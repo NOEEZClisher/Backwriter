@@ -1,4 +1,4 @@
-# Artext Current State
+# Backwriter Current State
 
 ## Core capability inventory
 
@@ -50,6 +50,8 @@ behavior remain deferred under the [CLI V1 authority](../architecture/backwriter
 CLI V1 has no remaining approved feature or implementation slice: beta
 implementation freeze holds until owner authority closes collection/Edit
 transport or Session machine output.
+The next step is package/lib/version decision and release packaging; until then
+Cargo identity, tag, artifact, and publish remain unexecuted.
 
 ## Current-only Runtime contract
 

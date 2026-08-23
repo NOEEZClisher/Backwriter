@@ -1,6 +1,7 @@
 # Repository operating guard
 
-Artext ships the Rust Backwriter Core and its required target Runtime. The
+This standalone repository provides the Rust Backwriter Core, its required
+target Runtime, and the canonical CLI. The
 owner-defined Core capability inventory is Search, View, Pick, Anchor, Check,
 Edit, Apply, and Data. `S` is assigned to Search, `P` to Pick, `A` to
 Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter

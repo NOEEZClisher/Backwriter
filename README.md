@@ -14,8 +14,8 @@ result-binding, explicit Data modes.
 
 ```arduino
 cargo build --release
-backwriter search line "needle"
-backwriter --workspace /path/project search paragraph "needle"
+./target/release/backwriter search line "needle"
+./target/release/backwriter --workspace /path/project search paragraph "needle"
 ```
 
 The default workspace is the process current working directory. An explicit

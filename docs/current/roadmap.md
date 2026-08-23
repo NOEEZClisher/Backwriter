@@ -1,4 +1,4 @@
-# Artext Roadmap
+# Backwriter Roadmap
 
 ## Completed: v3 target-local Anddress
 
@@ -65,6 +65,8 @@ behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
 or wire authority.
 CLI V1 beta implementation freeze is complete; work resumes only with owner
 authority for collection/Edit transport or Session machine output.
+The next step is package/lib/version decision and release packaging; until then
+Cargo identity, tag, artifact, and publish remain unexecuted.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a separate registry,
