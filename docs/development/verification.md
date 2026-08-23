@@ -136,6 +136,12 @@ Line targets, CR/LF/CRLF/no-EOL exact extents, Unicode and JSON escaping, result
 order, repeated Line content, global-option placement, rejected duplicate/late
 or non-Search JSON, and a structural audit that excludes a JSON Value or cloned
 result collection in the production writer.
+One-shot View JSON regressions cover exact compact envelope key order for File,
+Paragraph, and Line; related v3 File/Paragraph object re-decoding; every Line
+terminator including a separator Line's `paragraph:null`; Unicode and JSON
+escaping; unchanged human projection; rejected duplicate/late/anchored/extra
+forms; unavailable stdout/stderr closure; and a structural audit that excludes
+a JSON Value, ViewOutcome clone, or result collection in the production writer.
 Check regressions cover File/Paragraph/Line Current status, stale and missing
 NotCurrent status, unavailable-source status, strict v3 decoding, and rejected
 search/pick/extra forms. They create no CLI Session, binding, JSON, raw, or

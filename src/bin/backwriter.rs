@@ -1,4 +1,4 @@
-//! Human Search, View, Check, and Session adapter for Backwriter CLI V1.
+//! Human and JSON Search/View, human Check, and Session adapter for Backwriter CLI V1.
 
 use std::{
     env,
@@ -25,7 +25,7 @@ use artext::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human and JSON Search, View, and Check plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human and JSON Search and View, human Check, plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 enum CliError {
     Usage(String),
@@ -128,20 +128,22 @@ fn execute() -> Result<ExitCode, CliError> {
                     .map(|()| ExitCode::SUCCESS);
             }
             "view" => {
-                if json {
-                    return Err(CliError::usage("--json is supported only for Search"));
-                }
-                return execute_view(arguments, workspace, admissions).map(|()| ExitCode::SUCCESS);
+                return execute_view(arguments, workspace, admissions, json)
+                    .map(|()| ExitCode::SUCCESS);
             }
             "check" => {
                 if json {
-                    return Err(CliError::usage("--json is supported only for Search"));
+                    return Err(CliError::usage(
+                        "--json is supported only for Search or View",
+                    ));
                 }
                 return execute_check(arguments, workspace, admissions).map(|()| ExitCode::SUCCESS);
             }
             "shell" => {
                 if json {
-                    return Err(CliError::usage("--json is supported only for Search"));
+                    return Err(CliError::usage(
+                        "--json is supported only for Search or View",
+                    ));
                 }
                 if arguments.next().is_some() {
                     return Err(CliError::usage("shell accepts no operands"));
@@ -150,7 +152,9 @@ fn execute() -> Result<ExitCode, CliError> {
             }
             "pick" | "anchor" | "edit" | "apply" | "data" => {
                 if json {
-                    return Err(CliError::usage("--json is supported only for Search"));
+                    return Err(CliError::usage(
+                        "--json is supported only for Search or View",
+                    ));
                 }
                 return Err(CliError::usage(format!(
                     "{argument} is not implemented in this slice"
@@ -235,6 +239,7 @@ fn execute_view(
     mut arguments: impl Iterator<Item = OsString>,
     workspace: Option<PathBuf>,
     admissions: Vec<AdmissionRoot>,
+    json: bool,
 ) -> Result<(), CliError> {
     let form = required_text(&mut arguments, "view input form")?;
     if form != "anddress" {
@@ -252,7 +257,11 @@ fn execute_view(
     let anddress = decode_anddress(encoded)?;
     let runtime = open_runtime(workspace, admissions)?;
     let outcome = run_view(&runtime, &anddress)?;
-    write_view(outcome)
+    if json {
+        write_view_json(outcome)
+    } else {
+        write_view(outcome)
+    }
 }
 
 fn execute_check(
@@ -474,6 +483,101 @@ fn write_view(outcome: ViewOutcome) -> Result<(), CliError> {
         Ok(())
     })();
     result.map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
+}
+
+fn write_view_json(outcome: ViewOutcome) -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    let result = (|| -> Result<(), CliError> {
+        match outcome {
+            ViewOutcome::File { text } => {
+                stdout
+                    .write_all(
+                        b"{\"schema\":\"backwriter.cli.view.v1\",\"kind\":\"file\",\"text\":",
+                    )
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                serde_json::to_writer(&mut stdout, &text)
+                    .map_err(|error| CliError::execution(error.to_string()))?;
+                stdout
+                    .write_all(b"}")
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+            }
+            ViewOutcome::Paragraph { text, file } => {
+                stdout
+                    .write_all(
+                        b"{\"schema\":\"backwriter.cli.view.v1\",\"kind\":\"paragraph\",\"text\":",
+                    )
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                serde_json::to_writer(&mut stdout, &text)
+                    .map_err(|error| CliError::execution(error.to_string()))?;
+                stdout
+                    .write_all(b",\"file\":")
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                let file = file
+                    .encode()
+                    .map_err(|error| CliError::execution(error.to_string()))?;
+                stdout
+                    .write_all(&file)
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                stdout
+                    .write_all(b"}")
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+            }
+            ViewOutcome::Line {
+                content,
+                terminator,
+                file,
+                paragraph,
+            } => {
+                stdout
+                    .write_all(
+                        b"{\"schema\":\"backwriter.cli.view.v1\",\"kind\":\"line\",\"content\":",
+                    )
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                serde_json::to_writer(&mut stdout, &content)
+                    .map_err(|error| CliError::execution(error.to_string()))?;
+                stdout
+                    .write_all(match terminator {
+                        LineTerminator::None => b",\"terminator\":\"none\",\"file\":",
+                        LineTerminator::Lf => b",\"terminator\":\"lf\",\"file\":",
+                        LineTerminator::Cr => b",\"terminator\":\"cr\",\"file\":",
+                        LineTerminator::Crlf => b",\"terminator\":\"crlf\",\"file\":",
+                    })
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                let file = file
+                    .encode()
+                    .map_err(|error| CliError::execution(error.to_string()))?;
+                stdout
+                    .write_all(&file)
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                stdout
+                    .write_all(b",\"paragraph\":")
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                if let Some(paragraph) = paragraph {
+                    let paragraph = paragraph
+                        .encode()
+                        .map_err(|error| CliError::execution(error.to_string()))?;
+                    stdout
+                        .write_all(&paragraph)
+                        .map_err(|error| CliError::stream(error.to_string()))?;
+                } else {
+                    stdout
+                        .write_all(b"null")
+                        .map_err(|error| CliError::stream(error.to_string()))?;
+                }
+                stdout
+                    .write_all(b"}")
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+            }
+        }
+        Ok(())
+    })();
+    result?;
+    stdout
+        .write_all(b"\n")
+        .map_err(|error| CliError::stream(error.to_string()))?;
     stdout
         .flush()
         .map_err(|error| CliError::stream(error.to_string()))

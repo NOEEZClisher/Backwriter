@@ -22,10 +22,10 @@ Rust value implementation, and single-source Apply Runtime implementation are
 complete. Apply's V1 semantic/public API/error authority and Runtime
 implementation are complete.
 
-## CLI Adapter V1 Search JSON, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data slice
+## CLI Adapter V1 Search/View JSON, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data slice
 
 The repository includes the canonical `backwriter` CLI Adapter. Its completed
-scope is one-shot human and JSON Search, View, and Check plus Session Pick,
+scope is one-shot human and JSON Search and View, human Check plus Session Pick,
 batch Check, Anchor, Edit, Apply, result binding, and explicit Data over the existing public
 Runtime seams. The Session retains one Runtime, one caller-owned `DataStore`,
 and explicit CLI-local bindings plus non-aliasing owning Anchedress handles.
@@ -34,8 +34,9 @@ CLI-parsed predicate to the existing pure Core function. Session batch Check
 passes an exact matching binding clone to `check_search` or `check_pick` and
 exposes only its report counts. Session Anchor creates an opaque Runtime-local
 handle, views it through the existing anchored seam, and invalidates only its
-logical source. One-shot Search JSON streams a compact Adapter envelope and
-exact existing v3 Anddress objects without creating a Core wire. Data transfers exact clones from explicit Session values into
+logical source. One-shot Search and View JSON stream compact Adapter envelopes
+without creating a Core wire; related values are exact existing v3 Anddress
+objects. Data transfers exact clones from explicit Session values into
 the existing typed Core store and reads them back without capability execution.
 It adds no Core API, wire, workflow, provenance, automatic Data storage,
 registry, persistence, or retained Core state beyond existing Anchor continuity.

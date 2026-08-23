@@ -212,10 +212,12 @@ remove reflection of existing live continuity.
 `DataStore` keeps its separate boundaries: it calls no capability, performs no
 automatic Store, has no latest slot, and performs no automatic update.
 
-The completed one-shot Search JSON projection is Adapter-only. Its compact
-envelope identifies `backwriter.cli.search.v1` and embeds each existing encoded
-v3 Anddress JSON object directly; it creates no Core wire, value model, Search
-state, result collection, or capability workflow.
+The completed one-shot Search and View JSON projections are Adapter-only. Their
+compact envelopes identify `backwriter.cli.search.v1` and
+`backwriter.cli.view.v1`; Search embeds each existing encoded v3 Anddress JSON
+object directly, while View embeds its related v3 File and optional Paragraph
+objects directly. They create no Core wire, value model, Search/View state,
+result collection, or capability workflow.
 
 ## Search and Pick
 

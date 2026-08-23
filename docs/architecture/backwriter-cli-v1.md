@@ -1,8 +1,9 @@
 # Backwriter CLI V1
 
 Status: Adapter authority. The completed slices are the canonical `backwriter`
-executable's one-shot human and JSON Search, View, Check, Session Pick, batch
-Check, Anchor, Edit, Apply, result-binding, and Data modes only. This document follows the Core active documents in the
+executable's one-shot human and JSON Search/View, human Check, Session Pick,
+batch Check, Anchor, Edit, Apply, result-binding, and Data modes only. This
+document follows the Core active documents in the
 authority-reading order.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
@@ -28,8 +29,9 @@ CLI V1 has two intended execution forms:
   `DataStore`, and CLI-local Search/Pick/Anddress/Edit/View/Check values plus
   non-aliasing owning Anchedress handles until EOF or `exit`.
 
-One-shot human and JSON Search, View, and Check plus Session Pick, batch Check,
-Anchor, Edit, Apply, result binding, and explicit typed Data are implemented.
+One-shot human and JSON Search and View, human Check plus Session Pick, batch
+Check, Anchor, Edit, Apply, result binding, and explicit typed Data are
+implemented.
 One-shot Data and Anchor are intentionally unsupported because their DataStore
 and live-handle contracts require Session lifetime. One-shot Pick, batch Check,
 Edit, and Apply await collection or Edit transport schema authority. Raw output,
@@ -56,6 +58,8 @@ backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
+backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+    view anddress <encoded-v3-Anddress>
 ```
 
 The default workspace is the process current working directory. An explicit
@@ -66,10 +70,10 @@ the CLI does not canonicalize it or bypass Runtime root and symlink checks.
 single admission root is `.`. `--source` and `--subtree` are repeatable only
 after the query. With no scope selector, Search uses `AllAdmitted`.
 
-`--json` is an optional global Search-only flag. It appears before `search`, may
-appear once, and can occur in any order among `--workspace` and `--admit`.
-Duplicate or post-capability use is a usage error. Session and every non-Search
-one-shot capability reject it. `--raw` remains deferred and rejected.
+`--json` is an optional global Search/View-only flag. It appears before the
+capability, may appear once, and can occur in any order among `--workspace` and
+`--admit`. Duplicate or post-capability use is a usage error. Session and every
+other one-shot capability reject it. `--raw` remains deferred and rejected.
 
 The query is exactly one argv value supplied by the host shell. The CLI has no
 secondary quoting or tokenization. It directly uses `AdmissionRoot`,
@@ -89,7 +93,8 @@ session state, automatic selection, or background process.
   errors only to stderr.
 - `--help` as the sole argument exits `0` and writes usage to stdout.
 
-Unsupported capabilities and `--raw` are explicit usage errors in this slice.
+Unsupported capabilities, unsupported JSON forms, and `--raw` are explicit
+usage errors in this slice.
 There are no short option aliases.
 
 ### Human Search projection
@@ -149,6 +154,27 @@ Human View output contains only the selected target's exact text: File and
 Paragraph write their text unchanged, and Line writes its content followed by
 its exact None/LF/CR/CRLF terminator. It adds no header, automatic newline,
 preview, truncation, raw Anddress, or related File/Paragraph address.
+
+### JSON View projection
+
+With the global `--json` flag, View decodes one v3 Anddress, calls the existing
+Runtime View seam once, and writes exactly one compact UTF-8 JSON value followed
+by one LF. Its schema is Adapter-only, not a Core wire. Its fixed key orders are:
+
+```json
+{"schema":"backwriter.cli.view.v1","kind":"file","text":"..."}
+{"schema":"backwriter.cli.view.v1","kind":"paragraph","text":"...","file":<exact-v3-Anddress-object>}
+{"schema":"backwriter.cli.view.v1","kind":"line","content":"...","terminator":"none|lf|cr|crlf","file":<exact-v3-Anddress-object>,"paragraph":<exact-v3-Anddress-object-or-null>}
+```
+
+`text` and `content` use the existing JSON string writer directly. Related
+File/Paragraph values are their exact existing v3 `Anddress::encode()` objects,
+not strings or new CLI values. Line terminators project only to `none`, `lf`,
+`cr`, or `crlf`; a separator Line has `paragraph:null`. The writer retains no
+JSON `Value`, cloned `ViewOutcome`, complete JSON string, or result collection.
+Encoding resource and stdout failure are execution errors, and a successful
+JSON response contains no diagnostic bytes. The human View projection is
+unchanged.
 
 ## Implemented one-shot Check
 
@@ -303,7 +329,7 @@ The following are intentionally outside the completed initial slice:
   handle lifetime.
 - One-shot Pick, batch Check, Edit, and Apply, pending collection or Edit
   transport schema authority.
-- Raw output and any JSON form other than one-shot Search.
+- Raw output and any JSON form other than one-shot Search or View.
 
 These require owner decisions before implementation. The high-level intended
 form remains one-shot capability execution without equating CLI-local names with
@@ -320,6 +346,6 @@ and Anchor logical-source invalidation are implemented in Session. The explicit
 Edit, Apply, result-binding, and typed Data forms remain Adapter syntax only;
 none is a public Core wire or a new Core workflow.
 
-Machine-oriented JSON other than the completed Search schema, and exact text raw
-output if defined, are Adapter output schemas rather than `SearchOutcome`,
-`PickOutcome`, or Anddress wire authority.
+Machine-oriented JSON other than the completed Search/View schemas, and exact
+text raw output if defined, are Adapter output schemas rather than
+`SearchOutcome`, `PickOutcome`, `ViewOutcome`, or Anddress wire authority.

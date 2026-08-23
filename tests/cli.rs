@@ -7,8 +7,9 @@ use std::{
 
 use artext::{
     backwriter::{
-        anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural},
+        anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, LineTerminator, Natural},
         search::{SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget},
+        view::ViewOutcome,
     },
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
@@ -187,6 +188,116 @@ fn assert_search_json(output: Output, expected: &SearchOutcome) {
     }
 }
 
+fn expected_view_json(outcome: &ViewOutcome) -> Vec<u8> {
+    let mut output = b"{\"schema\":\"backwriter.cli.view.v1\",\"kind\":".to_vec();
+    match outcome {
+        ViewOutcome::File { text } => {
+            output.extend_from_slice(b"\"file\",\"text\":");
+            serde_json::to_writer(&mut output, text).unwrap();
+        }
+        ViewOutcome::Paragraph { text, file } => {
+            output.extend_from_slice(b"\"paragraph\",\"text\":");
+            serde_json::to_writer(&mut output, text).unwrap();
+            output.extend_from_slice(b",\"file\":");
+            output.extend_from_slice(&file.encode().unwrap());
+        }
+        ViewOutcome::Line {
+            content,
+            terminator,
+            file,
+            paragraph,
+        } => {
+            output.extend_from_slice(b"\"line\",\"content\":");
+            serde_json::to_writer(&mut output, content).unwrap();
+            output.extend_from_slice(match terminator {
+                LineTerminator::None => b",\"terminator\":\"none\",\"file\":",
+                LineTerminator::Lf => b",\"terminator\":\"lf\",\"file\":",
+                LineTerminator::Cr => b",\"terminator\":\"cr\",\"file\":",
+                LineTerminator::Crlf => b",\"terminator\":\"crlf\",\"file\":",
+            });
+            output.extend_from_slice(&file.encode().unwrap());
+            output.extend_from_slice(b",\"paragraph\":");
+            if let Some(paragraph) = paragraph {
+                output.extend_from_slice(&paragraph.encode().unwrap());
+            } else {
+                output.extend_from_slice(b"null");
+            }
+        }
+    }
+    output.extend_from_slice(b"}\n");
+    output
+}
+
+fn expected_human_view(outcome: &ViewOutcome) -> Vec<u8> {
+    match outcome {
+        ViewOutcome::File { text } | ViewOutcome::Paragraph { text, .. } => {
+            text.as_bytes().to_vec()
+        }
+        ViewOutcome::Line {
+            content,
+            terminator,
+            ..
+        } => {
+            let mut output = content.as_bytes().to_vec();
+            output.extend_from_slice(match terminator {
+                LineTerminator::None => b"",
+                LineTerminator::Lf => b"\n",
+                LineTerminator::Cr => b"\r",
+                LineTerminator::Crlf => b"\r\n",
+            });
+            output
+        }
+    }
+}
+
+fn assert_view_json(output: Output, expected: &ViewOutcome) {
+    assert!(output.status.success());
+    assert_eq!(output.stdout, expected_view_json(expected));
+    assert!(output.stderr.is_empty());
+
+    let document: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(document["schema"], "backwriter.cli.view.v1");
+    match expected {
+        ViewOutcome::File { text } => {
+            assert_eq!(document["kind"], "file");
+            assert_eq!(document["text"], text.as_str());
+        }
+        ViewOutcome::Paragraph { text, file } => {
+            assert_eq!(document["kind"], "paragraph");
+            assert_eq!(document["text"], text.as_str());
+            let encoded = serde_json::to_vec(&document["file"]).unwrap();
+            assert_eq!(Anddress::decode(&encoded).unwrap(), *file);
+        }
+        ViewOutcome::Line {
+            content,
+            terminator,
+            file,
+            paragraph,
+        } => {
+            assert_eq!(document["kind"], "line");
+            assert_eq!(document["content"], content.as_str());
+            assert_eq!(
+                document["terminator"],
+                match terminator {
+                    LineTerminator::None => "none",
+                    LineTerminator::Lf => "lf",
+                    LineTerminator::Cr => "cr",
+                    LineTerminator::Crlf => "crlf",
+                }
+            );
+            let encoded = serde_json::to_vec(&document["file"]).unwrap();
+            assert_eq!(Anddress::decode(&encoded).unwrap(), *file);
+            match paragraph {
+                Some(paragraph) => {
+                    let encoded = serde_json::to_vec(&document["paragraph"]).unwrap();
+                    assert_eq!(Anddress::decode(&encoded).unwrap(), *paragraph);
+                }
+                None => assert!(document["paragraph"].is_null()),
+            }
+        }
+    }
+}
+
 #[test]
 fn canonical_binary_help_and_default_workspace_search() {
     let root = tempfile::tempdir().unwrap();
@@ -203,6 +314,7 @@ fn canonical_binary_help_and_default_workspace_search() {
     let help_stdout = text(help.stdout);
     assert!(help_stdout.starts_with("Usage:\n  backwriter "));
     assert!(help_stdout.contains("[--json] search"));
+    assert!(help_stdout.contains("[--json] view"));
     assert!(help.stderr.is_empty());
 }
 
@@ -550,6 +662,158 @@ fn view_file_paragraph_and_line_preserve_exact_human_bytes() {
     assert_eq!(line_output.stdout, b"line\n");
     assert!(!text(line_output.stdout).contains("workspaceCoordinate"));
     assert!(line_output.stderr.is_empty());
+}
+
+#[test]
+fn one_shot_view_json_streams_exact_v3_objects_and_preserves_human_output() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(
+        root.path(),
+        "note.txt",
+        "quote \" and slash \\ control \u{1}\n\nparagraph λ\r\nline cr\rline lf\n \t\nnone",
+    );
+
+    for target in [
+        AnddressTarget::File,
+        AnddressTarget::Paragraph {
+            ordinal: Natural::one(),
+        },
+        AnddressTarget::Line {
+            ordinal: Natural::zero(),
+            exact_extent: "quote \" and slash \\ control \u{1}\n".to_owned(),
+        },
+        AnddressTarget::Line {
+            ordinal: Natural::parse("2").unwrap(),
+            exact_extent: "paragraph λ\r\n".to_owned(),
+        },
+        AnddressTarget::Line {
+            ordinal: Natural::parse("3").unwrap(),
+            exact_extent: "line cr\r".to_owned(),
+        },
+        AnddressTarget::Line {
+            ordinal: Natural::parse("5").unwrap(),
+            exact_extent: " \t\n".to_owned(),
+        },
+        AnddressTarget::Line {
+            ordinal: Natural::parse("6").unwrap(),
+            exact_extent: "none".to_owned(),
+        },
+    ] {
+        let operand = view_operand(root.path(), "note.txt", target);
+        let workspace = WorkspaceRuntime::open(
+            root.path(),
+            WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+        )
+        .unwrap();
+        let input = Anddress::decode(operand.as_bytes()).unwrap();
+        let expected = workspace.view(&input).unwrap();
+
+        assert_view_json(
+            run(root.path(), &["--json", "view", "anddress", &operand]),
+            &expected,
+        );
+        let human = run(root.path(), &["view", "anddress", &operand]);
+        assert!(human.status.success());
+        assert_eq!(human.stdout, expected_human_view(&expected));
+        assert!(human.stderr.is_empty());
+    }
+
+    let escaped = run(
+        root.path(),
+        &[
+            "--json",
+            "view",
+            "anddress",
+            &view_operand(
+                root.path(),
+                "note.txt",
+                AnddressTarget::Line {
+                    ordinal: Natural::zero(),
+                    exact_extent: "quote \" and slash \\ control \u{1}\n".to_owned(),
+                },
+            ),
+        ],
+    );
+    assert!(
+        escaped
+            .stdout
+            .windows(b"\\u0001".len())
+            .any(|window| window == b"\\u0001")
+    );
+    assert!(
+        escaped
+            .stdout
+            .windows(b"\\\"".len())
+            .any(|window| window == b"\\\"")
+    );
+    assert!(
+        escaped
+            .stdout
+            .windows(b"\\\\".len())
+            .any(|window| window == b"\\\\")
+    );
+}
+
+#[test]
+fn one_shot_view_json_rejects_invalid_forms_and_keeps_errors_off_stdout() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "actual\n");
+    let operand = view_operand(root.path(), "note.txt", AnddressTarget::File);
+
+    assert_usage(run(
+        root.path(),
+        &["--json", "--json", "view", "anddress", &operand],
+    ));
+    assert_usage(run(root.path(), &["view", "anddress", &operand, "--json"]));
+    assert_usage(run(root.path(), &["--json", "view", "anchored", "handle"]));
+    assert_usage(run(
+        root.path(),
+        &["--json", "view", "anddress", &operand, "extra"],
+    ));
+
+    let stale = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::zero(),
+            exact_extent: "actual\n".to_owned(),
+        },
+    );
+    write(root.path(), "note.txt", "changed\n");
+    assert_execution_error(run(root.path(), &["--json", "view", "anddress", &stale]));
+
+    write(root.path(), "unadmitted.txt", "unadmitted\n");
+    let unadmitted = view_operand(root.path(), "unadmitted.txt", AnddressTarget::File);
+    assert_execution_error(run(
+        root.path(),
+        &[
+            "--admit",
+            "coordinate.txt",
+            "--json",
+            "view",
+            "anddress",
+            &unadmitted,
+        ],
+    ));
+}
+
+#[test]
+fn one_shot_view_json_writer_has_no_value_clone_or_collection_path() {
+    let source = include_str!("../src/bin/backwriter.rs");
+    let writer = source
+        .split("fn write_view_json")
+        .nth(1)
+        .unwrap()
+        .split("fn write_check")
+        .next()
+        .unwrap();
+    assert!(writer.contains("serde_json::to_writer"));
+    assert!(!writer.contains("Value"));
+    assert!(!writer.contains(".clone()"));
+    assert!(!writer.contains("collect("));
+    assert!(!writer.contains("Vec<ViewOutcome>"));
 }
 
 #[test]
