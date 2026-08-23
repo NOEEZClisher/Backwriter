@@ -39,7 +39,7 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
-## Completed: CLI V1 Search, View, Check, Session Pick, batch Check, Anchor, Edit, and Apply Adapter
+## Completed: CLI V1 Search, View, Check, Session Pick, batch Check, Anchor, Edit, Apply, and result-binding Adapter
 
 The canonical `backwriter` executable implements one-shot human Search, View,
 and Check plus Session Pick, batch Check, and Anchor. The Session owns one

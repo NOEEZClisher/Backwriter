@@ -2,7 +2,7 @@
 
 Status: Adapter authority. The completed slices are the canonical `backwriter`
 executable's one-shot human Search, View, Check, Session Pick, batch Check, and
-Anchor, Edit, and Apply modes only. This document follows the Core active documents in the
+Anchor, Edit, Apply, and result-binding modes only. This document follows the Core active documents in the
 authority-reading order.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
@@ -225,6 +225,12 @@ unindexed Edit binding, retains that caller-owned binding, calls Runtime Apply,
 and writes `OK` only on success. All Runtime Apply failures are execution errors.
 Quoted tokens additionally decode `\n`, `\r`, and `\t`; no preview, retry,
 rollback, transaction, or CLI recovery is added.
+
+Session `let` can retain exact Core `ViewOutcome`, raw `CheckOutcome`, Search
+Check outcome, and Pick Check outcome after writing the same existing human
+projection. These results are cloneable Session values only: they are not
+Anddress, Search/Pick candidates, handles, Edit operands, DataStore values, or
+automatic filtered-value conversions.
 
 Each Session command reuses the completed one-shot Search, View, and Check
 validation, Runtime execution, and human projection. A command error writes to

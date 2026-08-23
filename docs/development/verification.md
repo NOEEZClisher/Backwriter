@@ -144,6 +144,9 @@ source-specific invalidation, rejected handle cloning/indexing/type misuse,
 lexer quoting and errors, blank Lines, EOF and exit, error continuation and exit
 precedence, and absence of latest, pipeline, registry, persistence, or DataStore
 behavior.
+Session result-binding regressions cover exact View/Check output before storage,
+cloneable result values, anchored View, raw and batch Check reports, and rejected
+cross-capability use without implicit filtered-value conversion.
 Session Edit/Apply regressions cover all five Edit variants, all four Position
 forms, exact source bytes, quoted content escapes, binding cloning, invalid
 forms, and continued execution after errors without CLI recovery.

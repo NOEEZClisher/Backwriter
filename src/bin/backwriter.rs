@@ -442,6 +442,10 @@ enum SessionValue {
     Anddress(Anddress),
     Anchedress(Anchedress),
     Edit(Edit),
+    View(ViewOutcome),
+    CheckAnddress(CheckOutcome<Option<Anddress>>),
+    CheckSearch(CheckOutcome<SearchOutcome>),
+    CheckPick(CheckOutcome<PickOutcome>),
 }
 
 struct SessionBinding {
@@ -598,6 +602,83 @@ fn execute_let(
         edit.validate().map_err(map_edit_error)?;
         return store_binding(bindings, name, SessionValue::Edit(edit));
     }
+    if right_hand_side == "view" {
+        let form = required_token(tokens, 4, "view input form")?;
+        let outcome = match form {
+            "anddress" => {
+                if tokens.len() != 6 {
+                    return Err(CliError::usage(
+                        "view anddress accepts exactly one reference",
+                    ));
+                }
+                let anddress = resolve_anddress(bindings, &tokens[5])?;
+                run_view(runtime, &anddress)?
+            }
+            "anchored" => {
+                if tokens.len() != 6 {
+                    return Err(CliError::usage(
+                        "view anchored accepts exactly one handle binding",
+                    ));
+                }
+                let handle = resolve_anchedress(bindings, &tokens[5])?;
+                runtime
+                    .view_anchored(handle)
+                    .map_err(|error| CliError::execution(error.to_string()))?
+            }
+            _ => {
+                return Err(CliError::usage(
+                    "view requires the anddress or anchored input form",
+                ));
+            }
+        };
+        write_view(outcome.clone())?;
+        return store_binding(bindings, name, SessionValue::View(outcome));
+    }
+    if right_hand_side == "check" {
+        let form = required_token(tokens, 4, "check input form")?;
+        return match form {
+            "anddress" => {
+                if tokens.len() != 6 {
+                    return Err(CliError::usage(
+                        "check anddress accepts exactly one reference",
+                    ));
+                }
+                let outcome = run_check(runtime, resolve_anddress(bindings, &tokens[5])?)?;
+                write_check(outcome.clone())?;
+                store_binding(bindings, name, SessionValue::CheckAnddress(outcome))
+            }
+            "search" | "pick" => {
+                if tokens.len() != 6 {
+                    return Err(CliError::usage(format!(
+                        "check {form} accepts exactly one binding"
+                    )));
+                }
+                let value = resolve_binding_value(bindings, &tokens[5])?;
+                match (form, value) {
+                    ("search", SessionValue::Search(input)) => {
+                        let outcome = runtime
+                            .check_search(input)
+                            .map_err(|error| CliError::execution(error.to_string()))?;
+                        write_batch_check(outcome.report.clone())?;
+                        store_binding(bindings, name, SessionValue::CheckSearch(outcome))
+                    }
+                    ("pick", SessionValue::Pick(input)) => {
+                        let outcome = runtime
+                            .check_pick(input)
+                            .map_err(|error| CliError::execution(error.to_string()))?;
+                        write_batch_check(outcome.report.clone())?;
+                        store_binding(bindings, name, SessionValue::CheckPick(outcome))
+                    }
+                    ("search", _) => Err(CliError::usage("check search requires a Search binding")),
+                    ("pick", _) => Err(CliError::usage("check pick requires a Pick binding")),
+                    _ => unreachable!(),
+                }
+            }
+            _ => Err(CliError::usage(
+                "check requires the anddress, search, or pick input form",
+            )),
+        };
+    }
     let value = if right_hand_side == "search" {
         let outcome = run_search(runtime, parse_search(&tokens[4..])?)?;
         write_human(&outcome)?;
@@ -750,6 +831,14 @@ fn resolve_pick_candidates(
             )));
         }
         Some(SessionValue::Edit(_)) => {
+            return Err(CliError::usage(format!(
+                "Pick candidates require a Search or Pick binding: {name}"
+            )));
+        }
+        Some(SessionValue::View(_))
+        | Some(SessionValue::CheckAnddress(_))
+        | Some(SessionValue::CheckSearch(_))
+        | Some(SessionValue::CheckPick(_)) => {
             return Err(CliError::usage(format!(
                 "Pick candidates require a Search or Pick binding: {name}"
             )));
@@ -1218,6 +1307,10 @@ fn resolve_binding_value(
         Some(SessionValue::Pick(value)) => Ok(SessionValue::Pick(value.clone())),
         Some(SessionValue::Anddress(value)) => Ok(SessionValue::Anddress(value.clone())),
         Some(SessionValue::Edit(value)) => Ok(SessionValue::Edit(value.clone())),
+        Some(SessionValue::View(value)) => Ok(SessionValue::View(value.clone())),
+        Some(SessionValue::CheckAnddress(value)) => Ok(SessionValue::CheckAnddress(value.clone())),
+        Some(SessionValue::CheckSearch(value)) => Ok(SessionValue::CheckSearch(value.clone())),
+        Some(SessionValue::CheckPick(value)) => Ok(SessionValue::CheckPick(value.clone())),
         Some(SessionValue::Anchedress(_)) => Err(CliError::usage(format!(
             "Anchedress binding cannot be cloned: {name}"
         ))),
@@ -1280,6 +1373,14 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
             Some(SessionValue::Edit(_)) => Err(CliError::usage(format!(
                 "Edit binding cannot be used as an Anddress: {reference}"
             ))),
+            Some(
+                SessionValue::View(_)
+                | SessionValue::CheckAnddress(_)
+                | SessionValue::CheckSearch(_)
+                | SessionValue::CheckPick(_),
+            ) => Err(CliError::usage(format!(
+                "result binding cannot be used as an Anddress: {reference}"
+            ))),
             None => Err(CliError::usage(format!("unknown binding: {reference}"))),
         };
     };
@@ -1315,6 +1416,14 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
         ))),
         Some(SessionValue::Edit(_)) => Err(CliError::usage(format!(
             "Edit binding cannot be indexed: {name}"
+        ))),
+        Some(
+            SessionValue::View(_)
+            | SessionValue::CheckAnddress(_)
+            | SessionValue::CheckSearch(_)
+            | SessionValue::CheckPick(_),
+        ) => Err(CliError::usage(format!(
+            "result binding cannot be indexed: {name}"
         ))),
         None => Err(CliError::usage(format!("unknown binding: {name}"))),
     }

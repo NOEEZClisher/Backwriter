@@ -22,7 +22,7 @@ Rust value implementation, and single-source Apply Runtime implementation are
 complete. Apply's V1 semantic/public API/error authority and Runtime
 implementation are complete.
 
-## CLI Adapter V1 Session Pick, batch Check, Anchor, Edit, and Apply slice
+## CLI Adapter V1 Session Pick, batch Check, Anchor, Edit, Apply, and result-binding slice
 
 The repository includes the canonical `backwriter` CLI Adapter. Its completed
 scope is one-shot human Search, View, and Check plus Session Pick, batch Check,

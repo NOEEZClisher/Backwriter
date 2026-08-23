@@ -839,6 +839,24 @@ fn session_edit_apply_rejects_invalid_forms_without_stopping_later_commands() {
 }
 
 #[test]
+fn session_view_and_check_result_bindings_keep_direct_output_and_clone_only_results() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\n");
+    let output = run_shell(
+        root.path(),
+        "let lines = search line needle\nlet view = view anddress @lines[0]\nlet view_copy = @view\nlet raw_check = check anddress @lines[0]\nlet raw_copy = @raw_check\nlet search_check = check search @lines\nlet search_copy = @search_check\nlet picked = pick @lines all\nlet pick_check = check pick @picked\nlet pick_copy = @pick_check\nlet handle = anchor create @lines[0]\nlet anchored = view anchored @handle\nview anchored @handle\nview anddress @view\ncheck search @search_check\napply @raw_check\nexit\n",
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(
+        output.stdout,
+        b"Found 1\n0\tLine\tnote.txt:0\nneedle\nCurrent\nChecked 1\nCurrent 1\nNotCurrent 0\nUnavailable 0\nSelected 1\n0\tLine\tnote.txt:0\nChecked 1\nCurrent 1\nNotCurrent 0\nUnavailable 0\nAnchored\nneedle\nneedle\n"
+    );
+    let stderr = text(output.stderr);
+    assert!(stderr.contains("check search requires a Search binding"));
+    assert!(stderr.contains("binding is not an Edit: raw_check"));
+}
+
+#[test]
 fn session_bindings_reject_unknown_duplicate_empty_out_of_range_and_type_mismatch() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "note.txt", "needle\n");
