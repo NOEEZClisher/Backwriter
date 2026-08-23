@@ -25,7 +25,8 @@ implementation are complete.
 ## CLI Adapter V1 initial slice
 
 The repository includes the canonical `backwriter` CLI Adapter. Its completed
-scope is one-shot human Search and View over the existing public Runtime seams.
+scope is one-shot human Search, View, and Check over the existing public Runtime
+seams.
 It adds no Core API, wire, workflow, provenance, or retained state. Session,
 binding ownership, all other capabilities, JSON, and raw output remain deferred
 under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).

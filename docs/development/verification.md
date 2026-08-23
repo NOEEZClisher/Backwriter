@@ -129,4 +129,7 @@ usage versus Runtime execution exits, unsupported deferred forms, and strict
 stdout/stderr separation. View regressions cover v3 decode, File/Paragraph/Line
 exact bytes, None/LF/CR/CRLF terminators, large no-EOL output, stale/wrong-
 extent and unadmitted source closure, and anchored/extra-operand rejection.
-They create no CLI Session, binding, JSON, raw, or other capability authority.
+Check regressions cover File/Paragraph/Line Current status, stale and missing
+NotCurrent status, unavailable-source status, strict v3 decoding, and rejected
+search/pick/extra forms. They create no CLI Session, binding, JSON, raw, or
+other capability authority.

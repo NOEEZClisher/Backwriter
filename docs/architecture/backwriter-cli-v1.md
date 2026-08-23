@@ -1,7 +1,7 @@
 # Backwriter CLI V1
 
 Status: Adapter authority. The completed initial slices are the canonical
-`backwriter` executable's one-shot human Search and View modes only. This
+`backwriter` executable's one-shot human Search, View, and Check modes only. This
 document follows the Core active documents in the authority-reading order.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
@@ -26,7 +26,7 @@ CLI V1 has two intended execution forms:
 - Session would retain one `WorkspaceRuntime`, live Anchor handles, Core
   `DataStore`, and explicit CLI-local named values.
 
-Only one-shot Search and View are implemented. Session, `shell`, named
+Only one-shot Search, View, and Check are implemented. Session, `shell`, named
 bindings, all other capabilities, JSON, and raw output are deferred and
 rejected rather than silently accepted.
 
@@ -113,6 +113,25 @@ Paragraph write their text unchanged, and Line writes its content followed by
 its exact None/LF/CR/CRLF terminator. It adds no header, automatic newline,
 preview, truncation, raw Anddress, or related File/Paragraph address.
 
+## Implemented one-shot Check
+
+The complete syntax for this slice is:
+
+```text
+backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+    check anddress <encoded-v3-Anddress>
+```
+
+Check shares View's one-value v3 Anddress decoding and global workspace and
+admission parsing. It passes the decoded value directly to
+`WorkspaceRuntime::check`; it introduces no CLI input schema, request, wrapper,
+alias, or retained result. The only successful human outputs are one of
+`Current`, `NotCurrent`, or `Unavailable`, followed by one newline. They map
+the one-input Check report exactly and never display an address or report member.
+All three are successful Check outcomes. Invalid input is a usage error; Runtime,
+Check resource, and stdout errors are execution errors. `check search`,
+`check pick`, and extra operands are usage errors in this slice.
+
 ## Deferred CLI V1 authority
 
 The following are intentionally outside the completed initial slice:
@@ -120,7 +139,7 @@ The following are intentionally outside the completed initial slice:
 - Session command grammar and shell lexical grammar.
 - CLI-local binding ownership, lifetime, and explicit result projection.
 - Anchor handle binding, including `AlreadyLive` binding behavior.
-- One-shot Pick, Check, Anchor, Edit, Apply, and Data commands.
+- One-shot Pick, Anchor, Edit, Apply, and Data commands.
 - JSON schema and the exact scope of raw output.
 
 These require owner decisions before implementation. The high-level intended

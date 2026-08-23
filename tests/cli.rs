@@ -73,6 +73,12 @@ fn assert_execution_error(output: Output) {
     assert!(text(output.stderr).starts_with("error: "));
 }
 
+fn assert_check_status(output: Output, status: &str) {
+    assert!(output.status.success());
+    assert_eq!(output.stdout, format!("{status}\n").as_bytes());
+    assert!(output.stderr.is_empty());
+}
+
 #[test]
 fn canonical_binary_help_and_default_workspace_search() {
     let root = tempfile::tempdir().unwrap();
@@ -371,4 +377,106 @@ fn view_rejects_anchored_and_extra_operands() {
 
     assert_usage(run(root.path(), &["view", "anchored", "handle"]));
     assert_usage(run(root.path(), &["view", "anddress", &operand, "extra"]));
+}
+
+#[test]
+fn check_reports_current_for_each_target_kind_without_address_output() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "file\n\nparagraph\nline\n");
+
+    for target in [
+        AnddressTarget::File,
+        AnddressTarget::Paragraph {
+            ordinal: Natural::one(),
+        },
+        AnddressTarget::Line {
+            ordinal: Natural::parse("3").unwrap(),
+            exact_extent: "line\n".to_owned(),
+        },
+    ] {
+        let operand = view_operand(root.path(), "note.txt", target);
+        let output = run(root.path(), &["check", "anddress", &operand]);
+        assert_check_status(output, "Current");
+    }
+}
+
+#[test]
+fn check_reports_not_current_and_unavailable_from_the_runtime_report() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "actual\n");
+
+    let stale = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::one(),
+            exact_extent: "actual\n".to_owned(),
+        },
+    );
+    assert_check_status(
+        run(root.path(), &["check", "anddress", &stale]),
+        "NotCurrent",
+    );
+
+    let wrong_extent = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::zero(),
+            exact_extent: "wrong\n".to_owned(),
+        },
+    );
+    assert_check_status(
+        run(root.path(), &["check", "anddress", &wrong_extent]),
+        "NotCurrent",
+    );
+
+    let missing = view_operand(root.path(), "missing.txt", AnddressTarget::File);
+    assert_check_status(
+        run(root.path(), &["check", "anddress", &missing]),
+        "NotCurrent",
+    );
+
+    let unavailable = view_operand(root.path(), "broken.txt", AnddressTarget::File);
+    write(root.path(), "broken.txt", "broken\0");
+    assert_check_status(
+        run(root.path(), &["check", "anddress", &unavailable]),
+        "Unavailable",
+    );
+}
+
+#[test]
+fn check_rejects_invalid_forms_and_extra_operands() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    let operand = view_operand(root.path(), "coordinate.txt", AnddressTarget::File);
+
+    assert_usage(run(root.path(), &["check", "anddress", "{"]));
+    assert_usage(run(
+        root.path(),
+        &["check", "anddress", r#"{"version":"old","kind":null}"#],
+    ));
+    assert_usage(run(
+        root.path(),
+        &[
+            "check",
+            "anddress",
+            r#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"x","logicalPath":"note.txt","kind":"file"}"#,
+        ],
+    ));
+    assert_usage(run(root.path(), &["check", "search", "value"]));
+    assert_usage(run(root.path(), &["check", "pick", "value"]));
+    assert_usage(run(root.path(), &["check", "anddress", &operand, "extra"]));
+
+    let unavailable_workspace = root.path().join("missing-workspace");
+    let workspace = Command::new(binary())
+        .current_dir(root.path())
+        .arg("--workspace")
+        .arg(unavailable_workspace)
+        .args(["check", "anddress", &operand])
+        .output()
+        .unwrap();
+    assert_execution_error(workspace);
 }

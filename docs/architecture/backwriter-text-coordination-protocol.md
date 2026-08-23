@@ -388,7 +388,7 @@ request, builder, disposition enum, public trait, state, or store. Anchedress
 values, in-place updates of stored Check outputs, and their associated RAM commit
 semantics remain deferred. Any Adapter-facing Check spelling remains Adapter
 syntax rather than storage syntax or Data authority. Wire remains outside the
-Core cutline; Check CLI work remains deferred beyond the initial Search Adapter.
+Core cutline; Adapter spelling does not alter Check Core authority.
 
 ## Data V1 public authority
 

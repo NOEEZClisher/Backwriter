@@ -11,6 +11,7 @@ use std::{
 use artext::{
     backwriter::{
         anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator},
+        check::CheckOutcome,
         search::{
             SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchScopeEntry, SearchTarget,
         },
@@ -19,7 +20,7 @@ use artext::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n\nOnly one-shot human Search and View are implemented in this slice.";
+const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n\nOnly one-shot human Search, View, and Check are implemented in this slice.";
 
 enum CliError {
     Usage(String),
@@ -106,7 +107,8 @@ fn execute() -> Result<(), CliError> {
             }
             "search" => return execute_search(arguments, workspace, admissions),
             "view" => return execute_view(arguments, workspace, admissions),
-            "shell" | "pick" | "check" | "anchor" | "edit" | "apply" | "data" => {
+            "check" => return execute_check(arguments, workspace, admissions),
+            "shell" | "pick" | "anchor" | "edit" | "apply" | "data" => {
                 return Err(CliError::usage(format!(
                     "{argument} is not implemented in this slice"
                 )));
@@ -192,20 +194,50 @@ fn execute_view(
     if arguments.next().is_some() {
         return Err(CliError::usage("view accepts exactly one anddress operand"));
     }
-    let anddress = match Anddress::decode(encoded.as_bytes()) {
-        Ok(anddress) => anddress,
-        Err(AnddressError::Resource) => {
-            return Err(CliError::execution(
-                "Anddress decoding ran out of resources",
-            ));
-        }
-        Err(error) => return Err(CliError::usage(error.to_string())),
-    };
+    let anddress = decode_anddress(encoded)?;
     let runtime = open_runtime(workspace, admissions)?;
     let outcome = runtime
         .view(&anddress)
         .map_err(|error| CliError::execution(error.to_string()))?;
     write_view(outcome)
+}
+
+fn execute_check(
+    mut arguments: impl Iterator<Item = OsString>,
+    workspace: Option<PathBuf>,
+    admissions: Vec<AdmissionRoot>,
+) -> Result<(), CliError> {
+    let form = required_text(&mut arguments, "check input form")?;
+    if form != "anddress" {
+        if matches!(form.as_str(), "search" | "pick") {
+            return Err(CliError::usage(format!(
+                "check {form} is not implemented in this slice"
+            )));
+        }
+        return Err(CliError::usage("check requires the anddress input form"));
+    }
+    let encoded = required_text(&mut arguments, "check anddress")?;
+    if arguments.next().is_some() {
+        return Err(CliError::usage(
+            "check accepts exactly one anddress operand",
+        ));
+    }
+    let anddress = decode_anddress(encoded)?;
+    let runtime = open_runtime(workspace, admissions)?;
+    let outcome = runtime
+        .check(anddress)
+        .map_err(|error| CliError::execution(error.to_string()))?;
+    write_check(outcome)
+}
+
+fn decode_anddress(encoded: String) -> Result<Anddress, CliError> {
+    match Anddress::decode(encoded.as_bytes()) {
+        Ok(anddress) => Ok(anddress),
+        Err(AnddressError::Resource) => Err(CliError::execution(
+            "Anddress decoding ran out of resources",
+        )),
+        Err(error) => Err(CliError::usage(error.to_string())),
+    }
 }
 
 fn open_runtime(
@@ -299,6 +331,28 @@ fn write_view(outcome: ViewOutcome) -> Result<(), CliError> {
         Ok(())
     })();
     result.map_err(|error| CliError::execution(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::execution(error.to_string()))
+}
+
+fn write_check(outcome: CheckOutcome<Option<Anddress>>) -> Result<(), CliError> {
+    let filtered = outcome.filtered.is_some();
+    let report = outcome.report;
+    let status = match (
+        filtered,
+        report.current_count(),
+        report.removed_count(),
+        report.unavailable_count(),
+        report.checked_count(),
+    ) {
+        (true, 1, 0, 0, 1) => "Current",
+        (false, 0, 1, 0, 1) => "NotCurrent",
+        (true, 0, 0, 1, 1) => "Unavailable",
+        _ => return Err(CliError::execution("inconsistent raw Check report")),
+    };
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    writeln!(stdout, "{status}").map_err(|error| CliError::execution(error.to_string()))?;
     stdout
         .flush()
         .map_err(|error| CliError::execution(error.to_string()))
