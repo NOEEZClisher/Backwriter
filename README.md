@@ -7,7 +7,8 @@ addresses without turning source history or editor state into Core identity.
 The Core capability inventory is Search, View, Pick, Anchor, Check, Edit,
 Apply, and Data. The repository currently provides their Rust Core/Runtime
 surfaces and the canonical `backwriter` executable's one-shot human Search,
-View, Check, Session Pick, batch Check, Anchor, Edit, Apply, and result-binding modes.
+View, Check, Session Pick, batch Check, Anchor, Edit, Apply, result-binding,
+and explicit Data modes.
 
 ## Quick start
 
@@ -27,7 +28,7 @@ sources.
 ## Current CLI scope
 
 `backwriter` currently implements one-shot human Search, View, Check, and
-Session Pick, batch Check, Anchor, Edit, and Apply:
+Session Pick, batch Check, Anchor, Edit, Apply, and Data:
 
 ```text
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
@@ -44,15 +45,17 @@ The CLI preserves Core Search validation and deterministic result order. View
 decodes a v3 Anddress and writes only its exact selected text. Check decodes one
 v3 Anddress and writes only `Current`, `NotCurrent`, or `Unavailable`. Human
 output does not expose address metadata. The Session holds one Runtime until EOF
-or `exit` and has explicit local Search, Pick, Anddress, and non-aliasing
-Anchedress bindings. It has no latest value or DataStore integration. Session Pick
+or `exit` and has explicit local Search, Pick, Anddress, Edit, View, and Check
+bindings plus non-aliasing Anchedress handles. It owns one explicit `DataStore`
+for the Session only; names are typed and never persist past EOF or `exit`.
+Session Pick
 passes a named Search or Pick collection and an Adapter-parsed predicate directly
 to Core; Session batch Check passes a named matching outcome directly to its
 Runtime batch seam and prints only report counts. Session Anchor creates a live
 handle only through `let <name> = anchor create <anddress-ref>`, views it through
 `view anchored @<name>`, and can invalidate its logical source with `anchor
 invalidate-source <logical-path>`. One-shot Pick, one-shot batch Check, Anchor,
-Edit, Apply, Data, JSON, raw output, and further Session behavior remain deferred.
+JSON, raw output, and further Session behavior remain deferred.
 
 ## Scope
 

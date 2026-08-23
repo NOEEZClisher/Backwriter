@@ -22,21 +22,24 @@ Rust value implementation, and single-source Apply Runtime implementation are
 complete. Apply's V1 semantic/public API/error authority and Runtime
 implementation are complete.
 
-## CLI Adapter V1 Session Pick, batch Check, Anchor, Edit, Apply, and result-binding slice
+## CLI Adapter V1 Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data slice
 
 The repository includes the canonical `backwriter` CLI Adapter. Its completed
 scope is one-shot human Search, View, and Check plus Session Pick, batch Check,
-and Anchor over the existing public Runtime seams. The Session retains one Runtime
-and explicit CLI-local Search/Pick/Anddress bindings plus non-aliasing owning
-Anchedress handles. Session Pick passes a named candidate collection and a
+Anchor, Edit, Apply, result binding, and explicit Data over the existing public
+Runtime seams. The Session retains one Runtime, one caller-owned `DataStore`,
+and explicit CLI-local bindings plus non-aliasing owning Anchedress handles.
+Session Pick passes a named candidate collection and a
 CLI-parsed predicate to the existing pure Core function. Session batch Check
 passes an exact matching binding clone to `check_search` or `check_pick` and
 exposes only its report counts. Session Anchor creates an opaque Runtime-local
 handle, views it through the existing anchored seam, and invalidates only its
-logical source. It adds no Core API, wire, workflow, provenance, automatic
-DataStore use, registry, persistence, or retained Core state beyond existing
-Anchor continuity. One-shot Pick, one-shot batch Check, one-shot Anchor, all
-other capabilities, JSON, raw output, and further Session behavior remain
+logical source. Data transfers exact clones from explicit Session values into
+the existing typed Core store and reads them back without capability execution.
+It adds no Core API, wire, workflow, provenance, automatic Data storage,
+registry, persistence, or retained Core state beyond existing Anchor continuity.
+One-shot Pick, one-shot batch Check, one-shot Anchor, all other capabilities,
+JSON, raw output, and further Session behavior remain
 deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
 
 ## Current-only Runtime contract

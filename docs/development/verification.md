@@ -142,8 +142,11 @@ copied Search/Anddress bindings, non-aliasing Anchor handle creation,
 `AlreadyLive` without a new binding, File/Paragraph/Line anchored View,
 source-specific invalidation, rejected handle cloning/indexing/type misuse,
 lexer quoting and errors, blank Lines, EOF and exit, error continuation and exit
-precedence, and absence of latest, pipeline, registry, persistence, or DataStore
-behavior.
+precedence, and absence of latest, pipeline, registry, or persistence. Session
+Data regressions cover all seven typed Core kinds, direct and `let` Get human
+projection, duplicate and cross-kind names, Rename/Remove/List order and safe
+name escaping, wrong-kind and unsupported-value rejection, mutation failure
+preservation, and DataStore drop at Session end.
 Session result-binding regressions cover exact View/Check output before storage,
 cloneable result values, anchored View, raw and batch Check reports, and rejected
 cross-capability use without implicit filtered-value conversion.

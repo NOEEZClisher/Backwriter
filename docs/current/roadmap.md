@@ -39,19 +39,22 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
-## Completed: CLI V1 Search, View, Check, Session Pick, batch Check, Anchor, Edit, Apply, and result-binding Adapter
+## Completed: CLI V1 Search, View, Check, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data Adapter
 
 The canonical `backwriter` executable implements one-shot human Search, View,
-and Check plus Session Pick, batch Check, and Anchor. The Session owns one
-Runtime until EOF or `exit` and explicit local Search/Pick/Anddress bindings plus
-non-aliasing owning Anchedress handles. It passes Pick candidate collections and
+and Check plus Session Pick, batch Check, Anchor, Edit, Apply, result binding,
+and Data. The Session owns one Runtime and one explicit caller-owned `DataStore`
+until EOF or `exit`, plus local bindings and non-aliasing owning Anchedress
+handles. It passes Pick candidate collections and
 parsed predicates to the existing pure Core function, while direct Pick remains
 unretained. Its batch Check passes exact matching binding clones to the existing
 Runtime seams and prints only count summaries. Its Anchor commands call the
 existing Runtime anchor, anchored View, and source-invalidation seams without a
-registry, persistence, or automatic re-identification. It directly reuses Core
-validation and public Runtime seams. One-shot Pick, one-shot batch Check,
-one-shot Anchor, other capabilities, JSON, raw output, and further Session
+registry, persistence, or automatic re-identification. Explicit typed Data
+commands transfer exact Session-value clones to/from Core `DataStore` without
+automatic storage or persistence. It directly reuses Core validation and public
+Runtime seams. One-shot Pick, one-shot batch Check, one-shot Anchor, other
+capabilities, JSON, raw output, and further Session
 behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
 or wire authority.
 

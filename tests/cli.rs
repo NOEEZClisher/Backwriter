@@ -857,6 +857,67 @@ fn session_view_and_check_result_bindings_keep_direct_output_and_clone_only_resu
 }
 
 #[test]
+fn session_data_stores_gets_and_binds_all_native_value_kinds() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\n");
+
+    let output = run_shell(
+        root.path(),
+        "let hits = search line needle\nlet address = @hits[0]\nlet picked = pick @hits all\nlet viewed = view anddress @address\nlet checked_anddress = check anddress @address\nlet checked_search = check search @hits\nlet checked_pick = check pick @picked\ndata store anddress \"quoted\\\"slash\\\\\" @hits[0]\ndata store search shared @hits\ndata store pick shared @picked\ndata store view shared @viewed\ndata store check-anddress shared @checked_anddress\ndata store check-search shared @checked_search\ndata store check-pick shared @checked_pick\ndata list\ndata get anddress \"quoted\\\"slash\\\\\"\ndata get search shared\ndata get pick shared\ndata get view shared\ndata get check-anddress shared\ndata get check-search shared\ndata get check-pick shared\nlet restored_address = data get anddress \"quoted\\\"slash\\\\\"\nlet restored_search = data get search shared\nlet restored_pick = data get pick shared\nlet restored_view = data get view shared\nlet restored_check_anddress = data get check-anddress shared\nlet restored_check_search = data get check-search shared\nlet restored_check_pick = data get check-pick shared\nview anddress @restored_address\npick @restored_search all\ncheck pick @restored_pick\nexit\n",
+    );
+
+    assert!(output.status.success(), "{}", text(output.stderr));
+    let stdout = text(output.stdout);
+    assert_eq!(stdout.matches("OK\n").count(), 7);
+    assert!(stdout.contains(
+        "anddress\t\"quoted\\\"slash\\\\\"\nsearch\t\"shared\"\npick\t\"shared\"\nview\t\"shared\"\ncheck-anddress\t\"shared\"\ncheck-search\t\"shared\"\ncheck-pick\t\"shared\"\n"
+    ));
+    assert_eq!(stdout.matches("Anddress\tLine\tnote.txt:0\n").count(), 2);
+    assert!(stdout.matches("Found 1\n0\tLine\tnote.txt:0\n").count() >= 3);
+    assert!(stdout.matches("Selected 1\n0\tLine\tnote.txt:0\n").count() >= 3);
+    assert!(stdout.matches("needle\n").count() >= 3);
+    assert!(stdout.matches("Current\n").count() >= 3);
+    assert!(
+        stdout
+            .matches("Checked 1\nCurrent 1\nNotCurrent 0\nUnavailable 0\n")
+            .count()
+            >= 5
+    );
+    assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn session_data_rejects_wrong_values_preserves_entries_and_drops_at_eof() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\n");
+
+    let invalid = run_shell(
+        root.path(),
+        "let hits = search line needle\nlet edit = edit delete @hits[0]\nlet handle = anchor create @hits[0]\ndata store search stored @hits\ndata store search stored @hits\ndata store pick stored @hits\ndata store anddress empty @hits[0]\ndata store anddress \"\" @hits[0]\ndata store anddress bad-edit @edit\ndata store search bad-anchor @handle\ndata rename search stored stored\ndata rename search stored renamed\ndata get search stored\ndata get search renamed\ndata remove search renamed\ndata get search renamed\nlet restored = data get anddress empty\ndata store search invalid @restored\ndata store view invalid @hits[0]\ndata store search indexed @hits[0]\ndata list extra\nexit\n",
+    );
+    assert_eq!(invalid.status.code(), Some(2));
+    assert_eq!(
+        invalid.stdout,
+        b"Found 1\n0\tLine\tnote.txt:0\nAnchored\nOK\nOK\nOK\nFound 1\n0\tLine\tnote.txt:0\nOK\nAnddress\tLine\tnote.txt:0\n"
+    );
+    let stderr = text(invalid.stderr);
+    assert!(stderr.contains("Data entry already exists"));
+    assert!(stderr.contains("Data kind does not match binding"));
+    assert!(stderr.contains("Data name is empty"));
+    assert!(stderr.contains("Edit binding cannot be used as an Anddress: edit"));
+    assert!(stderr.contains("Anchedress binding cannot be cloned: handle"));
+    assert!(stderr.contains("Data entry was not found"));
+    assert!(stderr.contains("indexed binding references select an Anddress"));
+    assert!(stderr.contains("unsupported data command"));
+
+    let next_session = run_shell(root.path(), "data list\ndata get anddress empty\nexit\n");
+    assert_eq!(next_session.status.code(), Some(2));
+    assert!(next_session.stdout.is_empty());
+    assert!(text(next_session.stderr).contains("Data entry was not found"));
+    assert_usage(run(root.path(), &["data", "list"]));
+}
+
+#[test]
 fn session_bindings_reject_unknown_duplicate_empty_out_of_range_and_type_mismatch() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "note.txt", "needle\n");

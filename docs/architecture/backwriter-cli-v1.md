@@ -1,8 +1,8 @@
 # Backwriter CLI V1
 
 Status: Adapter authority. The completed slices are the canonical `backwriter`
-executable's one-shot human Search, View, Check, Session Pick, batch Check, and
-Anchor, Edit, Apply, and result-binding modes only. This document follows the Core active documents in the
+executable's one-shot human Search, View, Check, Session Pick, batch Check,
+Anchor, Edit, Apply, result-binding, and Data modes only. This document follows the Core active documents in the
 authority-reading order.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
@@ -24,14 +24,14 @@ that alias is outside this Adapter contract.
 CLI V1 has two intended execution forms:
 
 - One-shot invokes one capability and exits without retaining a result.
-- The Session retains one `WorkspaceRuntime` and explicit CLI-local
-  Search/Pick/Anddress/Edit values plus non-aliasing owning Anchedress handles until
-  EOF or `exit`.
+- The Session retains one `WorkspaceRuntime`, one explicit caller-owned
+  `DataStore`, and CLI-local Search/Pick/Anddress/Edit/View/Check values plus
+  non-aliasing owning Anchedress handles until EOF or `exit`.
 
 One-shot Search, View, and Check plus Session Pick, batch Check, Anchor, Edit,
-and Apply are implemented. Core `DataStore`, one-shot Pick, one-shot batch Check,
-one-shot Anchor, one-shot Edit, one-shot Apply, all other capabilities, JSON,
-raw output, and further Session behavior
+Apply, result binding, and explicit typed Data are implemented. One-shot Pick,
+one-shot batch Check, one-shot Anchor, one-shot Edit, one-shot Apply, one-shot
+Data, all other capabilities, JSON, raw output, and further Session behavior
 are deferred and rejected rather than silently accepted.
 
 The intended expression roles remain:
@@ -136,7 +136,7 @@ All three are successful Check outcomes. Invalid input is a usage error; Runtime
 Check resource, and stdout errors are execution errors. One-shot `check search`,
 `check pick`, and extra operands are usage errors in this slice.
 
-## Implemented Session Pick, batch Check, and Anchor
+## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 
 The Session starts with:
 
@@ -159,8 +159,10 @@ search <kind> <query> [scope]`, `pick @<search-or-pick-binding> <predicate>`,
 `check anddress @<name>[<index>]`, `check search @<search-binding>`,
 `check pick @<pick-binding>`, `let <name> = anchor create <anddress-ref>`,
 `view anchored @<handle>`, `anchor invalidate-source <logical-path>`,
-`let <name> = edit <operation> ...`, `apply @<edit-binding>`, and
-`exit`. Pick predicates are exactly
+`let <name> = edit <operation> ...`, `apply @<edit-binding>`,
+`data store <kind> <name> <value-ref>`, `data get <kind> <name>`,
+`let <binding> = data get <kind> <name>`, `data rename <kind> <old> <new>`,
+`data remove <kind> <name>`, `data list`, and `exit`. Pick predicates are exactly
 `all`, `target-kind <file|paragraph|line>`, `one-of <anddress-ref>...`,
 `same-file <anddress-ref>`, `not (<predicate>)`, `all-of (<predicate>)...`, and
 `any-of (<predicate>)...`; attached and separate parentheses are equivalent.
@@ -168,10 +170,11 @@ The adapter parses those predicates into the existing `PickPredicate` constructo
 and calls Core `pick`; it never evaluates a predicate itself. Direct address
 bindings may be supplied to View or Check without an index. Names are ASCII
 identifiers and cannot be redefined. The Session values are exact
-`SearchOutcome`, `PickOutcome`, copied `Anddress` values, and owning
-non-aliasing `Anchedress` handles; they are private Adapter memory, not Core
-DataStore state. Search and Pick output are written before a `let` binding
-becomes available; View and Check results are not bindable.
+`SearchOutcome`, `PickOutcome`, copied `Anddress`, `Edit`, `ViewOutcome`, and
+Check outcome values plus owning non-aliasing `Anchedress` handles. Bindings are
+private Adapter memory and never cause automatic Core Data storage. Search,
+Pick, View, and Check output are written before a `let` binding becomes
+available.
 
 Pick preserves the Core result vector's order and multiplicity. Its human
 projection is exactly:
@@ -228,9 +231,30 @@ rollback, transaction, or CLI recovery is added.
 
 Session `let` can retain exact Core `ViewOutcome`, raw `CheckOutcome`, Search
 Check outcome, and Pick Check outcome after writing the same existing human
-projection. These results are cloneable Session values only: they are not
-Anddress, Search/Pick candidates, handles, Edit operands, DataStore values, or
-automatic filtered-value conversions.
+projection. These values can also be transferred only by an explicit typed Data
+Store, which retains an exact clone and leaves the source binding unchanged.
+
+Session Data has one private `DataStore` for the complete shell lifetime. Its
+seven exact native kinds are `anddress`, `search`, `pick`, `view`,
+`check-anddress`, `check-search`, and `check-pick`. `anddress` Store accepts a
+direct Anddress binding or indexed Search/Pick result; every other kind accepts
+only an unindexed matching value binding. Anchedress and Edit are rejected. Get
+uses the existing human writer; an Anddress Get writes exactly
+`Anddress\t<File|Paragraph|Line>\t<logical-path>[:<zero-based-ordinal>]` and
+never raw wire. `let ... = data get ...` gets once, writes once, then retains
+the exact cloned value under the requested binding name.
+
+Data names are passed unchanged to `DataName`: only an empty name is invalid.
+Store duplicates and Rename collisions are scoped to one kind, so equal names in
+different kinds are independent. Successful Rename and Remove write `OK`. List
+uses Core `DataStore::list` order and writes
+`<kind>\t"<escaped-name>"`; quote, backslash, LF, CR, tab, and other control
+characters are escaped. Empty List writes nothing. Data missing, duplicate,
+empty-name, malformed reference, and wrong-kind failures are usage errors;
+resource or stdout failures are execution errors. Every Data failure preserves
+existing Data entries and Session bindings. The store is dropped at EOF or
+`exit`: it adds no persistence, automatic Store/latest, wire, cache, registry,
+or capability execution.
 
 Each Session command reuses the completed one-shot Search, View, and Check
 validation, Runtime execution, and human projection. A command error writes to
@@ -242,26 +266,24 @@ status `2`; otherwise execution/resource errors make it `1`; otherwise it is
 
 The following are intentionally outside the completed initial slice:
 
-- One-shot Pick, one-shot batch Check, one-shot Anchor, one-shot Edit, one-shot Apply, and Data
+- One-shot Pick, one-shot batch Check, one-shot Anchor, one-shot Edit, one-shot Apply, and one-shot Data
   commands.
 - JSON schema and the exact scope of raw output.
 
 These require owner decisions before implementation. The high-level intended
-forms remain one-shot capability execution and later Session work that can bind
-anchored handles, build an inert Edit, Apply an explicit Edit, and expose Core
-Data without equating CLI-local names with `DataStore`.
+form remains one-shot capability execution without equating CLI-local names with
+`DataStore`.
 
 The Session introduces no implicit `latest`, hidden current selection,
-automatic Data storage, automatic Search-to-Pick/View/Edit/Apply handoff,
+automatic Data storage, automatic Search-to-Pick/View/Edit/Apply/Data handoff,
 automatic Anchor creation, persistent daemon, watcher, or Core workflow encoded
 by shell pipelines.
 
 Search scope selectors, Pick candidates before an Adapter predicate, raw Anddress
 View/Check references, batch Check named outcome bindings, anchored View input,
-and Anchor logical-source invalidation are implemented in Session. Later Session
-work may accept inert Edit construction, explicit Apply input, and typed Data
-names. None of those spellings are a public Core wire or a currently implemented
-CLI command.
+and Anchor logical-source invalidation are implemented in Session. The explicit
+Edit, Apply, result-binding, and typed Data forms remain Adapter syntax only;
+none is a public Core wire or a new Core workflow.
 
 Machine-oriented JSON and exact text raw output, if defined, are Adapter output
 schemas rather than `SearchOutcome`, `PickOutcome`, or Anddress wire authority.

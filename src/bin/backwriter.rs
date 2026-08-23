@@ -14,6 +14,7 @@ use artext::{
         anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator},
         apply::ApplyError,
         check::{CheckOutcome, CheckReport},
+        data::{DataError, DataKind, DataName, DataStore, StoreError},
         edit::{Edit, EditError, Position},
         pick::{PickError, PickOutcome, PickPredicate, PickTargetKind, pick},
         search::{
@@ -24,7 +25,7 @@ use artext::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human Search, View, and Check plus Session Pick, batch Check, and Anchor are implemented.";
+const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human Search, View, and Check plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 enum CliError {
     Usage(String),
@@ -463,6 +464,7 @@ fn execute_shell(
     admissions: Vec<AdmissionRoot>,
 ) -> Result<ExitCode, CliError> {
     let mut runtime = open_runtime(workspace, admissions)?;
+    let mut data = DataStore::new();
     let stdin = io::stdin();
     let mut reader = stdin.lock();
     let mut bindings = Vec::new();
@@ -489,7 +491,7 @@ fn execute_shell(
         if tokens.is_empty() {
             continue;
         }
-        match execute_session_command(&mut runtime, &mut bindings, &tokens) {
+        match execute_session_command(&mut runtime, &mut data, &mut bindings, &tokens) {
             Ok(SessionControl::Continue) => {}
             Ok(SessionControl::Exit) => break,
             Err(error @ CliError::Stream(_)) => return Err(error),
@@ -522,6 +524,7 @@ fn session_error_status(error: &CliError) -> u8 {
 
 fn execute_session_command(
     runtime: &mut WorkspaceRuntime,
+    data: &mut DataStore,
     bindings: &mut Vec<SessionBinding>,
     tokens: &[String],
 ) -> Result<SessionControl, CliError> {
@@ -537,7 +540,7 @@ fn execute_session_command(
             Ok(SessionControl::Continue)
         }
         "let" => {
-            execute_let(runtime, bindings, tokens)?;
+            execute_let(runtime, data, bindings, tokens)?;
             Ok(SessionControl::Continue)
         }
         "view" => {
@@ -556,6 +559,10 @@ fn execute_session_command(
             execute_session_apply(runtime, bindings, tokens)?;
             Ok(SessionControl::Continue)
         }
+        "data" => {
+            execute_session_data(data, bindings, tokens)?;
+            Ok(SessionControl::Continue)
+        }
         "exit" if tokens.len() == 1 => Ok(SessionControl::Exit),
         "exit" => Err(CliError::usage("exit accepts no operands")),
         capability => Err(CliError::usage(format!(
@@ -566,6 +573,7 @@ fn execute_session_command(
 
 fn execute_let(
     runtime: &mut WorkspaceRuntime,
+    data: &mut DataStore,
     bindings: &mut Vec<SessionBinding>,
     tokens: &[String],
 ) -> Result<(), CliError> {
@@ -578,6 +586,14 @@ fn execute_let(
         return Err(CliError::usage(format!("binding already exists: {name}")));
     }
     let right_hand_side = required_token(tokens, 3, "let value")?;
+    if right_hand_side == "data" {
+        if tokens.len() != 7 || tokens[4] != "get" {
+            return Err(CliError::usage("let data requires get, kind, and name"));
+        }
+        let value = data_get(data, &tokens[5], &tokens[6])?;
+        write_data_value(&value)?;
+        return store_binding(bindings, name, value);
+    }
     if right_hand_side == "anchor" {
         if required_token(tokens, 4, "anchor operation")? != "create" {
             return Err(CliError::usage("let anchor requires the create operation"));
@@ -698,6 +714,229 @@ fn execute_let(
         }
     };
     store_binding(bindings, name, value)
+}
+
+fn execute_session_data(
+    data: &mut DataStore,
+    bindings: &[SessionBinding],
+    tokens: &[String],
+) -> Result<(), CliError> {
+    match required_token(tokens, 1, "data operation")? {
+        "store" => {
+            if tokens.len() != 5 {
+                return Err(CliError::usage("data store requires kind, name, and value"));
+            }
+            data_store(data, bindings, &tokens[2], &tokens[3], &tokens[4])
+        }
+        "get" => {
+            if tokens.len() != 4 {
+                return Err(CliError::usage("data get requires kind and name"));
+            }
+            let value = data_get(data, &tokens[2], &tokens[3])?;
+            write_data_value(&value)
+        }
+        "list" if tokens.len() == 2 => write_data_list(data),
+        "rename" => {
+            if tokens.len() != 5 {
+                return Err(CliError::usage(
+                    "data rename requires kind, old name, and new name",
+                ));
+            }
+            data.rename(
+                parse_data_kind(&tokens[2])?,
+                &data_name(&tokens[3])?,
+                &data_name(&tokens[4])?,
+            )
+            .map_err(map_data_error)?;
+            write_session_status("OK")
+        }
+        "remove" => {
+            if tokens.len() != 4 {
+                return Err(CliError::usage("data remove requires kind and name"));
+            }
+            data.remove(parse_data_kind(&tokens[2])?, &data_name(&tokens[3])?)
+                .map_err(map_data_error)?;
+            write_session_status("OK")
+        }
+        _ => Err(CliError::usage("unsupported data command")),
+    }
+}
+
+fn data_name(value: &str) -> Result<DataName, CliError> {
+    DataName::new(value.to_owned()).map_err(|error| CliError::usage(error.to_string()))
+}
+
+fn parse_data_kind(value: &str) -> Result<DataKind, CliError> {
+    match value {
+        "anddress" => Ok(DataKind::Anddress),
+        "search" => Ok(DataKind::Search),
+        "pick" => Ok(DataKind::Pick),
+        "view" => Ok(DataKind::View),
+        "check-anddress" => Ok(DataKind::CheckAnddress),
+        "check-search" => Ok(DataKind::CheckSearch),
+        "check-pick" => Ok(DataKind::CheckPick),
+        _ => Err(CliError::usage("unknown Data kind")),
+    }
+}
+
+fn map_data_error(error: DataError) -> CliError {
+    match error {
+        DataError::Resource => CliError::execution(error.to_string()),
+        _ => CliError::usage(error.to_string()),
+    }
+}
+
+fn map_store_error<T>(error: StoreError<T>) -> CliError {
+    match error {
+        StoreError::AlreadyExists { .. } => CliError::usage("Data entry already exists"),
+        StoreError::Resource { .. } => CliError::execution("Data resource allocation failed"),
+    }
+}
+
+fn write_data_list(data: &DataStore) -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    for (kind, name) in data.list() {
+        write!(stdout, "{}\t\"", data_kind_name(kind))
+            .map_err(|error| CliError::stream(error.to_string()))?;
+        write_data_name(&mut stdout, name.as_str())
+            .map_err(|error| CliError::stream(error.to_string()))?;
+        writeln!(stdout, "\"").map_err(|error| CliError::stream(error.to_string()))?;
+    }
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
+}
+
+fn write_data_name(stdout: &mut impl Write, name: &str) -> io::Result<()> {
+    for character in name.chars() {
+        match character {
+            '"' => stdout.write_all(b"\\\"")?,
+            '\\' => stdout.write_all(b"\\\\")?,
+            '\n' => stdout.write_all(b"\\n")?,
+            '\r' => stdout.write_all(b"\\r")?,
+            '\t' => stdout.write_all(b"\\t")?,
+            character if character.is_control() => {
+                write!(stdout, "\\u{{{:04X}}}", character as u32)?;
+            }
+            character => write!(stdout, "{character}")?,
+        }
+    }
+    Ok(())
+}
+
+fn data_kind_name(kind: DataKind) -> &'static str {
+    match kind {
+        DataKind::Anddress => "anddress",
+        DataKind::Search => "search",
+        DataKind::Pick => "pick",
+        DataKind::View => "view",
+        DataKind::CheckAnddress => "check-anddress",
+        DataKind::CheckSearch => "check-search",
+        DataKind::CheckPick => "check-pick",
+    }
+}
+
+fn data_store(
+    data: &mut DataStore,
+    bindings: &[SessionBinding],
+    kind: &str,
+    name: &str,
+    reference: &str,
+) -> Result<(), CliError> {
+    let kind = parse_data_kind(kind)?;
+    let name = data_name(name)?;
+    let value = if kind == DataKind::Anddress {
+        SessionValue::Anddress(resolve_anddress(bindings, reference)?)
+    } else {
+        resolve_binding_value(bindings, reference)?
+    };
+    match (kind, value) {
+        (DataKind::Anddress, SessionValue::Anddress(v)) => {
+            data.store_anddress(&name, v).map_err(map_store_error)
+        }
+        (DataKind::Search, SessionValue::Search(v)) => {
+            data.store_search(&name, v).map_err(map_store_error)
+        }
+        (DataKind::Pick, SessionValue::Pick(v)) => {
+            data.store_pick(&name, v).map_err(map_store_error)
+        }
+        (DataKind::View, SessionValue::View(v)) => {
+            data.store_view(&name, v).map_err(map_store_error)
+        }
+        (DataKind::CheckAnddress, SessionValue::CheckAnddress(v)) => {
+            data.store_check_anddress(&name, v).map_err(map_store_error)
+        }
+        (DataKind::CheckSearch, SessionValue::CheckSearch(v)) => {
+            data.store_check_search(&name, v).map_err(map_store_error)
+        }
+        (DataKind::CheckPick, SessionValue::CheckPick(v)) => {
+            data.store_check_pick(&name, v).map_err(map_store_error)
+        }
+        _ => Err(CliError::usage("Data kind does not match binding")),
+    }?;
+    write_session_status("OK")
+}
+
+fn data_get(data: &DataStore, kind: &str, name: &str) -> Result<SessionValue, CliError> {
+    let name = data_name(name)?;
+    match parse_data_kind(kind)? {
+        DataKind::Anddress => data
+            .get_anddress(&name)
+            .cloned()
+            .map(SessionValue::Anddress),
+        DataKind::Search => data.get_search(&name).cloned().map(SessionValue::Search),
+        DataKind::Pick => data.get_pick(&name).cloned().map(SessionValue::Pick),
+        DataKind::View => data.get_view(&name).cloned().map(SessionValue::View),
+        DataKind::CheckAnddress => data
+            .get_check_anddress(&name)
+            .cloned()
+            .map(SessionValue::CheckAnddress),
+        DataKind::CheckSearch => data
+            .get_check_search(&name)
+            .cloned()
+            .map(SessionValue::CheckSearch),
+        DataKind::CheckPick => data
+            .get_check_pick(&name)
+            .cloned()
+            .map(SessionValue::CheckPick),
+    }
+    .ok_or_else(|| CliError::usage("Data entry was not found"))
+}
+
+fn write_data_value(value: &SessionValue) -> Result<(), CliError> {
+    match value {
+        SessionValue::Anddress(anddress) => write_data_anddress(anddress),
+        SessionValue::Search(outcome) => write_human(outcome),
+        SessionValue::Pick(outcome) => write_pick(outcome),
+        SessionValue::View(outcome) => write_view(outcome.clone()),
+        SessionValue::CheckAnddress(outcome) => write_check(outcome.clone()),
+        SessionValue::CheckSearch(outcome) => write_batch_check(outcome.report.clone()),
+        SessionValue::CheckPick(outcome) => write_batch_check(outcome.report.clone()),
+        _ => Err(CliError::usage("not a Data value")),
+    }
+}
+
+fn write_data_anddress(anddress: &Anddress) -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    match &anddress.target {
+        AnddressTarget::File => writeln!(stdout, "Anddress\tFile\t{}", anddress.logical_path),
+        AnddressTarget::Paragraph { ordinal } => writeln!(
+            stdout,
+            "Anddress\tParagraph\t{}:{ordinal}",
+            anddress.logical_path
+        ),
+        AnddressTarget::Line { ordinal, .. } => {
+            writeln!(
+                stdout,
+                "Anddress\tLine\t{}:{ordinal}",
+                anddress.logical_path
+            )
+        }
+    }
+    .map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
 }
 
 fn map_anchor_error(error: AnchorError) -> CliError {
