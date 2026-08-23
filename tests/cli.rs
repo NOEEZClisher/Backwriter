@@ -12,6 +12,7 @@ use artext::{
     },
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
+use serde_json::Value;
 
 fn binary() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_backwriter"))
@@ -141,6 +142,51 @@ fn assert_check_status(output: Output, status: &str) {
     assert!(output.stderr.is_empty());
 }
 
+fn expected_search_json(outcome: &SearchOutcome) -> Vec<u8> {
+    let mut output = b"{\"schema\":\"backwriter.cli.search.v1\",\"outcome\":\"".to_vec();
+    match outcome {
+        SearchOutcome::Empty => output.extend_from_slice(b"empty\",\"anddresses\":[]}"),
+        SearchOutcome::Found { anddresses } => {
+            output.extend_from_slice(b"found\",\"anddresses\":[");
+            for (index, anddress) in anddresses.iter().enumerate() {
+                if index != 0 {
+                    output.push(b',');
+                }
+                output.extend_from_slice(&anddress.encode().unwrap());
+            }
+            output.extend_from_slice(b"]}");
+        }
+    }
+    output.push(b'\n');
+    output
+}
+
+fn assert_search_json(output: Output, expected: &SearchOutcome) {
+    assert!(output.status.success());
+    assert_eq!(output.stdout, expected_search_json(expected));
+    assert!(output.stderr.is_empty());
+
+    let document: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(document["schema"], "backwriter.cli.search.v1");
+    assert_eq!(
+        document["outcome"],
+        match expected {
+            SearchOutcome::Empty => "empty",
+            SearchOutcome::Found { .. } => "found",
+        }
+    );
+    let actual = document["anddresses"].as_array().unwrap();
+    let expected = match expected {
+        SearchOutcome::Empty => &[] as &[Anddress],
+        SearchOutcome::Found { anddresses } => anddresses,
+    };
+    assert_eq!(actual.len(), expected.len());
+    for (actual, expected) in actual.iter().zip(expected) {
+        let encoded = serde_json::to_vec(actual).unwrap();
+        assert_eq!(Anddress::decode(&encoded).unwrap(), *expected);
+    }
+}
+
 #[test]
 fn canonical_binary_help_and_default_workspace_search() {
     let root = tempfile::tempdir().unwrap();
@@ -154,7 +200,9 @@ fn canonical_binary_help_and_default_workspace_search() {
 
     let help = run(root.path(), &["--help"]);
     assert!(help.status.success());
-    assert!(text(help.stdout).starts_with("Usage:\n  backwriter "));
+    let help_stdout = text(help.stdout);
+    assert!(help_stdout.starts_with("Usage:\n  backwriter "));
+    assert!(help_stdout.contains("[--json] search"));
     assert!(help.stderr.is_empty());
 }
 
@@ -258,6 +306,170 @@ fn human_output_hides_raw_anddress_and_preserves_space_query() {
     assert!(empty.status.success());
     assert_eq!(text(empty.stdout), "Found 0\n");
     assert!(empty.stderr.is_empty());
+}
+
+#[test]
+fn one_shot_search_json_streams_exact_v3_objects_for_every_target() {
+    let root = tempfile::tempdir().unwrap();
+    write(
+        root.path(),
+        "terms.txt",
+        "needle lf\nneedle cr\rneedle crlf\r\nneedle no-eol\nλ \"quote\" \\ \u{1} needle unicode\nneedle repeated\n",
+    );
+
+    for (kind, target) in [
+        ("file", SearchTarget::File),
+        ("paragraph", SearchTarget::Paragraph),
+        ("line", SearchTarget::Line),
+    ] {
+        let workspace = WorkspaceRuntime::open(
+            root.path(),
+            WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+        )
+        .unwrap();
+        let expected = workspace
+            .search(&SearchRequest::new(
+                SearchQuery::new("needle").unwrap(),
+                SearchScope::all_admitted(),
+                target,
+            ))
+            .unwrap();
+        let output = run(
+            root.path(),
+            &[
+                "--admit",
+                ".",
+                "--json",
+                "search",
+                kind,
+                "needle",
+                "--source",
+                "terms.txt",
+            ],
+        );
+        assert_search_json(output, &expected);
+    }
+
+    let line = run(
+        root.path(),
+        &[
+            "--json",
+            "search",
+            "line",
+            "needle",
+            "--source",
+            "terms.txt",
+        ],
+    );
+    assert!(
+        line.stdout
+            .windows(b"\\u0001".len())
+            .any(|window| window == b"\\u0001")
+    );
+    assert!(
+        line.stdout
+            .windows(b"\\\"quote\\\"".len())
+            .any(|window| window == b"\\\"quote\\\"")
+    );
+    assert!(
+        line.stdout
+            .windows(b"\\\\".len())
+            .any(|window| window == b"\\\\")
+    );
+}
+
+#[test]
+fn one_shot_search_json_maps_empty_and_rejects_invalid_placement() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\n");
+    let workspace = WorkspaceRuntime::open(
+        root.path(),
+        WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+    )
+    .unwrap();
+    let expected = workspace
+        .search(&SearchRequest::new(
+            SearchQuery::new("absent").unwrap(),
+            SearchScope::all_admitted(),
+            SearchTarget::Line,
+        ))
+        .unwrap();
+    assert_search_json(
+        run(
+            root.path(),
+            &["--json", "search", "line", "absent", "--source", "note.txt"],
+        ),
+        &expected,
+    );
+    assert_search_json(
+        run(
+            root.path(),
+            &[
+                "--json",
+                "--workspace",
+                root.path().to_str().unwrap(),
+                "--admit",
+                ".",
+                "search",
+                "line",
+                "absent",
+                "--source",
+                "note.txt",
+            ],
+        ),
+        &expected,
+    );
+
+    for arguments in [
+        vec!["--json", "--json", "search", "line", "needle"],
+        vec!["search", "line", "needle", "--json"],
+        vec!["--json", "shell"],
+        vec!["--json", "view", "anddress", "unused"],
+        vec!["--json", "check", "anddress", "unused"],
+        vec!["--json", "data"],
+        vec!["--raw", "search", "line", "needle"],
+    ] {
+        assert_usage(run(root.path(), &arguments));
+    }
+}
+
+#[test]
+fn one_shot_search_json_writer_has_no_value_or_result_clone_path() {
+    let source = include_str!("../src/bin/backwriter.rs");
+    let writer = source
+        .split("fn write_search_json")
+        .nth(1)
+        .unwrap()
+        .split("fn write_pick")
+        .next()
+        .unwrap();
+    assert!(writer.contains("for (index, anddress) in anddresses.iter().enumerate()"));
+    assert!(writer.contains("anddress\n                    .encode()"));
+    assert!(!writer.contains("serde_json"));
+    assert!(!writer.contains("collect("));
+    assert!(!writer.contains(".clone()"));
+}
+
+#[test]
+fn one_shot_search_json_keeps_large_result_output_streamed() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "large.txt", &"needle\n".repeat(4_097));
+
+    let output = run(
+        root.path(),
+        &[
+            "--json",
+            "search",
+            "line",
+            "needle",
+            "--source",
+            "large.txt",
+        ],
+    );
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    let document: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(document["anddresses"].as_array().unwrap().len(), 4_097);
 }
 
 #[test]

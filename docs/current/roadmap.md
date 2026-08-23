@@ -39,11 +39,13 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
-## Completed: CLI V1 Search, View, Check, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data Adapter
+## Completed: CLI V1 human and JSON Search, View, Check, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data Adapter
 
-The canonical `backwriter` executable implements one-shot human Search, View,
-and Check plus Session Pick, batch Check, Anchor, Edit, Apply, result binding,
-and Data. The Session owns one Runtime and one explicit caller-owned `DataStore`
+The canonical `backwriter` executable implements one-shot human and JSON Search,
+View, and Check plus Session Pick, batch Check, Anchor, Edit, Apply, result
+binding, and Data. JSON Search streams one compact Adapter envelope with exact
+v3 Anddress objects and creates no Core wire. The Session owns one Runtime and
+one explicit caller-owned `DataStore`
 until EOF or `exit`, plus local bindings and non-aliasing owning Anchedress
 handles. It passes Pick candidate collections and
 parsed predicates to the existing pure Core function, while direct Pick remains
@@ -53,10 +55,11 @@ existing Runtime anchor, anchored View, and source-invalidation seams without a
 registry, persistence, or automatic re-identification. Explicit typed Data
 commands transfer exact Session-value clones to/from Core `DataStore` without
 automatic storage or persistence. It directly reuses Core validation and public
-Runtime seams. One-shot Pick, one-shot batch Check, one-shot Anchor, other
-capabilities, JSON, raw output, and further Session
-behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
-or wire authority.
+Runtime seams. One-shot Data and Anchor remain intentionally unsupported because
+their DataStore and live-handle contracts require Session lifetime. One-shot
+Pick, batch Check, Edit, and Apply await collection or Edit transport schema
+authority. Raw output and further Session behavior remain deferred Adapter
+decisions; CLI syntax creates no Core workflow or wire authority.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a separate registry,

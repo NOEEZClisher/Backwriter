@@ -16,11 +16,12 @@ semantic/public API/type/error authority and Rust implementation are complete.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 one-shot human Search, View, Check, Session Pick,
-batch Check, Anchor, Edit, Apply, result-binding, and explicit Data Adapter.
+batch Check, Anchor, Edit, Apply, result-binding, explicit Data, and Search JSON
+Adapter.
 Native wire,
 AI/Context/Profile, client, MCP, product integration, and external consumer
 work remain outside that cutline. Beyond the completed Session Pick, batch
-Check, Anchor, Edit, Apply, result-binding, and Data slice, every other
+Check, Anchor, Edit, Apply, result-binding, Data, and Search JSON slice, every other
 capability remains deferred Adapter work.
 
 ## Current structure only

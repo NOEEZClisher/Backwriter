@@ -22,11 +22,11 @@ Rust value implementation, and single-source Apply Runtime implementation are
 complete. Apply's V1 semantic/public API/error authority and Runtime
 implementation are complete.
 
-## CLI Adapter V1 Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data slice
+## CLI Adapter V1 Search JSON, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data slice
 
 The repository includes the canonical `backwriter` CLI Adapter. Its completed
-scope is one-shot human Search, View, and Check plus Session Pick, batch Check,
-Anchor, Edit, Apply, result binding, and explicit Data over the existing public
+scope is one-shot human and JSON Search, View, and Check plus Session Pick,
+batch Check, Anchor, Edit, Apply, result binding, and explicit Data over the existing public
 Runtime seams. The Session retains one Runtime, one caller-owned `DataStore`,
 and explicit CLI-local bindings plus non-aliasing owning Anchedress handles.
 Session Pick passes a named candidate collection and a
@@ -34,12 +34,15 @@ CLI-parsed predicate to the existing pure Core function. Session batch Check
 passes an exact matching binding clone to `check_search` or `check_pick` and
 exposes only its report counts. Session Anchor creates an opaque Runtime-local
 handle, views it through the existing anchored seam, and invalidates only its
-logical source. Data transfers exact clones from explicit Session values into
+logical source. One-shot Search JSON streams a compact Adapter envelope and
+exact existing v3 Anddress objects without creating a Core wire. Data transfers exact clones from explicit Session values into
 the existing typed Core store and reads them back without capability execution.
 It adds no Core API, wire, workflow, provenance, automatic Data storage,
 registry, persistence, or retained Core state beyond existing Anchor continuity.
-One-shot Pick, one-shot batch Check, one-shot Anchor, all other capabilities,
-JSON, raw output, and further Session behavior remain
+One-shot Data and Anchor remain intentionally unsupported because their
+DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
+batch Check, Edit, and Apply await collection or Edit transport schema
+authority. Raw output and further Session behavior remain
 deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
 
 ## Current-only Runtime contract

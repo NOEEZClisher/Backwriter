@@ -8,7 +8,7 @@ The Core capability inventory is Search, View, Pick, Anchor, Check, Edit,
 Apply, and Data. The repository currently provides their Rust Core/Runtime
 surfaces and the canonical `backwriter` executable's one-shot human Search,
 View, Check, Session Pick, batch Check, Anchor, Edit, Apply, result-binding,
-and explicit Data modes.
+explicit Data, and one-shot Search JSON modes.
 
 ## Quick start
 
@@ -27,11 +27,14 @@ sources.
 
 ## Current CLI scope
 
-`backwriter` currently implements one-shot human Search, View, Check, and
-Session Pick, batch Check, Anchor, Edit, Apply, and Data:
+`backwriter` currently implements one-shot human or JSON Search, human View and
+Check, and Session Pick, batch Check, Anchor, Edit, Apply, and Data:
 
 ```text
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+    search <line|paragraph|file> <query>
+    [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
+backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
@@ -43,8 +46,10 @@ backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 
 The CLI preserves Core Search validation and deterministic result order. View
 decodes a v3 Anddress and writes only its exact selected text. Check decodes one
-v3 Anddress and writes only `Current`, `NotCurrent`, or `Unavailable`. Human
-output does not expose address metadata. The Session holds one Runtime until EOF
+v3 Anddress and writes only `Current`, `NotCurrent`, or `Unavailable`. Search
+`--json` writes one compact Adapter object with exact embedded v3 Anddress
+objects; it adds no Core wire. Human output does not expose address metadata.
+The Session holds one Runtime until EOF
 or `exit` and has explicit local Search, Pick, Anddress, Edit, View, and Check
 bindings plus non-aliasing Anchedress handles. It owns one explicit `DataStore`
 for the Session only; names are typed and never persist past EOF or `exit`.
@@ -54,8 +59,11 @@ to Core; Session batch Check passes a named matching outcome directly to its
 Runtime batch seam and prints only report counts. Session Anchor creates a live
 handle only through `let <name> = anchor create <anddress-ref>`, views it through
 `view anchored @<name>`, and can invalidate its logical source with `anchor
-invalidate-source <logical-path>`. One-shot Pick, one-shot batch Check, Anchor,
-JSON, raw output, and further Session behavior remain deferred.
+invalidate-source <logical-path>`. One-shot Data and Anchor are intentionally
+unsupported because their DataStore and live-handle contracts require Session
+lifetime. One-shot Pick, batch Check, Edit, and Apply await collection or Edit
+transport schema authority. Raw output and further Session behavior remain
+deferred.
 
 ## Scope
 

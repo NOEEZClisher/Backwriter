@@ -130,6 +130,12 @@ stdout/stderr separation. View regressions cover v3 decode, File/Paragraph/Line
 exact bytes, None/LF/CR/CRLF terminators, large no-EOL output, stale/wrong-
 extent and unadmitted source closure, plus one-shot anchored/extra-operand
 rejection.
+One-shot Search JSON regressions cover exact compact envelope key order, Empty
+and Found mapping, existing v3 object embedding and re-decoding, File/Paragraph/
+Line targets, CR/LF/CRLF/no-EOL exact extents, Unicode and JSON escaping, result
+order, repeated Line content, global-option placement, rejected duplicate/late
+or non-Search JSON, and a structural audit that excludes a JSON Value or cloned
+result collection in the production writer.
 Check regressions cover File/Paragraph/Line Current status, stale and missing
 NotCurrent status, unavailable-source status, strict v3 decoding, and rejected
 search/pick/extra forms. They create no CLI Session, binding, JSON, raw, or

@@ -212,6 +212,11 @@ remove reflection of existing live continuity.
 `DataStore` keeps its separate boundaries: it calls no capability, performs no
 automatic Store, has no latest slot, and performs no automatic update.
 
+The completed one-shot Search JSON projection is Adapter-only. Its compact
+envelope identifies `backwriter.cli.search.v1` and embeds each existing encoded
+v3 Anddress JSON object directly; it creates no Core wire, value model, Search
+state, result collection, or capability workflow.
+
 ## Search and Pick
 
 Search is all-or-nothing. Invalid input, unsafe or unavailable source, invalid

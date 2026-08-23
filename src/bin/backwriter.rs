@@ -25,7 +25,7 @@ use artext::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human Search, View, and Check plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human and JSON Search, View, and Check plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 enum CliError {
     Usage(String),
@@ -90,6 +90,7 @@ fn execute() -> Result<ExitCode, CliError> {
 
     let mut workspace = None;
     let mut admissions = Vec::new();
+    let mut json = false;
     let mut capability = first;
     loop {
         let Some(argument) = capability else {
@@ -116,28 +117,46 @@ fn execute() -> Result<ExitCode, CliError> {
                     AdmissionRoot::new(path).map_err(|error| CliError::usage(error.to_string()))?,
                 );
             }
+            "--json" => {
+                if json {
+                    return Err(CliError::usage("--json may appear only once"));
+                }
+                json = true;
+            }
             "search" => {
-                return execute_search(arguments, workspace, admissions)
+                return execute_search(arguments, workspace, admissions, json)
                     .map(|()| ExitCode::SUCCESS);
             }
             "view" => {
+                if json {
+                    return Err(CliError::usage("--json is supported only for Search"));
+                }
                 return execute_view(arguments, workspace, admissions).map(|()| ExitCode::SUCCESS);
             }
             "check" => {
+                if json {
+                    return Err(CliError::usage("--json is supported only for Search"));
+                }
                 return execute_check(arguments, workspace, admissions).map(|()| ExitCode::SUCCESS);
             }
             "shell" => {
+                if json {
+                    return Err(CliError::usage("--json is supported only for Search"));
+                }
                 if arguments.next().is_some() {
                     return Err(CliError::usage("shell accepts no operands"));
                 }
                 return execute_shell(workspace, admissions);
             }
             "pick" | "anchor" | "edit" | "apply" | "data" => {
+                if json {
+                    return Err(CliError::usage("--json is supported only for Search"));
+                }
                 return Err(CliError::usage(format!(
                     "{argument} is not implemented in this slice"
                 )));
             }
-            "--json" | "--raw" => {
+            "--raw" => {
                 return Err(CliError::usage(format!(
                     "{argument} is not implemented in this slice"
                 )));
@@ -157,12 +176,17 @@ fn execute_search(
     arguments: impl Iterator<Item = OsString>,
     workspace: Option<PathBuf>,
     admissions: Vec<AdmissionRoot>,
+    json: bool,
 ) -> Result<(), CliError> {
     let arguments = text_arguments(arguments, "search argument")?;
     let request = parse_search(&arguments)?;
     let runtime = open_runtime(workspace, admissions)?;
     let outcome = run_search(&runtime, request)?;
-    write_human(&outcome)
+    if json {
+        write_search_json(&outcome)
+    } else {
+        write_human(&outcome)
+    }
 }
 
 fn parse_search(arguments: &[String]) -> Result<SearchRequest, CliError> {
@@ -188,7 +212,8 @@ fn parse_search(arguments: &[String]) -> Result<SearchRequest, CliError> {
                 SearchScopeEntry::subtree(required_token(arguments, position, "--subtree")?)
                     .map_err(|error| CliError::usage(error.to_string()))?,
             ),
-            "--json" | "--raw" => {
+            "--json" => return Err(CliError::usage("--json must precede the capability")),
+            "--raw" => {
                 return Err(CliError::usage(format!(
                     "{option} is not implemented in this slice"
                 )));
@@ -347,6 +372,45 @@ fn write_human(outcome: &SearchOutcome) -> Result<(), CliError> {
         SearchOutcome::Found { anddresses } => anddresses,
     };
     write_address_rows("Found", anddresses)
+}
+
+fn write_search_json(outcome: &SearchOutcome) -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    stdout
+        .write_all(b"{\"schema\":\"backwriter.cli.search.v1\",\"outcome\":\"")
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    match outcome {
+        SearchOutcome::Empty => stdout
+            .write_all(b"empty\",\"anddresses\":[]}")
+            .map_err(|error| CliError::stream(error.to_string()))?,
+        SearchOutcome::Found { anddresses } => {
+            stdout
+                .write_all(b"found\",\"anddresses\":[")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+            for (index, anddress) in anddresses.iter().enumerate() {
+                if index != 0 {
+                    stdout
+                        .write_all(b",")
+                        .map_err(|error| CliError::stream(error.to_string()))?;
+                }
+                let encoded = anddress
+                    .encode()
+                    .map_err(|error| CliError::execution(error.to_string()))?;
+                stdout
+                    .write_all(&encoded)
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+            }
+            stdout
+                .write_all(b"]}")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+        }
+    }
+    stdout
+        .write_all(b"\n")
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
 }
 
 fn write_pick(outcome: &PickOutcome) -> Result<(), CliError> {
