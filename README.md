@@ -7,7 +7,7 @@ addresses without turning source history or editor state into Core identity.
 The Core capability inventory is Search, View, Pick, Anchor, Check, Edit,
 Apply, and Data. The repository currently provides their Rust Core/Runtime
 surfaces and the canonical `backwriter` executable's one-shot human Search,
-View, Check, and Session Pick modes.
+View, Check, Session Pick, and batch Check modes.
 
 ## Quick start
 
@@ -27,7 +27,7 @@ sources.
 ## Current CLI scope
 
 `backwriter` currently implements one-shot human Search, View, Check, and
-Session Pick:
+Session Pick and batch Check:
 
 ```text
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
@@ -46,9 +46,10 @@ v3 Anddress and writes only `Current`, `NotCurrent`, or `Unavailable`. Human
 output does not expose address metadata. The Session holds one Runtime until EOF
 or `exit` and has explicit local Search, Pick, and Anddress bindings. It has no
 latest value or DataStore integration. Session Pick passes a named Search or Pick
-collection and an Adapter-parsed predicate directly to Core; one-shot Pick,
-Anchor, Edit, Apply, Data, JSON, raw output, and further Session behavior remain
-deferred.
+collection and an Adapter-parsed predicate directly to Core; Session batch Check
+passes a named matching outcome directly to its Runtime batch seam and prints only
+report counts. One-shot Pick, one-shot batch Check, Anchor, Edit, Apply, Data,
+JSON, raw output, and further Session behavior remain deferred.
 
 ## Scope
 

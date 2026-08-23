@@ -39,14 +39,16 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
-## Completed: CLI V1 Search, View, Check, and Session Pick Adapter
+## Completed: CLI V1 Search, View, Check, Session Pick, and batch Check Adapter
 
 The canonical `backwriter` executable implements one-shot human Search, View,
-and Check plus Session Pick. The Session owns one Runtime until EOF or `exit` and
-explicit local Search/Pick/Anddress bindings only. It passes Pick candidate
-collections and parsed predicates to the existing pure Core function, while
-direct Pick remains unretained. It directly reuses Core validation and public
-Runtime seams. One-shot Pick, other capabilities, JSON, raw output, and further
+and Check plus Session Pick and batch Check. The Session owns one Runtime until
+EOF or `exit` and explicit local Search/Pick/Anddress bindings only. It passes
+Pick candidate collections and parsed predicates to the existing pure Core
+function, while direct Pick remains unretained. Its batch Check passes exact
+matching binding clones to the existing Runtime seams and prints only count
+summaries. It directly reuses Core validation and public Runtime seams. One-shot
+Pick, one-shot batch Check, other capabilities, JSON, raw output, and further
 Session behavior remain deferred Adapter decisions; CLI syntax creates no Core
 workflow or wire authority.
 

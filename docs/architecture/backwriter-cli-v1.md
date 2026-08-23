@@ -1,8 +1,8 @@
 # Backwriter CLI V1
 
 Status: Adapter authority. The completed slices are the canonical `backwriter`
-executable's one-shot human Search, View, Check, and Session Pick modes only.
-This document follows the Core active documents in the
+executable's one-shot human Search, View, Check, Session Pick, and batch Check
+modes only. This document follows the Core active documents in the
 authority-reading order.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
@@ -27,10 +27,10 @@ CLI V1 has two intended execution forms:
 - The Session retains one `WorkspaceRuntime` and explicit CLI-local
   Search/Pick/Anddress values until EOF or `exit`.
 
-One-shot Search, View, and Check plus Session Pick are implemented. Live Anchor
-handles, Core `DataStore`, one-shot Pick, all other capabilities, JSON, raw
-output, and further Session behavior are deferred and rejected rather than
-silently accepted.
+One-shot Search, View, and Check plus Session Pick and batch Check are
+implemented. Live Anchor handles, Core `DataStore`, one-shot Pick, one-shot batch
+Check, all other capabilities, JSON, raw output, and further Session behavior are
+deferred and rejected rather than silently accepted.
 
 The intended expression roles remain:
 
@@ -131,10 +131,10 @@ alias, or retained result. The only successful human outputs are one of
 `Current`, `NotCurrent`, or `Unavailable`, followed by one newline. They map
 the one-input Check report exactly and never display an address or report member.
 All three are successful Check outcomes. Invalid input is a usage error; Runtime,
-Check resource, and stdout errors are execution errors. `check search`,
+Check resource, and stdout errors are execution errors. One-shot `check search`,
 `check pick`, and extra operands are usage errors in this slice.
 
-## Implemented Session Pick
+## Implemented Session Pick and batch Check
 
 The Session starts with:
 
@@ -154,7 +154,8 @@ The completed commands are `search <kind> <query> [scope]`, `let <name> =
 search <kind> <query> [scope]`, `pick @<search-or-pick-binding> <predicate>`,
 `let <name> = pick @<search-or-pick-binding> <predicate>`, `let <name> =
 @<name>`, `let <name> = @<name>[<index>]`, `view anddress @<name>[<index>]`,
-`check anddress @<name>[<index>]`, and `exit`. Pick predicates are exactly
+`check anddress @<name>[<index>]`, `check search @<search-binding>`,
+`check pick @<pick-binding>`, and `exit`. Pick predicates are exactly
 `all`, `target-kind <file|paragraph|line>`, `one-of <anddress-ref>...`,
 `same-file <anddress-ref>`, `not (<predicate>)`, `all-of (<predicate>)...`, and
 `any-of (<predicate>)...`; attached and separate parentheses are equivalent.
@@ -180,6 +181,25 @@ index is a Session usage error. Pick resource and stdout errors are execution
 errors. The Session lexer remains unchanged for every non-Pick command; only the
 Pick predicate tail splits attached parentheses.
 
+Session batch Check accepts exactly one unindexed, matching named binding and
+passes its exact clone to `WorkspaceRuntime::check_search` or `check_pick`. It
+does not consume, filter, replace, or store that binding. Its successful human
+output is exactly:
+
+```text
+Checked <checked_count>
+Current <current_count>
+NotCurrent <removed_count>
+Unavailable <unavailable_count>
+```
+
+The counts are the Core `CheckReport` counts, including zero for an empty native
+outcome. The adapter displays neither the filtered outcome nor any address,
+coordinate, or extent. A report whose categories cannot sum to `Checked` is an
+execution error. An indexed, unknown, wrong-kind, or extra binding operand is a
+usage error. This adds no Check result binding, DataStore transfer, automatic
+binding update, latest value, JSON, or raw output.
+
 Each Session command reuses the completed one-shot Search, View, and Check
 validation, Runtime execution, and human projection. A command error writes to
 stderr and leaves later Lines runnable. Any usage error makes the final process
@@ -191,7 +211,7 @@ status `2`; otherwise execution/resource errors make it `1`; otherwise it is
 The following are intentionally outside the completed initial slice:
 
 - Anchor handle binding, including `AlreadyLive` binding behavior.
-- One-shot Pick, Anchor, Edit, Apply, and Data commands.
+- One-shot Pick, one-shot batch Check, Anchor, Edit, Apply, and Data commands.
 - JSON schema and the exact scope of raw output.
 
 These require owner decisions before implementation. The high-level intended
@@ -204,12 +224,12 @@ automatic Data storage, automatic Search-to-Pick/View/Edit/Apply handoff,
 automatic Anchor creation, persistent daemon, watcher, or Core workflow encoded
 by shell pipelines.
 
-Search scope selectors, Pick candidates before an Adapter predicate, and raw
-Anddress View/Check references are implemented in Session. Later Session work may
-accept anchored View input, Check native outcomes, Anchor logical-source
-associations, inert Edit construction, explicit Apply input, and typed Data
-names. None of those spellings are a public Core wire or a currently implemented
-CLI command.
+Search scope selectors, Pick candidates before an Adapter predicate, raw Anddress
+View/Check references, and batch Check named outcome bindings are implemented in
+Session. Later Session work may accept anchored View input, Anchor logical-source
+associations, inert Edit construction, explicit Apply input, and typed Data names.
+None of those spellings are a public Core wire or a currently implemented CLI
+command.
 
 Machine-oriented JSON and exact text raw output, if defined, are Adapter output
 schemas rather than `SearchOutcome`, `PickOutcome`, or Anddress wire authority.

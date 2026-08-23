@@ -135,6 +135,8 @@ search/pick/extra forms. They create no CLI Session, binding, JSON, raw, or
 other capability authority. Session regressions cover one retained Runtime,
 Search and Pick bindings with exact indexed address projection, direct Search and
 Pick non-retention, Core Pick target-kind, same-file, OneOf, and iterative boolean
-composition, copied Search/Anddress bindings, lexer quoting and errors, blank
-Lines, EOF and exit, error continuation and exit precedence, and absence of
-latest, pipeline, or DataStore behavior.
+composition, batch Search/Pick Check report counts, mixed current/NotCurrent/
+Unavailable outcomes, empty outcomes, unchanged bindings after batch Check,
+copied Search/Anddress bindings, lexer quoting and errors, blank Lines, EOF and
+exit, error continuation and exit precedence, and absence of latest, pipeline,
+or DataStore behavior.

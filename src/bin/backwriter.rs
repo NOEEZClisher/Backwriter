@@ -11,7 +11,7 @@ use std::{
 use artext::{
     backwriter::{
         anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator},
-        check::CheckOutcome,
+        check::{CheckOutcome, CheckReport},
         pick::{PickError, PickOutcome, PickPredicate, PickTargetKind, pick},
         search::{
             SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchScopeEntry, SearchTarget,
@@ -890,9 +890,71 @@ fn execute_session_check(
     bindings: &[SessionBinding],
     tokens: &[String],
 ) -> Result<(), CliError> {
-    session_anddress_form(tokens, "check")?;
-    let anddress = resolve_anddress(bindings, &tokens[2])?;
-    write_check(run_check(runtime, anddress)?)
+    match required_token(tokens, 1, "check input form")? {
+        "anddress" => {
+            session_anddress_form(tokens, "check")?;
+            let anddress = resolve_anddress(bindings, &tokens[2])?;
+            write_check(run_check(runtime, anddress)?)
+        }
+        "search" | "pick" => {
+            if tokens.len() != 3 {
+                return Err(CliError::usage(format!(
+                    "check {} accepts exactly one binding",
+                    tokens[1]
+                )));
+            }
+            let value = resolve_binding_value(bindings, &tokens[2])?;
+            let report = match (tokens[1].as_str(), value) {
+                ("search", SessionValue::Search(input)) => {
+                    runtime
+                        .check_search(input)
+                        .map_err(|error| CliError::execution(error.to_string()))?
+                        .report
+                }
+                ("pick", SessionValue::Pick(input)) => {
+                    runtime
+                        .check_pick(input)
+                        .map_err(|error| CliError::execution(error.to_string()))?
+                        .report
+                }
+                ("search", _) => {
+                    return Err(CliError::usage("check search requires a Search binding"));
+                }
+                ("pick", _) => {
+                    return Err(CliError::usage("check pick requires a Pick binding"));
+                }
+                _ => unreachable!(),
+            };
+            write_batch_check(report)
+        }
+        _ => Err(CliError::usage(
+            "check requires the anddress, search, or pick input form",
+        )),
+    }
+}
+
+fn write_batch_check(report: CheckReport) -> Result<(), CliError> {
+    let checked = report.checked_count();
+    let current = report.current_count();
+    let removed = report.removed_count();
+    let unavailable = report.unavailable_count();
+    if current
+        .checked_add(removed)
+        .and_then(|total| total.checked_add(unavailable))
+        != Some(checked)
+    {
+        return Err(CliError::execution("inconsistent batch Check report"));
+    }
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    writeln!(stdout, "Checked {checked}").map_err(|error| CliError::stream(error.to_string()))?;
+    writeln!(stdout, "Current {current}").map_err(|error| CliError::stream(error.to_string()))?;
+    writeln!(stdout, "NotCurrent {removed}")
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    writeln!(stdout, "Unavailable {unavailable}")
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
 }
 
 fn session_anddress_form(tokens: &[String], capability: &str) -> Result<(), CliError> {

@@ -1,6 +1,6 @@
 use std::{
     fs,
-    io::Write,
+    io::{BufRead, BufReader, Read, Write},
     path::{Path, PathBuf},
     process::{Command, Output, Stdio},
 };
@@ -41,6 +41,49 @@ fn run_shell(root: &Path, input: &str) -> Output {
         .write_all(input.as_bytes())
         .unwrap();
     child.wait_with_output().unwrap()
+}
+
+fn run_shell_after_initial_output(
+    root: &Path,
+    initial: &str,
+    initial_line_count: usize,
+    mutate: impl FnOnce(),
+    remaining: &str,
+) -> Output {
+    let mut child = Command::new(binary())
+        .current_dir(root)
+        .arg("shell")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdin = child.stdin.take().unwrap();
+    stdin.write_all(initial.as_bytes()).unwrap();
+    stdin.flush().unwrap();
+
+    let mut stdout_reader = BufReader::new(child.stdout.take().unwrap());
+    let mut stdout = Vec::new();
+    for _ in 0..initial_line_count {
+        stdout_reader.read_until(b'\n', &mut stdout).unwrap();
+    }
+    mutate();
+    stdin.write_all(remaining.as_bytes()).unwrap();
+    drop(stdin);
+    stdout_reader.read_to_end(&mut stdout).unwrap();
+    let status = child.wait().unwrap();
+    let mut stderr = Vec::new();
+    child
+        .stderr
+        .take()
+        .unwrap()
+        .read_to_end(&mut stderr)
+        .unwrap();
+    Output {
+        status,
+        stdout,
+        stderr,
+    }
 }
 
 fn text(bytes: Vec<u8>) -> String {
@@ -611,6 +654,65 @@ fn session_pick_rejects_malformed_references_and_preserves_existing_bindings() {
     assert!(stderr.contains("Pick candidates require a Search or Pick binding: address"));
     assert!(stderr.contains("Pick binding requires an index: selected"));
     assert!(stderr.contains("binding index is out of range: selected"));
+}
+
+#[test]
+fn session_batch_check_reports_search_and_pick_counts_without_changing_bindings() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "current.txt", "needle\n");
+    write(root.path(), "removed.txt", "needle\n");
+    write(root.path(), "unavailable.txt", "needle\n");
+
+    let output = run_shell_after_initial_output(
+        root.path(),
+        "let hits = search line needle\n",
+        4,
+        || {
+            write(root.path(), "removed.txt", "changed\n");
+            fs::write(root.path().join("unavailable.txt"), b"needle\0").unwrap();
+        },
+        "check search @hits\nlet selected = pick @hits all\ncheck pick @selected\npick @selected all\nexit\n",
+    );
+    assert!(output.status.success());
+    assert_eq!(
+        output.stdout,
+        b"Found 3\n0\tLine\tcurrent.txt:0\n1\tLine\tremoved.txt:0\n2\tLine\tunavailable.txt:0\nChecked 3\nCurrent 1\nNotCurrent 1\nUnavailable 1\nSelected 3\n0\tLine\tcurrent.txt:0\n1\tLine\tremoved.txt:0\n2\tLine\tunavailable.txt:0\nChecked 3\nCurrent 1\nNotCurrent 1\nUnavailable 1\nSelected 3\n0\tLine\tcurrent.txt:0\n1\tLine\tremoved.txt:0\n2\tLine\tunavailable.txt:0\n"
+    );
+    assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn session_batch_check_accepts_empty_outcomes_and_rejects_invalid_binding_forms() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\n");
+
+    let empty = run_shell(
+        root.path(),
+        "let empty_search = search line absent\ncheck search @empty_search\nlet empty_pick = pick @empty_search all\ncheck pick @empty_pick\nexit\n",
+    );
+    assert!(empty.status.success());
+    assert_eq!(
+        empty.stdout,
+        b"Found 0\nChecked 0\nCurrent 0\nNotCurrent 0\nUnavailable 0\nSelected 0\nChecked 0\nCurrent 0\nNotCurrent 0\nUnavailable 0\n"
+    );
+    assert!(empty.stderr.is_empty());
+
+    let invalid = run_shell(
+        root.path(),
+        "let hits = search line needle\nlet selected = pick @hits all\nlet address = @hits[0]\ncheck search @selected\ncheck pick @hits\ncheck search @address\ncheck pick @address\ncheck search @hits[0]\ncheck pick @selected[0]\ncheck search @missing\ncheck search @hits extra\ncheck pick @selected extra\ncheck anddress @hits[0]\nexit\n",
+    );
+    assert_eq!(invalid.status.code(), Some(2));
+    assert_eq!(
+        invalid.stdout,
+        b"Found 1\n0\tLine\tnote.txt:0\nSelected 1\n0\tLine\tnote.txt:0\nCurrent\n"
+    );
+    let stderr = text(invalid.stderr);
+    assert!(stderr.contains("check search requires a Search binding"));
+    assert!(stderr.contains("check pick requires a Pick binding"));
+    assert!(stderr.contains("indexed binding references select an Anddress"));
+    assert!(stderr.contains("unknown binding: missing"));
+    assert!(stderr.contains("check search accepts exactly one binding"));
+    assert!(stderr.contains("check pick accepts exactly one binding"));
 }
 
 #[test]
