@@ -1,11 +1,11 @@
 use std::fs;
 
-use artext::backwriter::anchor::AnchorOutcome;
-use artext::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural};
-use artext::backwriter::check::CheckError;
-use artext::backwriter::pick::PickOutcome;
-use artext::backwriter::search::SearchOutcome;
-use artext::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
+use backwriter::backwriter::anchor::AnchorOutcome;
+use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural};
+use backwriter::backwriter::check::CheckError;
+use backwriter::backwriter::pick::PickOutcome;
+use backwriter::backwriter::search::SearchOutcome;
+use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
 
 fn runtime(root: &std::path::Path, admission: &str) -> WorkspaceRuntime {
@@ -17,10 +17,10 @@ fn runtime(root: &std::path::Path, admission: &str) -> WorkspaceRuntime {
 }
 
 fn coordinate(runtime: &WorkspaceRuntime) -> String {
-    let request = artext::backwriter::search::SearchRequest::new(
-        artext::backwriter::search::SearchQuery::new("seed").unwrap(),
-        artext::backwriter::search::SearchScope::all_admitted(),
-        artext::backwriter::search::SearchTarget::File,
+    let request = backwriter::backwriter::search::SearchRequest::new(
+        backwriter::backwriter::search::SearchQuery::new("seed").unwrap(),
+        backwriter::backwriter::search::SearchScope::all_admitted(),
+        backwriter::backwriter::search::SearchTarget::File,
     );
     let SearchOutcome::Found { anddresses } = runtime.search(&request).unwrap() else {
         panic!("source fixture supplies a coordinate");

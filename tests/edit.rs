@@ -1,6 +1,6 @@
 use std::{error::Error, fmt::Debug};
 
-use artext::backwriter::{
+use backwriter::backwriter::{
     anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural},
     edit::{Edit, EditError, Position},
 };

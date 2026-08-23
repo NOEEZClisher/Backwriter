@@ -8,7 +8,7 @@ use std::{
     process::ExitCode,
 };
 
-use artext::{
+use backwriter::{
     backwriter::{
         anchor::{Anchedress, AnchorError, AnchorOutcome},
         anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator},

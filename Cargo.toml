@@ -1,11 +1,15 @@
 [package]
-name = "artext"
-version = "0.0.0"
+name = "backwriter"
+version = "0.1.0-beta.1"
+description = "Current structural text coordination Core, Runtime, and CLI"
+license = "MIT"
+repository = "https://github.com/NOEEZClisher/Backwriter"
+readme = "README.md"
 edition = "2024"
 rust-version = "1.95"
 
 [lib]
-name = "artext"
+name = "backwriter"
 path = "src/lib.rs"
 
 [dependencies]

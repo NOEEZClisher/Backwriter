@@ -1,12 +1,12 @@
 use std::fs;
 
-use artext::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural};
-use artext::backwriter::apply::ApplyError;
-use artext::backwriter::edit::{Edit, Position};
-use artext::backwriter::search::{
+use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural};
+use backwriter::backwriter::apply::ApplyError;
+use backwriter::backwriter::edit::{Edit, Position};
+use backwriter::backwriter::search::{
     SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
 };
-use artext::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
+use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
 
 fn runtime(root: &std::path::Path) -> WorkspaceRuntime {

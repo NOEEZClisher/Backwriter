@@ -1,11 +1,11 @@
 use std::fs;
 
-use artext::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural};
-use artext::backwriter::search::{
+use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural};
+use backwriter::backwriter::search::{
     SearchError, SearchInputError, SearchOutcome, SearchQuery, SearchRequest, SearchScope,
     SearchScopeEntry, SearchTarget,
 };
-use artext::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
+use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
 
 fn runtime(root: &std::path::Path) -> WorkspaceRuntime {
@@ -147,15 +147,15 @@ fn wire_is_flat_strict_and_version_priority_is_explicit() {
     );
     assert_eq!(
         Anddress::decode(br#"{"version":"old","kind":null}"#),
-        Err(artext::backwriter::anddress::AnddressError::UnsupportedVersion)
+        Err(backwriter::backwriter::anddress::AnddressError::UnsupportedVersion)
     );
-    assert_eq!(Anddress::decode(br#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","logicalPath":"note.txt","kind":"file","version":"artext.backwriter-anddress.v3"}"#), Err(artext::backwriter::anddress::AnddressError::Encoding));
-    assert_eq!(Anddress::decode(br#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","logicalPath":"note.txt","kind":"line","ordinal":"01","exactExtent":"x"}"#), Err(artext::backwriter::anddress::AnddressError::Encoding));
+    assert_eq!(Anddress::decode(br#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","logicalPath":"note.txt","kind":"file","version":"artext.backwriter-anddress.v3"}"#), Err(backwriter::backwriter::anddress::AnddressError::Encoding));
+    assert_eq!(Anddress::decode(br#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","logicalPath":"note.txt","kind":"line","ordinal":"01","exactExtent":"x"}"#), Err(backwriter::backwriter::anddress::AnddressError::Encoding));
 }
 
 #[test]
 fn wire_rejects_null_unknown_and_invalid_extents_without_natural_narrowing() {
-    use artext::backwriter::anddress::AnddressError;
+    use backwriter::backwriter::anddress::AnddressError;
     let base = "{\"version\":\"artext.backwriter-anddress.v3\",\"workspaceCoordinate\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"logicalPath\":\"note.txt\",";
     assert_eq!(
         Anddress::decode(format!("{base}\"kind\":null}}").as_bytes()),

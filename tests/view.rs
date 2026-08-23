@@ -1,10 +1,10 @@
 use std::fs;
 
-use artext::backwriter::anddress::{
+use backwriter::backwriter::anddress::{
     ANDDRESS_VERSION, Anddress, AnddressTarget, LineTerminator, Natural,
 };
-use artext::backwriter::view::{ViewError, ViewOutcome};
-use artext::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
+use backwriter::backwriter::view::{ViewError, ViewOutcome};
+use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
 
 fn runtime(root: &std::path::Path) -> WorkspaceRuntime {
@@ -18,13 +18,13 @@ fn runtime_with_admission(root: &std::path::Path, admission: &str) -> WorkspaceR
     .unwrap()
 }
 fn coordinate(workspace: &WorkspaceRuntime) -> String {
-    let request = artext::backwriter::search::SearchRequest::new(
-        artext::backwriter::search::SearchQuery::new("one").unwrap(),
-        artext::backwriter::search::SearchScope::all_admitted(),
-        artext::backwriter::search::SearchTarget::File,
+    let request = backwriter::backwriter::search::SearchRequest::new(
+        backwriter::backwriter::search::SearchQuery::new("one").unwrap(),
+        backwriter::backwriter::search::SearchScope::all_admitted(),
+        backwriter::backwriter::search::SearchTarget::File,
     );
     match workspace.search(&request).unwrap() {
-        artext::backwriter::search::SearchOutcome::Found { anddresses } => {
+        backwriter::backwriter::search::SearchOutcome::Found { anddresses } => {
             anddresses[0].workspace_coordinate.clone()
         }
         _ => panic!("coordinate source"),

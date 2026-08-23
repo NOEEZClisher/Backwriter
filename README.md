@@ -18,6 +18,9 @@ cargo build --release
 ./target/release/backwriter --workspace /path/project search paragraph "needle"
 ```
 
+The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
+canonical executable is `backwriter`.
+
 The default workspace is the process current working directory. An explicit
 `--workspace` must be absolute and is checked by Runtime. Search admits `.` by
 default; repeat `--admit LOGICAL_PATH` before `search` to narrow admission.

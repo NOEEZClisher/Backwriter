@@ -1,6 +1,6 @@
 use std::fs;
 
-use artext::{
+use backwriter::{
     backwriter::{
         anchor::{AnchorError, AnchorOutcome},
         anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural},
@@ -34,13 +34,13 @@ fn address(workspace: &WorkspaceRuntime, target: AnddressTarget) -> Anddress {
 }
 
 fn coordinate(workspace: &WorkspaceRuntime) -> String {
-    let request = artext::backwriter::search::SearchRequest::new(
-        artext::backwriter::search::SearchQuery::new("one").unwrap(),
-        artext::backwriter::search::SearchScope::all_admitted(),
-        artext::backwriter::search::SearchTarget::File,
+    let request = backwriter::backwriter::search::SearchRequest::new(
+        backwriter::backwriter::search::SearchQuery::new("one").unwrap(),
+        backwriter::backwriter::search::SearchScope::all_admitted(),
+        backwriter::backwriter::search::SearchTarget::File,
     );
     match workspace.search(&request).unwrap() {
-        artext::backwriter::search::SearchOutcome::Found { anddresses } => {
+        backwriter::backwriter::search::SearchOutcome::Found { anddresses } => {
             anddresses[0].workspace_coordinate.clone()
         }
         _ => panic!("source"),
@@ -542,7 +542,7 @@ fn copy_source_member_rebinds_a_joined_terminal_line_exactly() {
     assert!(matches!(
         workspace.view_anchored(&handle),
         Ok(ViewOutcome::Line { content, terminator, .. })
-            if content == "cc" && terminator == artext::backwriter::anddress::LineTerminator::None
+            if content == "cc" && terminator == backwriter::backwriter::anddress::LineTerminator::None
     ));
     assert!(matches!(
         workspace.anchor(&current(
@@ -597,7 +597,7 @@ fn copy_source_member_rebinds_across_after_planner_source_batch_boundaries() {
         assert!(matches!(
             workspace.view_anchored(&handle),
             Ok(ViewOutcome::Line { content, terminator, .. })
-                if content == expected && terminator == artext::backwriter::anddress::LineTerminator::None
+                if content == expected && terminator == backwriter::backwriter::anddress::LineTerminator::None
         ));
         assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
             !entry

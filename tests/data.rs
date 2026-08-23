@@ -1,17 +1,17 @@
 use std::error::Error;
 use std::fs;
 
-use artext::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget};
-use artext::backwriter::check::CheckOutcome;
-use artext::backwriter::data::{
+use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget};
+use backwriter::backwriter::check::CheckOutcome;
+use backwriter::backwriter::data::{
     DataError, DataKind, DataName, DataNameError, DataStore, StoreError,
 };
-use artext::backwriter::pick::PickOutcome;
-use artext::backwriter::search::{
+use backwriter::backwriter::pick::PickOutcome;
+use backwriter::backwriter::search::{
     SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
 };
-use artext::backwriter::view::ViewOutcome;
-use artext::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
+use backwriter::backwriter::view::ViewOutcome;
+use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
 
 fn name(value: &str) -> DataName {

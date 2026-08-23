@@ -50,8 +50,10 @@ behavior remain deferred under the [CLI V1 authority](../architecture/backwriter
 CLI V1 has no remaining approved feature or implementation slice: beta
 implementation freeze holds until owner authority closes collection/Edit
 transport or Session machine output.
-The next step is package/lib/version decision and release packaging; until then
-Cargo identity, tag, artifact, and publish remain unexecuted.
+The next step is release packaging; tag, artifact, and publish remain
+unexecuted.
+The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
+canonical executable is `backwriter`.
 
 ## Current-only Runtime contract
 
