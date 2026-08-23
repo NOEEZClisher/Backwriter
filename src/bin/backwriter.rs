@@ -1,4 +1,4 @@
-//! Human Search, View, Check, and initial Session adapter for Backwriter CLI V1.
+//! Human Search, View, Check, and Session adapter for Backwriter CLI V1.
 
 use std::{
     env,
@@ -12,6 +12,7 @@ use artext::{
     backwriter::{
         anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator},
         check::CheckOutcome,
+        pick::{PickError, PickOutcome, PickPredicate, PickTargetKind, pick},
         search::{
             SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchScopeEntry, SearchTarget,
         },
@@ -20,7 +21,7 @@ use artext::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human Search, View, Check, and the initial Session slice are implemented.";
+const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human Search, View, and Check plus Session Pick are implemented.";
 
 enum CliError {
     Usage(String),
@@ -337,32 +338,43 @@ fn required_token<'a>(
 }
 
 fn write_human(outcome: &SearchOutcome) -> Result<(), CliError> {
+    let anddresses = match outcome {
+        SearchOutcome::Empty => &[] as &[Anddress],
+        SearchOutcome::Found { anddresses } => anddresses,
+    };
+    write_address_rows("Found", anddresses)
+}
+
+fn write_pick(outcome: &PickOutcome) -> Result<(), CliError> {
+    let anddresses = match outcome {
+        PickOutcome::Empty => &[] as &[Anddress],
+        PickOutcome::Selected { anddresses } => anddresses,
+    };
+    write_address_rows("Selected", anddresses)
+}
+
+fn write_address_rows(header: &str, anddresses: &[Anddress]) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
     let result = (|| -> io::Result<()> {
-        match outcome {
-            SearchOutcome::Empty => writeln!(stdout, "Found 0"),
-            SearchOutcome::Found { anddresses } => {
-                writeln!(stdout, "Found {}", anddresses.len())?;
-                for (index, anddress) in anddresses.iter().enumerate() {
-                    match &anddress.target {
-                        AnddressTarget::File => {
-                            writeln!(stdout, "{index}\tFile\t{}", anddress.logical_path)?;
-                        }
-                        AnddressTarget::Paragraph { ordinal } => {
-                            writeln!(
-                                stdout,
-                                "{index}\tParagraph\t{}:{ordinal}",
-                                anddress.logical_path
-                            )?;
-                        }
-                        AnddressTarget::Line { ordinal, .. } => {
-                            writeln!(stdout, "{index}\tLine\t{}:{ordinal}", anddress.logical_path)?;
-                        }
-                    }
+        writeln!(stdout, "{header} {}", anddresses.len())?;
+        for (index, anddress) in anddresses.iter().enumerate() {
+            match &anddress.target {
+                AnddressTarget::File => {
+                    writeln!(stdout, "{index}\tFile\t{}", anddress.logical_path)?;
                 }
-                Ok(())
+                AnddressTarget::Paragraph { ordinal } => {
+                    writeln!(
+                        stdout,
+                        "{index}\tParagraph\t{}:{ordinal}",
+                        anddress.logical_path
+                    )?;
+                }
+                AnddressTarget::Line { ordinal, .. } => {
+                    writeln!(stdout, "{index}\tLine\t{}:{ordinal}", anddress.logical_path)?;
+                }
             }
         }
+        Ok(())
     })();
     result.map_err(|error| CliError::stream(error.to_string()))?;
     stdout
@@ -424,6 +436,7 @@ fn write_check(outcome: CheckOutcome<Option<Anddress>>) -> Result<(), CliError> 
 #[derive(Clone)]
 enum SessionValue {
     Search(SearchOutcome),
+    Pick(PickOutcome),
     Anddress(Anddress),
 }
 
@@ -510,6 +523,11 @@ fn execute_session_command(
             write_human(&outcome)?;
             Ok(SessionControl::Continue)
         }
+        "pick" => {
+            let outcome = run_pick(bindings, &tokens[1..])?;
+            write_pick(&outcome)?;
+            Ok(SessionControl::Continue)
+        }
         "let" => {
             execute_let(runtime, bindings, tokens)?;
             Ok(SessionControl::Continue)
@@ -548,6 +566,10 @@ fn execute_let(
         let outcome = run_search(runtime, parse_search(&tokens[4..])?)?;
         write_human(&outcome)?;
         SessionValue::Search(outcome)
+    } else if right_hand_side == "pick" {
+        let outcome = run_pick(bindings, &tokens[4..])?;
+        write_pick(&outcome)?;
+        SessionValue::Pick(outcome)
     } else {
         if tokens.len() != 4 {
             return Err(CliError::usage("let reference accepts exactly one operand"));
@@ -559,6 +581,298 @@ fn execute_let(
         }
     };
     store_binding(bindings, name, value)
+}
+
+fn run_pick(bindings: &[SessionBinding], arguments: &[String]) -> Result<PickOutcome, CliError> {
+    let candidates =
+        resolve_pick_candidates(bindings, required_token(arguments, 0, "pick candidates")?)?;
+    let predicate_tokens = split_pick_parentheses(&arguments[1..])?;
+    let predicate = parse_pick_predicate(bindings, &predicate_tokens)?;
+    pick(candidates, &predicate).map_err(map_pick_error)
+}
+
+fn map_pick_error(error: PickError) -> CliError {
+    CliError::execution(error.to_string())
+}
+
+fn resolve_pick_candidates(
+    bindings: &[SessionBinding],
+    token: &str,
+) -> Result<Vec<Anddress>, CliError> {
+    let name = token
+        .strip_prefix('@')
+        .ok_or_else(|| CliError::usage("Pick candidates require a binding reference"))?;
+    if name.contains('[') || name.contains(']') {
+        return Err(CliError::usage(
+            "Pick candidates require a Search or Pick binding without an index",
+        ));
+    }
+    validate_binding_name(name)?;
+    let source = match binding(bindings, name) {
+        Some(SessionValue::Search(SearchOutcome::Empty))
+        | Some(SessionValue::Pick(PickOutcome::Empty)) => {
+            return Ok(Vec::new());
+        }
+        Some(SessionValue::Search(SearchOutcome::Found { anddresses }))
+        | Some(SessionValue::Pick(PickOutcome::Selected { anddresses })) => anddresses,
+        Some(SessionValue::Anddress(_)) => {
+            return Err(CliError::usage(format!(
+                "Pick candidates require a Search or Pick binding: {name}"
+            )));
+        }
+        None => return Err(CliError::usage(format!("unknown binding: {name}"))),
+    };
+    let mut candidates = Vec::new();
+    candidates
+        .try_reserve_exact(source.len())
+        .map_err(|_| CliError::execution("Pick candidate allocation failed"))?;
+    candidates.extend(source.iter().cloned());
+    Ok(candidates)
+}
+
+enum PickFrameKind {
+    Group,
+    Not,
+    AllOf,
+    AnyOf,
+}
+
+struct PickFrame {
+    kind: PickFrameKind,
+    predicates: Vec<PickPredicate>,
+}
+
+fn split_pick_parentheses(tokens: &[String]) -> Result<Vec<String>, CliError> {
+    let mut split = Vec::new();
+    split
+        .try_reserve(tokens.len())
+        .map_err(|_| CliError::execution("Pick predicate allocation failed"))?;
+    for token in tokens {
+        let mut start = 0;
+        for (offset, character) in token.char_indices() {
+            if !matches!(character, '(' | ')') {
+                continue;
+            }
+            if start != offset {
+                push_pick_token(&mut split, &token[start..offset])?;
+            }
+            push_pick_token(&mut split, &token[offset..offset + character.len_utf8()])?;
+            start = offset + character.len_utf8();
+        }
+        if start != token.len() {
+            push_pick_token(&mut split, &token[start..])?;
+        }
+    }
+    Ok(split)
+}
+
+fn push_pick_token(tokens: &mut Vec<String>, value: &str) -> Result<(), CliError> {
+    tokens
+        .try_reserve(1)
+        .map_err(|_| CliError::execution("Pick predicate allocation failed"))?;
+    let mut token = String::new();
+    token
+        .try_reserve_exact(value.len())
+        .map_err(|_| CliError::execution("Pick predicate allocation failed"))?;
+    token.push_str(value);
+    tokens.push(token);
+    Ok(())
+}
+
+fn parse_pick_predicate(
+    bindings: &[SessionBinding],
+    tokens: &[String],
+) -> Result<PickPredicate, CliError> {
+    let mut position = 0;
+    let mut frames = Vec::new();
+    let mut root = None;
+    while let Some(token) = tokens.get(position) {
+        finish_pick_operators(&mut frames, &mut root, Some(token))?;
+        if token == ")" {
+            position += 1;
+            let frame = frames
+                .pop()
+                .ok_or_else(|| CliError::usage("unexpected Pick predicate closing parenthesis"))?;
+            let predicate = finish_pick_frame(frame)?;
+            accept_pick_predicate(&mut frames, &mut root, predicate)?;
+            continue;
+        }
+        if token == "(" {
+            if matches!(
+                frames.last().map(|frame| &frame.kind),
+                Some(PickFrameKind::AllOf | PickFrameKind::AnyOf)
+            ) {
+                frames
+                    .try_reserve(1)
+                    .map_err(|_| CliError::execution("Pick predicate allocation failed"))?;
+                frames.push(PickFrame {
+                    kind: PickFrameKind::Group,
+                    predicates: Vec::new(),
+                });
+                position += 1;
+                continue;
+            }
+            return Err(CliError::usage(
+                "unexpected Pick predicate opening parenthesis",
+            ));
+        }
+        if root.is_some() && frames.is_empty() {
+            return Err(CliError::usage("Pick predicate has trailing input"));
+        }
+        let predicate = match token.as_str() {
+            "all" => {
+                position += 1;
+                PickPredicate::all()
+            }
+            "target-kind" => {
+                let kind = required_token(tokens, position + 1, "Pick target kind")?;
+                position += 2;
+                PickPredicate::target_kind(match kind {
+                    "file" => PickTargetKind::File,
+                    "paragraph" => PickTargetKind::Paragraph,
+                    "line" => PickTargetKind::Line,
+                    _ => return Err(CliError::usage(format!("invalid Pick target kind: {kind}"))),
+                })
+            }
+            "one-of" => {
+                position += 1;
+                let mut members = Vec::new();
+                while let Some(reference) = tokens.get(position) {
+                    if !reference.starts_with('@') {
+                        break;
+                    }
+                    members
+                        .try_reserve(1)
+                        .map_err(|_| CliError::execution("Pick predicate allocation failed"))?;
+                    members.push(resolve_anddress(bindings, reference)?);
+                    position += 1;
+                }
+                if members.is_empty() {
+                    return Err(CliError::usage(
+                        "one-of requires at least one Anddress reference",
+                    ));
+                }
+                PickPredicate::one_of(members)
+            }
+            "same-file" => {
+                let reference =
+                    required_token(tokens, position + 1, "same-file Anddress reference")?;
+                position += 2;
+                PickPredicate::same_file(resolve_anddress(bindings, reference)?)
+            }
+            "not" | "all-of" | "any-of" => {
+                let kind = match token.as_str() {
+                    "not" => PickFrameKind::Not,
+                    "all-of" => PickFrameKind::AllOf,
+                    "any-of" => PickFrameKind::AnyOf,
+                    _ => unreachable!(),
+                };
+                if required_token(tokens, position + 1, "Pick predicate opening parenthesis")?
+                    != "("
+                {
+                    return Err(CliError::usage(
+                        "Pick composition requires an opening parenthesis",
+                    ));
+                }
+                frames
+                    .try_reserve(1)
+                    .map_err(|_| CliError::execution("Pick predicate allocation failed"))?;
+                frames.push(PickFrame {
+                    kind,
+                    predicates: Vec::new(),
+                });
+                frames
+                    .try_reserve(1)
+                    .map_err(|_| CliError::execution("Pick predicate allocation failed"))?;
+                frames.push(PickFrame {
+                    kind: PickFrameKind::Group,
+                    predicates: Vec::new(),
+                });
+                position += 2;
+                continue;
+            }
+            _ => return Err(CliError::usage(format!("invalid Pick predicate: {token}"))),
+        };
+        accept_pick_predicate(&mut frames, &mut root, predicate)?;
+    }
+    finish_pick_operators(&mut frames, &mut root, None)?;
+    if !frames.is_empty() {
+        return Err(CliError::usage("unclosed Pick predicate parenthesis"));
+    }
+    root.ok_or_else(|| CliError::usage("Pick predicate requires a value"))
+}
+
+fn accept_pick_predicate(
+    frames: &mut [PickFrame],
+    root: &mut Option<PickPredicate>,
+    predicate: PickPredicate,
+) -> Result<(), CliError> {
+    if let Some(frame) = frames.last_mut() {
+        frame
+            .predicates
+            .try_reserve(1)
+            .map_err(|_| CliError::execution("Pick predicate allocation failed"))?;
+        frame.predicates.push(predicate);
+        return Ok(());
+    }
+    if root.replace(predicate).is_some() {
+        return Err(CliError::usage("Pick predicate has trailing input"));
+    }
+    Ok(())
+}
+
+fn finish_pick_operators(
+    frames: &mut Vec<PickFrame>,
+    root: &mut Option<PickPredicate>,
+    next: Option<&String>,
+) -> Result<(), CliError> {
+    loop {
+        let Some(frame) = frames.last() else {
+            return Ok(());
+        };
+        let is_complete = match frame.kind {
+            PickFrameKind::Not => true,
+            PickFrameKind::AllOf | PickFrameKind::AnyOf => next.is_none_or(|token| token != "("),
+            PickFrameKind::Group => false,
+        };
+        if !is_complete {
+            return Ok(());
+        }
+        let frame = frames.pop().expect("nonempty Pick frame stack");
+        let predicate = finish_pick_frame(frame)?;
+        accept_pick_predicate(frames, root, predicate)?;
+    }
+}
+
+fn finish_pick_frame(mut frame: PickFrame) -> Result<PickPredicate, CliError> {
+    if frame.predicates.is_empty() {
+        return Err(CliError::usage(
+            "Pick composition requires at least one predicate",
+        ));
+    }
+    let first = frame.predicates.remove(0);
+    match frame.kind {
+        PickFrameKind::Group => {
+            if !frame.predicates.is_empty() {
+                return Err(CliError::usage(
+                    "parenthesized Pick predicate requires exactly one predicate",
+                ));
+            }
+            Ok(first)
+        }
+        PickFrameKind::Not => {
+            if !frame.predicates.is_empty() {
+                return Err(CliError::usage("not requires exactly one predicate"));
+            }
+            PickPredicate::negate(first).map_err(map_pick_error)
+        }
+        PickFrameKind::AllOf => {
+            PickPredicate::all_of(first, frame.predicates).map_err(map_pick_error)
+        }
+        PickFrameKind::AnyOf => {
+            PickPredicate::any_of(first, frame.predicates).map_err(map_pick_error)
+        }
+    }
 }
 
 fn execute_session_view(
@@ -652,6 +966,9 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
             Some(SessionValue::Search(_)) => Err(CliError::usage(format!(
                 "Search binding requires an index: {reference}"
             ))),
+            Some(SessionValue::Pick(_)) => Err(CliError::usage(format!(
+                "Pick binding requires an index: {reference}"
+            ))),
             None => Err(CliError::usage(format!("unknown binding: {reference}"))),
         };
     };
@@ -671,6 +988,13 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
             .ok_or_else(|| CliError::usage(format!("binding index is out of range: {name}"))),
         Some(SessionValue::Search(SearchOutcome::Empty)) => {
             Err(CliError::usage(format!("Search binding is empty: {name}")))
+        }
+        Some(SessionValue::Pick(PickOutcome::Selected { anddresses })) => anddresses
+            .get(index)
+            .cloned()
+            .ok_or_else(|| CliError::usage(format!("binding index is out of range: {name}"))),
+        Some(SessionValue::Pick(PickOutcome::Empty)) => {
+            Err(CliError::usage(format!("Pick binding is empty: {name}")))
         }
         Some(SessionValue::Anddress(_)) => Err(CliError::usage(format!(
             "Anddress binding cannot be indexed: {name}"

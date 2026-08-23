@@ -22,15 +22,16 @@ Rust value implementation, and single-source Apply Runtime implementation are
 complete. Apply's V1 semantic/public API/error authority and Runtime
 implementation are complete.
 
-## CLI Adapter V1 initial slice
+## CLI Adapter V1 Session Pick slice
 
 The repository includes the canonical `backwriter` CLI Adapter. Its completed
-scope is one-shot human Search, View, and Check plus the initial Session over
-the existing public Runtime seams. The Session retains one Runtime and explicit
-CLI-local Search/Anddress bindings only. It adds no Core API, wire, workflow,
-provenance, automatic DataStore use, or retained Core state. All other
-capabilities, JSON, raw output, and further Session behavior remain deferred
-under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
+scope is one-shot human Search, View, and Check plus Session Pick over the
+existing public Runtime seams. The Session retains one Runtime and explicit
+CLI-local Search/Pick/Anddress bindings. Session Pick passes a named candidate
+collection and a CLI-parsed predicate to the existing pure Core function. It adds
+no Core API, wire, workflow, provenance, automatic DataStore use, or retained
+Core state. One-shot Pick, all other capabilities, JSON, raw output, and further
+Session behavior remain deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
 
 ## Current-only Runtime contract
 

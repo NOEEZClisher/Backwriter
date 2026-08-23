@@ -1,8 +1,8 @@
 # Backwriter CLI V1
 
-Status: Adapter authority. The completed initial slices are the canonical
-`backwriter` executable's one-shot human Search, View, Check, and initial
-Session modes only. This document follows the Core active documents in the
+Status: Adapter authority. The completed slices are the canonical `backwriter`
+executable's one-shot human Search, View, Check, and Session Pick modes only.
+This document follows the Core active documents in the
 authority-reading order.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
@@ -24,12 +24,13 @@ that alias is outside this Adapter contract.
 CLI V1 has two intended execution forms:
 
 - One-shot invokes one capability and exits without retaining a result.
-- The initial Session retains one `WorkspaceRuntime` and explicit CLI-local
-  Search/Anddress values until EOF or `exit`.
+- The Session retains one `WorkspaceRuntime` and explicit CLI-local
+  Search/Pick/Anddress values until EOF or `exit`.
 
-One-shot Search, View, and Check plus the initial Session are implemented. Live
-Anchor handles, Core `DataStore`, all other capabilities, JSON, raw output, and
-further Session behavior are deferred and rejected rather than silently accepted.
+One-shot Search, View, and Check plus Session Pick are implemented. Live Anchor
+handles, Core `DataStore`, one-shot Pick, all other capabilities, JSON, raw
+output, and further Session behavior are deferred and rejected rather than
+silently accepted.
 
 The intended expression roles remain:
 
@@ -133,7 +134,7 @@ All three are successful Check outcomes. Invalid input is a usage error; Runtime
 Check resource, and stdout errors are execution errors. `check search`,
 `check pick`, and extra operands are usage errors in this slice.
 
-## Implemented initial Session
+## Implemented Session Pick
 
 The Session starts with:
 
@@ -146,17 +147,38 @@ prints no prompt. One physical input Line is one expression; blank Lines are
 ignored. Its private lexer splits spaces and tabs, supports a standalone
 double-quoted token with only `\\` and `\"` escapes, and rejects NUL, unmatched
 quotes, and every other quoted escape. It creates no single-quote, comment,
-continuation, interpolation, pipe, or parenthesis grammar.
+continuation, interpolation, or pipe grammar. Only the Pick predicate tail splits
+parentheses; it changes no other Session token syntax.
 
 The completed commands are `search <kind> <query> [scope]`, `let <name> =
-search <kind> <query> [scope]`, `let <name> = @<name>`, `let <name> =
-@<name>[<index>]`, `view anddress @<name>[<index>]`, `check anddress
-@<name>[<index>]`, and `exit`. Direct address bindings may be supplied to View
-or Check without an index. Names are ASCII identifiers and cannot be redefined.
-The only Session values are exact `SearchOutcome` and copied `Anddress` values;
-they are private Adapter memory, not Core DataStore state. Search output is
-written before a `let` binding becomes available; View and Check results are not
-bindable.
+search <kind> <query> [scope]`, `pick @<search-or-pick-binding> <predicate>`,
+`let <name> = pick @<search-or-pick-binding> <predicate>`, `let <name> =
+@<name>`, `let <name> = @<name>[<index>]`, `view anddress @<name>[<index>]`,
+`check anddress @<name>[<index>]`, and `exit`. Pick predicates are exactly
+`all`, `target-kind <file|paragraph|line>`, `one-of <anddress-ref>...`,
+`same-file <anddress-ref>`, `not (<predicate>)`, `all-of (<predicate>)...`, and
+`any-of (<predicate>)...`; attached and separate parentheses are equivalent.
+The adapter parses those predicates into the existing `PickPredicate` constructors
+and calls Core `pick`; it never evaluates a predicate itself. Direct address
+bindings may be supplied to View or Check without an index. Names are ASCII
+identifiers and cannot be redefined. The only Session values are exact
+`SearchOutcome`, `PickOutcome`, and copied `Anddress` values; they are private
+Adapter memory, not Core DataStore state. Search and Pick output are written
+before a `let` binding becomes available; View and Check results are not bindable.
+
+Pick preserves the Core result vector's order and multiplicity. Its human
+projection is exactly:
+
+```text
+Selected <count>
+<index>\t<File|Paragraph|Line>\t<logical-path>[:<zero-based-ordinal>]
+```
+
+`Empty` writes `Selected 0`. Pick address references use an Anddress binding or
+an indexed Search/Pick binding. A malformed predicate, parenthesis, binding, or
+index is a Session usage error. Pick resource and stdout errors are execution
+errors. The Session lexer remains unchanged for every non-Pick command; only the
+Pick predicate tail splits attached parentheses.
 
 Each Session command reuses the completed one-shot Search, View, and Check
 validation, Runtime execution, and human projection. A command error writes to
@@ -177,14 +199,14 @@ forms remain one-shot capability execution and later Session work that can bind
 anchored handles, build an inert Edit, Apply an explicit Edit, and expose Core
 Data without equating CLI-local names with `DataStore`.
 
-The initial Session introduces no implicit `latest`, hidden current selection,
+The Session introduces no implicit `latest`, hidden current selection,
 automatic Data storage, automatic Search-to-Pick/View/Edit/Apply handoff,
 automatic Anchor creation, persistent daemon, watcher, or Core workflow encoded
 by shell pipelines.
 
-Search scope selectors and raw Anddress View/Check references are implemented
-in the initial Session. Later Session work may accept anchored View input, Pick
-candidates before a predicate, Check native outcomes, Anchor logical-source
+Search scope selectors, Pick candidates before an Adapter predicate, and raw
+Anddress View/Check references are implemented in Session. Later Session work may
+accept anchored View input, Check native outcomes, Anchor logical-source
 associations, inert Edit construction, explicit Apply input, and typed Data
 names. None of those spellings are a public Core wire or a currently implemented
 CLI command.

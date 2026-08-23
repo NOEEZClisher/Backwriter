@@ -228,6 +228,7 @@ fn syntax_and_unimplemented_forms_are_usage_errors() {
         vec!["--workspace", "relative", "search", "line", "needle"],
         vec!["--unknown", "search", "line", "needle"],
         vec!["shell", "extra"],
+        vec!["pick"],
         vec!["view"],
         vec!["search", "line", "needle", "--json"],
         vec!["search", "line", "needle", "--raw"],
@@ -515,6 +516,101 @@ fn session_reuses_search_projection_view_and_check_with_exact_bindings() {
         b"Found 2\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:1\nneedle\nCurrent\n"
     );
     assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn session_pick_all_and_target_kind_project_the_existing_core_order() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "first\n\nsecond\n");
+
+    let output = run_shell(
+        root.path(),
+        "let files = search file first\npick @files all\nlet paragraphs = search paragraph first\npick @paragraphs target-kind paragraph\nlet lines = search line first\npick @lines target-kind line\nexit\n",
+    );
+    assert!(output.status.success());
+    assert_eq!(
+        output.stdout,
+        b"Found 1\n0\tFile\tnote.txt\nSelected 1\n0\tFile\tnote.txt\nFound 1\n0\tParagraph\tnote.txt:0\nSelected 1\n0\tParagraph\tnote.txt:0\nFound 1\n0\tLine\tnote.txt:0\nSelected 1\n0\tLine\tnote.txt:0\n"
+    );
+    assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn session_pick_same_file_and_one_of_preserve_candidate_order() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "a.txt", "needle\nneedle\n");
+    write(root.path(), "b.txt", "needle\n");
+
+    let output = run_shell(
+        root.path(),
+        "let hits = search line needle\nlet same = pick @hits same-file @hits[0]\nlet selected = pick @hits all-of(one-of @hits[2] @hits[0])\npick @same all\nexit\n",
+    );
+    assert!(output.status.success());
+    assert_eq!(
+        output.stdout,
+        b"Found 3\n0\tLine\ta.txt:0\n1\tLine\ta.txt:1\n2\tLine\tb.txt:0\nSelected 2\n0\tLine\ta.txt:0\n1\tLine\ta.txt:1\nSelected 2\n0\tLine\ta.txt:0\n1\tLine\tb.txt:0\nSelected 2\n0\tLine\ta.txt:0\n1\tLine\ta.txt:1\n"
+    );
+    assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn session_pick_composition_is_iterative_and_pick_bindings_feed_view_and_check() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\nneedle\nneedle\n");
+
+    let output = run_shell(
+        root.path(),
+        "let hits = search line needle\nlet selected = pick @hits all-of (target-kind line) (not (one-of @hits[1]))\npick @selected any-of(all) (not(not(target-kind line)))\nview anddress @selected[1]\ncheck anddress @selected[1]\nexit\n",
+    );
+    assert!(output.status.success());
+    assert_eq!(
+        output.stdout,
+        b"Found 3\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:1\n2\tLine\tnote.txt:2\nSelected 2\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:2\nSelected 2\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:2\nneedle\nCurrent\n"
+    );
+    assert!(output.stderr.is_empty());
+
+    let nesting = 4_096;
+    let input = format!(
+        "let hits = search line needle\npick @hits {}all{}\nexit\n",
+        "not(".repeat(nesting),
+        ")".repeat(nesting)
+    );
+    let deep = run_shell(root.path(), &input);
+    assert!(deep.status.success());
+    assert_eq!(
+        deep.stdout,
+        b"Found 3\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:1\n2\tLine\tnote.txt:2\nSelected 3\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:1\n2\tLine\tnote.txt:2\n"
+    );
+    assert!(deep.stderr.is_empty());
+}
+
+#[test]
+fn session_pick_rejects_malformed_references_and_preserves_existing_bindings() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\n");
+
+    let output = run_shell(
+        root.path(),
+        "let hits = search line needle\nlet address = @hits[0]\nlet empty = search line absent\npick @empty all\npick @hits all trailing\npick @hits not(all\npick @hits all-of()\npick @hits one-of\npick @hits same-file @hits\npick @hits target-kind section\npick @hits unknown\npick @missing all\npick @hits[0] all\npick @address all\nlet selected = pick @hits all\nview anddress @selected\nview anddress @selected[1]\nsearch line needle --source note.txt\nexit\n",
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(
+        output.stdout,
+        b"Found 1\n0\tLine\tnote.txt:0\nFound 0\nSelected 0\nSelected 1\n0\tLine\tnote.txt:0\nFound 1\n0\tLine\tnote.txt:0\n"
+    );
+    let stderr = text(output.stderr);
+    assert!(stderr.contains("Pick predicate has trailing input"));
+    assert!(stderr.contains("unclosed Pick predicate parenthesis"));
+    assert!(stderr.contains("Pick composition requires at least one predicate"));
+    assert!(stderr.contains("one-of requires at least one Anddress reference"));
+    assert!(stderr.contains("Search binding requires an index: hits"));
+    assert!(stderr.contains("invalid Pick target kind: section"));
+    assert!(stderr.contains("invalid Pick predicate: unknown"));
+    assert!(stderr.contains("unknown binding: missing"));
+    assert!(stderr.contains("Pick candidates require a Search or Pick binding without an index"));
+    assert!(stderr.contains("Pick candidates require a Search or Pick binding: address"));
+    assert!(stderr.contains("Pick binding requires an index: selected"));
+    assert!(stderr.contains("binding index is out of range: selected"));
 }
 
 #[test]
