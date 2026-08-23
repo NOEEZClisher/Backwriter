@@ -776,6 +776,69 @@ fn session_anchor_preserves_file_paragraph_and_line_views() {
 }
 
 #[test]
+fn session_edit_apply_builds_each_core_edit_and_preserves_bindings() {
+    let cases = [
+        (
+            "one\n",
+            "let lines = search line one\nlet edit = edit insert before @lines[0] \"zero\\n\"\nlet copy = @edit\napply @edit\nexit\n",
+            "zero\none\n",
+        ),
+        (
+            "one\n",
+            "let lines = search line one\nlet edit = edit replace @lines[0] \"two\\r\\n\"\napply @edit\nexit\n",
+            "two\r\n",
+        ),
+        (
+            "one\n",
+            "let lines = search line one\nlet edit = edit delete @lines[0]\napply @edit\nexit\n",
+            "",
+        ),
+        (
+            "a\nb\n",
+            "let lines = search line a\nlet files = search file a\nlet edit = edit move @lines[0] end-of @files[0]\napply @edit\nexit\n",
+            "b\na\n",
+        ),
+        (
+            "a\n",
+            "let lines = search line a\nlet files = search file a\nlet edit = edit copy @lines[0] end-of @files[0]\napply @edit\nexit\n",
+            "a\na\n",
+        ),
+    ];
+    for (before, input, after) in cases {
+        let root = tempfile::tempdir().unwrap();
+        write(root.path(), "note.txt", before);
+        let output = run_shell(root.path(), input);
+        assert!(output.status.success(), "{}", text(output.stderr));
+        assert_eq!(
+            fs::read_to_string(root.path().join("note.txt")).unwrap(),
+            after
+        );
+        assert!(text(output.stdout).contains("OK\n"));
+    }
+}
+
+#[test]
+fn session_edit_apply_rejects_invalid_forms_without_stopping_later_commands() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "one\n");
+    let output = run_shell(
+        root.path(),
+        "edit delete @missing\nlet lines = search line one\nlet wrong = @lines\nlet bad = edit insert start-of @lines[0] x\nlet edit = edit insert before @lines[0] \"\\t\\\"\\\\\\r\\n\"\napply @edit[0]\napply @wrong\napply @edit extra\napply @edit\nexit\n",
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(
+        fs::read(root.path().join("note.txt")).unwrap(),
+        b"\t\"\\\r\none\n"
+    );
+    let stderr = text(output.stderr);
+    assert!(stderr.contains("unsupported Session command: edit"));
+    assert!(stderr.contains("binding is not an Edit: wrong"));
+    assert!(stderr.contains("Edit bindings cannot be indexed"));
+    assert!(stderr.contains("binding is not an Edit: wrong"));
+    assert!(stderr.contains("apply accepts exactly one Edit binding"));
+}
+
+#[test]
 fn session_bindings_reject_unknown_duplicate_empty_out_of_range_and_type_mismatch() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "note.txt", "needle\n");

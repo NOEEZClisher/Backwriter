@@ -2,7 +2,7 @@
 
 Status: Adapter authority. The completed slices are the canonical `backwriter`
 executable's one-shot human Search, View, Check, Session Pick, batch Check, and
-Anchor modes only. This document follows the Core active documents in the
+Anchor, Edit, and Apply modes only. This document follows the Core active documents in the
 authority-reading order.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
@@ -25,12 +25,13 @@ CLI V1 has two intended execution forms:
 
 - One-shot invokes one capability and exits without retaining a result.
 - The Session retains one `WorkspaceRuntime` and explicit CLI-local
-  Search/Pick/Anddress values plus non-aliasing owning Anchedress handles until
+  Search/Pick/Anddress/Edit values plus non-aliasing owning Anchedress handles until
   EOF or `exit`.
 
-One-shot Search, View, and Check plus Session Pick, batch Check, and Anchor are
-implemented. Core `DataStore`, one-shot Pick, one-shot batch Check, one-shot
-Anchor, all other capabilities, JSON, raw output, and further Session behavior
+One-shot Search, View, and Check plus Session Pick, batch Check, Anchor, Edit,
+and Apply are implemented. Core `DataStore`, one-shot Pick, one-shot batch Check,
+one-shot Anchor, one-shot Edit, one-shot Apply, all other capabilities, JSON,
+raw output, and further Session behavior
 are deferred and rejected rather than silently accepted.
 
 The intended expression roles remain:
@@ -157,7 +158,8 @@ search <kind> <query> [scope]`, `pick @<search-or-pick-binding> <predicate>`,
 @<name>`, `let <name> = @<name>[<index>]`, `view anddress @<name>[<index>]`,
 `check anddress @<name>[<index>]`, `check search @<search-binding>`,
 `check pick @<pick-binding>`, `let <name> = anchor create <anddress-ref>`,
-`view anchored @<handle>`, `anchor invalidate-source <logical-path>`, and
+`view anchored @<handle>`, `anchor invalidate-source <logical-path>`,
+`let <name> = edit <operation> ...`, `apply @<edit-binding>`, and
 `exit`. Pick predicates are exactly
 `all`, `target-kind <file|paragraph|line>`, `one-of <anddress-ref>...`,
 `same-file <anddress-ref>`, `not (<predicate>)`, `all-of (<predicate>)...`, and
@@ -216,6 +218,14 @@ it invalidates only handles for that source. Anchor input/version errors are usa
 errors; unavailable and View errors are execution errors. The Session never
 deletes, recreates, persists, registers, or re-identifies a handle.
 
+Session Edit directly constructs and validates the existing Core `Edit` and
+`Position` values. Its positions are `before`, `after`, `start-of`, and `end-of`
+with one Anddress reference; only `let` can retain an Edit. `apply` accepts one
+unindexed Edit binding, retains that caller-owned binding, calls Runtime Apply,
+and writes `OK` only on success. All Runtime Apply failures are execution errors.
+Quoted tokens additionally decode `\n`, `\r`, and `\t`; no preview, retry,
+rollback, transaction, or CLI recovery is added.
+
 Each Session command reuses the completed one-shot Search, View, and Check
 validation, Runtime execution, and human projection. A command error writes to
 stderr and leaves later Lines runnable. Any usage error makes the final process
@@ -226,7 +236,7 @@ status `2`; otherwise execution/resource errors make it `1`; otherwise it is
 
 The following are intentionally outside the completed initial slice:
 
-- One-shot Pick, one-shot batch Check, one-shot Anchor, Edit, Apply, and Data
+- One-shot Pick, one-shot batch Check, one-shot Anchor, one-shot Edit, one-shot Apply, and Data
   commands.
 - JSON schema and the exact scope of raw output.
 

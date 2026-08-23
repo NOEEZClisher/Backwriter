@@ -12,7 +12,9 @@ use artext::{
     backwriter::{
         anchor::{Anchedress, AnchorError, AnchorOutcome},
         anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator},
+        apply::ApplyError,
         check::{CheckOutcome, CheckReport},
+        edit::{Edit, EditError, Position},
         pick::{PickError, PickOutcome, PickPredicate, PickTargetKind, pick},
         search::{
             SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchScopeEntry, SearchTarget,
@@ -439,6 +441,7 @@ enum SessionValue {
     Pick(PickOutcome),
     Anddress(Anddress),
     Anchedress(Anchedress),
+    Edit(Edit),
 }
 
 struct SessionBinding {
@@ -545,6 +548,10 @@ fn execute_session_command(
             execute_session_anchor(runtime, tokens)?;
             Ok(SessionControl::Continue)
         }
+        "apply" => {
+            execute_session_apply(runtime, bindings, tokens)?;
+            Ok(SessionControl::Continue)
+        }
         "exit" if tokens.len() == 1 => Ok(SessionControl::Exit),
         "exit" => Err(CliError::usage("exit accepts no operands")),
         capability => Err(CliError::usage(format!(
@@ -586,6 +593,11 @@ fn execute_let(
             AnchorOutcome::AlreadyLive => write_session_status("AlreadyLive"),
         };
     }
+    if right_hand_side == "edit" {
+        let edit = parse_session_edit(bindings, &tokens[4..])?;
+        edit.validate().map_err(map_edit_error)?;
+        return store_binding(bindings, name, SessionValue::Edit(edit));
+    }
     let value = if right_hand_side == "search" {
         let outcome = run_search(runtime, parse_search(&tokens[4..])?)?;
         write_human(&outcome)?;
@@ -613,6 +625,85 @@ fn map_anchor_error(error: AnchorError) -> CliError {
             CliError::usage(error.to_string())
         }
         AnchorError::Unavailable => CliError::execution(error.to_string()),
+    }
+}
+
+fn map_edit_error(error: EditError) -> CliError {
+    match error {
+        EditError::UnsupportedVersion | EditError::InvalidInput => {
+            CliError::usage(error.to_string())
+        }
+        EditError::Resource => CliError::execution(error.to_string()),
+    }
+}
+
+fn parse_session_edit(bindings: &[SessionBinding], arguments: &[String]) -> Result<Edit, CliError> {
+    match required_token(arguments, 0, "edit operation")? {
+        "insert" => {
+            if arguments.len() != 4 {
+                return Err(CliError::usage(
+                    "edit insert requires a position and content",
+                ));
+            }
+            Ok(Edit::Insert {
+                position: parse_session_position(bindings, &arguments[1..3])?,
+                content: arguments[3].clone(),
+            })
+        }
+        "replace" => {
+            if arguments.len() != 3 {
+                return Err(CliError::usage(
+                    "edit replace requires a target and content",
+                ));
+            }
+            Ok(Edit::Replace {
+                target: resolve_anddress(bindings, &arguments[1])?,
+                content: arguments[2].clone(),
+            })
+        }
+        "delete" => {
+            if arguments.len() != 2 {
+                return Err(CliError::usage("edit delete requires exactly one target"));
+            }
+            Ok(Edit::Delete {
+                target: resolve_anddress(bindings, &arguments[1])?,
+            })
+        }
+        "move" | "copy" => {
+            if arguments.len() != 4 {
+                return Err(CliError::usage(format!(
+                    "edit {} requires a target and position",
+                    arguments[0]
+                )));
+            }
+            let target = resolve_anddress(bindings, &arguments[1])?;
+            let position = parse_session_position(bindings, &arguments[2..4])?;
+            Ok(if arguments[0] == "move" {
+                Edit::Move { target, position }
+            } else {
+                Edit::Copy { target, position }
+            })
+        }
+        _ => Err(CliError::usage("unsupported edit operation")),
+    }
+}
+
+fn parse_session_position(
+    bindings: &[SessionBinding],
+    arguments: &[String],
+) -> Result<Position, CliError> {
+    if arguments.len() != 2 {
+        return Err(CliError::usage(
+            "position requires exactly one Anddress reference",
+        ));
+    }
+    let target = resolve_anddress(bindings, &arguments[1])?;
+    match arguments[0].as_str() {
+        "before" => Ok(Position::Before(target)),
+        "after" => Ok(Position::After(target)),
+        "start-of" => Ok(Position::StartOf(target)),
+        "end-of" => Ok(Position::EndOf(target)),
+        _ => Err(CliError::usage("unsupported position")),
     }
 }
 
@@ -654,6 +745,11 @@ fn resolve_pick_candidates(
             )));
         }
         Some(SessionValue::Anchedress(_)) => {
+            return Err(CliError::usage(format!(
+                "Pick candidates require a Search or Pick binding: {name}"
+            )));
+        }
+        Some(SessionValue::Edit(_)) => {
             return Err(CliError::usage(format!(
                 "Pick candidates require a Search or Pick binding: {name}"
             )));
@@ -967,6 +1063,21 @@ fn execute_session_anchor(
     }
 }
 
+fn execute_session_apply(
+    runtime: &mut WorkspaceRuntime,
+    bindings: &[SessionBinding],
+    tokens: &[String],
+) -> Result<(), CliError> {
+    if tokens.len() != 2 {
+        return Err(CliError::usage("apply accepts exactly one Edit binding"));
+    }
+    let edit = resolve_edit(bindings, &tokens[1])?;
+    runtime
+        .apply(&edit)
+        .map_err(|error: ApplyError| CliError::execution(error.to_string()))?;
+    write_session_status("OK")
+}
+
 fn write_session_status(status: &str) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
     writeln!(stdout, "{status}").map_err(|error| CliError::stream(error.to_string()))?;
@@ -1106,6 +1217,7 @@ fn resolve_binding_value(
         Some(SessionValue::Search(value)) => Ok(SessionValue::Search(value.clone())),
         Some(SessionValue::Pick(value)) => Ok(SessionValue::Pick(value.clone())),
         Some(SessionValue::Anddress(value)) => Ok(SessionValue::Anddress(value.clone())),
+        Some(SessionValue::Edit(value)) => Ok(SessionValue::Edit(value.clone())),
         Some(SessionValue::Anchedress(_)) => Err(CliError::usage(format!(
             "Anchedress binding cannot be cloned: {name}"
         ))),
@@ -1133,6 +1245,21 @@ fn resolve_anchedress<'a>(
     }
 }
 
+fn resolve_edit(bindings: &[SessionBinding], token: &str) -> Result<Edit, CliError> {
+    let name = token
+        .strip_prefix('@')
+        .ok_or_else(|| CliError::usage("Edit bindings start with @"))?;
+    if name.contains('[') || name.contains(']') {
+        return Err(CliError::usage("Edit bindings cannot be indexed"));
+    }
+    validate_binding_name(name)?;
+    match binding(bindings, name) {
+        Some(SessionValue::Edit(edit)) => Ok(edit.clone()),
+        Some(_) => Err(CliError::usage(format!("binding is not an Edit: {name}"))),
+        None => Err(CliError::usage(format!("unknown binding: {name}"))),
+    }
+}
+
 fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress, CliError> {
     let reference = token
         .strip_prefix('@')
@@ -1149,6 +1276,9 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
             ))),
             Some(SessionValue::Anchedress(_)) => Err(CliError::usage(format!(
                 "Anchedress binding cannot be used as an Anddress: {reference}"
+            ))),
+            Some(SessionValue::Edit(_)) => Err(CliError::usage(format!(
+                "Edit binding cannot be used as an Anddress: {reference}"
             ))),
             None => Err(CliError::usage(format!("unknown binding: {reference}"))),
         };
@@ -1182,6 +1312,9 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
         ))),
         Some(SessionValue::Anchedress(_)) => Err(CliError::usage(format!(
             "Anchedress binding cannot be indexed: {name}"
+        ))),
+        Some(SessionValue::Edit(_)) => Err(CliError::usage(format!(
+            "Edit binding cannot be indexed: {name}"
         ))),
         None => Err(CliError::usage(format!("unknown binding: {name}"))),
     }
@@ -1233,6 +1366,9 @@ fn lex_line(line: &str) -> Result<Vec<String>, CliError> {
                     Some('\\') => match characters.next() {
                         Some('\\') => token.push('\\'),
                         Some('"') => token.push('"'),
+                        Some('n') => token.push('\n'),
+                        Some('r') => token.push('\r'),
+                        Some('t') => token.push('\t'),
                         _ => return Err(CliError::usage("invalid quoted escape")),
                     },
                     Some(character) => token.push(character),

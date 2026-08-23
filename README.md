@@ -7,7 +7,7 @@ addresses without turning source history or editor state into Core identity.
 The Core capability inventory is Search, View, Pick, Anchor, Check, Edit,
 Apply, and Data. The repository currently provides their Rust Core/Runtime
 surfaces and the canonical `backwriter` executable's one-shot human Search,
-View, Check, Session Pick, batch Check, and Anchor modes.
+View, Check, Session Pick, batch Check, Anchor, Edit, and Apply modes.
 
 ## Quick start
 
@@ -27,7 +27,7 @@ sources.
 ## Current CLI scope
 
 `backwriter` currently implements one-shot human Search, View, Check, and
-Session Pick, batch Check, and Anchor:
+Session Pick, batch Check, Anchor, Edit, and Apply:
 
 ```text
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
