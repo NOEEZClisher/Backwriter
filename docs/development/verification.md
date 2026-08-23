@@ -132,4 +132,8 @@ extent and unadmitted source closure, and anchored/extra-operand rejection.
 Check regressions cover File/Paragraph/Line Current status, stale and missing
 NotCurrent status, unavailable-source status, strict v3 decoding, and rejected
 search/pick/extra forms. They create no CLI Session, binding, JSON, raw, or
-other capability authority.
+other capability authority. Session regressions cover one retained Runtime,
+Search binding and exact indexed address projection, direct Search non-retention,
+copied Search/Anddress bindings, lexer quoting and errors, blank Lines, EOF and
+exit, error continuation and exit precedence, and absence of latest, pipeline,
+or DataStore behavior.

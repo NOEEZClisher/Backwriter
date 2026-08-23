@@ -1,8 +1,9 @@
 # Backwriter CLI V1
 
 Status: Adapter authority. The completed initial slices are the canonical
-`backwriter` executable's one-shot human Search, View, and Check modes only. This
-document follows the Core active documents in the authority-reading order.
+`backwriter` executable's one-shot human Search, View, Check, and initial
+Session modes only. This document follows the Core active documents in the
+authority-reading order.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -23,12 +24,12 @@ that alias is outside this Adapter contract.
 CLI V1 has two intended execution forms:
 
 - One-shot invokes one capability and exits without retaining a result.
-- Session would retain one `WorkspaceRuntime`, live Anchor handles, Core
-  `DataStore`, and explicit CLI-local named values.
+- The initial Session retains one `WorkspaceRuntime` and explicit CLI-local
+  Search/Anddress values until EOF or `exit`.
 
-Only one-shot Search, View, and Check are implemented. Session, `shell`, named
-bindings, all other capabilities, JSON, and raw output are deferred and
-rejected rather than silently accepted.
+One-shot Search, View, and Check plus the initial Session are implemented. Live
+Anchor handles, Core `DataStore`, all other capabilities, JSON, raw output, and
+further Session behavior are deferred and rejected rather than silently accepted.
 
 The intended expression roles remain:
 
@@ -75,8 +76,8 @@ session state, automatic selection, or background process.
   errors only to stderr.
 - `--help` as the sole argument exits `0` and writes usage to stdout.
 
-Unsupported `shell`, capabilities, `--json`, and `--raw` are explicit usage
-errors in this slice. There are no short option aliases.
+Unsupported capabilities, `--json`, and `--raw` are explicit usage errors in
+this slice. There are no short option aliases.
 
 ### Human Search projection
 
@@ -132,34 +133,61 @@ All three are successful Check outcomes. Invalid input is a usage error; Runtime
 Check resource, and stdout errors are execution errors. `check search`,
 `check pick`, and extra operands are usage errors in this slice.
 
+## Implemented initial Session
+
+The Session starts with:
+
+```text
+backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
+```
+
+It opens one Runtime before reading stdin, retains it until EOF or `exit`, and
+prints no prompt. One physical input Line is one expression; blank Lines are
+ignored. Its private lexer splits spaces and tabs, supports a standalone
+double-quoted token with only `\\` and `\"` escapes, and rejects NUL, unmatched
+quotes, and every other quoted escape. It creates no single-quote, comment,
+continuation, interpolation, pipe, or parenthesis grammar.
+
+The completed commands are `search <kind> <query> [scope]`, `let <name> =
+search <kind> <query> [scope]`, `let <name> = @<name>`, `let <name> =
+@<name>[<index>]`, `view anddress @<name>[<index>]`, `check anddress
+@<name>[<index>]`, and `exit`. Direct address bindings may be supplied to View
+or Check without an index. Names are ASCII identifiers and cannot be redefined.
+The only Session values are exact `SearchOutcome` and copied `Anddress` values;
+they are private Adapter memory, not Core DataStore state. Search output is
+written before a `let` binding becomes available; View and Check results are not
+bindable.
+
+Each Session command reuses the completed one-shot Search, View, and Check
+validation, Runtime execution, and human projection. A command error writes to
+stderr and leaves later Lines runnable. Any usage error makes the final process
+status `2`; otherwise execution/resource errors make it `1`; otherwise it is
+`0`. Stdin or stdout failure ends the process with `1`.
+
 ## Deferred CLI V1 authority
 
 The following are intentionally outside the completed initial slice:
 
-- Session command grammar and shell lexical grammar.
-- CLI-local binding ownership, lifetime, and explicit result projection.
 - Anchor handle binding, including `AlreadyLive` binding behavior.
 - One-shot Pick, Anchor, Edit, Apply, and Data commands.
 - JSON schema and the exact scope of raw output.
 
 These require owner decisions before implementation. The high-level intended
-forms remain one-shot capability execution and a Session that can explicitly
-name Search results, View an Anddress or anchored handle, Check an explicit
-input, build an inert Edit, Apply an explicit Edit, and expose Core Data without
-equating CLI-local names with `DataStore`.
+forms remain one-shot capability execution and later Session work that can bind
+anchored handles, build an inert Edit, Apply an explicit Edit, and expose Core
+Data without equating CLI-local names with `DataStore`.
 
-An intended Session must not introduce implicit `latest`, hidden current
-selection, automatic Data storage, automatic Search-to-Pick/View/Edit/Apply
-handoff, automatic Anchor creation, a persistent daemon, watcher, or a Core
-workflow encoded by shell pipelines.
+The initial Session introduces no implicit `latest`, hidden current selection,
+automatic Data storage, automatic Search-to-Pick/View/Edit/Apply handoff,
+automatic Anchor creation, persistent daemon, watcher, or Core workflow encoded
+by shell pipelines.
 
-The intended future Search forms are `search <kind> <query> [scope]`, using
-`--source` and `--subtree` selectors. Future View accepts an input form such as
-an Anddress or anchored handle; Pick receives candidates before a predicate;
-Check receives an explicit input form; Anchor creates or invalidates a
-logical-source association; Edit constructs values; Apply consumes an explicit
-Edit; and Data operates on explicit typed names. None of those spellings are a
-public Core wire or a currently implemented CLI command.
+Search scope selectors and raw Anddress View/Check references are implemented
+in the initial Session. Later Session work may accept anchored View input, Pick
+candidates before a predicate, Check native outcomes, Anchor logical-source
+associations, inert Edit construction, explicit Apply input, and typed Data
+names. None of those spellings are a public Core wire or a currently implemented
+CLI command.
 
 Machine-oriented JSON and exact text raw output, if defined, are Adapter output
 schemas rather than `SearchOutcome`, `PickOutcome`, or Anddress wire authority.

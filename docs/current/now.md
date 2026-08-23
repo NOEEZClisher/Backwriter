@@ -25,10 +25,11 @@ implementation are complete.
 ## CLI Adapter V1 initial slice
 
 The repository includes the canonical `backwriter` CLI Adapter. Its completed
-scope is one-shot human Search, View, and Check over the existing public Runtime
-seams.
-It adds no Core API, wire, workflow, provenance, or retained state. Session,
-binding ownership, all other capabilities, JSON, and raw output remain deferred
+scope is one-shot human Search, View, and Check plus the initial Session over
+the existing public Runtime seams. The Session retains one Runtime and explicit
+CLI-local Search/Anddress bindings only. It adds no Core API, wire, workflow,
+provenance, automatic DataStore use, or retained Core state. All other
+capabilities, JSON, raw output, and further Session behavior remain deferred
 under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
 
 ## Current-only Runtime contract

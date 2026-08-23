@@ -1,7 +1,8 @@
 use std::{
     fs,
+    io::Write,
     path::{Path, PathBuf},
-    process::{Command, Output},
+    process::{Command, Output, Stdio},
 };
 
 use artext::{
@@ -22,6 +23,24 @@ fn run(root: &Path, arguments: &[&str]) -> Output {
         .args(arguments)
         .output()
         .unwrap()
+}
+
+fn run_shell(root: &Path, input: &str) -> Output {
+    let mut child = Command::new(binary())
+        .current_dir(root)
+        .arg("shell")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .as_mut()
+        .unwrap()
+        .write_all(input.as_bytes())
+        .unwrap();
+    child.wait_with_output().unwrap()
 }
 
 fn text(bytes: Vec<u8>) -> String {
@@ -208,7 +227,7 @@ fn syntax_and_unimplemented_forms_are_usage_errors() {
         vec!["search", "line", ""],
         vec!["--workspace", "relative", "search", "line", "needle"],
         vec!["--unknown", "search", "line", "needle"],
-        vec!["shell"],
+        vec!["shell", "extra"],
         vec!["view"],
         vec!["search", "line", "needle", "--json"],
         vec!["search", "line", "needle", "--raw"],
@@ -479,4 +498,102 @@ fn check_rejects_invalid_forms_and_extra_operands() {
         .output()
         .unwrap();
     assert_execution_error(workspace);
+}
+
+#[test]
+fn session_reuses_search_projection_view_and_check_with_exact_bindings() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\nneedle\n");
+
+    let output = run_shell(
+        root.path(),
+        "let hits = search line needle --source note.txt\nlet copied_hits = @hits\nlet second = @copied_hits[1]\nlet copied_second = @second\nview anddress @copied_second\ncheck anddress @hits[1]\nexit\n",
+    );
+    assert!(output.status.success());
+    assert_eq!(
+        output.stdout,
+        b"Found 2\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:1\nneedle\nCurrent\n"
+    );
+    assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn session_bindings_reject_unknown_duplicate_empty_out_of_range_and_type_mismatch() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\n");
+
+    let output = run_shell(
+        root.path(),
+        "let hits = search line needle\nlet malformed =search line needle\nlet hits = @hits\nview anddress @hits\nlet selected = @hits[0]\ncheck anddress @selected[0]\nlet empty = search line absent\nview anddress @empty[0]\nview anddress @missing\nsearch line needle\nexit\n",
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(
+        output.stdout,
+        b"Found 1\n0\tLine\tnote.txt:0\nFound 0\nFound 1\n0\tLine\tnote.txt:0\n"
+    );
+    let stderr = text(output.stderr);
+    assert!(stderr.contains("let requires a standalone = token"));
+    assert!(stderr.contains("binding already exists: hits"));
+    assert!(stderr.contains("Search binding requires an index: hits"));
+    assert!(stderr.contains("Anddress binding cannot be indexed: selected"));
+    assert!(stderr.contains("Search binding is empty: empty"));
+    assert!(stderr.contains("unknown binding: missing"));
+}
+
+#[test]
+fn session_lexer_exit_and_eof_follow_the_initial_grammar() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "a space\nquote: \" and slash \\\n");
+
+    let lexical = run_shell(
+        root.path(),
+        "\n\t \nlet spaced = search line \"a space\"\nlet escaped = search line \"quote: \\\" and slash \\\\\"\nview anddress @escaped[0]\nsearch line \"\"\nsearch line \"bad\\q\"\nsearch line \"unterminated\nsearch line \0\nsearch line \"a space\" | ignored\nsearch line \"a space\"\nexit extra\nsearch line \"a space\"\nexit\nsearch line \"a space\"\n",
+    );
+    assert_eq!(lexical.status.code(), Some(2));
+    assert_eq!(
+        lexical.stdout,
+        b"Found 1\n0\tLine\tnote.txt:0\nFound 1\n0\tLine\tnote.txt:1\nquote: \" and slash \\\nFound 1\n0\tLine\tnote.txt:0\nFound 1\n0\tLine\tnote.txt:0\n"
+    );
+    let stderr = text(lexical.stderr);
+    assert!(stderr.contains("search query is invalid"));
+    assert!(stderr.contains("invalid quoted escape"));
+    assert!(stderr.contains("unmatched quote"));
+    assert!(stderr.contains("Session input must not contain NUL"));
+    assert!(stderr.contains("invalid search option: |"));
+    assert!(stderr.contains("exit accepts no operands"));
+
+    let eof = run_shell(root.path(), "\nsearch line \"a space\"\n");
+    assert!(eof.status.success());
+    assert_eq!(eof.stdout, b"Found 1\n0\tLine\tnote.txt:0\n");
+    assert!(eof.stderr.is_empty());
+}
+
+#[test]
+fn session_preserves_execution_then_usage_exit_precedence_without_latest_state() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\n");
+
+    let execution_only = run_shell(
+        root.path(),
+        "search line needle --source missing.txt\nsearch line needle\n",
+    );
+    assert_eq!(execution_only.status.code(), Some(1));
+    assert_eq!(execution_only.stdout, b"Found 1\n0\tLine\tnote.txt:0\n");
+    assert!(text(execution_only.stderr).contains("workspace source is unavailable"));
+
+    let no_latest = run_shell(root.path(), "search line needle\nview anddress @latest\n");
+    assert_eq!(no_latest.status.code(), Some(2));
+    assert_eq!(no_latest.stdout, b"Found 1\n0\tLine\tnote.txt:0\n");
+    assert!(text(no_latest.stderr).contains("unknown binding: latest"));
+
+    let execution_then_usage = run_shell(
+        root.path(),
+        "search line needle --source missing.txt\nunknown\nsearch line needle\n",
+    );
+    assert_eq!(execution_then_usage.status.code(), Some(2));
+    assert_eq!(
+        execution_then_usage.stdout,
+        b"Found 1\n0\tLine\tnote.txt:0\n"
+    );
+    assert!(text(execution_then_usage.stderr).contains("unsupported Session command: unknown"));
 }
