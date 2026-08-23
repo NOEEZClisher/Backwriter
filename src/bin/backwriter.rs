@@ -1,4 +1,4 @@
-//! One-shot human Search adapter for Backwriter CLI V1.
+//! One-shot human Search and View adapter for Backwriter CLI V1.
 
 use std::{
     env,
@@ -10,15 +10,16 @@ use std::{
 
 use artext::{
     backwriter::{
-        anddress::AnddressTarget,
+        anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator},
         search::{
             SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchScopeEntry, SearchTarget,
         },
+        view::ViewOutcome,
     },
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n\nOnly one-shot human Search is implemented in this slice.";
+const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n\nOnly one-shot human Search and View are implemented in this slice.";
 
 enum CliError {
     Usage(String),
@@ -103,8 +104,9 @@ fn execute() -> Result<(), CliError> {
                     AdmissionRoot::new(path).map_err(|error| CliError::usage(error.to_string()))?,
                 );
             }
-            "search" => break,
-            "shell" | "view" | "pick" | "check" | "anchor" | "edit" | "apply" | "data" => {
+            "search" => return execute_search(arguments, workspace, admissions),
+            "view" => return execute_view(arguments, workspace, admissions),
+            "shell" | "pick" | "check" | "anchor" | "edit" | "apply" | "data" => {
                 return Err(CliError::usage(format!(
                     "{argument} is not implemented in this slice"
                 )));
@@ -123,7 +125,13 @@ fn execute() -> Result<(), CliError> {
         }
         capability = arguments.next();
     }
+}
 
+fn execute_search(
+    mut arguments: impl Iterator<Item = OsString>,
+    workspace: Option<PathBuf>,
+    admissions: Vec<AdmissionRoot>,
+) -> Result<(), CliError> {
     let target = match required_text(&mut arguments, "search kind")?.as_str() {
         "line" => SearchTarget::Line,
         "paragraph" => SearchTarget::Paragraph,
@@ -159,6 +167,51 @@ fn execute() -> Result<(), CliError> {
     } else {
         SearchScope::only(entries).map_err(|error| CliError::usage(error.to_string()))?
     };
+    let runtime = open_runtime(workspace, admissions)?;
+    let outcome = runtime
+        .search(&SearchRequest::new(query, scope, target))
+        .map_err(|error| CliError::execution(error.to_string()))?;
+    write_human(outcome)
+}
+
+fn execute_view(
+    mut arguments: impl Iterator<Item = OsString>,
+    workspace: Option<PathBuf>,
+    admissions: Vec<AdmissionRoot>,
+) -> Result<(), CliError> {
+    let form = required_text(&mut arguments, "view input form")?;
+    if form != "anddress" {
+        if form == "anchored" {
+            return Err(CliError::usage(
+                "view anchored is not implemented in this slice",
+            ));
+        }
+        return Err(CliError::usage("view requires the anddress input form"));
+    }
+    let encoded = required_text(&mut arguments, "view anddress")?;
+    if arguments.next().is_some() {
+        return Err(CliError::usage("view accepts exactly one anddress operand"));
+    }
+    let anddress = match Anddress::decode(encoded.as_bytes()) {
+        Ok(anddress) => anddress,
+        Err(AnddressError::Resource) => {
+            return Err(CliError::execution(
+                "Anddress decoding ran out of resources",
+            ));
+        }
+        Err(error) => return Err(CliError::usage(error.to_string())),
+    };
+    let runtime = open_runtime(workspace, admissions)?;
+    let outcome = runtime
+        .view(&anddress)
+        .map_err(|error| CliError::execution(error.to_string()))?;
+    write_view(outcome)
+}
+
+fn open_runtime(
+    workspace: Option<PathBuf>,
+    mut admissions: Vec<AdmissionRoot>,
+) -> Result<WorkspaceRuntime, CliError> {
     if admissions.is_empty() {
         admissions.push(AdmissionRoot::new(".").expect("dot admission is valid"));
     }
@@ -168,12 +221,8 @@ fn execute() -> Result<(), CliError> {
         Some(path) => path,
         None => env::current_dir().map_err(|error| CliError::execution(error.to_string()))?,
     };
-    let runtime = WorkspaceRuntime::open(&workspace, admission)
-        .map_err(|error| CliError::execution(error.to_string()))?;
-    let outcome = runtime
-        .search(&SearchRequest::new(query, scope, target))
-        .map_err(|error| CliError::execution(error.to_string()))?;
-    write_human(outcome)
+    WorkspaceRuntime::open(&workspace, admission)
+        .map_err(|error| CliError::execution(error.to_string()))
 }
 
 fn utf8(argument: OsString, context: &str) -> Result<String, CliError> {
@@ -219,6 +268,35 @@ fn write_human(outcome: SearchOutcome) -> Result<(), CliError> {
                 Ok(())
             }
         }
+    })();
+    result.map_err(|error| CliError::execution(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::execution(error.to_string()))
+}
+
+fn write_view(outcome: ViewOutcome) -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    let result = (|| -> io::Result<()> {
+        match outcome {
+            ViewOutcome::File { text } | ViewOutcome::Paragraph { text, .. } => {
+                stdout.write_all(text.as_bytes())?;
+            }
+            ViewOutcome::Line {
+                content,
+                terminator,
+                ..
+            } => {
+                stdout.write_all(content.as_bytes())?;
+                stdout.write_all(match terminator {
+                    LineTerminator::None => b"",
+                    LineTerminator::Lf => b"\n",
+                    LineTerminator::Cr => b"\r",
+                    LineTerminator::Crlf => b"\r\n",
+                })?;
+            }
+        }
+        Ok(())
     })();
     result.map_err(|error| CliError::execution(error.to_string()))?;
     stdout

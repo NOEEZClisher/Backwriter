@@ -126,5 +126,7 @@ default and repeated admission, Line/Paragraph/File Search, repeated source and
 subtree scope selectors, Core scope rejection, deterministic human output,
 space-preserving query argv, raw-Anddress/workspace-coordinate omission, Empty,
 usage versus Runtime execution exits, unsupported deferred forms, and strict
-stdout/stderr separation. They create no CLI Session, binding, JSON, raw, or
-other capability authority.
+stdout/stderr separation. View regressions cover v3 decode, File/Paragraph/Line
+exact bytes, None/LF/CR/CRLF terminators, large no-EOL output, stale/wrong-
+extent and unadmitted source closure, and anchored/extra-operand rejection.
+They create no CLI Session, binding, JSON, raw, or other capability authority.

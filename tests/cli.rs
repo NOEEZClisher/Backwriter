@@ -4,6 +4,14 @@ use std::{
     process::{Command, Output},
 };
 
+use artext::{
+    backwriter::{
+        anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural},
+        search::{SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget},
+    },
+    runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
+};
+
 fn binary() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_backwriter"))
 }
@@ -24,6 +32,33 @@ fn write(root: &Path, path: &str, content: &str) {
     let path = root.join(path);
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, content).unwrap();
+}
+
+fn view_operand(root: &Path, path: &str, target: AnddressTarget) -> String {
+    let workspace = WorkspaceRuntime::open(
+        root,
+        WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+    )
+    .unwrap();
+    let request = SearchRequest::new(
+        SearchQuery::new("coordinate").unwrap(),
+        SearchScope::all_admitted(),
+        SearchTarget::File,
+    );
+    let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
+        panic!("coordinate source");
+    };
+    String::from_utf8(
+        Anddress {
+            version: ANDDRESS_VERSION.to_owned(),
+            workspace_coordinate: anddresses[0].workspace_coordinate.clone(),
+            logical_path: path.to_owned(),
+            target,
+        }
+        .encode()
+        .unwrap(),
+    )
+    .unwrap()
 }
 
 fn assert_usage(output: Output) {
@@ -194,4 +229,146 @@ fn unavailable_workspace_and_source_are_execution_errors() {
         root.path(),
         &["search", "line", "needle", "--source", "missing.txt"],
     ));
+}
+
+#[test]
+fn view_file_paragraph_and_line_preserve_exact_human_bytes() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    let source = "file\n\nparagraph\nline\n";
+    write(root.path(), "note.txt", source);
+
+    let file = view_operand(root.path(), "note.txt", AnddressTarget::File);
+    let file_output = run(root.path(), &["view", "anddress", &file]);
+    assert!(file_output.status.success());
+    assert_eq!(file_output.stdout, source.as_bytes());
+    assert!(file_output.stderr.is_empty());
+
+    let paragraph = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Paragraph {
+            ordinal: Natural::one(),
+        },
+    );
+    let paragraph_output = run(root.path(), &["view", "anddress", &paragraph]);
+    assert!(paragraph_output.status.success());
+    assert_eq!(paragraph_output.stdout, b"paragraph\nline\n");
+    assert!(paragraph_output.stderr.is_empty());
+
+    let line = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::parse("3").unwrap(),
+            exact_extent: "line\n".to_owned(),
+        },
+    );
+    let line_output = run(root.path(), &["view", "anddress", &line]);
+    assert!(line_output.status.success());
+    assert_eq!(line_output.stdout, b"line\n");
+    assert!(!text(line_output.stdout).contains("workspaceCoordinate"));
+    assert!(line_output.stderr.is_empty());
+}
+
+#[test]
+fn view_line_terminators_and_large_no_eol_are_exact() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "terminators.txt", "lf\ncr\rcrlf\r\nnone");
+
+    for (ordinal, exact_extent) in [
+        ("0", "lf\n"),
+        ("1", "cr\r"),
+        ("2", "crlf\r\n"),
+        ("3", "none"),
+    ] {
+        let operand = view_operand(
+            root.path(),
+            "terminators.txt",
+            AnddressTarget::Line {
+                ordinal: Natural::parse(ordinal).unwrap(),
+                exact_extent: exact_extent.to_owned(),
+            },
+        );
+        let output = run(root.path(), &["view", "anddress", &operand]);
+        assert!(output.status.success());
+        assert_eq!(output.stdout, exact_extent.as_bytes());
+        assert!(output.stderr.is_empty());
+    }
+
+    let large_line = format!("large-{}-tail", "x".repeat(20_000));
+    let large_source = format!("coordinate\n\n{large_line}");
+    write(root.path(), "large.txt", &large_source);
+    let file = view_operand(root.path(), "large.txt", AnddressTarget::File);
+    let file_output = run(root.path(), &["view", "anddress", &file]);
+    assert!(file_output.status.success());
+    assert_eq!(file_output.stdout, large_source.as_bytes());
+    let line = view_operand(
+        root.path(),
+        "large.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::parse("2").unwrap(),
+            exact_extent: large_line.clone(),
+        },
+    );
+    let line_output = run(root.path(), &["view", "anddress", &line]);
+    assert!(line_output.status.success());
+    assert_eq!(line_output.stdout, large_line.as_bytes());
+    assert!(line_output.stderr.is_empty());
+}
+
+#[test]
+fn view_rejects_invalid_and_unavailable_inputs_at_the_right_exit() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "actual\n");
+
+    assert_usage(run(root.path(), &["view", "anddress", "{"]));
+    assert_usage(run(
+        root.path(),
+        &["view", "anddress", r#"{"version":"old","kind":null}"#],
+    ));
+    let wrong_extent = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::zero(),
+            exact_extent: "wrong\n".to_owned(),
+        },
+    );
+    assert_execution_error(run(root.path(), &["view", "anddress", &wrong_extent]));
+    let stale = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::zero(),
+            exact_extent: "actual\n".to_owned(),
+        },
+    );
+    write(root.path(), "note.txt", "changed\n");
+    assert_execution_error(run(root.path(), &["view", "anddress", &stale]));
+
+    let admitted_root = tempfile::tempdir().unwrap();
+    write(
+        admitted_root.path(),
+        "admitted/coordinate.txt",
+        "coordinate\n",
+    );
+    write(admitted_root.path(), "other.txt", "other\n");
+    let unadmitted = view_operand(admitted_root.path(), "other.txt", AnddressTarget::File);
+    assert_execution_error(run(
+        admitted_root.path(),
+        &["--admit", "admitted", "view", "anddress", &unadmitted],
+    ));
+}
+
+#[test]
+fn view_rejects_anchored_and_extra_operands() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    let operand = view_operand(root.path(), "coordinate.txt", AnddressTarget::File);
+
+    assert_usage(run(root.path(), &["view", "anchored", "handle"]));
+    assert_usage(run(root.path(), &["view", "anddress", &operand, "extra"]));
 }

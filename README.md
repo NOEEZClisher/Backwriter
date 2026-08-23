@@ -6,8 +6,8 @@ addresses without turning source history or editor state into Core identity.
 
 The Core capability inventory is Search, View, Pick, Anchor, Check, Edit,
 Apply, and Data. The repository currently provides their Rust Core/Runtime
-surfaces and the canonical `backwriter` executable's one-shot human Search
-mode.
+surfaces and the canonical `backwriter` executable's one-shot human Search and
+View modes.
 
 ## Quick start
 
@@ -26,18 +26,20 @@ sources.
 
 ## Current CLI scope
 
-`backwriter` currently implements only one-shot human Search:
+`backwriter` currently implements one-shot human Search and View:
 
 ```text
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
+backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+    view anddress <encoded-v3-Anddress>
 ```
 
-The CLI preserves Core Search validation and deterministic result order. It
-does not expose raw Anddress values or workspace coordinates in human output.
-CLI Session, shell grammar, View, Pick, Check, Anchor, Edit, Apply, Data, JSON,
-and raw output remain deferred.
+The CLI preserves Core Search validation and deterministic result order. View
+decodes a v3 Anddress and writes only its exact selected text. Human output does
+not expose address metadata. CLI Session, shell grammar, Pick, Check, Anchor,
+Edit, Apply, Data, JSON, and raw output remain deferred.
 
 ## Scope
 

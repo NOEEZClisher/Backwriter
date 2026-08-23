@@ -15,10 +15,10 @@ implementation are complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
-implemented Backwriter CLI V1 one-shot human Search Adapter. Native wire,
+implemented Backwriter CLI V1 one-shot human Search and View Adapter. Native wire,
 AI/Context/Profile, client, MCP, product integration, and external consumer
 work remain outside that cutline. The CLI's Session and every capability other
-than human Search remain deferred Adapter work.
+than human Search and View remain deferred Adapter work.
 
 ## Current structure only
 

@@ -1,8 +1,8 @@
 # Backwriter CLI V1
 
-Status: Adapter authority. The completed initial slice is the canonical
-`backwriter` executable's one-shot human Search mode only. This document follows
-the Core active documents in the authority-reading order.
+Status: Adapter authority. The completed initial slices are the canonical
+`backwriter` executable's one-shot human Search and View modes only. This
+document follows the Core active documents in the authority-reading order.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -26,9 +26,9 @@ CLI V1 has two intended execution forms:
 - Session would retain one `WorkspaceRuntime`, live Anchor handles, Core
   `DataStore`, and explicit CLI-local named values.
 
-Only one-shot Search is implemented. Session, `shell`, named bindings, all
-other capabilities, JSON, and raw output are deferred and rejected rather than
-silently accepted.
+Only one-shot Search and View are implemented. Session, `shell`, named
+bindings, all other capabilities, JSON, and raw output are deferred and
+rejected rather than silently accepted.
 
 The intended expression roles remain:
 
@@ -92,6 +92,27 @@ existing deterministic order. The human projection never modifies an internal
 `SearchOutcome` or `Anddress`; it only omits raw Anddress, workspace coordinate,
 and complete Line `ExactExtent` from display. Preview is not implemented.
 
+## Implemented one-shot View
+
+The complete syntax for this slice is:
+
+```text
+backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+    view anddress <encoded-v3-Anddress>
+```
+
+View reuses the same global workspace and admission parsing as Search. Its
+operand is exactly one argv value decoded by `Anddress::decode`; it introduces
+no CLI address schema, alias, shorthand, or wrapper. Invalid encoding, version,
+or address is a usage error. Resource, Runtime, source, View, and stdout errors
+are execution errors. `view anchored` and extra operands are explicit usage
+errors in this slice.
+
+Human View output contains only the selected target's exact text: File and
+Paragraph write their text unchanged, and Line writes its content followed by
+its exact None/LF/CR/CRLF terminator. It adds no header, automatic newline,
+preview, truncation, raw Anddress, or related File/Paragraph address.
+
 ## Deferred CLI V1 authority
 
 The following are intentionally outside the completed initial slice:
@@ -99,7 +120,7 @@ The following are intentionally outside the completed initial slice:
 - Session command grammar and shell lexical grammar.
 - CLI-local binding ownership, lifetime, and explicit result projection.
 - Anchor handle binding, including `AlreadyLive` binding behavior.
-- One-shot View, Pick, Check, Anchor, Edit, Apply, and Data commands.
+- One-shot Pick, Check, Anchor, Edit, Apply, and Data commands.
 - JSON schema and the exact scope of raw output.
 
 These require owner decisions before implementation. The high-level intended
