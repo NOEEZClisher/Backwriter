@@ -39,6 +39,13 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
+## Completed: CLI V1 initial Search Adapter
+
+The canonical `backwriter` executable implements only one-shot human Search.
+It directly reuses Core Search validation and the public Runtime seam. Session,
+bindings, other capabilities, JSON, and raw output remain deferred Adapter
+decisions; CLI syntax creates no Core workflow or wire authority.
+
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a separate registry,
 issuance lifecycle, lookup/reuse state, durable identity, or global identity.

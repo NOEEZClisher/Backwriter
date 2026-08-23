@@ -119,3 +119,12 @@ Run after Rust or Runtime behavior changes:
 Before handoff, verify the diff and index, confirm repository-root `.artext` is
 absent and untracked, preserve historical task/history files, and leave the
 index empty.
+
+CLI process regressions cover the canonical `backwriter` binary without a `bw`
+binary, `--help`, default-current-directory and explicit absolute workspaces,
+default and repeated admission, Line/Paragraph/File Search, repeated source and
+subtree scope selectors, Core scope rejection, deterministic human output,
+space-preserving query argv, raw-Anddress/workspace-coordinate omission, Empty,
+usage versus Runtime execution exits, unsupported deferred forms, and strict
+stdout/stderr separation. They create no CLI Session, binding, JSON, raw, or
+other capability authority.

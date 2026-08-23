@@ -190,8 +190,9 @@ input form, and Data native namespace remain Kind slots. A target-kind
 constraint inside a Pick predicate is part of the Qualifier, not a top-level
 Kind. Operand and Payload describe roles rather than types: the same
 `SearchOutcome` is an Operand to Check and a Payload to Data Store. Search scope
-retains all-admitted versus subtree/source selector meaning, but its token syntax
-remains deferred.
+retains all-admitted versus subtree/source selector meaning. The initial CLI V1
+Search token syntax is Adapter authority in the CLI document and changes no Core
+method, type, validation, or workflow contract.
 
 This ordering changes none of the Rust method, type, variant, field, or
 argument names or order; validation/error priority; result ordering; Anddress
@@ -385,9 +386,9 @@ Search or Pick, refresh View, retarget, create an Anddress, mutate Anchor or
 Workspace state, or otherwise mutate Core state. It introduces no `CheckInput`,
 request, builder, disposition enum, public trait, state, or store. Anchedress
 values, in-place updates of stored Check outputs, and their associated RAM commit
-semantics remain deferred. Any Adapter-facing Check spelling remains external
+semantics remain deferred. Any Adapter-facing Check spelling remains Adapter
 syntax rather than storage syntax or Data authority. Wire remains outside the
-Core cutline, as does CLI work.
+Core cutline; Check CLI work remains deferred beyond the initial Search Adapter.
 
 ## Data V1 public authority
 
