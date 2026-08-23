@@ -39,11 +39,11 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
-## Completed: CLI V1 human and JSON Search/View, human Check, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data Adapter
+## Completed: CLI V1 human and JSON Search/View/Check, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data Adapter
 
-The canonical `backwriter` executable implements one-shot human and JSON Search
-and View, human Check plus Session Pick, batch Check, Anchor, Edit, Apply,
-result binding, and Data. JSON Search and View stream compact Adapter envelopes
+The canonical `backwriter` executable implements one-shot human and JSON Search,
+View, and Check plus Session Pick, batch Check, Anchor, Edit, Apply, result
+binding, and Data. JSON Search, View, and Check stream compact Adapter envelopes
 with exact v3 Anddress objects where applicable and create no Core wire. The
 Session owns one Runtime and
 one explicit caller-owned `DataStore`

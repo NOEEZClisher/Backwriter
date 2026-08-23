@@ -142,6 +142,13 @@ terminator including a separator Line's `paragraph:null`; Unicode and JSON
 escaping; unchanged human projection; rejected duplicate/late/anchored/extra
 forms; unavailable stdout/stderr closure; and a structural audit that excludes
 a JSON Value, ViewOutcome clone, or result collection in the production writer.
+One-shot Check JSON regressions cover exact compact Current, NotCurrent, and
+Unavailable envelopes; direct v3 filtered-value re-decoding; File/Paragraph/Line
+inputs; missing-source NotCurrent versus invalid-source Unavailable; unchanged
+human statuses; rejected duplicate/late/search/pick/extra/invalid forms; and
+structural audits for shared fail-closed status classification, no JSON Value,
+no CheckOutcome clone or collection in the JSON writer, and removed display-only
+CheckOutcome clones at Session/Data writer callsites.
 Check regressions cover File/Paragraph/Line Current status, stale and missing
 NotCurrent status, unavailable-source status, strict v3 decoding, and rejected
 search/pick/extra forms. They create no CLI Session, binding, JSON, raw, or

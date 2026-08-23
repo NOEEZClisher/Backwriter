@@ -1,4 +1,4 @@
-//! Human and JSON Search/View, human Check, and Session adapter for Backwriter CLI V1.
+//! Human and JSON Search/View/Check and Session adapter for Backwriter CLI V1.
 
 use std::{
     env,
@@ -25,7 +25,7 @@ use artext::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human and JSON Search and View, human Check, plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human and JSON Search, View, and Check, plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 enum CliError {
     Usage(String),
@@ -132,17 +132,13 @@ fn execute() -> Result<ExitCode, CliError> {
                     .map(|()| ExitCode::SUCCESS);
             }
             "check" => {
-                if json {
-                    return Err(CliError::usage(
-                        "--json is supported only for Search or View",
-                    ));
-                }
-                return execute_check(arguments, workspace, admissions).map(|()| ExitCode::SUCCESS);
+                return execute_check(arguments, workspace, admissions, json)
+                    .map(|()| ExitCode::SUCCESS);
             }
             "shell" => {
                 if json {
                     return Err(CliError::usage(
-                        "--json is supported only for Search or View",
+                        "--json is supported only for Search, View, or Check",
                     ));
                 }
                 if arguments.next().is_some() {
@@ -153,7 +149,7 @@ fn execute() -> Result<ExitCode, CliError> {
             "pick" | "anchor" | "edit" | "apply" | "data" => {
                 if json {
                     return Err(CliError::usage(
-                        "--json is supported only for Search or View",
+                        "--json is supported only for Search, View, or Check",
                     ));
                 }
                 return Err(CliError::usage(format!(
@@ -268,6 +264,7 @@ fn execute_check(
     mut arguments: impl Iterator<Item = OsString>,
     workspace: Option<PathBuf>,
     admissions: Vec<AdmissionRoot>,
+    json: bool,
 ) -> Result<(), CliError> {
     let form = required_text(&mut arguments, "check input form")?;
     if form != "anddress" {
@@ -287,7 +284,11 @@ fn execute_check(
     let anddress = decode_anddress(encoded)?;
     let runtime = open_runtime(workspace, admissions)?;
     let outcome = run_check(&runtime, anddress)?;
-    write_check(outcome)
+    if json {
+        write_check_json(&outcome)
+    } else {
+        write_check(&outcome)
+    }
 }
 
 fn run_search(
@@ -583,23 +584,63 @@ fn write_view_json(outcome: ViewOutcome) -> Result<(), CliError> {
         .map_err(|error| CliError::stream(error.to_string()))
 }
 
-fn write_check(outcome: CheckOutcome<Option<Anddress>>) -> Result<(), CliError> {
-    let filtered = outcome.filtered.is_some();
-    let report = outcome.report;
+fn raw_check_status(outcome: &CheckOutcome<Option<Anddress>>) -> Result<&'static str, CliError> {
     let status = match (
-        filtered,
-        report.current_count(),
-        report.removed_count(),
-        report.unavailable_count(),
-        report.checked_count(),
+        outcome.filtered.is_some(),
+        outcome.report.current_count(),
+        outcome.report.removed_count(),
+        outcome.report.unavailable_count(),
+        outcome.report.checked_count(),
     ) {
         (true, 1, 0, 0, 1) => "Current",
         (false, 0, 1, 0, 1) => "NotCurrent",
         (true, 0, 0, 1, 1) => "Unavailable",
         _ => return Err(CliError::execution("inconsistent raw Check report")),
     };
+    Ok(status)
+}
+
+fn write_check(outcome: &CheckOutcome<Option<Anddress>>) -> Result<(), CliError> {
+    let status = raw_check_status(outcome)?;
     let mut stdout = BufWriter::new(io::stdout().lock());
     writeln!(stdout, "{status}").map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
+}
+
+fn write_check_json(outcome: &CheckOutcome<Option<Anddress>>) -> Result<(), CliError> {
+    let status = match raw_check_status(outcome)? {
+        "Current" => "current",
+        "NotCurrent" => "not-current",
+        "Unavailable" => "unavailable",
+        _ => unreachable!(),
+    };
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    stdout
+        .write_all(b"{\"schema\":\"backwriter.cli.check.v1\",\"status\":\"")
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .write_all(status.as_bytes())
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .write_all(b"\",\"filtered\":")
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    if let Some(filtered) = &outcome.filtered {
+        let encoded = filtered
+            .encode()
+            .map_err(|error| CliError::execution(error.to_string()))?;
+        stdout
+            .write_all(&encoded)
+            .map_err(|error| CliError::stream(error.to_string()))?;
+    } else {
+        stdout
+            .write_all(b"null")
+            .map_err(|error| CliError::stream(error.to_string()))?;
+    }
+    stdout
+        .write_all(b"}\n")
+        .map_err(|error| CliError::stream(error.to_string()))?;
     stdout
         .flush()
         .map_err(|error| CliError::stream(error.to_string()))
@@ -828,7 +869,7 @@ fn execute_let(
                     ));
                 }
                 let outcome = run_check(runtime, resolve_anddress(bindings, &tokens[5])?)?;
-                write_check(outcome.clone())?;
+                write_check(&outcome)?;
                 store_binding(bindings, name, SessionValue::CheckAnddress(outcome))
             }
             "search" | "pick" => {
@@ -1077,7 +1118,7 @@ fn write_data_value(value: &SessionValue) -> Result<(), CliError> {
         SessionValue::Search(outcome) => write_human(outcome),
         SessionValue::Pick(outcome) => write_pick(outcome),
         SessionValue::View(outcome) => write_view(outcome.clone()),
-        SessionValue::CheckAnddress(outcome) => write_check(outcome.clone()),
+        SessionValue::CheckAnddress(outcome) => write_check(outcome),
         SessionValue::CheckSearch(outcome) => write_batch_check(outcome.report.clone()),
         SessionValue::CheckPick(outcome) => write_batch_check(outcome.report.clone()),
         _ => Err(CliError::usage("not a Data value")),
@@ -1591,7 +1632,7 @@ fn execute_session_check(
         "anddress" => {
             session_anddress_form(tokens, "check")?;
             let anddress = resolve_anddress(bindings, &tokens[2])?;
-            write_check(run_check(runtime, anddress)?)
+            write_check(&run_check(runtime, anddress)?)
         }
         "search" | "pick" => {
             if tokens.len() != 3 {

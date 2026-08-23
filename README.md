@@ -7,7 +7,7 @@ addresses without turning source history or editor state into Core identity.
 The Core capability inventory is Search, View, Pick, Anchor, Check, Edit,
 Apply, and Data. The repository currently provides their Rust Core/Runtime
 surfaces and the canonical `backwriter` executable's one-shot human and JSON
-Search/View, human Check, Session Pick, batch Check, Anchor, Edit, Apply,
+Search/View/Check, Session Pick, batch Check, Anchor, Edit, Apply,
 result-binding, explicit Data modes.
 
 ## Quick start
@@ -27,8 +27,8 @@ sources.
 
 ## Current CLI scope
 
-`backwriter` currently implements one-shot human or JSON Search and View,
-human Check, and Session Pick, batch Check, Anchor, Edit, Apply, and Data:
+`backwriter` currently implements one-shot human or JSON Search, View, and
+Check, plus Session Pick, batch Check, Anchor, Edit, Apply, and Data:
 
 ```text
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
@@ -39,6 +39,8 @@ backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     view anddress <encoded-v3-Anddress>
+backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+    check anddress <encoded-v3-Anddress>
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     view anddress <encoded-v3-Anddress>
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
@@ -48,8 +50,8 @@ backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 
 The CLI preserves Core Search validation and deterministic result order. View
 decodes a v3 Anddress and writes only its exact selected text. Check decodes one
-v3 Anddress and writes only `Current`, `NotCurrent`, or `Unavailable`. Search
-and View `--json` write one compact Adapter object with exact embedded v3
+v3 Anddress and writes only `Current`, `NotCurrent`, or `Unavailable`. Search,
+View, and Check `--json` write one compact Adapter object with exact embedded v3
 Anddress objects where applicable; each is an Adapter schema, not a Core wire.
 Human output does not expose address metadata.
 The Session holds one Runtime until EOF

@@ -8,6 +8,7 @@ use std::{
 use artext::{
     backwriter::{
         anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, LineTerminator, Natural},
+        check::CheckOutcome,
         search::{SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget},
         view::ViewOutcome,
     },
@@ -141,6 +142,52 @@ fn assert_check_status(output: Output, status: &str) {
     assert!(output.status.success());
     assert_eq!(output.stdout, format!("{status}\n").as_bytes());
     assert!(output.stderr.is_empty());
+}
+
+fn raw_check_status(outcome: &CheckOutcome<Option<Anddress>>) -> &'static str {
+    match (
+        outcome.filtered.is_some(),
+        outcome.report.current_count(),
+        outcome.report.removed_count(),
+        outcome.report.unavailable_count(),
+        outcome.report.checked_count(),
+    ) {
+        (true, 1, 0, 0, 1) => "current",
+        (false, 0, 1, 0, 1) => "not-current",
+        (true, 0, 0, 1, 1) => "unavailable",
+        _ => panic!("inconsistent raw Check report"),
+    }
+}
+
+fn expected_check_json(outcome: &CheckOutcome<Option<Anddress>>) -> Vec<u8> {
+    let mut output = b"{\"schema\":\"backwriter.cli.check.v1\",\"status\":\"".to_vec();
+    output.extend_from_slice(raw_check_status(outcome).as_bytes());
+    output.extend_from_slice(b"\",\"filtered\":");
+    if let Some(filtered) = &outcome.filtered {
+        output.extend_from_slice(&filtered.encode().unwrap());
+    } else {
+        output.extend_from_slice(b"null");
+    }
+    output.extend_from_slice(b"}\n");
+    output
+}
+
+fn assert_check_json(output: Output, expected: &CheckOutcome<Option<Anddress>>, input: &Anddress) {
+    assert!(output.status.success());
+    assert_eq!(output.stdout, expected_check_json(expected));
+    assert!(output.stderr.is_empty());
+
+    let document: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(document["schema"], "backwriter.cli.check.v1");
+    assert_eq!(document["status"], raw_check_status(expected));
+    match &expected.filtered {
+        Some(filtered) => {
+            let encoded = serde_json::to_vec(&document["filtered"]).unwrap();
+            assert_eq!(Anddress::decode(&encoded).unwrap(), *filtered);
+            assert_eq!(filtered, input);
+        }
+        None => assert!(document["filtered"].is_null()),
+    }
 }
 
 fn expected_search_json(outcome: &SearchOutcome) -> Vec<u8> {
@@ -315,6 +362,7 @@ fn canonical_binary_help_and_default_workspace_search() {
     assert!(help_stdout.starts_with("Usage:\n  backwriter "));
     assert!(help_stdout.contains("[--json] search"));
     assert!(help_stdout.contains("[--json] view"));
+    assert!(help_stdout.contains("[--json] check"));
     assert!(help.stderr.is_empty());
 }
 
@@ -916,6 +964,104 @@ fn view_rejects_anchored_and_extra_operands() {
 
     assert_usage(run(root.path(), &["view", "anchored", "handle"]));
     assert_usage(run(root.path(), &["view", "anddress", &operand, "extra"]));
+}
+
+#[test]
+fn one_shot_check_json_preserves_raw_status_and_filtered_v3_values() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "file\n\nparagraph\nline\n");
+
+    let cases = [
+        view_operand(root.path(), "note.txt", AnddressTarget::File),
+        view_operand(
+            root.path(),
+            "note.txt",
+            AnddressTarget::Paragraph {
+                ordinal: Natural::one(),
+            },
+        ),
+        view_operand(
+            root.path(),
+            "note.txt",
+            AnddressTarget::Line {
+                ordinal: Natural::parse("3").unwrap(),
+                exact_extent: "line\n".to_owned(),
+            },
+        ),
+        view_operand(root.path(), "missing.txt", AnddressTarget::File),
+        view_operand(root.path(), "broken.txt", AnddressTarget::File),
+    ];
+    write(root.path(), "broken.txt", "broken\0");
+
+    for operand in cases {
+        let input = Anddress::decode(operand.as_bytes()).unwrap();
+        let workspace = WorkspaceRuntime::open(
+            root.path(),
+            WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+        )
+        .unwrap();
+        let expected = workspace.check(input.clone()).unwrap();
+
+        assert_check_json(
+            run(root.path(), &["--json", "check", "anddress", &operand]),
+            &expected,
+            &input,
+        );
+        let human_status = match raw_check_status(&expected) {
+            "current" => "Current",
+            "not-current" => "NotCurrent",
+            "unavailable" => "Unavailable",
+            _ => unreachable!(),
+        };
+        assert_check_status(
+            run(root.path(), &["check", "anddress", &operand]),
+            human_status,
+        );
+    }
+}
+
+#[test]
+fn one_shot_check_json_rejects_invalid_forms_and_keeps_fail_closed_writer() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    let operand = view_operand(root.path(), "coordinate.txt", AnddressTarget::File);
+
+    assert_usage(run(
+        root.path(),
+        &["--json", "--json", "check", "anddress", &operand],
+    ));
+    assert_usage(run(root.path(), &["check", "anddress", &operand, "--json"]));
+    assert_usage(run(root.path(), &["--json", "check", "search", "value"]));
+    assert_usage(run(root.path(), &["--json", "check", "pick", "value"]));
+    assert_usage(run(
+        root.path(),
+        &["--json", "check", "anddress", &operand, "extra"],
+    ));
+    assert_usage(run(root.path(), &["--json", "check", "anddress", "{"]));
+
+    let source = include_str!("../src/bin/backwriter.rs");
+    let status = source
+        .split("fn raw_check_status")
+        .nth(1)
+        .unwrap()
+        .split("fn write_check")
+        .next()
+        .unwrap();
+    assert!(status.contains("inconsistent raw Check report"));
+    let writer = source
+        .split("fn write_check_json")
+        .nth(1)
+        .unwrap()
+        .split("enum SessionValue")
+        .next()
+        .unwrap();
+    assert!(writer.contains("raw_check_status(outcome)?"));
+    assert!(!writer.contains("Value"));
+    assert!(!writer.contains(".clone()"));
+    assert!(!writer.contains("collect("));
+    assert!(!writer.contains("Vec<CheckOutcome"));
+    assert!(!source.contains("write_check(outcome.clone())"));
 }
 
 #[test]

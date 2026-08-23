@@ -1,8 +1,8 @@
 # Backwriter CLI V1
 
 Status: Adapter authority. The completed slices are the canonical `backwriter`
-executable's one-shot human and JSON Search/View, human Check, Session Pick,
-batch Check, Anchor, Edit, Apply, result-binding, and Data modes only. This
+executable's one-shot human and JSON Search/View/Check, Session Pick, batch
+Check, Anchor, Edit, Apply, result-binding, and Data modes only. This
 document follows the Core active documents in the
 authority-reading order.
 
@@ -29,8 +29,8 @@ CLI V1 has two intended execution forms:
   `DataStore`, and CLI-local Search/Pick/Anddress/Edit/View/Check values plus
   non-aliasing owning Anchedress handles until EOF or `exit`.
 
-One-shot human and JSON Search and View, human Check plus Session Pick, batch
-Check, Anchor, Edit, Apply, result binding, and explicit typed Data are
+One-shot human and JSON Search, View, and Check plus Session Pick, batch Check,
+Anchor, Edit, Apply, result binding, and explicit typed Data are
 implemented.
 One-shot Data and Anchor are intentionally unsupported because their DataStore
 and live-handle contracts require Session lifetime. One-shot Pick, batch Check,
@@ -60,6 +60,8 @@ backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
 backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     view anddress <encoded-v3-Anddress>
+backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+    check anddress <encoded-v3-Anddress>
 ```
 
 The default workspace is the process current working directory. An explicit
@@ -70,7 +72,7 @@ the CLI does not canonicalize it or bypass Runtime root and symlink checks.
 single admission root is `.`. `--source` and `--subtree` are repeatable only
 after the query. With no scope selector, Search uses `AllAdmitted`.
 
-`--json` is an optional global Search/View-only flag. It appears before the
+`--json` is an optional global Search/View/Check-only flag. It appears before the
 capability, may appear once, and can occur in any order among `--workspace` and
 `--admit`. Duplicate or post-capability use is a usage error. Session and every
 other one-shot capability reject it. `--raw` remains deferred and rejected.
@@ -194,6 +196,25 @@ the one-input Check report exactly and never display an address or report member
 All three are successful Check outcomes. Invalid input is a usage error; Runtime,
 Check resource, and stdout errors are execution errors. One-shot `check search`,
 `check pick`, and extra operands are usage errors in this slice.
+
+### JSON Check projection
+
+With the global `--json` flag, Check decodes one v3 Anddress, calls the existing
+Runtime Check seam once, and writes exactly one compact UTF-8 JSON value followed
+by one LF. Its schema is Adapter-only, not a Core wire. Its fixed key orders are:
+
+```json
+{"schema":"backwriter.cli.check.v1","status":"current","filtered":<exact-v3-Anddress-object>}
+{"schema":"backwriter.cli.check.v1","status":"not-current","filtered":null}
+{"schema":"backwriter.cli.check.v1","status":"unavailable","filtered":<exact-v3-Anddress-object>}
+```
+
+The JSON and human writers share the existing raw one-input Check-report
+classification. `current` and `unavailable` contain the exact existing filtered
+v3 `Anddress::encode()` object; `not-current` contains only `filtered:null`.
+An inconsistent report/filtered combination is an execution error before either
+writer emits output. The writer keeps no JSON `Value`, cloned `CheckOutcome`, or
+result collection. The human Check projection is unchanged.
 
 ## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 
@@ -329,7 +350,7 @@ The following are intentionally outside the completed initial slice:
   handle lifetime.
 - One-shot Pick, batch Check, Edit, and Apply, pending collection or Edit
   transport schema authority.
-- Raw output and any JSON form other than one-shot Search or View.
+- Raw output and any JSON form other than one-shot Search, View, or Check.
 
 These require owner decisions before implementation. The high-level intended
 form remains one-shot capability execution without equating CLI-local names with
@@ -346,6 +367,6 @@ and Anchor logical-source invalidation are implemented in Session. The explicit
 Edit, Apply, result-binding, and typed Data forms remain Adapter syntax only;
 none is a public Core wire or a new Core workflow.
 
-Machine-oriented JSON other than the completed Search/View schemas, and exact
+Machine-oriented JSON other than the completed Search/View/Check schemas, and exact
 text raw output if defined, are Adapter output schemas rather than
-`SearchOutcome`, `PickOutcome`, `ViewOutcome`, or Anddress wire authority.
+`SearchOutcome`, `PickOutcome`, `ViewOutcome`, `CheckOutcome`, or Anddress wire authority.
