@@ -149,6 +149,11 @@ human statuses; rejected duplicate/late/search/pick/extra/invalid forms; and
 structural audits for shared fail-closed status classification, no JSON Value,
 no CheckOutcome clone or collection in the JSON writer, and removed display-only
 CheckOutcome clones at Session/Data writer callsites.
+One-shot raw View regressions cover exact default-human equality for File,
+Paragraph, Line, Unicode, every terminator, and large no-EOL output; admitted
+global-option order; stale/invalid closure; rejected duplicate/mixed/late flags
+and non-View raw forms; and structural absence of a raw writer or the retired
+global JSON bool.
 Check regressions cover File/Paragraph/Line Current status, stale and missing
 NotCurrent status, unavailable-source status, strict v3 decoding, and rejected
 search/pick/extra forms. They create no CLI Session, binding, JSON, raw, or

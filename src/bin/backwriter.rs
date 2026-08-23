@@ -25,12 +25,19 @@ use artext::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human and JSON Search, View, and Check, plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human and JSON Search, View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 enum CliError {
     Usage(String),
     Execution(String),
     Stream(String),
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum OutputMode {
+    Human,
+    Json,
+    Raw,
 }
 
 impl CliError {
@@ -90,7 +97,7 @@ fn execute() -> Result<ExitCode, CliError> {
 
     let mut workspace = None;
     let mut admissions = Vec::new();
-    let mut json = false;
+    let mut output = OutputMode::Human;
     let mut capability = first;
     loop {
         let Some(argument) = capability else {
@@ -118,28 +125,32 @@ fn execute() -> Result<ExitCode, CliError> {
                 );
             }
             "--json" => {
-                if json {
-                    return Err(CliError::usage("--json may appear only once"));
+                if output != OutputMode::Human {
+                    return Err(CliError::usage("only one output option may appear"));
                 }
-                json = true;
+                output = OutputMode::Json;
+            }
+            "--raw" => {
+                if output != OutputMode::Human {
+                    return Err(CliError::usage("only one output option may appear"));
+                }
+                output = OutputMode::Raw;
             }
             "search" => {
-                return execute_search(arguments, workspace, admissions, json)
+                return execute_search(arguments, workspace, admissions, output)
                     .map(|()| ExitCode::SUCCESS);
             }
             "view" => {
-                return execute_view(arguments, workspace, admissions, json)
+                return execute_view(arguments, workspace, admissions, output)
                     .map(|()| ExitCode::SUCCESS);
             }
             "check" => {
-                return execute_check(arguments, workspace, admissions, json)
+                return execute_check(arguments, workspace, admissions, output)
                     .map(|()| ExitCode::SUCCESS);
             }
             "shell" => {
-                if json {
-                    return Err(CliError::usage(
-                        "--json is supported only for Search, View, or Check",
-                    ));
+                if output != OutputMode::Human {
+                    return Err(CliError::usage("output options are unsupported for shell"));
                 }
                 if arguments.next().is_some() {
                     return Err(CliError::usage("shell accepts no operands"));
@@ -147,16 +158,11 @@ fn execute() -> Result<ExitCode, CliError> {
                 return execute_shell(workspace, admissions);
             }
             "pick" | "anchor" | "edit" | "apply" | "data" => {
-                if json {
+                if output != OutputMode::Human {
                     return Err(CliError::usage(
-                        "--json is supported only for Search, View, or Check",
+                        "output options are unsupported for this capability",
                     ));
                 }
-                return Err(CliError::usage(format!(
-                    "{argument} is not implemented in this slice"
-                )));
-            }
-            "--raw" => {
                 return Err(CliError::usage(format!(
                     "{argument} is not implemented in this slice"
                 )));
@@ -176,16 +182,19 @@ fn execute_search(
     arguments: impl Iterator<Item = OsString>,
     workspace: Option<PathBuf>,
     admissions: Vec<AdmissionRoot>,
-    json: bool,
+    output: OutputMode,
 ) -> Result<(), CliError> {
+    if output == OutputMode::Raw {
+        return Err(CliError::usage("--raw is supported only for View"));
+    }
     let arguments = text_arguments(arguments, "search argument")?;
     let request = parse_search(&arguments)?;
     let runtime = open_runtime(workspace, admissions)?;
     let outcome = run_search(&runtime, request)?;
-    if json {
-        write_search_json(&outcome)
-    } else {
-        write_human(&outcome)
+    match output {
+        OutputMode::Human => write_human(&outcome),
+        OutputMode::Json => write_search_json(&outcome),
+        OutputMode::Raw => unreachable!(),
     }
 }
 
@@ -212,11 +221,10 @@ fn parse_search(arguments: &[String]) -> Result<SearchRequest, CliError> {
                 SearchScopeEntry::subtree(required_token(arguments, position, "--subtree")?)
                     .map_err(|error| CliError::usage(error.to_string()))?,
             ),
-            "--json" => return Err(CliError::usage("--json must precede the capability")),
-            "--raw" => {
-                return Err(CliError::usage(format!(
-                    "{option} is not implemented in this slice"
-                )));
+            "--json" | "--raw" => {
+                return Err(CliError::usage(
+                    "output options must precede the capability",
+                ));
             }
             "--admit" => return Err(CliError::usage("--admit must precede the capability")),
             _ => return Err(CliError::usage(format!("invalid search option: {option}"))),
@@ -235,7 +243,7 @@ fn execute_view(
     mut arguments: impl Iterator<Item = OsString>,
     workspace: Option<PathBuf>,
     admissions: Vec<AdmissionRoot>,
-    json: bool,
+    output: OutputMode,
 ) -> Result<(), CliError> {
     let form = required_text(&mut arguments, "view input form")?;
     if form != "anddress" {
@@ -253,10 +261,9 @@ fn execute_view(
     let anddress = decode_anddress(encoded)?;
     let runtime = open_runtime(workspace, admissions)?;
     let outcome = run_view(&runtime, &anddress)?;
-    if json {
-        write_view_json(outcome)
-    } else {
-        write_view(outcome)
+    match output {
+        OutputMode::Human | OutputMode::Raw => write_view(outcome),
+        OutputMode::Json => write_view_json(outcome),
     }
 }
 
@@ -264,8 +271,11 @@ fn execute_check(
     mut arguments: impl Iterator<Item = OsString>,
     workspace: Option<PathBuf>,
     admissions: Vec<AdmissionRoot>,
-    json: bool,
+    output: OutputMode,
 ) -> Result<(), CliError> {
+    if output == OutputMode::Raw {
+        return Err(CliError::usage("--raw is supported only for View"));
+    }
     let form = required_text(&mut arguments, "check input form")?;
     if form != "anddress" {
         if matches!(form.as_str(), "search" | "pick") {
@@ -284,10 +294,10 @@ fn execute_check(
     let anddress = decode_anddress(encoded)?;
     let runtime = open_runtime(workspace, admissions)?;
     let outcome = run_check(&runtime, anddress)?;
-    if json {
-        write_check_json(&outcome)
-    } else {
-        write_check(&outcome)
+    match output {
+        OutputMode::Human => write_check(&outcome),
+        OutputMode::Json => write_check_json(&outcome),
+        OutputMode::Raw => unreachable!(),
     }
 }
 

@@ -361,8 +361,8 @@ fn canonical_binary_help_and_default_workspace_search() {
     let help_stdout = text(help.stdout);
     assert!(help_stdout.starts_with("Usage:\n  backwriter "));
     assert!(help_stdout.contains("[--json] search"));
-    assert!(help_stdout.contains("[--json] view"));
     assert!(help_stdout.contains("[--json] check"));
+    assert!(help_stdout.contains("[--json|--raw] view"));
     assert!(help.stderr.is_empty());
 }
 
@@ -765,6 +765,10 @@ fn one_shot_view_json_streams_exact_v3_objects_and_preserves_human_output() {
         assert!(human.status.success());
         assert_eq!(human.stdout, expected_human_view(&expected));
         assert!(human.stderr.is_empty());
+        let raw = run(root.path(), &["--raw", "view", "anddress", &operand]);
+        assert!(raw.status.success());
+        assert_eq!(raw.stdout, expected_human_view(&expected));
+        assert!(raw.stderr.is_empty());
     }
 
     let escaped = run(
@@ -820,6 +824,7 @@ fn one_shot_view_json_rejects_invalid_forms_and_keeps_errors_off_stdout() {
         root.path(),
         &["--json", "view", "anddress", &operand, "extra"],
     ));
+    assert_usage(run(root.path(), &["view", "anddress", &operand, "--raw"]));
 
     let stale = view_operand(
         root.path(),
@@ -831,6 +836,7 @@ fn one_shot_view_json_rejects_invalid_forms_and_keeps_errors_off_stdout() {
     );
     write(root.path(), "note.txt", "changed\n");
     assert_execution_error(run(root.path(), &["--json", "view", "anddress", &stale]));
+    assert_execution_error(run(root.path(), &["--raw", "view", "anddress", &stale]));
 
     write(root.path(), "unadmitted.txt", "unadmitted\n");
     let unadmitted = view_operand(root.path(), "unadmitted.txt", AnddressTarget::File);
@@ -840,6 +846,17 @@ fn one_shot_view_json_rejects_invalid_forms_and_keeps_errors_off_stdout() {
             "--admit",
             "coordinate.txt",
             "--json",
+            "view",
+            "anddress",
+            &unadmitted,
+        ],
+    ));
+    assert_execution_error(run(
+        root.path(),
+        &[
+            "--raw",
+            "--admit",
+            "coordinate.txt",
             "view",
             "anddress",
             &unadmitted,
@@ -862,6 +879,50 @@ fn one_shot_view_json_writer_has_no_value_clone_or_collection_path() {
     assert!(!writer.contains(".clone()"));
     assert!(!writer.contains("collect("));
     assert!(!writer.contains("Vec<ViewOutcome>"));
+}
+
+#[test]
+fn one_shot_raw_view_accepts_global_order_and_rejects_every_other_output_form() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "raw\r\n");
+    let operand = view_operand(root.path(), "note.txt", AnddressTarget::File);
+
+    let ordered = run(
+        root.path(),
+        &[
+            "--workspace",
+            root.path().to_str().unwrap(),
+            "--raw",
+            "--admit",
+            ".",
+            "view",
+            "anddress",
+            &operand,
+        ],
+    );
+    assert!(ordered.status.success());
+    assert_eq!(ordered.stdout, b"raw\r\n");
+    assert!(ordered.stderr.is_empty());
+
+    for arguments in [
+        vec!["--raw", "--raw", "view", "anddress", &operand],
+        vec!["--json", "--raw", "view", "anddress", &operand],
+        vec!["--raw", "--json", "view", "anddress", &operand],
+        vec!["--raw", "search", "line", "raw"],
+        vec!["--raw", "check", "anddress", &operand],
+        vec!["--raw", "shell"],
+        vec!["--raw", "data"],
+        vec!["--raw", "pick"],
+        vec!["--raw", "view", "anchored", "handle"],
+    ] {
+        assert_usage(run(root.path(), &arguments));
+    }
+
+    let source = include_str!("../src/bin/backwriter.rs");
+    assert!(source.contains("enum OutputMode"));
+    assert!(!source.contains("let mut json"));
+    assert!(!source.contains("write_view_raw"));
 }
 
 #[test]
@@ -909,6 +970,10 @@ fn view_line_terminators_and_large_no_eol_are_exact() {
     assert!(line_output.status.success());
     assert_eq!(line_output.stdout, large_line.as_bytes());
     assert!(line_output.stderr.is_empty());
+    let raw_line_output = run(root.path(), &["--raw", "view", "anddress", &line]);
+    assert!(raw_line_output.status.success());
+    assert_eq!(raw_line_output.stdout, large_line.as_bytes());
+    assert!(raw_line_output.stderr.is_empty());
 }
 
 #[test]

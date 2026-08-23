@@ -22,10 +22,10 @@ Rust value implementation, and single-source Apply Runtime implementation are
 complete. Apply's V1 semantic/public API/error authority and Runtime
 implementation are complete.
 
-## CLI Adapter V1 Search/View/Check JSON, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data slice
+## CLI Adapter V1 Search/View/Check JSON and raw View, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data slice
 
 The repository includes the canonical `backwriter` CLI Adapter. Its completed
-scope is one-shot human and JSON Search, View, and Check plus Session Pick,
+scope is one-shot human and JSON Search, View, and Check plus raw View and Session Pick,
 batch Check, Anchor, Edit, Apply, result binding, and explicit Data over the existing public
 Runtime seams. The Session retains one Runtime, one caller-owned `DataStore`,
 and explicit CLI-local bindings plus non-aliasing owning Anchedress handles.
@@ -36,15 +36,17 @@ exposes only its report counts. Session Anchor creates an opaque Runtime-local
 handle, views it through the existing anchored seam, and invalidates only its
 logical source. One-shot Search, View, and Check JSON stream compact Adapter
 envelopes without creating a Core wire; related or filtered values are exact
-existing v3 Anddress objects. Data transfers exact clones from explicit Session values into
-the existing typed Core store and reads them back without capability execution.
+existing v3 Anddress objects. Raw View is an explicit Adapter exact-text
+projection and creates no Core wire or new View meaning. Data transfers exact
+clones from explicit Session values into the existing typed Core store and reads
+them back without capability execution.
 It adds no Core API, wire, workflow, provenance, automatic Data storage,
 registry, persistence, or retained Core state beyond existing Anchor continuity.
 One-shot Data and Anchor remain intentionally unsupported because their
 DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
 batch Check, Edit, and Apply await collection or Edit transport schema
-authority. Raw output and further Session behavior remain
-deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
+authority. Raw output other than completed one-shot View and further Session
+behavior remain deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
 
 ## Current-only Runtime contract
 

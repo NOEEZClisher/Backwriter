@@ -220,6 +220,10 @@ File and optional Paragraph objects directly, and Check embeds its filtered v3
 Anddress object directly when present. They create no Core wire, value model,
 Search/View/Check state, result collection, or capability workflow.
 
+One-shot raw View is likewise Adapter-only: it is an explicit exact-text output
+selection that reuses the existing View projection without a Core wire, state,
+or View semantic change.
+
 ## Search and Pick
 
 Search is all-or-nothing. Invalid input, unsafe or unavailable source, invalid

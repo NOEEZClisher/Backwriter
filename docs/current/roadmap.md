@@ -39,14 +39,15 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
-## Completed: CLI V1 human and JSON Search/View/Check, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data Adapter
+## Completed: CLI V1 human and JSON Search/View/Check, raw View, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data Adapter
 
 The canonical `backwriter` executable implements one-shot human and JSON Search,
-View, and Check plus Session Pick, batch Check, Anchor, Edit, Apply, result
+View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result
 binding, and Data. JSON Search, View, and Check stream compact Adapter envelopes
 with exact v3 Anddress objects where applicable and create no Core wire. The
-Session owns one Runtime and
-one explicit caller-owned `DataStore`
+Raw View is an exact-text Adapter projection that reuses ordinary View output
+without a Core wire or new View meaning. The Session owns one Runtime and one
+explicit caller-owned `DataStore`
 until EOF or `exit`, plus local bindings and non-aliasing owning Anchedress
 handles. It passes Pick candidate collections and
 parsed predicates to the existing pure Core function, while direct Pick remains
@@ -59,8 +60,9 @@ automatic storage or persistence. It directly reuses Core validation and public
 Runtime seams. One-shot Data and Anchor remain intentionally unsupported because
 their DataStore and live-handle contracts require Session lifetime. One-shot
 Pick, batch Check, Edit, and Apply await collection or Edit transport schema
-authority. Raw output and further Session behavior remain deferred Adapter
-decisions; CLI syntax creates no Core workflow or wire authority.
+authority. Raw output other than completed one-shot View and further Session
+behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
+or wire authority.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a separate registry,
