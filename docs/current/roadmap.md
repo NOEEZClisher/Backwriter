@@ -63,6 +63,8 @@ Pick, batch Check, Edit, and Apply await collection or Edit transport schema
 authority. Raw output other than completed one-shot View and further Session
 behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
 or wire authority.
+CLI V1 beta implementation freeze is complete; work resumes only with owner
+authority for collection/Edit transport or Session machine output.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a separate registry,

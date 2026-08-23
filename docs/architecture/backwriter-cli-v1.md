@@ -238,9 +238,9 @@ backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 
 It opens one Runtime before reading stdin, retains it until EOF or `exit`, and
 prints no prompt. One physical input Line is one expression; blank Lines are
-ignored. Its private lexer splits spaces and tabs, supports a standalone
-double-quoted token with only `\\` and `\"` escapes, and rejects NUL, unmatched
-quotes, and every other quoted escape. It creates no single-quote, comment,
+ignored. Its private lexer splits spaces and tabs, and every standalone
+double-quoted token decodes exactly `\\`, `\"`, `\n`, `\r`, and `\t`. It rejects
+NUL, unmatched quotes, and every other quoted escape. It creates no single-quote, comment,
 continuation, interpolation, or pipe grammar. Only the Pick predicate tail splits
 parentheses; it changes no other Session token syntax.
 
@@ -318,8 +318,7 @@ Session Edit directly constructs and validates the existing Core `Edit` and
 with one Anddress reference; only `let` can retain an Edit. `apply` accepts one
 unindexed Edit binding, retains that caller-owned binding, calls Runtime Apply,
 and writes `OK` only on success. All Runtime Apply failures are execution errors.
-Quoted tokens additionally decode `\n`, `\r`, and `\t`; no preview, retry,
-rollback, transaction, or CLI recovery is added.
+No preview, retry, rollback, transaction, or CLI recovery is added.
 
 Session `let` can retain exact Core `ViewOutcome`, raw `CheckOutcome`, Search
 Check outcome, and Pick Check outcome after writing the same existing human

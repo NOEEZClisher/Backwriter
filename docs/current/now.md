@@ -47,6 +47,9 @@ DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
 batch Check, Edit, and Apply await collection or Edit transport schema
 authority. Raw output other than completed one-shot View and further Session
 behavior remain deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
+CLI V1 has no remaining approved feature or implementation slice: beta
+implementation freeze holds until owner authority closes collection/Edit
+transport or Session machine output.
 
 ## Current-only Runtime contract
 

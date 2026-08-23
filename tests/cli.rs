@@ -1656,6 +1656,47 @@ fn session_lexer_exit_and_eof_follow_the_initial_grammar() {
 }
 
 #[test]
+fn session_lexer_decodes_all_quoted_escapes_outside_edit() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\n");
+
+    let output = run_shell(
+        root.path(),
+        "let hits = search line needle\ndata store anddress \"slash\\\\ quote\\\" line\\ncarriage\\rtab\\t\" @hits[0]\ndata list\nexit\n",
+    );
+    assert!(output.status.success(), "{}", text(output.stderr));
+    assert_eq!(
+        output.stdout,
+        b"Found 1\n0\tLine\tnote.txt:0\nOK\nanddress\t\"slash\\\\ quote\\\" line\\ncarriage\\rtab\\t\"\n"
+    );
+}
+
+#[test]
+fn session_apply_reuses_edit_binding_and_keeps_explicit_edit_clone() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "one\n");
+
+    let output = run_shell(
+        root.path(),
+        "let lines = search line one\nlet edit = edit replace @lines[0] \"one\\n\"\nlet copy = @edit\napply @edit\napply @copy\nexit\n",
+    );
+    assert!(output.status.success(), "{}", text(output.stderr));
+    assert_eq!(output.stdout, b"Found 1\n0\tLine\tnote.txt:0\nOK\nOK\n");
+    assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"one\n");
+
+    let source = include_str!("../src/bin/backwriter.rs");
+    assert!(source.contains("fn write_view(outcome: &ViewOutcome)"));
+    assert!(source.contains("fn write_batch_check(report: &CheckReport)"));
+    assert!(source.contains("Result<&'a Edit, CliError>"));
+    assert!(!source.contains("write_view(outcome.clone())"));
+    assert!(!source.contains("write_batch_check(outcome.report.clone())"));
+    assert!(!source.contains("Some(SessionValue::Edit(edit)) => Ok(edit.clone())"));
+    assert!(
+        source.contains("Some(SessionValue::Edit(value)) => Ok(SessionValue::Edit(value.clone()))")
+    );
+}
+
+#[test]
 fn session_preserves_execution_then_usage_exit_precedence_without_latest_state() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "note.txt", "needle\n");

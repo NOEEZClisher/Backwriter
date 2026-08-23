@@ -262,7 +262,7 @@ fn execute_view(
     let runtime = open_runtime(workspace, admissions)?;
     let outcome = run_view(&runtime, &anddress)?;
     match output {
-        OutputMode::Human | OutputMode::Raw => write_view(outcome),
+        OutputMode::Human | OutputMode::Raw => write_view(&outcome),
         OutputMode::Json => write_view_json(outcome),
     }
 }
@@ -470,7 +470,7 @@ fn write_address_rows(header: &str, anddresses: &[Anddress]) -> Result<(), CliEr
         .map_err(|error| CliError::stream(error.to_string()))
 }
 
-fn write_view(outcome: ViewOutcome) -> Result<(), CliError> {
+fn write_view(outcome: &ViewOutcome) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
     let result = (|| -> io::Result<()> {
         match outcome {
@@ -866,7 +866,7 @@ fn execute_let(
                 ));
             }
         };
-        write_view(outcome.clone())?;
+        write_view(&outcome)?;
         return store_binding(bindings, name, SessionValue::View(outcome));
     }
     if right_hand_side == "check" {
@@ -894,14 +894,14 @@ fn execute_let(
                         let outcome = runtime
                             .check_search(input)
                             .map_err(|error| CliError::execution(error.to_string()))?;
-                        write_batch_check(outcome.report.clone())?;
+                        write_batch_check(&outcome.report)?;
                         store_binding(bindings, name, SessionValue::CheckSearch(outcome))
                     }
                     ("pick", SessionValue::Pick(input)) => {
                         let outcome = runtime
                             .check_pick(input)
                             .map_err(|error| CliError::execution(error.to_string()))?;
-                        write_batch_check(outcome.report.clone())?;
+                        write_batch_check(&outcome.report)?;
                         store_binding(bindings, name, SessionValue::CheckPick(outcome))
                     }
                     ("search", _) => Err(CliError::usage("check search requires a Search binding")),
@@ -1127,10 +1127,10 @@ fn write_data_value(value: &SessionValue) -> Result<(), CliError> {
         SessionValue::Anddress(anddress) => write_data_anddress(anddress),
         SessionValue::Search(outcome) => write_human(outcome),
         SessionValue::Pick(outcome) => write_pick(outcome),
-        SessionValue::View(outcome) => write_view(outcome.clone()),
+        SessionValue::View(outcome) => write_view(outcome),
         SessionValue::CheckAnddress(outcome) => write_check(outcome),
-        SessionValue::CheckSearch(outcome) => write_batch_check(outcome.report.clone()),
-        SessionValue::CheckPick(outcome) => write_batch_check(outcome.report.clone()),
+        SessionValue::CheckSearch(outcome) => write_batch_check(&outcome.report),
+        SessionValue::CheckPick(outcome) => write_batch_check(&outcome.report),
         _ => Err(CliError::usage("not a Data value")),
     }
 }
@@ -1565,7 +1565,7 @@ fn execute_session_view(
         "anddress" => {
             session_anddress_form(tokens, "view")?;
             let anddress = resolve_anddress(bindings, &tokens[2])?;
-            write_view(run_view(runtime, &anddress)?)
+            write_view(&run_view(runtime, &anddress)?)
         }
         "anchored" => {
             if tokens.len() != 3 {
@@ -1575,7 +1575,7 @@ fn execute_session_view(
             }
             let handle = resolve_anchedress(bindings, &tokens[2])?;
             write_view(
-                runtime
+                &runtime
                     .view_anchored(handle)
                     .map_err(|error| CliError::execution(error.to_string()))?,
             )
@@ -1620,7 +1620,7 @@ fn execute_session_apply(
     }
     let edit = resolve_edit(bindings, &tokens[1])?;
     runtime
-        .apply(&edit)
+        .apply(edit)
         .map_err(|error: ApplyError| CliError::execution(error.to_string()))?;
     write_session_status("OK")
 }
@@ -1673,7 +1673,7 @@ fn execute_session_check(
                 }
                 _ => unreachable!(),
             };
-            write_batch_check(report)
+            write_batch_check(&report)
         }
         _ => Err(CliError::usage(
             "check requires the anddress, search, or pick input form",
@@ -1681,7 +1681,7 @@ fn execute_session_check(
     }
 }
 
-fn write_batch_check(report: CheckReport) -> Result<(), CliError> {
+fn write_batch_check(report: &CheckReport) -> Result<(), CliError> {
     let checked = report.checked_count();
     let current = report.current_count();
     let removed = report.removed_count();
@@ -1796,7 +1796,7 @@ fn resolve_anchedress<'a>(
     }
 }
 
-fn resolve_edit(bindings: &[SessionBinding], token: &str) -> Result<Edit, CliError> {
+fn resolve_edit<'a>(bindings: &'a [SessionBinding], token: &str) -> Result<&'a Edit, CliError> {
     let name = token
         .strip_prefix('@')
         .ok_or_else(|| CliError::usage("Edit bindings start with @"))?;
@@ -1805,7 +1805,7 @@ fn resolve_edit(bindings: &[SessionBinding], token: &str) -> Result<Edit, CliErr
     }
     validate_binding_name(name)?;
     match binding(bindings, name) {
-        Some(SessionValue::Edit(edit)) => Ok(edit.clone()),
+        Some(SessionValue::Edit(edit)) => Ok(edit),
         Some(_) => Err(CliError::usage(format!("binding is not an Edit: {name}"))),
         None => Err(CliError::usage(format!("unknown binding: {name}"))),
     }

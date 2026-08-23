@@ -174,6 +174,10 @@ preservation, and DataStore drop at Session end.
 Session result-binding regressions cover exact View/Check output before storage,
 cloneable result values, anchored View, raw and batch Check reports, and rejected
 cross-capability use without implicit filtered-value conversion.
-Session Edit/Apply regressions cover all five Edit variants, all four Position
-forms, exact source bytes, quoted content escapes, binding cloning, invalid
-forms, and continued execution after errors without CLI recovery.
+Session lexer regressions cover `\\`, `\"`, `\n`, `\r`, and `\t` for non-Edit
+commands plus rejected malformed escapes and quotes. Session View/Check
+regressions preserve direct, anchored, binding, and Data Get bytes/counts while
+displaying through borrowed outcomes. Session Edit/Apply regressions cover all
+five Edit variants, all four Position forms, exact source bytes, explicit Edit
+binding cloning and repeated Apply reuse, invalid forms, and continued execution
+after errors without CLI recovery.
