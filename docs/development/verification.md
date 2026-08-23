@@ -128,7 +128,8 @@ space-preserving query argv, raw-Anddress/workspace-coordinate omission, Empty,
 usage versus Runtime execution exits, unsupported deferred forms, and strict
 stdout/stderr separation. View regressions cover v3 decode, File/Paragraph/Line
 exact bytes, None/LF/CR/CRLF terminators, large no-EOL output, stale/wrong-
-extent and unadmitted source closure, and anchored/extra-operand rejection.
+extent and unadmitted source closure, plus one-shot anchored/extra-operand
+rejection.
 Check regressions cover File/Paragraph/Line Current status, stale and missing
 NotCurrent status, unavailable-source status, strict v3 decoding, and rejected
 search/pick/extra forms. They create no CLI Session, binding, JSON, raw, or
@@ -137,6 +138,9 @@ Search and Pick bindings with exact indexed address projection, direct Search an
 Pick non-retention, Core Pick target-kind, same-file, OneOf, and iterative boolean
 composition, batch Search/Pick Check report counts, mixed current/NotCurrent/
 Unavailable outcomes, empty outcomes, unchanged bindings after batch Check,
-copied Search/Anddress bindings, lexer quoting and errors, blank Lines, EOF and
-exit, error continuation and exit precedence, and absence of latest, pipeline,
-or DataStore behavior.
+copied Search/Anddress bindings, non-aliasing Anchor handle creation,
+`AlreadyLive` without a new binding, File/Paragraph/Line anchored View,
+source-specific invalidation, rejected handle cloning/indexing/type misuse,
+lexer quoting and errors, blank Lines, EOF and exit, error continuation and exit
+precedence, and absence of latest, pipeline, registry, persistence, or DataStore
+behavior.

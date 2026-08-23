@@ -716,6 +716,66 @@ fn session_batch_check_accepts_empty_outcomes_and_rejects_invalid_binding_forms(
 }
 
 #[test]
+fn session_anchor_creates_views_and_invalidates_only_the_selected_source() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "left.txt", "needle\n");
+    write(root.path(), "right.txt", "needle\n");
+
+    let output = run_shell(
+        root.path(),
+        "let hits = search line needle\nlet left = anchor create @hits[0]\nlet duplicate = anchor create @hits[0]\nlet right = anchor create @hits[1]\nview anchored @left\nanchor invalidate-source left.txt\nview anchored @right\nexit\n",
+    );
+    assert!(output.status.success());
+    assert_eq!(
+        output.stdout,
+        b"Found 2\n0\tLine\tleft.txt:0\n1\tLine\tright.txt:0\nAnchored\nAlreadyLive\nAnchored\nneedle\nOK\nneedle\n"
+    );
+    assert!(output.stderr.is_empty());
+
+    let invalidated = run_shell(
+        root.path(),
+        "let hits = search line needle\nlet handle = anchor create @hits[0]\nanchor invalidate-source left.txt\nview anchored @handle\nsearch line needle\nexit\n",
+    );
+    assert_eq!(invalidated.status.code(), Some(1));
+    assert_eq!(
+        invalidated.stdout,
+        b"Found 2\n0\tLine\tleft.txt:0\n1\tLine\tright.txt:0\nAnchored\nOK\nFound 2\n0\tLine\tleft.txt:0\n1\tLine\tright.txt:0\n"
+    );
+    assert!(text(invalidated.stderr).contains("unavailable"));
+
+    let invalid = run_shell(
+        root.path(),
+        "let hits = search line needle\nlet handle = anchor create @hits[0]\nlet alias = @handle\nview anchored @handle[0]\nanchor create @hits[0]\nanchor invalidate-source left.txt extra\nview anchored @missing\nexit\n",
+    );
+    assert_eq!(invalid.status.code(), Some(2));
+    let stderr = text(invalid.stderr);
+    assert!(stderr.contains("Anchedress binding cannot be cloned"));
+    assert!(stderr.contains("Anchedress bindings cannot be indexed"));
+    assert!(stderr.contains("anchor create is available only"));
+    assert!(stderr.contains("invalidate-source accepts exactly"));
+    assert!(stderr.contains("unknown binding: missing"));
+}
+
+#[test]
+fn session_anchor_preserves_file_paragraph_and_line_views() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\n\nsecond needle\n");
+
+    let output = run_shell(
+        root.path(),
+        "let files = search file needle\nlet paragraphs = search paragraph needle\nlet lines = search line needle\nlet file = anchor create @files[0]\nlet paragraph = anchor create @paragraphs[0]\nlet line = anchor create @lines[0]\nview anchored @file\nview anchored @paragraph\nview anchored @line\nexit\n",
+    );
+    assert!(output.status.success());
+    let stdout = text(output.stdout);
+    assert_eq!(stdout.matches("Anchored\n").count(), 3);
+    assert!(stdout.ends_with("needle\n\nsecond needle\nneedle\nneedle\n"));
+    assert!(output.stderr.is_empty());
+
+    let direct = run(root.path(), &["anchor", "create", "not-an-address"]);
+    assert_eq!(direct.status.code(), Some(2));
+}
+
+#[test]
 fn session_bindings_reject_unknown_duplicate_empty_out_of_range_and_type_mismatch() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "note.txt", "needle\n");

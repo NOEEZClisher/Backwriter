@@ -10,6 +10,7 @@ use std::{
 
 use artext::{
     backwriter::{
+        anchor::{Anchedress, AnchorError, AnchorOutcome},
         anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator},
         check::{CheckOutcome, CheckReport},
         pick::{PickError, PickOutcome, PickPredicate, PickTargetKind, pick},
@@ -21,7 +22,7 @@ use artext::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human Search, View, and Check plus Session Pick are implemented.";
+const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human Search, View, and Check plus Session Pick, batch Check, and Anchor are implemented.";
 
 enum CliError {
     Usage(String),
@@ -433,11 +434,11 @@ fn write_check(outcome: CheckOutcome<Option<Anddress>>) -> Result<(), CliError> 
         .map_err(|error| CliError::stream(error.to_string()))
 }
 
-#[derive(Clone)]
 enum SessionValue {
     Search(SearchOutcome),
     Pick(PickOutcome),
     Anddress(Anddress),
+    Anchedress(Anchedress),
 }
 
 struct SessionBinding {
@@ -454,7 +455,7 @@ fn execute_shell(
     workspace: Option<PathBuf>,
     admissions: Vec<AdmissionRoot>,
 ) -> Result<ExitCode, CliError> {
-    let runtime = open_runtime(workspace, admissions)?;
+    let mut runtime = open_runtime(workspace, admissions)?;
     let stdin = io::stdin();
     let mut reader = stdin.lock();
     let mut bindings = Vec::new();
@@ -481,7 +482,7 @@ fn execute_shell(
         if tokens.is_empty() {
             continue;
         }
-        match execute_session_command(&runtime, &mut bindings, &tokens) {
+        match execute_session_command(&mut runtime, &mut bindings, &tokens) {
             Ok(SessionControl::Continue) => {}
             Ok(SessionControl::Exit) => break,
             Err(error @ CliError::Stream(_)) => return Err(error),
@@ -513,7 +514,7 @@ fn session_error_status(error: &CliError) -> u8 {
 }
 
 fn execute_session_command(
-    runtime: &WorkspaceRuntime,
+    runtime: &mut WorkspaceRuntime,
     bindings: &mut Vec<SessionBinding>,
     tokens: &[String],
 ) -> Result<SessionControl, CliError> {
@@ -540,6 +541,10 @@ fn execute_session_command(
             execute_session_check(runtime, bindings, tokens)?;
             Ok(SessionControl::Continue)
         }
+        "anchor" => {
+            execute_session_anchor(runtime, tokens)?;
+            Ok(SessionControl::Continue)
+        }
         "exit" if tokens.len() == 1 => Ok(SessionControl::Exit),
         "exit" => Err(CliError::usage("exit accepts no operands")),
         capability => Err(CliError::usage(format!(
@@ -549,7 +554,7 @@ fn execute_session_command(
 }
 
 fn execute_let(
-    runtime: &WorkspaceRuntime,
+    runtime: &mut WorkspaceRuntime,
     bindings: &mut Vec<SessionBinding>,
     tokens: &[String],
 ) -> Result<(), CliError> {
@@ -562,6 +567,25 @@ fn execute_let(
         return Err(CliError::usage(format!("binding already exists: {name}")));
     }
     let right_hand_side = required_token(tokens, 3, "let value")?;
+    if right_hand_side == "anchor" {
+        if required_token(tokens, 4, "anchor operation")? != "create" {
+            return Err(CliError::usage("let anchor requires the create operation"));
+        }
+        let operand = required_token(tokens, 5, "anchor Anddress reference")?;
+        if tokens.len() != 6 {
+            return Err(CliError::usage(
+                "let anchor create accepts exactly one Anddress reference",
+            ));
+        }
+        let anddress = resolve_anddress(bindings, operand)?;
+        return match runtime.anchor(&anddress).map_err(map_anchor_error)? {
+            AnchorOutcome::Anchored(handle) => {
+                write_session_status("Anchored")?;
+                store_binding(bindings, name, SessionValue::Anchedress(handle))
+            }
+            AnchorOutcome::AlreadyLive => write_session_status("AlreadyLive"),
+        };
+    }
     let value = if right_hand_side == "search" {
         let outcome = run_search(runtime, parse_search(&tokens[4..])?)?;
         write_human(&outcome)?;
@@ -581,6 +605,15 @@ fn execute_let(
         }
     };
     store_binding(bindings, name, value)
+}
+
+fn map_anchor_error(error: AnchorError) -> CliError {
+    match error {
+        AnchorError::UnsupportedVersion | AnchorError::InvalidInput => {
+            CliError::usage(error.to_string())
+        }
+        AnchorError::Unavailable => CliError::execution(error.to_string()),
+    }
 }
 
 fn run_pick(bindings: &[SessionBinding], arguments: &[String]) -> Result<PickOutcome, CliError> {
@@ -616,6 +649,11 @@ fn resolve_pick_candidates(
         Some(SessionValue::Search(SearchOutcome::Found { anddresses }))
         | Some(SessionValue::Pick(PickOutcome::Selected { anddresses })) => anddresses,
         Some(SessionValue::Anddress(_)) => {
+            return Err(CliError::usage(format!(
+                "Pick candidates require a Search or Pick binding: {name}"
+            )));
+        }
+        Some(SessionValue::Anchedress(_)) => {
             return Err(CliError::usage(format!(
                 "Pick candidates require a Search or Pick binding: {name}"
             )));
@@ -876,17 +914,69 @@ fn finish_pick_frame(mut frame: PickFrame) -> Result<PickPredicate, CliError> {
 }
 
 fn execute_session_view(
-    runtime: &WorkspaceRuntime,
+    runtime: &mut WorkspaceRuntime,
     bindings: &[SessionBinding],
     tokens: &[String],
 ) -> Result<(), CliError> {
-    session_anddress_form(tokens, "view")?;
-    let anddress = resolve_anddress(bindings, &tokens[2])?;
-    write_view(run_view(runtime, &anddress)?)
+    match required_token(tokens, 1, "view input form")? {
+        "anddress" => {
+            session_anddress_form(tokens, "view")?;
+            let anddress = resolve_anddress(bindings, &tokens[2])?;
+            write_view(run_view(runtime, &anddress)?)
+        }
+        "anchored" => {
+            if tokens.len() != 3 {
+                return Err(CliError::usage(
+                    "view anchored accepts exactly one handle binding",
+                ));
+            }
+            let handle = resolve_anchedress(bindings, &tokens[2])?;
+            write_view(
+                runtime
+                    .view_anchored(handle)
+                    .map_err(|error| CliError::execution(error.to_string()))?,
+            )
+        }
+        _ => Err(CliError::usage(
+            "view requires the anddress or anchored input form",
+        )),
+    }
+}
+
+fn execute_session_anchor(
+    runtime: &mut WorkspaceRuntime,
+    tokens: &[String],
+) -> Result<(), CliError> {
+    match required_token(tokens, 1, "anchor operation")? {
+        "create" => Err(CliError::usage(
+            "anchor create is available only as a let right-hand side",
+        )),
+        "invalidate-source" => {
+            let path = required_token(tokens, 2, "anchor logical path")?;
+            if tokens.len() != 3 {
+                return Err(CliError::usage(
+                    "anchor invalidate-source accepts exactly one logical path",
+                ));
+            }
+            runtime
+                .invalidate_anchored_source(path)
+                .map_err(map_anchor_error)?;
+            write_session_status("OK")
+        }
+        _ => Err(CliError::usage("unsupported anchor operation")),
+    }
+}
+
+fn write_session_status(status: &str) -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    writeln!(stdout, "{status}").map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
 }
 
 fn execute_session_check(
-    runtime: &WorkspaceRuntime,
+    runtime: &mut WorkspaceRuntime,
     bindings: &[SessionBinding],
     tokens: &[String],
 ) -> Result<(), CliError> {
@@ -1012,9 +1102,35 @@ fn resolve_binding_value(
         ));
     }
     validate_binding_name(name)?;
-    binding(bindings, name)
-        .cloned()
-        .ok_or_else(|| CliError::usage(format!("unknown binding: {name}")))
+    match binding(bindings, name) {
+        Some(SessionValue::Search(value)) => Ok(SessionValue::Search(value.clone())),
+        Some(SessionValue::Pick(value)) => Ok(SessionValue::Pick(value.clone())),
+        Some(SessionValue::Anddress(value)) => Ok(SessionValue::Anddress(value.clone())),
+        Some(SessionValue::Anchedress(_)) => Err(CliError::usage(format!(
+            "Anchedress binding cannot be cloned: {name}"
+        ))),
+        None => Err(CliError::usage(format!("unknown binding: {name}"))),
+    }
+}
+
+fn resolve_anchedress<'a>(
+    bindings: &'a [SessionBinding],
+    token: &str,
+) -> Result<&'a Anchedress, CliError> {
+    let name = token
+        .strip_prefix('@')
+        .ok_or_else(|| CliError::usage("binding references start with @"))?;
+    if name.contains('[') || name.contains(']') {
+        return Err(CliError::usage("Anchedress bindings cannot be indexed"));
+    }
+    validate_binding_name(name)?;
+    match binding(bindings, name) {
+        Some(SessionValue::Anchedress(handle)) => Ok(handle),
+        Some(_) => Err(CliError::usage(format!(
+            "binding is not an Anchedress: {name}"
+        ))),
+        None => Err(CliError::usage(format!("unknown binding: {name}"))),
+    }
 }
 
 fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress, CliError> {
@@ -1030,6 +1146,9 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
             ))),
             Some(SessionValue::Pick(_)) => Err(CliError::usage(format!(
                 "Pick binding requires an index: {reference}"
+            ))),
+            Some(SessionValue::Anchedress(_)) => Err(CliError::usage(format!(
+                "Anchedress binding cannot be used as an Anddress: {reference}"
             ))),
             None => Err(CliError::usage(format!("unknown binding: {reference}"))),
         };
@@ -1060,6 +1179,9 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
         }
         Some(SessionValue::Anddress(_)) => Err(CliError::usage(format!(
             "Anddress binding cannot be indexed: {name}"
+        ))),
+        Some(SessionValue::Anchedress(_)) => Err(CliError::usage(format!(
+            "Anchedress binding cannot be indexed: {name}"
         ))),
         None => Err(CliError::usage(format!("unknown binding: {name}"))),
     }
