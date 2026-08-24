@@ -2,7 +2,7 @@
 
 use std::{cmp::Ordering, fmt};
 
-use serde::de::{MapAccess, Visitor};
+use serde::de::{IgnoredAny, MapAccess, Visitor};
 use thiserror::Error;
 
 use crate::hash::is_lower_hex_sha256;
@@ -279,12 +279,12 @@ fn validate_exact_extent(exact_extent: &str) -> Result<(), AnddressError> {
 
 #[derive(Default)]
 struct Wire {
-    version: Option<serde_json::Value>,
-    workspace_coordinate: Option<serde_json::Value>,
-    logical_path: Option<serde_json::Value>,
-    kind: Option<serde_json::Value>,
-    ordinal: Option<serde_json::Value>,
-    exact_extent: Option<serde_json::Value>,
+    version: Option<WireString>,
+    workspace_coordinate: Option<WireString>,
+    logical_path: Option<WireString>,
+    kind: Option<WireString>,
+    ordinal: Option<WireString>,
+    exact_extent: Option<WireString>,
     invalid: bool,
     duplicate_version: bool,
 }
@@ -326,14 +326,88 @@ impl Wire {
     }
 }
 
-fn wire_string(value: Option<serde_json::Value>) -> Result<String, AnddressError> {
+fn wire_string(value: Option<WireString>) -> Result<String, AnddressError> {
     match value {
-        Some(serde_json::Value::String(value)) => Ok(value),
+        Some(WireString::String(value)) => Ok(value),
         _ => Err(AnddressError::Encoding),
     }
 }
-fn wire_natural(value: Option<serde_json::Value>) -> Result<Natural, AnddressError> {
+fn wire_natural(value: Option<WireString>) -> Result<Natural, AnddressError> {
     Natural::from_wire(wire_string(value)?).map_err(|_| AnddressError::Encoding)
+}
+
+enum WireString {
+    String(String),
+    NonString,
+}
+
+impl<'de> serde::Deserialize<'de> for WireString {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct WireStringVisitor;
+        impl<'de> Visitor<'de> for WireStringVisitor {
+            type Value = WireString;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("a JSON string or another JSON value")
+            }
+
+            fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<WireString, E> {
+                Ok(WireString::String(value.to_owned()))
+            }
+
+            fn visit_string<E: serde::de::Error>(self, value: String) -> Result<WireString, E> {
+                Ok(WireString::String(value))
+            }
+
+            fn visit_bool<E: serde::de::Error>(self, _value: bool) -> Result<WireString, E> {
+                Ok(WireString::NonString)
+            }
+
+            fn visit_i64<E: serde::de::Error>(self, _value: i64) -> Result<WireString, E> {
+                Ok(WireString::NonString)
+            }
+
+            fn visit_u64<E: serde::de::Error>(self, _value: u64) -> Result<WireString, E> {
+                Ok(WireString::NonString)
+            }
+
+            fn visit_f64<E: serde::de::Error>(self, _value: f64) -> Result<WireString, E> {
+                Ok(WireString::NonString)
+            }
+
+            fn visit_unit<E: serde::de::Error>(self) -> Result<WireString, E> {
+                Ok(WireString::NonString)
+            }
+
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                mut sequence: A,
+            ) -> Result<WireString, A::Error> {
+                while sequence.next_element::<IgnoredAny>()?.is_some() {}
+                Ok(WireString::NonString)
+            }
+
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<WireString, A::Error> {
+                while map.next_entry::<IgnoredAny, IgnoredAny>()?.is_some() {}
+                Ok(WireString::NonString)
+            }
+        }
+        deserializer.deserialize_any(WireStringVisitor)
+    }
+}
+
+fn read_wire_value<'de, M: MapAccess<'de>>(
+    map: &mut M,
+    slot: &mut Option<WireString>,
+    duplicate: &mut bool,
+) -> Result<(), M::Error> {
+    if slot.is_some() {
+        *duplicate = true;
+        map.next_value::<IgnoredAny>()?;
+    } else {
+        *slot = Some(map.next_value::<WireString>()?);
+    }
+    Ok(())
 }
 
 impl<'de> serde::Deserialize<'de> for Wire {
@@ -347,28 +421,33 @@ impl<'de> serde::Deserialize<'de> for Wire {
             fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<Wire, M::Error> {
                 let mut wire = Wire::default();
                 while let Some(key) = map.next_key::<String>()? {
-                    let value = map.next_value::<serde_json::Value>()?;
-                    let slot = match key.as_str() {
-                        "version" => {
-                            if wire.version.is_some() {
-                                wire.duplicate_version = true;
-                            }
-                            &mut wire.version
+                    match key.as_str() {
+                        "version" => read_wire_value(
+                            &mut map,
+                            &mut wire.version,
+                            &mut wire.duplicate_version,
+                        )?,
+                        "workspaceCoordinate" => read_wire_value(
+                            &mut map,
+                            &mut wire.workspace_coordinate,
+                            &mut wire.invalid,
+                        )?,
+                        "logicalPath" => {
+                            read_wire_value(&mut map, &mut wire.logical_path, &mut wire.invalid)?;
                         }
-                        "workspaceCoordinate" => &mut wire.workspace_coordinate,
-                        "logicalPath" => &mut wire.logical_path,
-                        "kind" => &mut wire.kind,
-                        "ordinal" => &mut wire.ordinal,
-                        "exactExtent" => &mut wire.exact_extent,
+                        "kind" => {
+                            read_wire_value(&mut map, &mut wire.kind, &mut wire.invalid)?;
+                        }
+                        "ordinal" => {
+                            read_wire_value(&mut map, &mut wire.ordinal, &mut wire.invalid)?;
+                        }
+                        "exactExtent" => {
+                            read_wire_value(&mut map, &mut wire.exact_extent, &mut wire.invalid)?;
+                        }
                         _ => {
                             wire.invalid = true;
-                            continue;
+                            map.next_value::<IgnoredAny>()?;
                         }
-                    };
-                    if slot.is_some() {
-                        wire.invalid = true;
-                    } else {
-                        *slot = Some(value);
                     }
                 }
                 Ok(wire)

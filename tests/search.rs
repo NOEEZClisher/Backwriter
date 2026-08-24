@@ -208,6 +208,46 @@ fn wire_rejects_null_unknown_and_invalid_extents_without_natural_narrowing() {
 }
 
 #[test]
+fn wire_ignores_large_invalid_values_without_materializing_them() {
+    use backwriter::backwriter::anddress::AnddressError;
+
+    let large = "x".repeat(65_536);
+    let valid = format!(
+        r#"{{"version":"{}","workspaceCoordinate":"{}","logicalPath":"note.txt","kind":"file""#,
+        ANDDRESS_VERSION,
+        "a".repeat(64),
+    );
+
+    for encoded in [
+        format!(r#"{valid},"unknown":"{large}"}}"#),
+        format!(r#"{valid},"unknown":["{large}",{{"nested":"{large}"}}]}}"#),
+        format!(r#"{valid},"unknown":{{"nested":["{large}"]}}}}"#),
+        format!(r#"{valid},"workspaceCoordinate":{{"nested":"{large}"}}}}"#),
+    ] {
+        assert_eq!(
+            Anddress::decode(encoded.as_bytes()),
+            Err(AnddressError::Encoding)
+        );
+    }
+
+    assert_eq!(
+        Anddress::decode(
+            format!(r#"{{"version":"old","kind":{{"nested":"{large}"}}}}"#).as_bytes()
+        ),
+        Err(AnddressError::UnsupportedVersion)
+    );
+    assert_eq!(
+        Anddress::decode(
+            format!(r#"{{"version":"old","version":{{"nested":"{large}"}}}}"#).as_bytes()
+        ),
+        Err(AnddressError::Encoding)
+    );
+
+    let production = include_str!("../src/backwriter/anddress.rs");
+    assert_eq!(production.matches("serde_json::Value").count(), 0);
+}
+
+#[test]
 fn search_handles_separators_repeated_occurrences_ordering_and_fail_all() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
