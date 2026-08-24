@@ -656,6 +656,15 @@ forced process termination. This adds no collision retry, retained cache,
 durable snapshot, rollback, CAS, or generic spill authority. Exact temporary
 names and primitives are Runtime-private.
 
+On Unix, a changed publication retains only the accepted source handle's basic
+`mode & 0o777` value, applies it to the still-open prospective-after temporary
+after its writes complete and before rename, then follows the ordinary
+close/rename/reflection path. A metadata or mode-application failure is a
+definite prepublication `Unavailable` failure and leaves the armed temporary
+for ordinary cleanup. This preserves neither special mode bits, ownership,
+ACLs, xattrs, timestamps, hard-link relationships, nor external-writer
+atomicity.
+
 Every same-path live Anchor must be current before publication. A File binding
 is preserved. Only an Edit source target supplies mutation-before provenance;
 Position supplies splice geometry only. Before prospective-after emission,

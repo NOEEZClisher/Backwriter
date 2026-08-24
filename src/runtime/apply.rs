@@ -6,6 +6,8 @@ use cap_fs_ext::{
     FollowSymlinks, OpenOptionsFollowExt, OpenOptionsMaybeDirExt, OpenOptionsSyncExt,
 };
 use cap_std::fs::{Dir, File, OpenOptions};
+#[cfg(unix)]
+use cap_std::fs::{Permissions, PermissionsExt};
 
 use crate::backwriter::anddress::{
     Anddress, AnddressTarget, LineBodyClass, Natural, construct_anddress, fallible_copy_anddress,
@@ -112,6 +114,15 @@ impl<'a> Temporary<'a> {
             .map_err(|_| ApplyError::Unavailable)
     }
 
+    #[cfg(unix)]
+    fn set_mode(&mut self, mode: u32) -> Result<(), ApplyError> {
+        self.file
+            .as_ref()
+            .expect("temporary is open before publication")
+            .set_permissions(Permissions::from_mode(mode))
+            .map_err(|_| ApplyError::Unavailable)
+    }
+
     fn close(&mut self) -> Result<(), ApplyError> {
         self.file
             .as_mut()
@@ -187,8 +198,11 @@ fn edit_temporary_name(
 fn publish(
     parent: &Dir,
     destination: &str,
+    #[cfg(unix)] source_mode: u32,
     mut temporary: Temporary<'_>,
 ) -> Result<(), ApplyError> {
+    #[cfg(unix)]
+    temporary.set_mode(source_mode)?;
     temporary.close()?;
     parent
         .rename(&temporary.name, parent, destination)
@@ -683,13 +697,26 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
     let mut output = Output::after(temporary, planner);
     replay(&staging, edit, &mut output)?;
     let (temporary, candidates) = output.finish()?;
+    #[cfg(unix)]
+    let source_mode = source
+        .metadata()
+        .map_err(|_| ApplyError::Unavailable)?
+        .permissions()
+        .mode()
+        & 0o777;
     let plan = reflection_plan(runtime, &first.logical_path, candidates)?;
     staging.remove()?;
     finish_publication(
         runtime,
         &first.logical_path,
         plan,
-        publish(&parent, destination, temporary),
+        publish(
+            &parent,
+            destination,
+            #[cfg(unix)]
+            source_mode,
+            temporary,
+        ),
     )
 }
 
@@ -2188,7 +2215,13 @@ mod edit_tests {
         temporary.write(b"after").unwrap();
 
         assert_eq!(
-            publish(&parent, "destination", temporary),
+            publish(
+                &parent,
+                "destination",
+                #[cfg(unix)]
+                0o600,
+                temporary,
+            ),
             Err(ApplyError::PublicationUncertain)
         );
         assert_eq!(

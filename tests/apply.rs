@@ -1,4 +1,6 @@
 use std::fs;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 
 use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural};
 use backwriter::backwriter::apply::ApplyError;
@@ -144,6 +146,41 @@ fn apply_inserts_at_each_exact_position_without_normalization() {
         "one\rXtwo"
     );
     assert_no_apply_temp(&root);
+}
+
+#[cfg(unix)]
+#[test]
+fn changed_apply_preserves_the_source_basic_mode() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("coordinate.txt"), "coordinate").unwrap();
+    let mut workspace = runtime(&root);
+    let file = address(coordinate(&workspace), "note.txt", AnddressTarget::File);
+
+    for (mode, content) in [(0o600, "private"), (0o755, "executable")] {
+        let source = root.join("note.txt");
+        fs::write(&source, "before").unwrap();
+        fs::set_permissions(&source, fs::Permissions::from_mode(mode)).unwrap();
+        assert_eq!(
+            fs::metadata(&source).unwrap().permissions().mode() & 0o777,
+            mode
+        );
+
+        workspace
+            .apply(&Edit::Replace {
+                target: file.clone(),
+                content: content.to_owned(),
+            })
+            .unwrap();
+
+        assert_eq!(fs::read_to_string(&source).unwrap(), content);
+        assert_eq!(
+            fs::metadata(&source).unwrap().permissions().mode() & 0o777,
+            mode
+        );
+        assert_no_apply_temp(&root);
+    }
 }
 
 #[test]
