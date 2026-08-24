@@ -649,9 +649,12 @@ reread, or seek staging while assembling a prospective-after temporary and
 preparing its after-parse and Anchor plan. It never rereads, seeks, or reopens
 the retained source handle or prospective-after temporary, and no temporary
 other than staging has readback authority. It closes and removes staging before
-publication. This adds no collision retry, retained cache, durable snapshot,
-rollback, CAS, or generic spill authority. Exact temporary names and primitives
-are Runtime-private.
+publication. The prospective-after temporary remains armed until rename
+succeeds; if rename fails, its ordinary Drop cleanup attempts removal before
+`PublicationUncertain` returns. This does not promise cleanup after a crash or
+forced process termination. This adds no collision retry, retained cache,
+durable snapshot, rollback, CAS, or generic spill authority. Exact temporary
+names and primitives are Runtime-private.
 
 Every same-path live Anchor must be current before publication. A File binding
 is preserved. Only an Edit source target supplies mutation-before provenance;

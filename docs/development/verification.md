@@ -11,10 +11,10 @@ deep iterative boolean composition. Apply regressions cover Edit validation
 priority, exact File/Paragraph/Line splice geometry, all line terminators,
 Unicode and scratch boundaries, cross-source rejection, no-op publication
 avoidance, and late invalid/incomplete/NUL source closure. They also cover
-same-parent staging cleanup, deterministic temporary-name collision
-preservation, logical-path independence for hard links, unavailable and
-no-follow sources, and large whitespace Lines without unnecessary Paragraph
-state.
+same-parent staging cleanup, failed-publication prospective-after cleanup,
+deterministic temporary-name collision preservation, logical-path independence
+for hard links, unavailable and no-follow sources, and large whitespace Lines
+without unnecessary Paragraph state.
 Anchor regressions cover Runtime-local opaque handles, duplicate anchoring,
 drop-and-reanchor, foreign handles, stale-input preservation, one-read Apply
 preparation, known-invalid-source and transient-read handling, exact

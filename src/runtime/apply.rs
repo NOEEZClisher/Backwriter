@@ -133,11 +133,6 @@ impl<'a> Temporary<'a> {
         Ok(())
     }
 
-    fn disarm(mut self) -> String {
-        self.armed = false;
-        std::mem::take(&mut self.name)
-    }
-
     fn open_read(&self) -> Result<File, ApplyError> {
         if self.file.is_some() {
             return Err(ApplyError::Unavailable);
@@ -195,10 +190,11 @@ fn publish(
     mut temporary: Temporary<'_>,
 ) -> Result<(), ApplyError> {
     temporary.close()?;
-    let name = temporary.disarm();
     parent
-        .rename(&name, parent, destination)
-        .map_err(|_| ApplyError::PublicationUncertain)
+        .rename(&temporary.name, parent, destination)
+        .map_err(|_| ApplyError::PublicationUncertain)?;
+    temporary.armed = false;
+    Ok(())
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -1841,7 +1837,7 @@ mod edit_tests {
 
     use super::{
         AfterPlanner, Relation, Temporary, compare_exact, comparison_exhausted,
-        edit_temporary_name, execute, scan_staged,
+        edit_temporary_name, execute, publish, scan_staged,
     };
 
     struct FailingReader {
@@ -2174,6 +2170,35 @@ mod edit_tests {
         );
         drop(temporary);
         assert!(!fixture.path().join(name).exists());
+    }
+
+    #[test]
+    fn failed_publication_removes_the_after_temporary() {
+        let fixture = tempfile::tempdir().unwrap();
+        fs::write(fixture.path().join("source.txt"), "before").unwrap();
+        fs::create_dir(fixture.path().join("destination")).unwrap();
+        let runtime = WorkspaceRuntime::open(
+            fixture.path(),
+            WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+        )
+        .unwrap();
+        let (parent, _) = runtime.open_admitted_parent("source.txt").unwrap();
+        let name = edit_temporary_name(&runtime, "source.txt", "after").unwrap();
+        let mut temporary = Temporary::create(&parent, name.clone()).unwrap();
+        temporary.write(b"after").unwrap();
+
+        assert_eq!(
+            publish(&parent, "destination", temporary),
+            Err(ApplyError::PublicationUncertain)
+        );
+        assert_eq!(
+            fs::read_to_string(fixture.path().join("source.txt")).unwrap(),
+            "before"
+        );
+        assert!(fixture.path().join("destination").is_dir());
+        assert!(!fixture.path().join(&name).exists());
+
+        drop(Temporary::create(&parent, name).unwrap());
     }
 
     #[test]
