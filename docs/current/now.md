@@ -50,8 +50,11 @@ behavior remain deferred under the [CLI V1 authority](../architecture/backwriter
 Core/Runtime beta implementation freeze holds. CLI V1 has no remaining approved
 feature or implementation slice; its beta implementation freeze holds until
 owner authority closes collection/Edit transport or Session machine output.
-The next step is release packaging; tag, artifact, and publish remain
-unexecuted.
+The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`; the
+GNU target is retained for local development and tests. Target selection and
+direct build verification are complete. Archive, checksum, manifest, installer,
+publish, tag, and upload remain unexecuted, and no universal Linux or kernel
+compatibility is claimed.
 The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
 canonical executable is `backwriter`.
 

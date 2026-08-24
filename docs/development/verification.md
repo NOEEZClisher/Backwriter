@@ -117,6 +117,23 @@ Run after Rust or Runtime behavior changes:
     cargo clippy --offline --locked --all-targets -- -D warnings
     cargo build --offline --locked --release
 
+Linux x86_64 release-target verification uses the explicitly installed canonical
+`x86_64-unknown-linux-musl` target. The GNU target remains the local development
+and test-host target; `rust-toolchain.toml` does not auto-install musl for every
+checkout. Run:
+
+    rustup target add x86_64-unknown-linux-musl --toolchain 1.95.0
+    rustc +1.95.0 --print cfg --target x86_64-unknown-linux-musl
+    cargo check --offline --locked --all-targets --target x86_64-unknown-linux-musl
+    cargo build --offline --locked --release --target x86_64-unknown-linux-musl
+    cargo test --offline --locked --target x86_64-unknown-linux-musl
+
+The release binary is
+`target/x86_64-unknown-linux-musl/release/backwriter`. These checks verify target
+selection, build, test, and host execution only; they create no archive,
+checksum, manifest, installer, publication, tag, upload, or universal Linux or
+kernel-compatibility claim.
+
 Before handoff, verify the diff and index, confirm repository-root `.artext` is
 absent and untracked, preserve historical task/history files, and leave the
 index empty.

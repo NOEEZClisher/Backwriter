@@ -96,6 +96,17 @@ cargo build --offline --locked --release
 cargo test --offline --locked
 ```
 
+## Linux release target
+
+The canonical Linux x86_64 release target is
+`x86_64-unknown-linux-musl`. `x86_64-unknown-linux-gnu` remains the local
+development and test-host target. The release target is installed explicitly on
+the release host; it is not added to `rust-toolchain.toml` as an automatic
+checkout requirement. Target selection and direct build verification are
+complete only. Archive, checksum, manifest, installer, publish, tag, and upload
+work remain unperformed, and no universal Linux or kernel-compatibility claim
+is made.
+
 ## Architecture
 
 - [Current state](docs/current/now.md)

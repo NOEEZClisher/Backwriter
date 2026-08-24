@@ -66,8 +66,11 @@ or wire authority.
 Core/Runtime beta implementation freeze holds. CLI V1 beta implementation
 freeze is complete; work resumes only with owner authority for collection/Edit
 transport or Session machine output.
-The next step is release packaging; tag, artifact, and publish remain
-unexecuted.
+The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
+`x86_64-unknown-linux-gnu` remains the local development and test-host target.
+The target choice and direct build verification are complete; archive, checksum,
+manifest, installer, publish, tag, and upload remain unexecuted. This makes no
+universal Linux or kernel-compatibility claim.
 The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
 canonical executable is `backwriter`.
 
@@ -89,3 +92,9 @@ Plural View input, ranges, descendants, and partial behavior remain owner
 decisions. Apply's reference letter is unassigned. Future Search spill is
 separately owned by a host-provided system root and must not create
 repository-local authority.
+
+## Deferred release packaging decisions
+
+Archive, checksum, and manifest generation tools and their contracts remain
+owner decisions. The selected musl target does not itself define packaging,
+installer, publication, tag, upload, or host compatibility authority.
