@@ -615,6 +615,15 @@ publication. Cross-source operands, including distinct logical paths to one
 hard-linked object, return `ApplyError::InvalidInput` at this seam without
 changing `Edit::validate`.
 
+Backwriter does not require a single-writer Workspace. Concurrency coordination
+is caller-owned. Apply executes from the accepted current observation above; it
+does not detect, serialize, merge, retry, reconcile, or CAS-protect concurrent
+external writes. Writers may race, and one publication may overwrite another
+writer's source-visible change. This is an accepted contract boundary, not an
+Apply correctness failure. A host needing a stronger multi-writer guarantee
+must coordinate outside Backwriter or adapt this open-source implementation to
+its environment.
+
 `EditError::UnsupportedVersion` and `EditError::InvalidInput` map to their
 same-named `ApplyError`; `EditError::Resource` maps to
 `ApplyError::Unavailable`. Coordinate, admission, currentness, source-read,

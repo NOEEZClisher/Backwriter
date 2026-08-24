@@ -135,6 +135,9 @@ are preserved evidence, never current authority.
   complete, and Apply's
   reference letter remains
   unassigned. Anchor and anchored seams are implemented after Apply.
+  Concurrent-writer coordination is caller-owned; do not add Apply locks, CAS,
+  serialization, conflict detection, or retries without explicit owner
+  authority.
 - **Anchor** has closed live-continuity authority and an implemented public
   surface. It retains only opaque owning Runtime-local
   continuity, non-aliasing `AlreadyLive`, no history/persistence/

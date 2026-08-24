@@ -84,6 +84,11 @@ It reads admitted current Workspace Source through Runtime's safe no-follow
 access. It does not model branches, merges, history, automatic re-evaluation,
 or editor buffers.
 
+Apply uses its accepted current observation and does not coordinate concurrent
+writers. Writers may race and one publication may overwrite another
+source-visible change; hosts requiring a stronger guarantee coordinate outside
+Backwriter.
+
 ## Build and test
 
 ```sh

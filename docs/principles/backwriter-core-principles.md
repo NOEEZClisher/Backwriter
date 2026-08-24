@@ -40,8 +40,8 @@
    Save continuity path. It has no watcher, retry, rollback, or automatic
    creation of a new
    `Anchedress` or `AnchorOutcome`; it still reflects existing live Anchor
-   continuity under the Protocol. Anchor and anchored seams are implemented
-   after it.
+   continuity under the Protocol. Concurrent-writer coordination is
+   caller-owned. Anchor and anchored seams are implemented after it.
 11. **Anchor stays minimal.** Its live-continuity authority and public Runtime
    surface are implemented. It retains
    only opaque owning Runtime-local continuity, non-aliasing `AlreadyLive`, no

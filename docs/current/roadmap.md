@@ -63,8 +63,9 @@ Pick, batch Check, Edit, and Apply await collection or Edit transport schema
 authority. Raw output other than completed one-shot View and further Session
 behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
 or wire authority.
-CLI V1 beta implementation freeze is complete; work resumes only with owner
-authority for collection/Edit transport or Session machine output.
+Core/Runtime beta implementation freeze holds. CLI V1 beta implementation
+freeze is complete; work resumes only with owner authority for collection/Edit
+transport or Session machine output.
 The next step is release packaging; tag, artifact, and publish remain
 unexecuted.
 The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
