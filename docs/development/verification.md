@@ -129,10 +129,22 @@ checkout. Run:
     cargo test --offline --locked --target x86_64-unknown-linux-musl
 
 The release binary is
-`target/x86_64-unknown-linux-musl/release/backwriter`. These checks verify target
-selection, build, test, and host execution only; they create no archive,
-checksum, manifest, installer, publication, tag, upload, or universal Linux or
-kernel-compatibility claim.
+`target/x86_64-unknown-linux-musl/release/backwriter`. These commands verify
+target selection, build, test, and host execution; running them alone does not
+publish a distribution.
+
+Separately, the external operations-owned distribution at
+[https://backwriter.pentagration.com](https://backwriter.pentagration.com) has
+completed publication verification for Backwriter `0.1.0-beta.1` on Linux
+x86_64 and WSL x86_64. The canonical target is
+`x86_64-unknown-linux-musl`, the artifact and manifest retain Source Authority
+revision `e6217d93bf241edd4040319113b7116c3126a8e6`, and the installer destination
+is `$HOME/.local/bin/backwriter`. Verification covered the archive, manual
+`.sha256` sidecar, canonical manifest, installer, immutable version directory,
+public GET/HEAD cache policy, manifest-authoritative artifact SHA-256, and an
+end-to-end temporary-`HOME` install. Linux arm64, macOS, and Windows remain
+unsupported. This records no tag, GitHub Release, crates.io publication,
+universal Linux/kernel compatibility, or GitHub distribution authority.
 
 Before handoff, verify the diff and index, confirm repository-root `.artext` is
 absent and untracked, preserve historical task/history files, and leave the

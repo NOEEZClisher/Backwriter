@@ -52,9 +52,18 @@ feature or implementation slice; its beta implementation freeze holds until
 owner authority closes collection/Edit transport or Session machine output.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`; the
 GNU target is retained for local development and tests. Target selection and
-direct build verification are complete. Archive, checksum, manifest, installer,
-publish, tag, and upload remain unexecuted, and no universal Linux or kernel
-compatibility is claimed.
+direct build verification are complete. The external operations-owned
+distribution at
+[https://backwriter.pentagration.com](https://backwriter.pentagration.com)
+publishes Backwriter `0.1.0-beta.1` for Linux x86_64 and WSL x86_64. Its
+artifact, manual-verification checksum sidecar, canonical manifest, installer,
+and initial publication are complete from Source Authority revision
+`e6217d93bf241edd4040319113b7116c3126a8e6`. The installer verifies the
+manifest-authoritative SHA-256 and atomically installs to
+`$HOME/.local/bin/backwriter` without changing `PATH` or shell startup files.
+Linux arm64, macOS, and Windows distributions remain unsupported, and no
+universal Linux or kernel compatibility is claimed. No tag, GitHub Release,
+crates.io publication, or GitHub distribution authority is implied.
 The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
 canonical executable is `backwriter`.
 

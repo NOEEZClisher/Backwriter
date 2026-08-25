@@ -12,7 +12,27 @@ result-binding, explicit Data modes.
 
 ## Quick start
 
-```arduino
+Install the official beta:
+
+```sh
+curl -fsSL https://backwriter.pentagration.com/install.sh | sh
+```
+
+The installer writes exactly `$HOME/.local/bin/backwriter`. It does not change
+`PATH` or a shell startup file. If `$HOME/.local/bin` is not already on `PATH`,
+run the installed absolute path or add that directory to `PATH` yourself.
+
+Verify the installation and run Search with the installed absolute path:
+
+```sh
+$HOME/.local/bin/backwriter --help
+$HOME/.local/bin/backwriter search line "needle"
+$HOME/.local/bin/backwriter --workspace /path/project search paragraph "needle"
+```
+
+### Build from source
+
+```sh
 cargo build --release
 ./target/release/backwriter search line "needle"
 ./target/release/backwriter --workspace /path/project search paragraph "needle"
@@ -96,16 +116,24 @@ cargo build --offline --locked --release
 cargo test --offline --locked
 ```
 
-## Linux release target
+## Official Linux distribution
 
-The canonical Linux x86_64 release target is
-`x86_64-unknown-linux-musl`. `x86_64-unknown-linux-gnu` remains the local
-development and test-host target. The release target is installed explicitly on
-the release host; it is not added to `rust-toolchain.toml` as an automatic
-checkout requirement. Target selection and direct build verification are
-complete only. Archive, checksum, manifest, installer, publish, tag, and upload
-work remain unperformed, and no universal Linux or kernel-compatibility claim
-is made.
+The official distribution authority is
+[https://backwriter.pentagration.com](https://backwriter.pentagration.com).
+It currently publishes Backwriter `0.1.0-beta.1` for
+Linux x86_64 and WSL x86_64, built for the canonical
+`x86_64-unknown-linux-musl` target.
+`x86_64-unknown-linux-gnu` remains the local development and test-host target.
+Linux arm64, macOS, and Windows distributions are not currently provided, and
+no universal Linux or kernel-compatibility claim is made.
+
+`install.sh` reads the canonical manifest, verifies the downloaded artifact
+against the manifest SHA-256, and atomically installs the verified binary at
+`$HOME/.local/bin/backwriter`. The published `.sha256` sidecar is for manual
+verification and is not installer authority. The distribution provides no
+signature, automatic update, telemetry, `sudo` execution, or automatic `PATH`
+or shell-startup-file change. GitHub is a public source and documentation mirror,
+not the distribution authority.
 
 ## Architecture
 

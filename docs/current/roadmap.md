@@ -68,9 +68,16 @@ freeze is complete; work resumes only with owner authority for collection/Edit
 transport or Session machine output.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 `x86_64-unknown-linux-gnu` remains the local development and test-host target.
-The target choice and direct build verification are complete; archive, checksum,
-manifest, installer, publish, tag, and upload remain unexecuted. This makes no
-universal Linux or kernel-compatibility claim.
+The target choice and direct build verification are complete. The external
+operations-owned distribution at
+[https://backwriter.pentagration.com](https://backwriter.pentagration.com)
+publishes Backwriter `0.1.0-beta.1` for Linux x86_64 and WSL x86_64 from Source
+Authority revision `e6217d93bf241edd4040319113b7116c3126a8e6`. Its archive,
+manual-verification checksum sidecar, canonical manifest, installer, and initial
+publication are complete. The installer uses the manifest SHA-256 and
+atomically installs to `$HOME/.local/bin/backwriter` without modifying `PATH`
+or shell startup files. This makes no universal Linux or kernel-compatibility
+claim and gives GitHub no distribution authority.
 The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
 canonical executable is `backwriter`.
 
@@ -93,8 +100,9 @@ decisions. Apply's reference letter is unassigned. Future Search spill is
 separately owned by a host-provided system root and must not create
 repository-local authority.
 
-## Deferred release packaging decisions
+## Deferred distribution decisions
 
-Archive, checksum, and manifest generation tools and their contracts remain
-owner decisions. The selected musl target does not itself define packaging,
-installer, publication, tag, upload, or host compatibility authority.
+Linux arm64, macOS, and Windows distributions remain unsupported. Their future
+support and every version contract after `0.1.0-beta.1` require separate owner
+authority. The completed Linux/WSL x86_64 publication defines neither universal
+host compatibility nor a tag, GitHub Release, or crates.io publication.
