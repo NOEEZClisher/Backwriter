@@ -135,16 +135,20 @@ publish a distribution.
 
 Separately, the external operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com) has
-completed publication verification for Backwriter `0.1.0-beta.1` on Linux
-x86_64 and WSL x86_64. The canonical target is
-`x86_64-unknown-linux-musl`, the artifact and manifest retain Source Authority
-revision `e6217d93bf241edd4040319113b7116c3126a8e6`, and the installer destination
-is `$HOME/.local/bin/backwriter`. Verification covered the archive, manual
-`.sha256` sidecar, canonical manifest, installer, immutable version directory,
-public GET/HEAD cache policy, manifest-authoritative artifact SHA-256, and an
-end-to-end temporary-`HOME` install. Linux arm64, macOS, and Windows remain
-unsupported. This records no tag, GitHub Release, crates.io publication,
-universal Linux/kernel compatibility, or GitHub distribution authority.
+completed publication verification for Backwriter `0.1.0-beta.1` on
+Linux/WSL x86_64, macOS arm64, and macOS x86_64. Targets are
+`x86_64-unknown-linux-musl`, `aarch64-apple-darwin` at minimum macOS 11.0, and
+`x86_64-apple-darwin` at minimum macOS 10.12. The artifacts and manifest retain
+Source Authority revision `e6217d93bf241edd4040319113b7116c3126a8e6`, and the
+installer destination is `$HOME/.local/bin/backwriter`. Verification covered
+the archive, manual
+`.sha256` sidecars, expanded canonical manifest, installer, append-only version
+directory, public GET/HEAD cache policy, manifest-authoritative artifact
+SHA-256, and an end-to-end temporary-`HOME` Linux install. macOS verification is
+static and does not claim native execution. Linux arm64 and Windows remain
+unsupported. `0.1.0-beta.1` remains open for the planned Windows slices; this
+records no tag, GitHub Release, crates.io publication, universal host
+compatibility, or GitHub distribution authority.
 
 Before handoff, verify the diff and index, confirm repository-root `.artext` is
 absent and untracked, preserve historical task/history files, and leave the

@@ -116,24 +116,30 @@ cargo build --offline --locked --release
 cargo test --offline --locked
 ```
 
-## Official Linux distribution
+## Official desktop distribution
 
 The official distribution authority is
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com).
-It currently publishes Backwriter `0.1.0-beta.1` for
-Linux x86_64 and WSL x86_64, built for the canonical
-`x86_64-unknown-linux-musl` target.
-`x86_64-unknown-linux-gnu` remains the local development and test-host target.
-Linux arm64, macOS, and Windows distributions are not currently provided, and
-no universal Linux or kernel-compatibility claim is made.
+It publishes Backwriter `0.1.0-beta.1` for Linux/WSL x86_64, macOS arm64, and
+macOS x86_64. Linux uses canonical target `x86_64-unknown-linux-musl`;
+`x86_64-unknown-linux-gnu` remains the local development/test-host target.
+macOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and
+`x86_64-apple-darwin` with minimum macOS 10.12. The macOS artifacts receive
+static cross-build verification but are not claimed to have been executed on a
+native Mac before publication. Linux arm64 and Windows are not currently
+provided, and no universal host-compatibility claim is made.
 
 `install.sh` reads the canonical manifest, verifies the downloaded artifact
-against the manifest SHA-256, and atomically installs the verified binary at
-`$HOME/.local/bin/backwriter`. The published `.sha256` sidecar is for manual
+against the manifest SHA-256, and installs the verified binary at
+`$HOME/.local/bin/backwriter` with a same-directory rename. Concurrent same-user
+HOME mutation is caller-owned. The published `.sha256` sidecar is for manual
 verification and is not installer authority. The distribution provides no
-signature, automatic update, telemetry, `sudo` execution, or automatic `PATH`
-or shell-startup-file change. GitHub is a public source and documentation mirror,
-not the distribution authority.
+publisher-authenticity signature or trusted signing identity, automatic update,
+telemetry, `sudo` execution, or automatic `PATH` or shell-startup-file change.
+GitHub is a public source and documentation mirror, not the distribution
+authority. `0.1.0-beta.1` remains open for the planned Windows slices:
+already-published artifact files are immutable, its version directory is
+append-only, and the manifest may expand atomically until that matrix closes.
 
 ## Architecture
 

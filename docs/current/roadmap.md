@@ -71,13 +71,18 @@ The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 The target choice and direct build verification are complete. The external
 operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes Backwriter `0.1.0-beta.1` for Linux x86_64 and WSL x86_64 from Source
-Authority revision `e6217d93bf241edd4040319113b7116c3126a8e6`. Its archive,
-manual-verification checksum sidecar, canonical manifest, installer, and initial
-publication are complete. The installer uses the manifest SHA-256 and
-atomically installs to `$HOME/.local/bin/backwriter` without modifying `PATH`
-or shell startup files. This makes no universal Linux or kernel-compatibility
-claim and gives GitHub no distribution authority.
+publishes Backwriter `0.1.0-beta.1` for Linux/WSL x86_64, macOS arm64, and
+macOS x86_64 from Source Authority revision
+`e6217d93bf241edd4040319113b7116c3126a8e6`. Linux uses
+`x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
+and `x86_64-apple-darwin` at minimum 10.12. Archives, checksum sidecars, the
+expanded canonical manifest, installer, and publication are complete. The
+installer uses the selected manifest SHA-256 and installs to
+`$HOME/.local/bin/backwriter` with a same-directory rename without modifying
+`PATH` or shell startup files. Concurrent same-user HOME mutation is
+caller-owned. This makes no universal Linux or kernel-compatibility
+claim and gives GitHub no distribution authority. macOS artifacts have static
+cross-build validation without a native-runtime test claim.
 The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
 canonical executable is `backwriter`.
 
@@ -102,7 +107,10 @@ repository-local authority.
 
 ## Deferred distribution decisions
 
-Linux arm64, macOS, and Windows distributions remain unsupported. Their future
-support and every version contract after `0.1.0-beta.1` require separate owner
-authority. The completed Linux/WSL x86_64 publication defines neither universal
-host compatibility nor a tag, GitHub Release, or crates.io publication.
+`0.1.0-beta.1` remains open for the already-authorized Windows PowerShell and
+Windows CMD slices. PowerShell is next, followed by CMD. Existing target
+artifacts are immutable, its version
+directory is append-only, and the manifest may expand until that planned matrix
+closes. Linux arm64, later versions, tags, GitHub Releases, crates.io, and
+auto-update remain outside current authority. The completed Linux/WSL and
+macOS publication defines no universal host-compatibility claim.

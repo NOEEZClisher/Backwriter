@@ -55,15 +55,23 @@ GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes Backwriter `0.1.0-beta.1` for Linux x86_64 and WSL x86_64. Its
-artifact, manual-verification checksum sidecar, canonical manifest, installer,
-and initial publication are complete from Source Authority revision
+publishes Backwriter `0.1.0-beta.1` for Linux/WSL x86_64, macOS arm64, and
+macOS x86_64. Linux uses `x86_64-unknown-linux-musl`; macOS uses
+`aarch64-apple-darwin` at minimum 11.0 and `x86_64-apple-darwin` at minimum
+10.12. Their artifacts, manual-verification checksum sidecars, expanded
+canonical manifest, installer, and publication are complete from Source
+Authority revision
 `e6217d93bf241edd4040319113b7116c3126a8e6`. The installer verifies the
-manifest-authoritative SHA-256 and atomically installs to
-`$HOME/.local/bin/backwriter` without changing `PATH` or shell startup files.
-Linux arm64, macOS, and Windows distributions remain unsupported, and no
-universal Linux or kernel compatibility is claimed. No tag, GitHub Release,
-crates.io publication, or GitHub distribution authority is implied.
+manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/backwriter`
+with a same-directory rename, without changing `PATH` or shell startup files.
+Concurrent same-user HOME mutation is caller-owned.
+macOS support is based on static cross-build verification without a native
+runtime-test claim. Linux arm64 and Windows remain unsupported, and no universal
+host compatibility is claimed. `0.1.0-beta.1` stays open for the planned
+Windows slices: existing artifact files are immutable, its version directory is
+append-only, and the manifest may expand until the matrix closes. No tag,
+GitHub Release, crates.io publication, or GitHub distribution authority is
+implied.
 The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
 canonical executable is `backwriter`.
 
