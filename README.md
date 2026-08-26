@@ -12,13 +12,21 @@ result-binding, explicit Data modes.
 
 ## Quick start
 
-Build the current beta from source:
+Install the official `0.1.0-beta.2` release on Linux, macOS, or WSL:
 
 ```sh
-cargo build --release
-./target/release/bw search line "needle"
-./target/release/bw --workspace /path/project search paragraph "needle"
+curl -fsSL https://backwriter.pentagration.com/install.sh | sh
 ```
+
+On Windows PowerShell:
+
+```powershell
+irm https://backwriter.pentagration.com/install.ps1 | iex
+```
+
+Windows CMD uses the [canonical `curl.exe` block](#official-desktop-distribution)
+below. The installers place `bw` in `$HOME/.local/bin` (`bw.exe` on Windows)
+without changing `PATH` or shell startup files.
 
 The product is Backwriter. The Cargo package and library crate are `backwriter`
 at `0.1.0-beta.2`; the sole canonical executable and external Adapter command
@@ -92,10 +100,12 @@ writers. Writers may race and one publication may overwrite another
 source-visible change; hosts requiring a stronger guarantee coordinate outside
 Backwriter.
 
-## Build and test
+## Build from source and test
 
 ```sh
 cargo build --offline --locked --release
+./target/release/bw search line "needle"
+./target/release/bw --workspace /path/project search paragraph "needle"
 cargo test --offline --locked
 ```
 
