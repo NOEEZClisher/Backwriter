@@ -135,21 +135,14 @@ verification and is not installer authority. Windows PowerShell installation use
 manifest authority and exact ZIP, and installs to `$HOME\.local\bin\bw.exe`
 without editing PATH or the PowerShell profile.
 
-Paste this canonical block into `cmd.exe` to use the thin CMD Adapter without
-silently replacing a fixed temporary filename:
+Run this canonical command in `cmd.exe` to use the thin CMD Adapter:
 
 ```cmd
-set "BW_TEMP="
-if defined TEMP for %I in ("%TEMP%") do set "BW_TEMP=%~fI"
-set "BW_BOOTSTRAP="
-if defined BW_TEMP set "BW_BOOTSTRAP=%BW_TEMP%\backwriter-bootstrap-%RANDOM%-%RANDOM%"
-cmd.exe /D /C exit 1
-if defined BW_BOOTSTRAP if exist "%BW_TEMP%\." if not exist "%BW_BOOTSTRAP%\." mkdir "%BW_BOOTSTRAP%" && curl.exe --fail --show-error --silent --location --proto "=https" --proto-redir "=https" --tlsv1.2 --output "%BW_BOOTSTRAP%\install.cmd" "https://backwriter.pentagration.com/install.cmd" && call "%BW_BOOTSTRAP%\install.cmd"
-set "BW_EXIT=%ERRORLEVEL%"
-if defined BW_BOOTSTRAP if exist "%BW_BOOTSTRAP%\." rmdir /S /Q "%BW_BOOTSTRAP%"
-if defined BW_BOOTSTRAP if exist "%BW_BOOTSTRAP%\." >&2 echo backwriter bootstrap: could not remove temporary directory
-set "BW_TEMP=" & set "BW_BOOTSTRAP=" & set "BW_EXIT=" & cmd.exe /D /C exit %BW_EXIT%
+curl.exe -fsSL https://backwriter.pentagration.com/install.cmd -o install.cmd && call install.cmd && del install.cmd
 ```
+
+The command writes `install.cmd` in the current directory and removes it after
+a successful installation. An existing file with that name is replaced.
 
 The CRLF `install.cmd` checks `curl.exe` and `powershell.exe`, downloads exactly
 the canonical `install.ps1` over HTTPS-only TLS 1.2-or-newer transport into a
