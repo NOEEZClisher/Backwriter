@@ -3,10 +3,19 @@
 use std::{
     env,
     ffi::OsString,
+    fs::{self, OpenOptions},
     io::{self, BufRead, BufWriter, Write},
-    path::PathBuf,
-    process::ExitCode,
+    path::{Path, PathBuf},
+    process::{Command, ExitCode},
+    time::{SystemTime, UNIX_EPOCH},
 };
+
+#[cfg(unix)]
+use std::os::unix::fs::DirBuilderExt;
+#[cfg(windows)]
+use std::os::windows::fs::MetadataExt;
+#[cfg(unix)]
+use std::process::ExitStatus;
 
 use backwriter::{
     backwriter::{
@@ -25,7 +34,12 @@ use backwriter::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human and JSON Search, View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+
+#[cfg(unix)]
+const INSTALL_SH_URL: &str = "https://backwriter.pentagration.com/install.sh";
+#[cfg(windows)]
+const INSTALL_PS1_URL: &str = "https://backwriter.pentagration.com/install.ps1";
 
 enum CliError {
     Usage(String),
@@ -38,6 +52,122 @@ enum OutputMode {
     Human,
     Json,
     Raw,
+}
+
+struct UpdateTemporary {
+    root: PathBuf,
+    armed: bool,
+}
+
+impl UpdateTemporary {
+    fn create() -> Result<Self, CliError> {
+        let parent = env::temp_dir();
+        let metadata = fs::symlink_metadata(&parent).map_err(|error| {
+            CliError::execution(format!("update temporary root is unavailable: {error}"))
+        })?;
+        if !parent.is_absolute() || !safe_update_directory(&metadata) {
+            return Err(CliError::execution(
+                "update temporary root must be an absolute ordinary directory",
+            ));
+        }
+
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| CliError::execution("system time is unavailable"))?
+            .as_nanos();
+        let process = u128::from(std::process::id());
+        for attempt in 0_u128..128 {
+            let nonce = nanos.wrapping_add(process << 64).wrapping_add(attempt);
+            let candidate = parent.join(format!("backwriter-update-{nonce:032x}"));
+            match create_update_directory(&candidate) {
+                Ok(()) => {
+                    let metadata = match fs::symlink_metadata(&candidate) {
+                        Ok(metadata) => metadata,
+                        Err(error) => {
+                            let _ = fs::remove_dir(&candidate);
+                            return Err(CliError::execution(format!(
+                                "could not inspect update temporary directory: {error}"
+                            )));
+                        }
+                    };
+                    if !safe_update_directory(&metadata) {
+                        let _ = fs::remove_dir(&candidate);
+                        return Err(CliError::execution(
+                            "update temporary path is not an ordinary directory",
+                        ));
+                    }
+                    return Ok(Self {
+                        root: candidate,
+                        armed: true,
+                    });
+                }
+                Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+                Err(error) => {
+                    return Err(CliError::execution(format!(
+                        "could not create update temporary directory: {error}"
+                    )));
+                }
+            }
+        }
+        Err(CliError::execution(
+            "could not create a unique update temporary directory",
+        ))
+    }
+
+    fn installer(&self, name: &str) -> Result<PathBuf, CliError> {
+        let path = self.root.join(name);
+        OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .map_err(|error| {
+                CliError::execution(format!("could not create update installer file: {error}"))
+            })?;
+        Ok(path)
+    }
+
+    #[cfg(unix)]
+    fn cleanup(mut self) -> Result<(), CliError> {
+        fs::remove_dir_all(&self.root).map_err(|error| {
+            CliError::execution(format!(
+                "could not remove update temporary directory: {error}"
+            ))
+        })?;
+        self.armed = false;
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    fn handoff(mut self) {
+        self.armed = false;
+    }
+}
+
+impl Drop for UpdateTemporary {
+    fn drop(&mut self) {
+        if self.armed {
+            let _ = fs::remove_dir_all(&self.root);
+        }
+    }
+}
+
+fn safe_update_directory(metadata: &fs::Metadata) -> bool {
+    let safe = metadata.is_dir() && !metadata.file_type().is_symlink();
+    #[cfg(windows)]
+    let safe = safe && metadata.file_attributes() & 0x400 == 0;
+    safe
+}
+
+#[cfg(unix)]
+fn create_update_directory(path: &Path) -> io::Result<()> {
+    let mut builder = fs::DirBuilder::new();
+    builder.mode(0o700);
+    builder.create(path)
+}
+
+#[cfg(not(unix))]
+fn create_update_directory(path: &Path) -> io::Result<()> {
+    fs::DirBuilder::new().create(path)
 }
 
 impl CliError {
@@ -136,6 +266,27 @@ fn execute() -> Result<ExitCode, CliError> {
                 }
                 output = OutputMode::Raw;
             }
+            "version" => {
+                if workspace.is_some()
+                    || !admissions.is_empty()
+                    || output != OutputMode::Human
+                    || arguments.next().is_some()
+                {
+                    return Err(CliError::usage("version accepts no options or operands"));
+                }
+                write_version()?;
+                return Ok(ExitCode::SUCCESS);
+            }
+            "update" => {
+                if workspace.is_some()
+                    || !admissions.is_empty()
+                    || output != OutputMode::Human
+                    || arguments.next().is_some()
+                {
+                    return Err(CliError::usage("update accepts no options or operands"));
+                }
+                return execute_update();
+            }
             "search" => {
                 return execute_search(arguments, workspace, admissions, output)
                     .map(|()| ExitCode::SUCCESS);
@@ -176,6 +327,112 @@ fn execute() -> Result<ExitCode, CliError> {
         }
         capability = arguments.next();
     }
+}
+
+fn write_version() -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    writeln!(stdout, "Backwriter {}", env!("CARGO_PKG_VERSION"))
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
+}
+
+fn download_update_installer(curl: &str, url: &str, destination: &Path) -> Result<(), CliError> {
+    let status = Command::new(curl)
+        .args([
+            "--fail",
+            "--show-error",
+            "--silent",
+            "--location",
+            "--proto",
+            "=https",
+            "--proto-redir",
+            "=https",
+            "--tlsv1.2",
+            "--output",
+        ])
+        .arg(destination)
+        .arg(url)
+        .status()
+        .map_err(|error| {
+            CliError::execution(format!(
+                "could not start update download with {curl}: {error}"
+            ))
+        })?;
+    if !status.success() {
+        return Err(CliError::execution("could not download update installer"));
+    }
+    let metadata = fs::symlink_metadata(destination).map_err(|error| {
+        CliError::execution(format!(
+            "could not inspect downloaded update installer: {error}"
+        ))
+    })?;
+    if !metadata.is_file() || metadata.file_type().is_symlink() {
+        return Err(CliError::execution(
+            "downloaded update installer is not an ordinary file",
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+fn propagated_exit_code(status: ExitStatus) -> ExitCode {
+    match status.code() {
+        Some(code) if (0..=i32::from(u8::MAX)).contains(&code) => ExitCode::from(code as u8),
+        _ => ExitCode::FAILURE,
+    }
+}
+
+#[cfg(unix)]
+fn execute_update() -> Result<ExitCode, CliError> {
+    let temporary = UpdateTemporary::create()?;
+    let installer = temporary.installer("install.sh")?;
+    download_update_installer("curl", INSTALL_SH_URL, &installer)?;
+    let status = Command::new("sh")
+        .arg(&installer)
+        .status()
+        .map_err(|error| {
+            CliError::execution(format!(
+                "could not start downloaded update installer: {error}"
+            ))
+        })?;
+    temporary.cleanup()?;
+    Ok(propagated_exit_code(status))
+}
+
+#[cfg(windows)]
+fn execute_update() -> Result<ExitCode, CliError> {
+    let temporary = UpdateTemporary::create()?;
+    let installer = temporary.installer("install.ps1")?;
+    download_update_installer("curl.exe", INSTALL_PS1_URL, &installer)?;
+    Command::new("powershell.exe")
+        .args([
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+        ])
+        .arg(&installer)
+        .arg("-WaitForProcessId")
+        .arg(std::process::id().to_string())
+        .arg("-BootstrapRoot")
+        .arg(&temporary.root)
+        .spawn()
+        .map_err(|error| {
+            CliError::execution(format!("could not hand off to PowerShell updater: {error}"))
+        })?;
+    temporary.handoff();
+    Ok(ExitCode::SUCCESS)
+}
+
+#[cfg(not(any(unix, windows)))]
+fn execute_update() -> Result<ExitCode, CliError> {
+    Err(CliError::execution(
+        "update is unsupported on this operating system",
+    ))
 }
 
 fn execute_search(

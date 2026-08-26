@@ -5,6 +5,9 @@ use std::{
     process::{Command, Output, Stdio},
 };
 
+#[cfg(unix)]
+use std::{env, os::unix::fs::PermissionsExt};
+
 use backwriter::{
     backwriter::{
         anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, LineTerminator, Natural},
@@ -97,6 +100,12 @@ fn write(root: &Path, path: &str, content: &str) {
     let path = root.join(path);
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, content).unwrap();
+}
+
+#[cfg(unix)]
+fn write_executable(root: &Path, path: &str, content: &str) {
+    write(root, path, content);
+    fs::set_permissions(root.join(path), fs::Permissions::from_mode(0o755)).unwrap();
 }
 
 fn view_operand(root: &Path, path: &str, target: AnddressTarget) -> String {
@@ -368,7 +377,132 @@ fn canonical_binary_help_and_default_workspace_search() {
     assert!(help_stdout.contains("[--json] search"));
     assert!(help_stdout.contains("[--json] check"));
     assert!(help_stdout.contains("[--json|--raw] view"));
+    assert!(help_stdout.contains("  bw version\n"));
+    assert!(help_stdout.contains("  bw update\n"));
     assert!(help.stderr.is_empty());
+
+    let version = run(root.path(), &["version"]);
+    assert!(version.status.success());
+    assert_eq!(version.stdout, b"Backwriter 0.1.0-beta.3\n");
+    assert!(version.stderr.is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn one_shot_update_delegates_to_the_https_installer_and_propagates_status() {
+    let root = tempfile::tempdir().unwrap();
+    let fake_bin = root.path().join("bin");
+    let update_temp = root.path().join("temporary");
+    fs::create_dir(&fake_bin).unwrap();
+    fs::create_dir(&update_temp).unwrap();
+    let curl_log = root.path().join("curl.log");
+    write_executable(
+        root.path(),
+        "bin/curl",
+        r#"#!/bin/sh
+set -eu
+: "${BW_FAKE_CURL_LOG:?}"
+: > "$BW_FAKE_CURL_LOG"
+for argument in "$@"; do
+    printf '%s\n' "$argument" >> "$BW_FAKE_CURL_LOG"
+done
+exit_code=${BW_FAKE_CURL_EXIT-0}
+if [ "$exit_code" -ne 0 ]; then
+    exit "$exit_code"
+fi
+output=''
+while [ "$#" -gt 0 ]; do
+    if [ "$1" = '--output' ]; then
+        shift
+        output=${1-}
+    fi
+    shift
+done
+[ -n "$output" ]
+printf '%s' "${BW_FAKE_INSTALLER:?}" > "$output"
+"#,
+    );
+
+    let mut paths = vec![fake_bin.clone()];
+    paths.extend(env::split_paths(&env::var_os("PATH").unwrap_or_default()));
+    let path = env::join_paths(paths).unwrap();
+    let invoke = |installer: &str, curl_exit: Option<&str>| {
+        let mut command = Command::new(binary());
+        command
+            .current_dir(root.path())
+            .arg("update")
+            .env("PATH", &path)
+            .env("TMPDIR", &update_temp)
+            .env("BW_FAKE_CURL_LOG", &curl_log)
+            .env("BW_FAKE_INSTALLER", installer);
+        if let Some(exit) = curl_exit {
+            command.env("BW_FAKE_CURL_EXIT", exit);
+        }
+        command.output().unwrap()
+    };
+
+    let success = invoke("#!/bin/sh\nprintf 'Backwriter delegated\\n'\n", None);
+    assert!(success.status.success(), "{}", text(success.stderr));
+    assert_eq!(success.stdout, b"Backwriter delegated\n");
+    assert!(success.stderr.is_empty());
+    let curl_arguments = fs::read_to_string(&curl_log).unwrap();
+    let curl_arguments = curl_arguments.lines().collect::<Vec<_>>();
+    assert_eq!(curl_arguments.len(), 12);
+    assert_eq!(
+        &curl_arguments[..10],
+        [
+            "--fail",
+            "--show-error",
+            "--silent",
+            "--location",
+            "--proto",
+            "=https",
+            "--proto-redir",
+            "=https",
+            "--tlsv1.2",
+            "--output",
+        ]
+    );
+    let installer_path = Path::new(curl_arguments[10]);
+    assert_eq!(installer_path.file_name().unwrap(), "install.sh");
+    let temporary_leaf = installer_path.parent().unwrap().file_name().unwrap();
+    let temporary_leaf = temporary_leaf.to_str().unwrap();
+    let nonce = temporary_leaf.strip_prefix("backwriter-update-").unwrap();
+    assert_eq!(nonce.len(), 32);
+    assert!(
+        nonce
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    );
+    assert_eq!(
+        curl_arguments[11],
+        "https://backwriter.pentagration.com/install.sh"
+    );
+    assert!(!installer_path.exists());
+    assert!(fs::read_dir(&update_temp).unwrap().next().is_none());
+
+    let installer_failure = invoke(
+        "#!/bin/sh\nprintf 'installer failed\\n' >&2\nexit 7\n",
+        None,
+    );
+    assert_eq!(installer_failure.status.code(), Some(7));
+    assert!(installer_failure.stdout.is_empty());
+    assert_eq!(installer_failure.stderr, b"installer failed\n");
+    assert!(fs::read_dir(&update_temp).unwrap().next().is_none());
+
+    let download_failure = invoke("#!/bin/sh\nexit 0\n", Some("22"));
+    assert_eq!(download_failure.status.code(), Some(1));
+    assert!(download_failure.stdout.is_empty());
+    assert!(text(download_failure.stderr).contains("could not download update installer"));
+    assert!(fs::read_dir(&update_temp).unwrap().next().is_none());
+
+    let source = include_str!("../src/bin/bw.rs");
+    assert!(source.contains("backwriter-update-{nonce:032x}"));
+    assert!(source.contains(".arg(\"-WaitForProcessId\")"));
+    assert!(source.contains(".arg(std::process::id().to_string())"));
+    assert!(source.contains(".arg(\"-BootstrapRoot\")"));
+    assert!(source.contains(".arg(&temporary.root)"));
+    assert!(source.contains("temporary.handoff()"));
 }
 
 #[test]
@@ -648,6 +782,10 @@ fn syntax_and_unimplemented_forms_are_usage_errors() {
         vec!["--workspace", "relative", "search", "line", "needle"],
         vec!["--unknown", "search", "line", "needle"],
         vec!["shell", "extra"],
+        vec!["version", "extra"],
+        vec!["update", "extra"],
+        vec!["--json", "version"],
+        vec!["--raw", "update"],
         vec!["pick"],
         vec!["view"],
         vec!["search", "line", "needle", "--json"],
@@ -655,6 +793,11 @@ fn syntax_and_unimplemented_forms_are_usage_errors() {
     ] {
         assert_usage(run(root.path(), &arguments));
     }
+    assert_usage(run(
+        root.path(),
+        &["--workspace", root.path().to_str().unwrap(), "version"],
+    ));
+    assert_usage(run(root.path(), &["--admit", ".", "update"]));
 }
 
 #[test]
