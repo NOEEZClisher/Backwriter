@@ -8,7 +8,7 @@ The Core capability inventory is Search, View, Pick, Anchor, Check, Edit,
 Apply, and Data. The repository currently provides their Rust Core/Runtime
 surfaces and the canonical `bw` executable's one-shot human and JSON
 Search/View/Check, raw View, Session Pick, batch Check, Anchor, Edit, Apply,
-result-binding, explicit Data modes.
+result-binding, explicit Data modes, and Adapter-owned Version and Update.
 
 ## Quick start
 
@@ -33,17 +33,37 @@ curl.exe -fsSL https://backwriter.pentagration.com/install.cmd -o install.cmd &&
 ```
 
 The installers place `bw` in `$HOME/.local/bin` (`bw.exe` on Windows) without
-changing `PATH` or shell startup files.
+changing `PATH` or shell startup files. A fresh install prints `Installed
+Backwriter: <version>`; replacing an existing destination prints `Updated
+Backwriter: <version>`. The executable path and `PATH` guidance are printed
+separately only when the installation directory is not already on `PATH`.
+
+### Version
+
+```sh
+bw version
+```
+
+The current release prints exactly:
+
+```text
+Backwriter 0.1.0-beta.3
+```
 
 ### Update
 
-Run the same command for your platform again. The installer reads the current
-distribution manifest, verifies the selected artifact, and replaces the
-existing executable only after validation succeeds. Backwriter does not update
-itself in the background.
+```sh
+bw update
+```
+
+`bw update` downloads and delegates to the current official installer. The
+installer reads the current distribution manifest, verifies the selected
+artifact, and installs or reinstalls that manifest version only after
+validation succeeds. It does not run a background updater or compare release
+versions.
 
 The product is Backwriter. The Cargo package and library crate are `backwriter`
-at `0.1.0-beta.2`; the sole canonical executable and external Adapter command
+at `0.1.0-beta.3`; the sole canonical executable and external Adapter command
 are `bw`. There is no `backwriter` binary, alias, or wrapper.
 
 The default workspace is the process current working directory. An explicit
@@ -55,10 +75,13 @@ sources.
 
 ## Current CLI scope
 
-`bw` currently implements one-shot human or JSON Search, View, and
-Check, raw View, plus Session Pick, batch Check, Anchor, Edit, Apply, and Data:
+`bw` currently implements Adapter-owned one-shot Version and Update, one-shot
+human or JSON Search, View, and Check, raw View, plus Session Pick, batch Check,
+Anchor, Edit, Apply, and Data:
 
 ```text
+bw version
+bw update
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
@@ -77,6 +100,9 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     check anddress <encoded-v3-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 ```
+
+Version and Update do not call Backwriter Core or Runtime and create no Core
+wire or capability workflow.
 
 The CLI preserves Core Search validation and deterministic result order. View
 decodes a v3 Anddress and writes only its exact selected text. Check decodes one
@@ -127,9 +153,9 @@ cargo test --offline --locked
 
 The official distribution authority is
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com).
-It publishes Backwriter `0.1.0-beta.2` for Linux/WSL x86_64, macOS arm64,
+It publishes Backwriter `0.1.0-beta.3` for Linux/WSL x86_64, macOS arm64,
 macOS x86_64, and Windows x86_64 from Source Authority revision
-`209f606db08415ef5fd7f1cfbe1e43bf0c96dc73`. Linux uses canonical target
+`7d7469563a357215261c42fa2067d7f587c5eb1b`. Linux uses canonical target
 `x86_64-unknown-linux-musl`;
 `x86_64-unknown-linux-gnu` remains the local development/test-host target.
 macOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and
@@ -147,8 +173,8 @@ HOME mutation is caller-owned. The published `.sha256` sidecar is for manual
 verification and is not installer authority. Windows PowerShell verifies the
 same manifest authority and exact ZIP, and installs to
 `$HOME\.local\bin\bw.exe` without editing PATH or the PowerShell profile. The
-three canonical install and update commands are kept together in
-[Quick start](#quick-start).
+three canonical install commands and the canonical `bw update` command are kept
+together in [Quick start](#quick-start).
 
 The CMD command writes `install.cmd` in the current directory and removes it
 after a successful installation. An existing file with that name is replaced.
@@ -160,14 +186,16 @@ cleans the directory, and preserves the child exit code. It owns no manifest,
 SHA-256, ZIP, or installation logic. The Linux-hosted CMD regression is static;
 no native CMD execution is claimed.
 The distribution provides no
-publisher-authenticity signature or trusted signing identity, automatic update,
-telemetry, `sudo` execution, or automatic `PATH` or shell-startup-file change.
+publisher-authenticity signature or trusted signing identity, background or
+automatic update, telemetry, `sudo` execution, or automatic `PATH` or
+shell-startup-file change.
 GitHub is a public source and documentation mirror, not the distribution
-authority. The prior beta.1 files remain unchanged and immutable. The complete
-beta.2 version directory is immutable, the planned matrix is complete, and the
-release is closed. Any later platform or version requires separate Owner
-authority. Linux arm64, tags, GitHub Releases,
-crates.io publication, and auto-update remain outside the completed publication.
+authority. The complete beta.1 and beta.2 version directories remain unchanged
+and immutable. The complete beta.3 version directory is also immutable; its
+planned matrix is complete and the release is closed. Any later platform or
+version requires separate Owner authority. Linux arm64, tags, GitHub Releases,
+crates.io publication, and background or automatic update remain outside the
+completed publication.
 
 ## Architecture
 

@@ -22,10 +22,11 @@ Rust value implementation, and single-source Apply Runtime implementation are
 complete. Apply's V1 semantic/public API/error authority and Runtime
 implementation are complete.
 
-## CLI Adapter V1 Search/View/Check JSON and raw View, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data slice
+## CLI Adapter V1 capabilities and standalone Version/Update utilities
 
 The repository includes the canonical `bw` CLI Adapter. Its completed
-scope is one-shot human and JSON Search, View, and Check plus raw View and Session Pick,
+scope includes exact `bw version`, explicit `bw update`, one-shot human and
+JSON Search, View, and Check plus raw View and Session Pick,
 batch Check, Anchor, Edit, Apply, result binding, and explicit Data over the existing public
 Runtime seams. The Session retains one Runtime, one caller-owned `DataStore`,
 and explicit CLI-local bindings plus non-aliasing owning Anchedress handles.
@@ -40,7 +41,10 @@ existing v3 Anddress objects. Raw View is an explicit Adapter exact-text
 projection and creates no Core wire or new View meaning. Data transfers exact
 clones from explicit Session values into the existing typed Core store and reads
 them back without capability execution.
-It adds no Core API, wire, workflow, provenance, automatic Data storage,
+Version and Update are Adapter-owned standalone utilities outside Core;
+explicit Update invokes the canonical distribution installer and adds no
+background or automatic updater. The Adapter adds no Core API, wire, workflow,
+provenance, automatic Data storage,
 registry, persistence, or retained Core state beyond existing Anchor continuity.
 One-shot Data and Anchor remain intentionally unsupported because their
 DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
@@ -55,16 +59,18 @@ GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes Backwriter `0.1.0-beta.2` for Linux/WSL x86_64, macOS arm64,
+publishes Backwriter `0.1.0-beta.3` for Linux/WSL x86_64, macOS arm64,
 macOS x86_64, and Windows x86_64. Linux uses `x86_64-unknown-linux-musl`; macOS uses
 `aarch64-apple-darwin` at minimum 11.0 and `x86_64-apple-darwin` at minimum
 10.12. Windows uses `x86_64-pc-windows-gnu` and canonical `bw.exe`. Their
 artifacts, manual-verification checksum sidecars, expanded canonical manifest,
 POSIX and PowerShell installers, and publication are complete from Source
 Authority revision
-`209f606db08415ef5fd7f1cfbe1e43bf0c96dc73`. The installer verifies the
+`7d7469563a357215261c42fa2067d7f587c5eb1b`. The installer verifies the
 manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/bw`
 with a same-directory rename, without changing `PATH` or shell startup files.
+Fresh installation prints the installed version and replacement prints the
+updated version; destination/PATH guidance is separate.
 PowerShell installs to `$HOME\.local\bin\bw.exe` without changing PATH or the
 PowerShell profile. The public CRLF CMD Adapter downloads exactly that
 PowerShell installer over HTTPS-only TLS transport, delegates all installation
@@ -73,15 +79,14 @@ code. It duplicates no installer authority.
 Concurrent same-user HOME mutation is caller-owned.
 macOS and Windows support are based on static cross-build verification without
 native runtime-test or native CMD claims. Linux arm64 remains unsupported, and
-no universal host compatibility is claimed. The public beta.1 files remain
-unchanged and immutable, and the complete beta.2 version directory is
-immutable. The planned
-matrix is complete and beta.2 is closed; any later platform or version requires
-separate Owner authority. Tags, GitHub Releases,
+no universal host compatibility is claimed. The public beta.1 and beta.2 files
+remain unchanged and immutable, and the complete beta.3 version directory is
+immutable. The full planned matrix is complete and beta.3 is closed; any later
+platform or version requires separate Owner authority. Tags, GitHub Releases,
 crates.io publication, and GitHub distribution
 remain outside the completed publication.
 The current Cargo package and library crate are `backwriter` at
-`0.1.0-beta.2`; the sole canonical executable and external Adapter command are
+`0.1.0-beta.3`; the sole canonical executable and external Adapter command are
 `bw`. There is no current `backwriter` binary, alias, or wrapper. Product prose
 continues to use Backwriter, and persisted Core wire/private-path and
 distribution artifact/domain contracts keep their existing names.

@@ -1,10 +1,10 @@
 # Backwriter CLI V1
 
 Status: Adapter authority. The completed slices are the canonical `bw`
-executable's one-shot human and JSON Search/View/Check, raw View, Session Pick,
-batch Check, Anchor, Edit, Apply, result-binding, and Data modes only. This
-document follows the Core active documents in the
-authority-reading order.
+executable's standalone Version and Update operations, one-shot human and JSON
+Search/View/Check, raw View, Session Pick, batch Check, Anchor, Edit, Apply,
+result-binding, and Data modes only. This document follows the Core active
+documents in the authority-reading order.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -25,7 +25,7 @@ External callers invoke `bw`, which adapts to `backwriter` Core. Product prose
 uses Backwriter; persisted `artext.backwriter-*` wire values, `.artext/bw`, and
 distribution artifact/domain names are unchanged contracts.
 
-CLI V1 has two intended execution forms:
+CLI V1 capability execution has two intended forms:
 
 - One-shot invokes one capability and exits without retaining a result.
 - The Session retains one `WorkspaceRuntime`, one explicit caller-owned
@@ -35,6 +35,8 @@ CLI V1 has two intended execution forms:
 One-shot human and JSON Search, View, and Check plus raw View, Session Pick,
 batch Check, Anchor, Edit, Apply, result binding, and explicit typed Data are
 implemented.
+Standalone `version` and `update` are Adapter-owned executable operations, not
+Core capabilities or Session commands.
 One-shot Data and Anchor are intentionally unsupported because their DataStore
 and live-handle contracts require Session lifetime. One-shot Pick, batch Check,
 Edit, and Apply await collection or Edit transport schema authority. Raw output
@@ -49,6 +51,39 @@ Capability → Operation → Kind → Operand → Position → Payload → Quali
 
 This is an Adapter expression order, not a Core method signature, provenance
 claim, automatic handoff, or required workflow.
+
+## Implemented standalone Version and Update
+
+The complete syntax is:
+
+```text
+bw version
+bw update
+```
+
+Both forms reject every option and operand, including workspace, admission, and
+output selections. They are unavailable inside Session. Neither opens a
+workspace, calls Core or Runtime, defines a wire value, or establishes a
+capability workflow.
+
+`bw version` writes exactly:
+
+```text
+Backwriter 0.1.0-beta.3
+```
+
+including the final LF and no other successful output.
+
+`bw update` downloads the current platform's official installer over HTTPS and
+delegates installation to it. It performs no local version comparison, retry,
+daemon or background update, and adds no compatibility alias. On Unix it uses a
+private temporary directory, runs the downloaded `install.sh` synchronously
+with `sh`, propagates its exit status, and removes the temporary directory. On
+Windows it starts the downloaded `install.ps1` with the current process ID and
+the exact private bootstrap root, then exits so PowerShell can wait for the
+parent before replacing `bw.exe`. A Windows parent status of `0` means only that
+handoff started successfully; the child owns final installer output, final
+status, replacement, and bootstrap cleanup.
 
 ## Implemented one-shot Search
 
@@ -90,7 +125,9 @@ all duplicate, overlap, logical-path, and query validation. It passes a
 validated `SearchRequest` unchanged to `WorkspaceRuntime::search`.
 
 The CLI has no parser framework, Core facade, second validation model, cache,
-session state, automatic selection, or background process.
+automatic selection, daemon, or background updater. Session state is limited to
+the explicit Session contract, and the only detached process is the Windows
+Update replacement handoff described above.
 
 ### Exit and stream rules
 
@@ -99,6 +136,9 @@ session state, automatic selection, or background process.
   to stderr.
 - Runtime/Search execution errors and stdout write failures exit `1` and write
   errors only to stderr.
+- Adapter Version/Update I/O or process-launch errors exit `1` and write only to
+  stderr. Unix Update propagates the installer status; Windows status `0` has
+  the narrower handoff meaning defined above.
 - `--help` as the sole argument exits `0` and writes usage to stdout.
 
 Unsupported capabilities and unsupported output forms are explicit usage errors

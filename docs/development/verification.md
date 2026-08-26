@@ -134,12 +134,12 @@ publish a distribution.
 
 Separately, the external operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com) has
-completed publication verification for Backwriter `0.1.0-beta.2` on
+completed publication verification for Backwriter `0.1.0-beta.3` on
 Linux/WSL x86_64, macOS arm64, macOS x86_64, and Windows x86_64. Targets are
 `x86_64-unknown-linux-musl`, `aarch64-apple-darwin` at minimum macOS 11.0, and
 `x86_64-apple-darwin` at minimum macOS 10.12, and
 `x86_64-pc-windows-gnu`. The artifacts and manifest retain
-Source Authority revision `209f606db08415ef5fd7f1cfbe1e43bf0c96dc73`, and the
+Source Authority revision `7d7469563a357215261c42fa2067d7f587c5eb1b`, and the
 POSIX installer destination is `$HOME/.local/bin/bw`; the PowerShell destination
 is `$HOME\.local\bin\bw.exe`. The CMD path is the public CRLF Adapter that
 downloads and delegates to the same PowerShell installer. Verification covered
@@ -147,25 +147,28 @@ the archive, manual
 `.sha256` sidecars, expanded canonical manifest, installers, closed version
 directory, local and public GET/HEAD status, zero-length HEAD bodies, exact
 cache policy, canonical body equality, manifest-authoritative artifact SHA-256,
-and an end-to-end temporary-`HOME` Linux install with help, Search, and Session
-execution. Windows verification covered deterministic ZIP bytes, x86_64 PE and
-system DLL imports, canonical manifest/installers, static PowerShell and CMD
-contract checks, CMD GET/HEAD 200 with `no-store`, zero HEAD body, and exact
-tracked bytes. The beta.1 file identities, bytes, modes, and ownership, all
-pre-existing beta.2 artifact and pointer identities and hashes, and both
-service processes remained unchanged. macOS and Windows verification is static
-and does not claim native execution. The beta.1 files and complete beta.2
-version directory are immutable. The planned matrix is complete and beta.2 is
-closed. Linux arm64, tags, GitHub Releases, crates.io publication, universal
-host compatibility, and GitHub distribution authority remain outside this
-verification.
+and task-local fresh installation plus explicit `bw update`. Fresh installation
+printed the installed version, replacement printed the updated version, and
+destination/PATH guidance remained separate. `bw version` produced exactly
+`Backwriter 0.1.0-beta.3` plus LF. Verification passed 188 GNU tests, 188 musl tests, 10
+origin tests, 64 POSIX installer regressions, 36 PowerShell regressions, 12 CMD
+regressions, 10 Windows release regressions, and 19 publisher regressions. It
+also verified 12 local and 12 public GET/HEAD responses with exact bodies and
+cache policy. The beta.1 and beta.2 file identities, bytes, modes, ownership,
+and hashes, and both service processes remained unchanged. macOS and Windows
+verification is static and does not claim native execution. The beta.1 and
+beta.2 files and complete beta.3 version directory are immutable. The planned
+matrix is complete and beta.3 is closed. Linux arm64, tags, GitHub Releases,
+crates.io publication, universal host compatibility, background or automatic
+update, and GitHub distribution authority remain outside this verification.
 
 Before handoff, verify the diff and index, confirm repository-root `.artext` is
 absent and untracked, preserve historical task/history files, and leave the
 index empty.
 
 CLI process regressions cover the canonical `bw` binary without a `backwriter`
-binary, `--help`, default-current-directory and explicit absolute workspaces,
+binary, `--help`, exact `bw version`, explicit `bw update` download/exit/output
+propagation and platform handoff, default-current-directory and explicit absolute workspaces,
 default and repeated admission, Line/Paragraph/File Search, repeated source and
 subtree scope selectors, Core scope rejection, deterministic human output,
 space-preserving query argv, raw-Anddress/workspace-coordinate omission, Empty,

@@ -21,14 +21,17 @@ implementation are complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
-implemented Backwriter CLI V1 one-shot human and JSON Search/View/Check, raw
-View, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, explicit
-Data, and JSON Adapter.
+implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,
+one-shot human and JSON Search/View/Check, raw View, Session Pick, batch Check,
+Anchor, Edit, Apply, result-binding, explicit Data, and JSON Adapter. Version
+and Update add no Core capability, Runtime seam, wire, or workflow authority.
 Native wire,
 AI/Context/Profile, client, MCP, product integration, and external consumer
 work remain outside that cutline. Beyond the completed Session Pick, batch
-Check, Anchor, Edit, Apply, result-binding, Data, Search/View/Check JSON, and raw View slice, every other
-capability remains deferred Adapter work.
+Check, Anchor, Edit, Apply, result-binding, Data, Search/View/Check JSON, raw
+View, Version, and Update slice, every other capability remains deferred Adapter
+work. `bw update` is an explicit user-invoked installer handoff; it creates no
+daemon, background updater, retry authority, or version-comparison engine.
 
 ## Current structure only
 

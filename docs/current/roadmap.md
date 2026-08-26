@@ -39,9 +39,10 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
-## Completed: CLI V1 human and JSON Search/View/Check, raw View, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data Adapter
+## Completed: CLI V1 capabilities and standalone Version/Update utilities
 
-The canonical `bw` executable implements one-shot human and JSON Search,
+The canonical `bw` executable implements exact `bw version`, explicit
+`bw update`, one-shot human and JSON Search,
 View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result
 binding, and Data. JSON Search, View, and Check stream compact Adapter envelopes
 with exact v3 Anddress objects where applicable and create no Core wire. The
@@ -62,7 +63,9 @@ their DataStore and live-handle contracts require Session lifetime. One-shot
 Pick, batch Check, Edit, and Apply await collection or Edit transport schema
 authority. Raw output other than completed one-shot View and further Session
 behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
-or wire authority.
+or wire authority. Version and Update are Adapter-owned standalone utilities
+outside Core. Explicit Update invokes the canonical installer; background and
+automatic update remain deferred.
 Core/Runtime beta implementation freeze holds. CLI V1 beta implementation
 freeze is complete; work resumes only with owner authority for collection/Edit
 transport or Session machine output.
@@ -71,9 +74,9 @@ The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 The target choice and direct build verification are complete. The external
 operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes Backwriter `0.1.0-beta.2` for Linux/WSL x86_64, macOS arm64,
+publishes Backwriter `0.1.0-beta.3` for Linux/WSL x86_64, macOS arm64,
 macOS x86_64, and Windows x86_64 from Source Authority revision
-`209f606db08415ef5fd7f1cfbe1e43bf0c96dc73`. Linux uses
+`7d7469563a357215261c42fa2067d7f587c5eb1b`. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
 and `x86_64-apple-darwin` at minimum 10.12. Windows uses
 `x86_64-pc-windows-gnu` and canonical `bw.exe`. Archives, checksum sidecars,
@@ -81,7 +84,9 @@ the expanded canonical manifest, POSIX and PowerShell installers, the CMD
 Adapter, and publication are complete. The
 installer uses the selected manifest SHA-256 and installs to
 `$HOME/.local/bin/bw` with a same-directory rename without modifying
-`PATH` or shell startup files. Concurrent same-user HOME mutation is
+`PATH` or shell startup files. Fresh installation and replacement report the
+installed or updated version respectively, with destination/PATH guidance kept
+separate. Concurrent same-user HOME mutation is
 caller-owned. This makes no universal Linux or kernel-compatibility
 claim and gives GitHub no distribution authority. macOS artifacts have static
 cross-build validation without a native-runtime test claim. Windows PowerShell
@@ -89,10 +94,10 @@ installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
 Windows build and installer verification make no native-runtime or native-CMD
 claim.
 The current Cargo package and library crate are `backwriter` at
-`0.1.0-beta.2`; the sole canonical executable and external Adapter command are
-`bw`. The public beta.1 files remain unchanged prior artifacts, while the
-complete beta.2 Linux/macOS/Windows version directory is immutable. The planned
-matrix is complete and beta.2 is closed.
+`0.1.0-beta.3`; the sole canonical executable and external Adapter command are
+`bw`. The public beta.1 and beta.2 files remain unchanged immutable prior
+artifacts, while the complete beta.3 Linux/macOS/Windows version directory is
+immutable. The planned matrix is complete and beta.3 is closed.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a separate registry,
@@ -116,10 +121,12 @@ repository-local authority.
 ## Deferred distribution decisions
 
 The Linux/WSL x86_64, macOS arm64/x86_64, Windows PowerShell x86_64, and
-Windows CMD beta.2 publication is complete. Existing public `0.1.0-beta.1`
-files and the complete beta.2 version directory are immutable and stay
-unchanged. Beta.2 is closed and has no remaining planned platform slice. Linux
-arm64, later versions, tags, GitHub Releases, crates.io, and auto-update remain
-deferred and require separate Owner authority. The completed publication
+Windows CMD beta.3 publication is complete. Existing public `0.1.0-beta.1` and
+`0.1.0-beta.2` files remain unchanged and immutable; the complete beta.3
+version directory is also immutable. Beta.3 is closed and has no remaining
+planned platform slice. Explicit `bw update` is complete, while background or
+automatic update remains deferred. Linux arm64, later versions, tags, GitHub
+Releases, and crates.io remain deferred and require separate Owner authority.
+The completed publication
 defines no universal host-compatibility, native-macOS-runtime,
 native-Windows-runtime, or native-CMD claim.
