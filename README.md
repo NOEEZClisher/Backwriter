@@ -12,21 +12,35 @@ result-binding, explicit Data modes.
 
 ## Quick start
 
-Install the official `0.1.0-beta.2` release on Linux, macOS, or WSL:
+Install the official release with the command for your platform.
+
+Linux, macOS, or WSL:
 
 ```sh
 curl -fsSL https://backwriter.pentagration.com/install.sh | sh
 ```
 
-On Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 irm https://backwriter.pentagration.com/install.ps1 | iex
 ```
 
-Windows CMD uses the [canonical `curl.exe` block](#official-desktop-distribution)
-below. The installers place `bw` in `$HOME/.local/bin` (`bw.exe` on Windows)
-without changing `PATH` or shell startup files.
+Windows CMD:
+
+```cmd
+curl.exe -fsSL https://backwriter.pentagration.com/install.cmd -o install.cmd && call install.cmd && del install.cmd
+```
+
+The installers place `bw` in `$HOME/.local/bin` (`bw.exe` on Windows) without
+changing `PATH` or shell startup files.
+
+### Update
+
+Run the same command for your platform again. The installer reads the current
+distribution manifest, verifies the selected artifact, and replaces the
+existing executable only after validation succeeds. Backwriter does not update
+itself in the background.
 
 The product is Backwriter. The Cargo package and library crate are `backwriter`
 at `0.1.0-beta.2`; the sole canonical executable and external Adapter command
@@ -130,19 +144,14 @@ provided, and no universal host-compatibility claim is made.
 against the manifest SHA-256, and installs the verified binary at
 `$HOME/.local/bin/bw` with a same-directory rename. Concurrent same-user
 HOME mutation is caller-owned. The published `.sha256` sidecar is for manual
-verification and is not installer authority. Windows PowerShell installation uses
-`irm https://backwriter.pentagration.com/install.ps1 | iex`, verifies the same
-manifest authority and exact ZIP, and installs to `$HOME\.local\bin\bw.exe`
-without editing PATH or the PowerShell profile.
+verification and is not installer authority. Windows PowerShell verifies the
+same manifest authority and exact ZIP, and installs to
+`$HOME\.local\bin\bw.exe` without editing PATH or the PowerShell profile. The
+three canonical install and update commands are kept together in
+[Quick start](#quick-start).
 
-Run this canonical command in `cmd.exe` to use the thin CMD Adapter:
-
-```cmd
-curl.exe -fsSL https://backwriter.pentagration.com/install.cmd -o install.cmd && call install.cmd && del install.cmd
-```
-
-The command writes `install.cmd` in the current directory and removes it after
-a successful installation. An existing file with that name is replaced.
+The CMD command writes `install.cmd` in the current directory and removes it
+after a successful installation. An existing file with that name is replaced.
 
 The CRLF `install.cmd` checks `curl.exe` and `powershell.exe`, downloads exactly
 the canonical `install.ps1` over HTTPS-only TLS 1.2-or-newer transport into a
