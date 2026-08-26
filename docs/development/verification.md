@@ -134,21 +134,24 @@ publish a distribution.
 
 Separately, the external operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com) has
-completed publication verification for Backwriter `0.1.0-beta.1` on
+completed publication verification for Backwriter `0.1.0-beta.2` on
 Linux/WSL x86_64, macOS arm64, and macOS x86_64. Targets are
 `x86_64-unknown-linux-musl`, `aarch64-apple-darwin` at minimum macOS 11.0, and
 `x86_64-apple-darwin` at minimum macOS 10.12. The artifacts and manifest retain
-Source Authority revision `e6217d93bf241edd4040319113b7116c3126a8e6`, and the
-installer destination is `$HOME/.local/bin/backwriter`. Verification covered
+Source Authority revision `209f606db08415ef5fd7f1cfbe1e43bf0c96dc73`, and the
+installer destination is `$HOME/.local/bin/bw`. Verification covered
 the archive, manual
 `.sha256` sidecars, expanded canonical manifest, installer, append-only version
-directory, public GET/HEAD cache policy, manifest-authoritative artifact
-SHA-256, and an end-to-end temporary-`HOME` Linux install. macOS verification is
-static and does not claim native execution. Linux arm64 and Windows remain
-unsupported. These are immutable prior beta.1 publication results.
-Distribution work is frozen: beta.2 and Windows are not published, and this
-records no tag, GitHub Release, crates.io publication, universal host
-compatibility, or GitHub distribution authority.
+directory, local and public GET/HEAD status, zero-length HEAD bodies, exact
+cache policy, canonical body equality, manifest-authoritative artifact SHA-256,
+and an end-to-end temporary-`HOME` Linux install with help, Search, and Session
+execution. The beta.1 file identities, bytes, modes, and ownership and both
+service processes remained unchanged. macOS verification is static and does
+not claim native execution. The beta.1 files and published beta.2 artifacts are
+immutable. Beta.2 remains open for Windows PowerShell support followed by CMD
+support; Linux arm64, tags, GitHub Releases, crates.io publication, universal
+host compatibility, and GitHub distribution authority remain outside this
+verification.
 
 Before handoff, verify the diff and index, confirm repository-root `.artext` is
 absent and untracked, preserve historical task/history files, and leave the

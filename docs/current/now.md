@@ -52,25 +52,26 @@ feature or implementation slice; its beta implementation freeze holds until
 owner authority closes collection/Edit transport or Session machine output.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`; the
 GNU target is retained for local development and tests. Target selection and
-direct build verification are complete. The external operations-owned prior
+direct build verification are complete. The external operations-owned
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes Backwriter `0.1.0-beta.1` for Linux/WSL x86_64, macOS arm64, and
+publishes Backwriter `0.1.0-beta.2` for Linux/WSL x86_64, macOS arm64, and
 macOS x86_64. Linux uses `x86_64-unknown-linux-musl`; macOS uses
 `aarch64-apple-darwin` at minimum 11.0 and `x86_64-apple-darwin` at minimum
 10.12. Their artifacts, manual-verification checksum sidecars, expanded
 canonical manifest, installer, and publication are complete from Source
 Authority revision
-`e6217d93bf241edd4040319113b7116c3126a8e6`. The installer verifies the
-manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/backwriter`
+`209f606db08415ef5fd7f1cfbe1e43bf0c96dc73`. The installer verifies the
+manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/bw`
 with a same-directory rename, without changing `PATH` or shell startup files.
 Concurrent same-user HOME mutation is caller-owned.
 macOS support is based on static cross-build verification without a native
-runtime-test claim. Linux arm64 and Windows remain unsupported, and no universal
-host compatibility is claimed. The public beta.1 artifacts and their installed
-`backwriter` executable remain unchanged and immutable. Distribution work is
-frozen; beta.2, Windows, tags, GitHub Releases, crates.io publication, and
-GitHub distribution are not published or authorized.
+runtime-test claim. Linux arm64 remains unsupported, and no universal host
+compatibility is claimed. The public beta.1 files remain unchanged and
+immutable, and every published beta.2 artifact and sidecar is immutable. Beta.2
+remains open and append-only for Windows PowerShell support followed by CMD
+support. Tags, GitHub Releases, crates.io publication, and GitHub distribution
+remain outside the completed publication.
 The current Cargo package and library crate are `backwriter` at
 `0.1.0-beta.2`; the sole canonical executable and external Adapter command are
 `bw`. There is no current `backwriter` binary, alias, or wrapper. Product prose
