@@ -141,19 +141,22 @@ Linux/WSL x86_64, macOS arm64, macOS x86_64, and Windows x86_64. Targets are
 `x86_64-pc-windows-gnu`. The artifacts and manifest retain
 Source Authority revision `209f606db08415ef5fd7f1cfbe1e43bf0c96dc73`, and the
 POSIX installer destination is `$HOME/.local/bin/bw`; the PowerShell destination
-is `$HOME\.local\bin\bw.exe`. Verification covered
+is `$HOME\.local\bin\bw.exe`. The CMD path is the public CRLF Adapter that
+downloads and delegates to the same PowerShell installer. Verification covered
 the archive, manual
-`.sha256` sidecars, expanded canonical manifest, installer, append-only version
+`.sha256` sidecars, expanded canonical manifest, installers, closed version
 directory, local and public GET/HEAD status, zero-length HEAD bodies, exact
 cache policy, canonical body equality, manifest-authoritative artifact SHA-256,
 and an end-to-end temporary-`HOME` Linux install with help, Search, and Session
 execution. Windows verification covered deterministic ZIP bytes, x86_64 PE and
-system DLL imports, canonical manifest/installers, and static PowerShell
-contract checks. The beta.1 file identities, bytes, modes, and ownership and
-both service processes remained unchanged. macOS and Windows verification is
-static and does not claim native execution. The beta.1 files and published
-beta.2 artifacts are immutable. Beta.2 remains open for Windows CMD support;
-Linux arm64, tags, GitHub Releases, crates.io publication, universal
+system DLL imports, canonical manifest/installers, static PowerShell and CMD
+contract checks, CMD GET/HEAD 200 with `no-store`, zero HEAD body, and exact
+tracked bytes. The beta.1 file identities, bytes, modes, and ownership, all
+pre-existing beta.2 artifact and pointer identities and hashes, and both
+service processes remained unchanged. macOS and Windows verification is static
+and does not claim native execution. The beta.1 files and complete beta.2
+version directory are immutable. The planned matrix is complete and beta.2 is
+closed. Linux arm64, tags, GitHub Releases, crates.io publication, universal
 host compatibility, and GitHub distribution authority remain outside this
 verification.
 

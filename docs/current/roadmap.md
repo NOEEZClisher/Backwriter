@@ -77,8 +77,8 @@ macOS x86_64, and Windows x86_64 from Source Authority revision
 `x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
 and `x86_64-apple-darwin` at minimum 10.12. Windows uses
 `x86_64-pc-windows-gnu` and canonical `bw.exe`. Archives, checksum sidecars,
-the expanded canonical manifest, POSIX and PowerShell installers, and
-publication are complete. The
+the expanded canonical manifest, POSIX and PowerShell installers, the CMD
+Adapter, and publication are complete. The
 installer uses the selected manifest SHA-256 and installs to
 `$HOME/.local/bin/bw` with a same-directory rename without modifying
 `PATH` or shell startup files. Concurrent same-user HOME mutation is
@@ -86,12 +86,13 @@ caller-owned. This makes no universal Linux or kernel-compatibility
 claim and gives GitHub no distribution authority. macOS artifacts have static
 cross-build validation without a native-runtime test claim. Windows PowerShell
 installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
-Windows build and installer verification make no native-runtime claim.
+Windows build and installer verification make no native-runtime or native-CMD
+claim.
 The current Cargo package and library crate are `backwriter` at
 `0.1.0-beta.2`; the sole canonical executable and external Adapter command are
 `bw`. The public beta.1 files remain unchanged prior artifacts, while the
-published beta.2 Linux/macOS/Windows artifacts and sidecars are immutable.
-Beta.2 stays open and append-only for Windows CMD support.
+complete beta.2 Linux/macOS/Windows version directory is immutable. The planned
+matrix is complete and beta.2 is closed.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a separate registry,
@@ -114,11 +115,11 @@ repository-local authority.
 
 ## Deferred distribution decisions
 
-The Linux/WSL x86_64, macOS arm64/x86_64, and Windows PowerShell x86_64 beta.2
-publication is complete.
-Existing public `0.1.0-beta.1` files and every published beta.2 artifact and
-sidecar are immutable and stay unchanged. Beta.2 remains open; the next
-remaining distribution slice is Windows CMD support. Linux
+The Linux/WSL x86_64, macOS arm64/x86_64, Windows PowerShell x86_64, and
+Windows CMD beta.2 publication is complete. Existing public `0.1.0-beta.1`
+files and the complete beta.2 version directory are immutable and stay
+unchanged. Beta.2 is closed and has no remaining planned platform slice. Linux
 arm64, later versions, tags, GitHub Releases, crates.io, and auto-update remain
-deferred. The completed publication defines no universal host-compatibility,
-native-macOS-runtime, or native-Windows-runtime claim.
+deferred and require separate Owner authority. The completed publication
+defines no universal host-compatibility, native-macOS-runtime,
+native-Windows-runtime, or native-CMD claim.

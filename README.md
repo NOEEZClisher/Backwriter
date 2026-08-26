@@ -113,7 +113,7 @@ macOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and
 static cross-build verification but are not claimed to have been executed on a
 native Mac before publication. Windows uses `x86_64-pc-windows-gnu` and the
 canonical executable `bw.exe`; its static cross-build verification does not
-claim native Windows or PowerShell execution. Linux arm64 is not currently
+claim native Windows, PowerShell, or CMD execution. Linux arm64 is not currently
 provided, and no universal host-compatibility claim is made.
 
 `install.sh` reads the canonical manifest, verifies the downloaded artifact
@@ -123,15 +123,38 @@ HOME mutation is caller-owned. The published `.sha256` sidecar is for manual
 verification and is not installer authority. Windows PowerShell installation uses
 `irm https://backwriter.pentagration.com/install.ps1 | iex`, verifies the same
 manifest authority and exact ZIP, and installs to `$HOME\.local\bin\bw.exe`
-without editing PATH or the PowerShell profile. Windows CMD is unsupported.
+without editing PATH or the PowerShell profile.
+
+Paste this canonical block into `cmd.exe` to use the thin CMD Adapter without
+silently replacing a fixed temporary filename:
+
+```cmd
+set "BW_TEMP="
+if defined TEMP for %I in ("%TEMP%") do set "BW_TEMP=%~fI"
+set "BW_BOOTSTRAP="
+if defined BW_TEMP set "BW_BOOTSTRAP=%BW_TEMP%\backwriter-bootstrap-%RANDOM%-%RANDOM%"
+cmd.exe /D /C exit 1
+if defined BW_BOOTSTRAP if exist "%BW_TEMP%\." if not exist "%BW_BOOTSTRAP%\." mkdir "%BW_BOOTSTRAP%" && curl.exe --fail --show-error --silent --location --proto "=https" --proto-redir "=https" --tlsv1.2 --output "%BW_BOOTSTRAP%\install.cmd" "https://backwriter.pentagration.com/install.cmd" && call "%BW_BOOTSTRAP%\install.cmd"
+set "BW_EXIT=%ERRORLEVEL%"
+if defined BW_BOOTSTRAP if exist "%BW_BOOTSTRAP%\." rmdir /S /Q "%BW_BOOTSTRAP%"
+if defined BW_BOOTSTRAP if exist "%BW_BOOTSTRAP%\." >&2 echo backwriter bootstrap: could not remove temporary directory
+set "BW_TEMP=" & set "BW_BOOTSTRAP=" & set "BW_EXIT=" & cmd.exe /D /C exit %BW_EXIT%
+```
+
+The CRLF `install.cmd` checks `curl.exe` and `powershell.exe`, downloads exactly
+the canonical `install.ps1` over HTTPS-only TLS 1.2-or-newer transport into a
+collision-failing `%TEMP%` task directory, delegates all installation meaning,
+cleans the directory, and preserves the child exit code. It owns no manifest,
+SHA-256, ZIP, or installation logic. The Linux-hosted CMD regression is static;
+no native CMD execution is claimed.
 The distribution provides no
 publisher-authenticity signature or trusted signing identity, automatic update,
 telemetry, `sudo` execution, or automatic `PATH` or shell-startup-file change.
 GitHub is a public source and documentation mirror, not the distribution
-authority. The prior beta.1 files remain unchanged and immutable. Every
-published beta.2 artifact and sidecar is also immutable, while the beta.2
-version directory remains append-only and the release stays open for Windows
-CMD support. Linux arm64, tags, GitHub Releases,
+authority. The prior beta.1 files remain unchanged and immutable. The complete
+beta.2 version directory is immutable, the planned matrix is complete, and the
+release is closed. Any later platform or version requires separate Owner
+authority. Linux arm64, tags, GitHub Releases,
 crates.io publication, and auto-update remain outside the completed publication.
 
 ## Architecture

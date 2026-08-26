@@ -66,13 +66,18 @@ Authority revision
 manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/bw`
 with a same-directory rename, without changing `PATH` or shell startup files.
 PowerShell installs to `$HOME\.local\bin\bw.exe` without changing PATH or the
-PowerShell profile. Windows CMD remains unsupported.
+PowerShell profile. The public CRLF CMD Adapter downloads exactly that
+PowerShell installer over HTTPS-only TLS transport, delegates all installation
+meaning, cleans its temporary task directory, and preserves the child exit
+code. It duplicates no installer authority.
 Concurrent same-user HOME mutation is caller-owned.
 macOS and Windows support are based on static cross-build verification without
-native runtime-test claims. Linux arm64 remains unsupported, and no universal host
-compatibility is claimed. The public beta.1 files remain unchanged and
-immutable, and every published beta.2 artifact and sidecar is immutable. Beta.2
-remains open and append-only for Windows CMD support. Tags, GitHub Releases,
+native runtime-test or native CMD claims. Linux arm64 remains unsupported, and
+no universal host compatibility is claimed. The public beta.1 files remain
+unchanged and immutable, and the complete beta.2 version directory is
+immutable. The planned
+matrix is complete and beta.2 is closed; any later platform or version requires
+separate Owner authority. Tags, GitHub Releases,
 crates.io publication, and GitHub distribution
 remain outside the completed publication.
 The current Cargo package and library crate are `backwriter` at
