@@ -6,40 +6,23 @@ addresses without turning source history or editor state into Core identity.
 
 The Core capability inventory is Search, View, Pick, Anchor, Check, Edit,
 Apply, and Data. The repository currently provides their Rust Core/Runtime
-surfaces and the canonical `backwriter` executable's one-shot human and JSON
+surfaces and the canonical `bw` executable's one-shot human and JSON
 Search/View/Check, raw View, Session Pick, batch Check, Anchor, Edit, Apply,
 result-binding, explicit Data modes.
 
 ## Quick start
 
-Install the official beta:
-
-```sh
-curl -fsSL https://backwriter.pentagration.com/install.sh | sh
-```
-
-The installer writes exactly `$HOME/.local/bin/backwriter`. It does not change
-`PATH` or a shell startup file. If `$HOME/.local/bin` is not already on `PATH`,
-run the installed absolute path or add that directory to `PATH` yourself.
-
-Verify the installation and run Search with the installed absolute path:
-
-```sh
-$HOME/.local/bin/backwriter --help
-$HOME/.local/bin/backwriter search line "needle"
-$HOME/.local/bin/backwriter --workspace /path/project search paragraph "needle"
-```
-
-### Build from source
+Build the current beta from source:
 
 ```sh
 cargo build --release
-./target/release/backwriter search line "needle"
-./target/release/backwriter --workspace /path/project search paragraph "needle"
+./target/release/bw search line "needle"
+./target/release/bw --workspace /path/project search paragraph "needle"
 ```
 
-The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
-canonical executable is `backwriter`.
+The product is Backwriter. The Cargo package and library crate are `backwriter`
+at `0.1.0-beta.2`; the sole canonical executable and external Adapter command
+are `bw`. There is no `backwriter` binary, alias, or wrapper.
 
 The default workspace is the process current working directory. An explicit
 `--workspace` must be absolute and is checked by Runtime. Search admits `.` by
@@ -50,27 +33,27 @@ sources.
 
 ## Current CLI scope
 
-`backwriter` currently implements one-shot human or JSON Search, View, and
+`bw` currently implements one-shot human or JSON Search, View, and
 Check, raw View, plus Session Pick, batch Check, Anchor, Edit, Apply, and Data:
 
 ```text
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     view anddress <encoded-v3-Anddress>
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     check anddress <encoded-v3-Anddress>
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw
     view anddress <encoded-v3-Anddress>
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     view anddress <encoded-v3-Anddress>
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     check anddress <encoded-v3-Anddress>
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 ```
 
 The CLI preserves Core Search validation and deterministic result order. View
@@ -137,9 +120,11 @@ verification and is not installer authority. The distribution provides no
 publisher-authenticity signature or trusted signing identity, automatic update,
 telemetry, `sudo` execution, or automatic `PATH` or shell-startup-file change.
 GitHub is a public source and documentation mirror, not the distribution
-authority. `0.1.0-beta.1` remains open for the planned Windows slices:
-already-published artifact files are immutable, its version directory is
-append-only, and the manifest may expand atomically until that matrix closes.
+authority. This is the unchanged prior beta.1 distribution, whose installer
+and installed executable remain `$HOME/.local/bin/backwriter`. Its published
+artifacts are immutable. Distribution work is frozen: beta.2 is not published,
+and no Windows, later-version, tag, release, crates.io, or auto-update work is
+currently authorized.
 
 ## Architecture
 

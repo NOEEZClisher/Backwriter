@@ -213,8 +213,8 @@ remove reflection of existing live continuity.
 automatic Store, has no latest slot, and performs no automatic update.
 
 The completed one-shot Search, View, and Check JSON projections are Adapter-only.
-Their compact envelopes identify `backwriter.cli.search.v1`,
-`backwriter.cli.view.v1`, and `backwriter.cli.check.v1`; Search embeds each
+Their compact envelopes identify `bw.cli.search.v1`, `bw.cli.view.v1`, and
+`bw.cli.check.v1`; Search embeds each
 existing encoded v3 Anddress JSON object directly, View embeds its related v3
 File and optional Paragraph objects directly, and Check embeds its filtered v3
 Anddress object directly when present. They create no Core wire, value model,

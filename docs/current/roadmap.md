@@ -41,7 +41,7 @@ slices are complete.
 
 ## Completed: CLI V1 human and JSON Search/View/Check, raw View, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data Adapter
 
-The canonical `backwriter` executable implements one-shot human and JSON Search,
+The canonical `bw` executable implements one-shot human and JSON Search,
 View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result
 binding, and Data. JSON Search, View, and Check stream compact Adapter envelopes
 with exact v3 Anddress objects where applicable and create no Core wire. The
@@ -83,8 +83,10 @@ installer uses the selected manifest SHA-256 and installs to
 caller-owned. This makes no universal Linux or kernel-compatibility
 claim and gives GitHub no distribution authority. macOS artifacts have static
 cross-build validation without a native-runtime test claim.
-The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
-canonical executable is `backwriter`.
+The current Cargo package and library crate are `backwriter` at
+`0.1.0-beta.2`; the sole canonical executable and external Adapter command are
+`bw`. The public beta.1 distribution and its installed `backwriter` executable
+remain unchanged prior artifacts; beta.2 is not published.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a separate registry,
@@ -107,10 +109,8 @@ repository-local authority.
 
 ## Deferred distribution decisions
 
-`0.1.0-beta.1` remains open for the already-authorized Windows PowerShell and
-Windows CMD slices. PowerShell is next, followed by CMD. Existing target
-artifacts are immutable, its version
-directory is append-only, and the manifest may expand until that planned matrix
-closes. Linux arm64, later versions, tags, GitHub Releases, crates.io, and
-auto-update remain outside current authority. The completed Linux/WSL and
-macOS publication defines no universal host-compatibility claim.
+Distribution work is frozen. Existing public `0.1.0-beta.1` artifacts are
+immutable and stay unchanged. Beta.2, Windows, Linux arm64, later versions,
+tags, GitHub Releases, crates.io, and auto-update remain outside current
+publication authority. The completed beta.1 Linux/WSL and macOS publication
+defines no universal host-compatibility claim.

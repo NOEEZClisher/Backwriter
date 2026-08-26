@@ -17,7 +17,7 @@ use backwriter::{
 use serde_json::Value;
 
 fn binary() -> PathBuf {
-    PathBuf::from(env!("CARGO_BIN_EXE_backwriter"))
+    PathBuf::from(env!("CARGO_BIN_EXE_bw"))
 }
 
 fn run(root: &Path, arguments: &[&str]) -> Output {
@@ -160,7 +160,7 @@ fn raw_check_status(outcome: &CheckOutcome<Option<Anddress>>) -> &'static str {
 }
 
 fn expected_check_json(outcome: &CheckOutcome<Option<Anddress>>) -> Vec<u8> {
-    let mut output = b"{\"schema\":\"backwriter.cli.check.v1\",\"status\":\"".to_vec();
+    let mut output = b"{\"schema\":\"bw.cli.check.v1\",\"status\":\"".to_vec();
     output.extend_from_slice(raw_check_status(outcome).as_bytes());
     output.extend_from_slice(b"\",\"filtered\":");
     if let Some(filtered) = &outcome.filtered {
@@ -178,7 +178,7 @@ fn assert_check_json(output: Output, expected: &CheckOutcome<Option<Anddress>>, 
     assert!(output.stderr.is_empty());
 
     let document: Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(document["schema"], "backwriter.cli.check.v1");
+    assert_eq!(document["schema"], "bw.cli.check.v1");
     assert_eq!(document["status"], raw_check_status(expected));
     match &expected.filtered {
         Some(filtered) => {
@@ -191,7 +191,7 @@ fn assert_check_json(output: Output, expected: &CheckOutcome<Option<Anddress>>, 
 }
 
 fn expected_search_json(outcome: &SearchOutcome) -> Vec<u8> {
-    let mut output = b"{\"schema\":\"backwriter.cli.search.v1\",\"outcome\":\"".to_vec();
+    let mut output = b"{\"schema\":\"bw.cli.search.v1\",\"outcome\":\"".to_vec();
     match outcome {
         SearchOutcome::Empty => output.extend_from_slice(b"empty\",\"anddresses\":[]}"),
         SearchOutcome::Found { anddresses } => {
@@ -215,7 +215,7 @@ fn assert_search_json(output: Output, expected: &SearchOutcome) {
     assert!(output.stderr.is_empty());
 
     let document: Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(document["schema"], "backwriter.cli.search.v1");
+    assert_eq!(document["schema"], "bw.cli.search.v1");
     assert_eq!(
         document["outcome"],
         match expected {
@@ -236,7 +236,7 @@ fn assert_search_json(output: Output, expected: &SearchOutcome) {
 }
 
 fn expected_view_json(outcome: &ViewOutcome) -> Vec<u8> {
-    let mut output = b"{\"schema\":\"backwriter.cli.view.v1\",\"kind\":".to_vec();
+    let mut output = b"{\"schema\":\"bw.cli.view.v1\",\"kind\":".to_vec();
     match outcome {
         ViewOutcome::File { text } => {
             output.extend_from_slice(b"\"file\",\"text\":");
@@ -303,7 +303,7 @@ fn assert_view_json(output: Output, expected: &ViewOutcome) {
     assert!(output.stderr.is_empty());
 
     let document: Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(document["schema"], "backwriter.cli.view.v1");
+    assert_eq!(document["schema"], "bw.cli.view.v1");
     match expected {
         ViewOutcome::File { text } => {
             assert_eq!(document["kind"], "file");
@@ -354,12 +354,17 @@ fn canonical_binary_help_and_default_workspace_search() {
     assert!(output.status.success());
     assert_eq!(text(output.stdout), "Found 1\n0\tLine\tnote.txt:0\n");
     assert!(output.stderr.is_empty());
-    assert!(!binary().with_file_name("bw").exists());
+    assert_eq!(binary().file_name().unwrap(), "bw");
+    assert!(
+        !Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src/bin/backwriter.rs")
+            .exists()
+    );
 
     let help = run(root.path(), &["--help"]);
     assert!(help.status.success());
     let help_stdout = text(help.stdout);
-    assert!(help_stdout.starts_with("Usage:\n  backwriter "));
+    assert!(help_stdout.starts_with("Usage:\n  bw "));
     assert!(help_stdout.contains("[--json] search"));
     assert!(help_stdout.contains("[--json] check"));
     assert!(help_stdout.contains("[--json|--raw] view"));
@@ -595,7 +600,7 @@ fn one_shot_search_json_maps_empty_and_rejects_invalid_placement() {
 
 #[test]
 fn one_shot_search_json_writer_has_no_value_or_result_clone_path() {
-    let source = include_str!("../src/bin/backwriter.rs");
+    let source = include_str!("../src/bin/bw.rs");
     let writer = source
         .split("fn write_search_json")
         .nth(1)
@@ -866,7 +871,7 @@ fn one_shot_view_json_rejects_invalid_forms_and_keeps_errors_off_stdout() {
 
 #[test]
 fn one_shot_view_json_writer_has_no_value_clone_or_collection_path() {
-    let source = include_str!("../src/bin/backwriter.rs");
+    let source = include_str!("../src/bin/bw.rs");
     let writer = source
         .split("fn write_view_json")
         .nth(1)
@@ -919,7 +924,7 @@ fn one_shot_raw_view_accepts_global_order_and_rejects_every_other_output_form() 
         assert_usage(run(root.path(), &arguments));
     }
 
-    let source = include_str!("../src/bin/backwriter.rs");
+    let source = include_str!("../src/bin/bw.rs");
     assert!(source.contains("enum OutputMode"));
     assert!(!source.contains("let mut json"));
     assert!(!source.contains("write_view_raw"));
@@ -1105,7 +1110,7 @@ fn one_shot_check_json_rejects_invalid_forms_and_keeps_fail_closed_writer() {
     ));
     assert_usage(run(root.path(), &["--json", "check", "anddress", "{"]));
 
-    let source = include_str!("../src/bin/backwriter.rs");
+    let source = include_str!("../src/bin/bw.rs");
     let status = source
         .split("fn raw_check_status")
         .nth(1)
@@ -1684,7 +1689,7 @@ fn session_apply_reuses_edit_binding_and_keeps_explicit_edit_clone() {
     assert_eq!(output.stdout, b"Found 1\n0\tLine\tnote.txt:0\nOK\nOK\n");
     assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"one\n");
 
-    let source = include_str!("../src/bin/backwriter.rs");
+    let source = include_str!("../src/bin/bw.rs");
     assert!(source.contains("fn write_view(outcome: &ViewOutcome)"));
     assert!(source.contains("fn write_batch_check(report: &CheckReport)"));
     assert!(source.contains("Result<&'a Edit, CliError>"));

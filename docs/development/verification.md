@@ -128,8 +128,7 @@ checkout. Run:
     cargo build --offline --locked --release --target x86_64-unknown-linux-musl
     cargo test --offline --locked --target x86_64-unknown-linux-musl
 
-The release binary is
-`target/x86_64-unknown-linux-musl/release/backwriter`. These commands verify
+The release binary is `target/x86_64-unknown-linux-musl/release/bw`. These commands verify
 target selection, build, test, and host execution; running them alone does not
 publish a distribution.
 
@@ -146,7 +145,8 @@ the archive, manual
 directory, public GET/HEAD cache policy, manifest-authoritative artifact
 SHA-256, and an end-to-end temporary-`HOME` Linux install. macOS verification is
 static and does not claim native execution. Linux arm64 and Windows remain
-unsupported. `0.1.0-beta.1` remains open for the planned Windows slices; this
+unsupported. These are immutable prior beta.1 publication results.
+Distribution work is frozen: beta.2 and Windows are not published, and this
 records no tag, GitHub Release, crates.io publication, universal host
 compatibility, or GitHub distribution authority.
 
@@ -154,7 +154,7 @@ Before handoff, verify the diff and index, confirm repository-root `.artext` is
 absent and untracked, preserve historical task/history files, and leave the
 index empty.
 
-CLI process regressions cover the canonical `backwriter` binary without a `bw`
+CLI process regressions cover the canonical `bw` binary without a `backwriter`
 binary, `--help`, default-current-directory and explicit absolute workspaces,
 default and repeated admission, Line/Paragraph/File Search, repeated source and
 subtree scope selectors, Core scope rejection, deterministic human output,

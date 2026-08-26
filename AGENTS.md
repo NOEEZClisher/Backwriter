@@ -1,7 +1,12 @@
 # Repository operating guard
 
 This standalone repository provides the Rust Backwriter Core, its required
-target Runtime, and the canonical CLI. The
+target Runtime, and the canonical `bw` CLI Adapter. Product prose uses
+`Backwriter`; the Cargo package, library crate, and Core namespace use
+`backwriter`; external callers invoke `bw`, which adapts to `backwriter` Core.
+Do not add a `backwriter` executable, alias, or wrapper. Persisted
+`artext.backwriter-*` values, the `.artext/bw` private path, and distribution
+artifact/domain names keep their existing contracts. The
 owner-defined Core capability inventory is Search, View, Pick, Anchor, Check,
 Edit, Apply, and Data. `S` is assigned to Search, `P` to Pick, `A` to
 Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter

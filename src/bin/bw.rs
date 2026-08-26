@@ -25,7 +25,7 @@ use backwriter::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v3-Anddress>\n  backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human and JSON Search, View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot human and JSON Search, View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 enum CliError {
     Usage(String),
@@ -397,7 +397,7 @@ fn write_human(outcome: &SearchOutcome) -> Result<(), CliError> {
 fn write_search_json(outcome: &SearchOutcome) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
     stdout
-        .write_all(b"{\"schema\":\"backwriter.cli.search.v1\",\"outcome\":\"")
+        .write_all(b"{\"schema\":\"bw.cli.search.v1\",\"outcome\":\"")
         .map_err(|error| CliError::stream(error.to_string()))?;
     match outcome {
         SearchOutcome::Empty => stdout
@@ -505,9 +505,7 @@ fn write_view_json(outcome: ViewOutcome) -> Result<(), CliError> {
         match outcome {
             ViewOutcome::File { text } => {
                 stdout
-                    .write_all(
-                        b"{\"schema\":\"backwriter.cli.view.v1\",\"kind\":\"file\",\"text\":",
-                    )
+                    .write_all(b"{\"schema\":\"bw.cli.view.v1\",\"kind\":\"file\",\"text\":")
                     .map_err(|error| CliError::stream(error.to_string()))?;
                 serde_json::to_writer(&mut stdout, &text)
                     .map_err(|error| CliError::execution(error.to_string()))?;
@@ -517,9 +515,7 @@ fn write_view_json(outcome: ViewOutcome) -> Result<(), CliError> {
             }
             ViewOutcome::Paragraph { text, file } => {
                 stdout
-                    .write_all(
-                        b"{\"schema\":\"backwriter.cli.view.v1\",\"kind\":\"paragraph\",\"text\":",
-                    )
+                    .write_all(b"{\"schema\":\"bw.cli.view.v1\",\"kind\":\"paragraph\",\"text\":")
                     .map_err(|error| CliError::stream(error.to_string()))?;
                 serde_json::to_writer(&mut stdout, &text)
                     .map_err(|error| CliError::execution(error.to_string()))?;
@@ -543,9 +539,7 @@ fn write_view_json(outcome: ViewOutcome) -> Result<(), CliError> {
                 paragraph,
             } => {
                 stdout
-                    .write_all(
-                        b"{\"schema\":\"backwriter.cli.view.v1\",\"kind\":\"line\",\"content\":",
-                    )
+                    .write_all(b"{\"schema\":\"bw.cli.view.v1\",\"kind\":\"line\",\"content\":")
                     .map_err(|error| CliError::stream(error.to_string()))?;
                 serde_json::to_writer(&mut stdout, &content)
                     .map_err(|error| CliError::execution(error.to_string()))?;
@@ -628,7 +622,7 @@ fn write_check_json(outcome: &CheckOutcome<Option<Anddress>>) -> Result<(), CliE
     };
     let mut stdout = BufWriter::new(io::stdout().lock());
     stdout
-        .write_all(b"{\"schema\":\"backwriter.cli.check.v1\",\"status\":\"")
+        .write_all(b"{\"schema\":\"bw.cli.check.v1\",\"status\":\"")
         .map_err(|error| CliError::stream(error.to_string()))?;
     stdout
         .write_all(status.as_bytes())

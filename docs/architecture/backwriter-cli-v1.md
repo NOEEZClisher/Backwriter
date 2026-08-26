@@ -1,6 +1,6 @@
 # Backwriter CLI V1
 
-Status: Adapter authority. The completed slices are the canonical `backwriter`
+Status: Adapter authority. The completed slices are the canonical `bw`
 executable's one-shot human and JSON Search/View/Check, raw View, Session Pick,
 batch Check, Anchor, Edit, Apply, result-binding, and Data modes only. This
 document follows the Core active documents in the
@@ -16,11 +16,14 @@ passing never prescribe a Rust call order or make a new Core wire.
 The canonical executable is:
 
 ```text
-backwriter
+bw
 ```
 
-`bw` is not a Backwriter binary. A user may create a personal shell alias, but
-that alias is outside this Adapter contract.
+`backwriter` is the Cargo package, library crate, and Core namespace, not an
+executable. The repository provides no `backwriter` binary, alias, or wrapper.
+External callers invoke `bw`, which adapts to `backwriter` Core. Product prose
+uses Backwriter; persisted `artext.backwriter-*` wire values, `.artext/bw`, and
+distribution artifact/domain names are unchanged contracts.
 
 CLI V1 has two intended execution forms:
 
@@ -52,17 +55,17 @@ claim, automatic handoff, or required workflow.
 The complete syntax for this slice is:
 
 ```text
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     view anddress <encoded-v3-Anddress>
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     check anddress <encoded-v3-Anddress>
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw
     view anddress <encoded-v3-Anddress>
 ```
 
@@ -122,13 +125,13 @@ With the global `--json` flag, Search writes exactly one compact UTF-8 JSON valu
 followed by one LF. Its keys are ordered `schema`, `outcome`, and `anddresses`:
 
 ```json
-{"schema":"backwriter.cli.search.v1","outcome":"empty","anddresses":[]}
+{"schema":"bw.cli.search.v1","outcome":"empty","anddresses":[]}
 ```
 
 or:
 
 ```json
-{"schema":"backwriter.cli.search.v1","outcome":"found","anddresses":[<exact-v3-Anddress-object>]}
+{"schema":"bw.cli.search.v1","outcome":"found","anddresses":[<exact-v3-Anddress-object>]}
 ```
 
 The writer maps `SearchOutcome::Empty` and `Found` directly. It streams the
@@ -144,7 +147,7 @@ successful JSON response contains no diagnostic bytes.
 The complete syntax for this slice is:
 
 ```text
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     view anddress <encoded-v3-Anddress>
 ```
 
@@ -167,9 +170,9 @@ Runtime View seam once, and writes exactly one compact UTF-8 JSON value followed
 by one LF. Its schema is Adapter-only, not a Core wire. Its fixed key orders are:
 
 ```json
-{"schema":"backwriter.cli.view.v1","kind":"file","text":"..."}
-{"schema":"backwriter.cli.view.v1","kind":"paragraph","text":"...","file":<exact-v3-Anddress-object>}
-{"schema":"backwriter.cli.view.v1","kind":"line","content":"...","terminator":"none|lf|cr|crlf","file":<exact-v3-Anddress-object>,"paragraph":<exact-v3-Anddress-object-or-null>}
+{"schema":"bw.cli.view.v1","kind":"file","text":"..."}
+{"schema":"bw.cli.view.v1","kind":"paragraph","text":"...","file":<exact-v3-Anddress-object>}
+{"schema":"bw.cli.view.v1","kind":"line","content":"...","terminator":"none|lf|cr|crlf","file":<exact-v3-Anddress-object>,"paragraph":<exact-v3-Anddress-object-or-null>}
 ```
 
 `text` and `content` use the existing JSON string writer directly. Related
@@ -195,7 +198,7 @@ new View meaning. Raw output is otherwise deferred.
 The complete syntax for this slice is:
 
 ```text
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     check anddress <encoded-v3-Anddress>
 ```
 
@@ -216,9 +219,9 @@ Runtime Check seam once, and writes exactly one compact UTF-8 JSON value followe
 by one LF. Its schema is Adapter-only, not a Core wire. Its fixed key orders are:
 
 ```json
-{"schema":"backwriter.cli.check.v1","status":"current","filtered":<exact-v3-Anddress-object>}
-{"schema":"backwriter.cli.check.v1","status":"not-current","filtered":null}
-{"schema":"backwriter.cli.check.v1","status":"unavailable","filtered":<exact-v3-Anddress-object>}
+{"schema":"bw.cli.check.v1","status":"current","filtered":<exact-v3-Anddress-object>}
+{"schema":"bw.cli.check.v1","status":"not-current","filtered":null}
+{"schema":"bw.cli.check.v1","status":"unavailable","filtered":<exact-v3-Anddress-object>}
 ```
 
 The JSON and human writers share the existing raw one-input Check-report
@@ -233,7 +236,7 @@ result collection. The human Check projection is unchanged.
 The Session starts with:
 
 ```text
-backwriter [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 ```
 
 It opens one Runtime before reading stdin, retains it until EOF or `exit`, and

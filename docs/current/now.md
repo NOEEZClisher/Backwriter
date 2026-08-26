@@ -24,7 +24,7 @@ implementation are complete.
 
 ## CLI Adapter V1 Search/View/Check JSON and raw View, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, and Data slice
 
-The repository includes the canonical `backwriter` CLI Adapter. Its completed
+The repository includes the canonical `bw` CLI Adapter. Its completed
 scope is one-shot human and JSON Search, View, and Check plus raw View and Session Pick,
 batch Check, Anchor, Edit, Apply, result binding, and explicit Data over the existing public
 Runtime seams. The Session retains one Runtime, one caller-owned `DataStore`,
@@ -52,7 +52,7 @@ feature or implementation slice; its beta implementation freeze holds until
 owner authority closes collection/Edit transport or Session machine output.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`; the
 GNU target is retained for local development and tests. Target selection and
-direct build verification are complete. The external operations-owned
+direct build verification are complete. The external operations-owned prior
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
 publishes Backwriter `0.1.0-beta.1` for Linux/WSL x86_64, macOS arm64, and
@@ -67,13 +67,15 @@ with a same-directory rename, without changing `PATH` or shell startup files.
 Concurrent same-user HOME mutation is caller-owned.
 macOS support is based on static cross-build verification without a native
 runtime-test claim. Linux arm64 and Windows remain unsupported, and no universal
-host compatibility is claimed. `0.1.0-beta.1` stays open for the planned
-Windows slices: existing artifact files are immutable, its version directory is
-append-only, and the manifest may expand until the matrix closes. No tag,
-GitHub Release, crates.io publication, or GitHub distribution authority is
-implied.
-The Cargo package and library crate are `backwriter` at `0.1.0-beta.1`; the
-canonical executable is `backwriter`.
+host compatibility is claimed. The public beta.1 artifacts and their installed
+`backwriter` executable remain unchanged and immutable. Distribution work is
+frozen; beta.2, Windows, tags, GitHub Releases, crates.io publication, and
+GitHub distribution are not published or authorized.
+The current Cargo package and library crate are `backwriter` at
+`0.1.0-beta.2`; the sole canonical executable and external Adapter command are
+`bw`. There is no current `backwriter` binary, alias, or wrapper. Product prose
+continues to use Backwriter, and persisted Core wire/private-path and
+distribution artifact/domain contracts keep their existing names.
 
 ## Current-only Runtime contract
 
