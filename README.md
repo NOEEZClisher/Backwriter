@@ -103,29 +103,35 @@ cargo test --offline --locked
 
 The official distribution authority is
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com).
-It publishes Backwriter `0.1.0-beta.2` for Linux/WSL x86_64, macOS arm64, and
-macOS x86_64 from Source Authority revision
+It publishes Backwriter `0.1.0-beta.2` for Linux/WSL x86_64, macOS arm64,
+macOS x86_64, and Windows x86_64 from Source Authority revision
 `209f606db08415ef5fd7f1cfbe1e43bf0c96dc73`. Linux uses canonical target
 `x86_64-unknown-linux-musl`;
 `x86_64-unknown-linux-gnu` remains the local development/test-host target.
 macOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and
 `x86_64-apple-darwin` with minimum macOS 10.12. The macOS artifacts receive
 static cross-build verification but are not claimed to have been executed on a
-native Mac before publication. Linux arm64 and Windows are not currently
+native Mac before publication. Windows uses `x86_64-pc-windows-gnu` and the
+canonical executable `bw.exe`; its static cross-build verification does not
+claim native Windows or PowerShell execution. Linux arm64 is not currently
 provided, and no universal host-compatibility claim is made.
 
 `install.sh` reads the canonical manifest, verifies the downloaded artifact
 against the manifest SHA-256, and installs the verified binary at
 `$HOME/.local/bin/bw` with a same-directory rename. Concurrent same-user
 HOME mutation is caller-owned. The published `.sha256` sidecar is for manual
-verification and is not installer authority. The distribution provides no
+verification and is not installer authority. Windows PowerShell installation uses
+`irm https://backwriter.pentagration.com/install.ps1 | iex`, verifies the same
+manifest authority and exact ZIP, and installs to `$HOME\.local\bin\bw.exe`
+without editing PATH or the PowerShell profile. Windows CMD is unsupported.
+The distribution provides no
 publisher-authenticity signature or trusted signing identity, automatic update,
 telemetry, `sudo` execution, or automatic `PATH` or shell-startup-file change.
 GitHub is a public source and documentation mirror, not the distribution
 authority. The prior beta.1 files remain unchanged and immutable. Every
 published beta.2 artifact and sidecar is also immutable, while the beta.2
 version directory remains append-only and the release stays open for Windows
-PowerShell support followed by CMD support. Linux arm64, tags, GitHub Releases,
+CMD support. Linux arm64, tags, GitHub Releases,
 crates.io publication, and auto-update remain outside the completed publication.
 
 ## Architecture

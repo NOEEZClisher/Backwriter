@@ -71,23 +71,27 @@ The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 The target choice and direct build verification are complete. The external
 operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes Backwriter `0.1.0-beta.2` for Linux/WSL x86_64, macOS arm64, and
-macOS x86_64 from Source Authority revision
+publishes Backwriter `0.1.0-beta.2` for Linux/WSL x86_64, macOS arm64,
+macOS x86_64, and Windows x86_64 from Source Authority revision
 `209f606db08415ef5fd7f1cfbe1e43bf0c96dc73`. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
-and `x86_64-apple-darwin` at minimum 10.12. Archives, checksum sidecars, the
-expanded canonical manifest, installer, and publication are complete. The
+and `x86_64-apple-darwin` at minimum 10.12. Windows uses
+`x86_64-pc-windows-gnu` and canonical `bw.exe`. Archives, checksum sidecars,
+the expanded canonical manifest, POSIX and PowerShell installers, and
+publication are complete. The
 installer uses the selected manifest SHA-256 and installs to
 `$HOME/.local/bin/bw` with a same-directory rename without modifying
 `PATH` or shell startup files. Concurrent same-user HOME mutation is
 caller-owned. This makes no universal Linux or kernel-compatibility
 claim and gives GitHub no distribution authority. macOS artifacts have static
-cross-build validation without a native-runtime test claim.
+cross-build validation without a native-runtime test claim. Windows PowerShell
+installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
+Windows build and installer verification make no native-runtime claim.
 The current Cargo package and library crate are `backwriter` at
 `0.1.0-beta.2`; the sole canonical executable and external Adapter command are
 `bw`. The public beta.1 files remain unchanged prior artifacts, while the
-published beta.2 Linux/macOS artifacts and sidecars are immutable. Beta.2 stays
-open and append-only for Windows PowerShell support followed by CMD support.
+published beta.2 Linux/macOS/Windows artifacts and sidecars are immutable.
+Beta.2 stays open and append-only for Windows CMD support.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a separate registry,
@@ -110,10 +114,11 @@ repository-local authority.
 
 ## Deferred distribution decisions
 
-The Linux/WSL x86_64 and macOS arm64/x86_64 beta.2 publication is complete.
+The Linux/WSL x86_64, macOS arm64/x86_64, and Windows PowerShell x86_64 beta.2
+publication is complete.
 Existing public `0.1.0-beta.1` files and every published beta.2 artifact and
 sidecar are immutable and stay unchanged. Beta.2 remains open; the next
-distribution order is Windows PowerShell support, then CMD support. Linux
+remaining distribution slice is Windows CMD support. Linux
 arm64, later versions, tags, GitHub Releases, crates.io, and auto-update remain
-deferred. The completed Linux/macOS publication defines no universal
-host-compatibility or native-macOS-runtime claim.
+deferred. The completed publication defines no universal host-compatibility,
+native-macOS-runtime, or native-Windows-runtime claim.
