@@ -150,15 +150,19 @@ cache policy, canonical body equality, manifest-authoritative artifact SHA-256,
 and task-local fresh installation plus explicit `bw update`. Fresh installation
 printed the installed version, replacement printed the updated version, and
 destination/PATH guidance remained separate. `bw version` produced exactly
-`Backwriter 0.1.0-beta.3` plus LF. Verification passed 188 GNU tests, 188 musl tests, 10
-origin tests, 64 POSIX installer regressions, 36 PowerShell regressions, 12 CMD
-regressions, 10 Windows release regressions, and 19 publisher regressions. It
+`Backwriter 0.1.0-beta.3` plus LF. Verification passed 188 GNU tests, 188 musl tests, 13
+origin tests, 35 POSIX installer regressions, 36 PowerShell regressions, 12 CMD
+regressions, 10 Windows release regressions, and 18 publisher regressions. It
 also verified 12 local and 12 public GET/HEAD responses with exact bodies and
-cache policy. The beta.1 and beta.2 file identities, bytes, modes, ownership,
-and hashes, and both service processes remained unchanged. macOS and Windows
-verification is static and does not claim native execution. The beta.1 and
-beta.2 files and complete beta.3 version directory are immutable. The planned
-matrix is complete and beta.3 is closed. Linux arm64, tags, GitHub Releases,
+cache policy. Host verification confirmed enabled and active
+`backwriter-origin.service` and official `cloudflared.service` processes with
+zero restarts, one `127.0.0.1:8080` listener, byte-identical tracked and
+installed ingress YAML, and a root-only Git-external tunnel credential. No
+token or credential value is present in Git, unit arguments, service
+environment, or service journal. macOS and Windows verification is static and
+does not claim native execution. The beta.1 and beta.2 files and complete
+beta.3 version directory are immutable. The planned matrix is complete and
+beta.3 is closed. Linux arm64, tags, GitHub Releases,
 crates.io publication, universal host compatibility, background or automatic
 update, and GitHub distribution authority remain outside this verification.
 

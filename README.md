@@ -32,11 +32,13 @@ Windows CMD:
 curl.exe -fsSL https://backwriter.pentagration.com/install.cmd -o install.cmd && call install.cmd && del install.cmd
 ```
 
-The installers place `bw` in `$HOME/.local/bin` (`bw.exe` on Windows) without
-changing `PATH` or shell startup files. A fresh install prints `Installed
-Backwriter: <version>`; replacing an existing destination prints `Updated
-Backwriter: <version>`. The executable path and `PATH` guidance are printed
-separately only when the installation directory is not already on `PATH`.
+The POSIX installer places `bw` at `$HOME/.local/bin/bw`; the PowerShell and
+CMD paths place `bw.exe` at `$HOME\.local\bin\bw.exe`. They do not change
+`PATH`, a shell startup file, the PowerShell profile, or the registry. A fresh
+install prints `Installed Backwriter: <version>`; replacing an existing
+destination prints `Updated Backwriter: <version>`. The executable path and
+`PATH` guidance are printed separately only when the installation directory is
+not already on `PATH`.
 
 ### Version
 
