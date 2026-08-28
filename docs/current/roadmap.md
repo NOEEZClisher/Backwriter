@@ -51,9 +51,9 @@ Check accepts the resulting ordinary Search outcome, and its File Anddress can
 drive existing Apply `StartOf` and `EndOf` positions for an empty source.
 
 The Cargo package and source executable version are `0.1.0`, and `bw version`
-prints `Backwriter 0.1.0`. This source milestone does not publish a stable
-distribution. The complete public `0.1.0-beta.3` bundle remains closed and
-immutable until a separate stable-publication phase.
+prints `Backwriter 0.1.0`. This source milestone did not itself publish a
+distribution; the separate stable-publication phase is completed below, while
+the complete public `0.1.0-beta.3` bundle remains closed and immutable.
 
 ## Completed: CLI V1 capabilities and standalone Version/Update utilities
 
@@ -90,9 +90,9 @@ The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 The target choice and direct build verification are complete. The external
 operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes Backwriter `0.1.0-beta.3` for Linux/WSL x86_64, macOS arm64,
-macOS x86_64, and Windows x86_64 from Source Authority revision
-`7d7469563a357215261c42fa2067d7f587c5eb1b`. Linux uses
+publishes the closed Backwriter `0.1.0` stable release for Linux/WSL x86_64,
+macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
+`25a0dbc38dc78cc7592b219e9070af3c0e201c17`. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
 and `x86_64-apple-darwin` at minimum 10.12. Windows uses
 `x86_64-pc-windows-gnu` and canonical `bw.exe`. Archives, checksum sidecars,
@@ -111,9 +111,10 @@ Windows build and installer verification make no native-runtime or native-CMD
 claim.
 The current Cargo package and library crate are `backwriter` at
 `0.1.0`; the sole canonical executable and external Adapter command are
-`bw`. The public beta.1 and beta.2 files remain unchanged immutable prior
-artifacts, while the complete beta.3 Linux/macOS/Windows version directory is
-immutable. The planned matrix is complete and beta.3 is closed.
+`bw`. The public beta.1, beta.2, and beta.3 files remain unchanged immutable
+prior artifacts. The complete stable `0.1.0` Linux/macOS/Windows version
+directory is immutable, the planned matrix is complete, and the stable release
+is closed.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a separate registry,
@@ -134,17 +135,14 @@ decisions. Apply's reference letter is unassigned. Future Search spill is
 separately owned by a host-provided system root and must not create
 repository-local authority.
 
-## Deferred distribution decisions
+## Completed: 0.1.0 stable distribution
 
 The Linux/WSL x86_64, macOS arm64/x86_64, Windows PowerShell x86_64, and
-Windows CMD beta.3 publication is complete. Existing public `0.1.0-beta.1` and
-`0.1.0-beta.2` files remain unchanged and immutable; the complete beta.3
-version directory is also immutable. Beta.3 is closed and has no remaining
-planned platform slice. Explicit `bw update` is complete, while background or
+Windows CMD stable `0.1.0` publication is complete. Current installers and the
+manifest select `0.1.0`; the complete stable version directory is immutable.
+Existing public `0.1.0-beta.1`, `0.1.0-beta.2`, and `0.1.0-beta.3` files remain
+unchanged and immutable. Explicit `bw update` is complete, while background or
 automatic update remains deferred. Linux arm64, later versions, tags, GitHub
 Releases, and crates.io remain deferred and require separate Owner authority.
-The completed publication
-defines no universal host-compatibility, native-macOS-runtime,
-native-Windows-runtime, or native-CMD claim.
-Stable `0.1.0` artifact building, manifest/installer changes, and publication
-are the next separate distribution phase; none started in the source milestone.
+The completed publication defines no universal host-compatibility,
+native-macOS-runtime, native-Windows-runtime, or native-CMD claim.

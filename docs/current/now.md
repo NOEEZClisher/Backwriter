@@ -64,14 +64,15 @@ GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes Backwriter `0.1.0-beta.3` for Linux/WSL x86_64, macOS arm64,
-macOS x86_64, and Windows x86_64. Linux uses `x86_64-unknown-linux-musl`; macOS uses
+publishes the closed Backwriter `0.1.0` stable release for Linux/WSL x86_64,
+macOS arm64, macOS x86_64, and Windows x86_64. Linux uses
+`x86_64-unknown-linux-musl`; macOS uses
 `aarch64-apple-darwin` at minimum 11.0 and `x86_64-apple-darwin` at minimum
 10.12. Windows uses `x86_64-pc-windows-gnu` and canonical `bw.exe`. Their
 artifacts, manual-verification checksum sidecars, expanded canonical manifest,
 POSIX and PowerShell installers, and publication are complete from Source
 Authority revision
-`7d7469563a357215261c42fa2067d7f587c5eb1b`. The installer verifies the
+`25a0dbc38dc78cc7592b219e9070af3c0e201c17`. The installer verifies the
 manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/bw`
 with a same-directory rename, without changing `PATH` or shell startup files.
 Fresh installation prints the installed version and replacement prints the
@@ -84,10 +85,11 @@ code. It duplicates no installer authority.
 Concurrent same-user HOME mutation is caller-owned.
 macOS and Windows support are based on static cross-build verification without
 native runtime-test or native CMD claims. Linux arm64 remains unsupported, and
-no universal host compatibility is claimed. The public beta.1 and beta.2 files
-remain unchanged and immutable, and the complete beta.3 version directory is
-immutable. The full planned matrix is complete and beta.3 is closed; any later
-platform or version requires separate Owner authority. Tags, GitHub Releases,
+no universal host compatibility is claimed. The public beta.1, beta.2, and
+beta.3 files remain unchanged and immutable. The complete stable `0.1.0`
+version directory is immutable, the full planned matrix is complete, and the
+stable release is closed; any later platform or version requires separate Owner
+authority. Tags, GitHub Releases,
 crates.io publication, and GitHub distribution
 remain outside the completed publication.
 The current Cargo package and library crate are `backwriter` at
@@ -95,9 +97,9 @@ The current Cargo package and library crate are `backwriter` at
 `bw`. There is no current `backwriter` binary, alias, or wrapper. Product prose
 continues to use Backwriter, and persisted Core wire/private-path and
 distribution artifact/domain contracts keep their existing names. Stable
-publication has not started: the operations-owned public distribution remains
-the closed, immutable `0.1.0-beta.3` bundle, and `bw update` still delegates to
-that current official installer.
+publication is closed: the current installers and manifest select `0.1.0`, and
+`bw update` delegates to that official stable installer. Exact beta.3 manifest
+acceptance remains transition compatibility only.
 
 ## Current-only Runtime contract
 

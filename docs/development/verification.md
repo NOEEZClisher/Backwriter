@@ -172,14 +172,35 @@ beta.3 is closed. Linux arm64, tags, GitHub Releases,
 crates.io publication, universal host compatibility, background or automatic
 update, and GitHub distribution authority remain outside this verification.
 
+Stable `0.1.0` publication verification regenerated the four artifacts and
+sidecars from source revision `25a0dbc38dc78cc7592b219e9070af3c0e201c17`
+and reproduced the canonical 876-byte manifest with SHA-256
+`551ee8b6fc4c5df83421ba7244f191fee8cc70287775088f08f5e1b8e2290570`.
+The tracked publisher installed the stable eight-file version directory,
+replaced the POSIX and PowerShell pointers, reused the CMD Adapter, and replaced
+the manifest last; a complete rerun reused the resulting exact 20-file tree.
+All 20 public GET and HEAD endpoints returned exact bodies, lengths, and cache
+policy; root and unknown paths remained 404/no-store. Task-local fresh install
+and an actual beta.3 binary's explicit update both installed byte-identical
+stable Linux binaries and printed `Installed Backwriter: 0.1.0` and `Updated
+Backwriter: 0.1.0`. The published binary passed help, exact version, Search,
+Session, and empty-File StartOf/EndOf Apply verification. Stable closure also
+passed 193 Backwriter tests, 13 Origin tests, 32 installer regressions, 16
+stable-publisher regressions, and 12 CMD regressions. Origin and cloudflared
+process identity, restart counts, loopback listener, tunnel connector, ingress
+YAML, DNS, credential metadata, and actual user HOME/PATH/shell files remained
+unchanged. macOS and Windows verification remains static and makes no native
+execution claim.
+
 Before handoff, verify the diff and index, confirm repository-root `.artext` is
 absent and untracked, preserve historical task/history files, and leave the
 index empty.
 
 The repository source package is `0.1.0`, and its release build must print
-exactly `Backwriter 0.1.0` plus LF. This source verification does not alter or
-publish the separately verified, closed `0.1.0-beta.3` distribution described
-above. The `0.1.0` source suite passes 193 GNU-host Rust tests.
+exactly `Backwriter 0.1.0` plus LF. Source verification remains distinct from
+the separately executed operations publication: the current official
+distribution is the closed stable `0.1.0` release, while prior beta files remain
+immutable. The `0.1.0` source suite passes 193 GNU-host Rust tests.
 
 CLI process regressions cover the canonical `bw` binary without a `backwriter`
 binary, `--help`, exact `bw version`, explicit `bw update` download/exit/output

@@ -12,9 +12,8 @@ result-binding, explicit Data modes, and Adapter-owned Version and Update.
 
 ## Quick start
 
-Install the currently published official beta.3 release with the command for
-your platform. The repository source is `0.1.0`; its stable distribution has
-not been published.
+Install the closed official `0.1.0` stable release with the command for your
+platform.
 
 Linux, macOS, or WSL:
 
@@ -60,13 +59,13 @@ Backwriter 0.1.0
 bw update
 ```
 
-`bw update` downloads and delegates to the current official installer. Until a
-separate stable publication is authorized, that installer remains the closed
-`0.1.0-beta.3` distribution. The
-installer reads the current distribution manifest, verifies the selected
-artifact, and installs or reinstalls that manifest version only after
-validation succeeds. It does not run a background updater or compare release
-versions.
+`bw update` downloads and delegates to the current official installer. The
+current manifest selects the closed `0.1.0` stable distribution. The installer
+reads that manifest, verifies the selected artifact, and installs or reinstalls
+that manifest version only after validation succeeds. It does not run a
+background updater or compare release versions. The transition installer also
+retains exact acceptance of the immutable beta.3 manifest; that compatibility
+does not change the current stable pointer.
 
 The product is Backwriter. The Cargo package and library crate are `backwriter`
 at `0.1.0`; the sole canonical executable and external Adapter command
@@ -168,9 +167,9 @@ cargo test --offline --locked
 
 The official distribution authority is
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com).
-It publishes Backwriter `0.1.0-beta.3` for Linux/WSL x86_64, macOS arm64,
-macOS x86_64, and Windows x86_64 from Source Authority revision
-`7d7469563a357215261c42fa2067d7f587c5eb1b`. Linux uses canonical target
+It publishes the closed Backwriter `0.1.0` stable release for Linux/WSL x86_64,
+macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
+`25a0dbc38dc78cc7592b219e9070af3c0e201c17`. Linux uses canonical target
 `x86_64-unknown-linux-musl`;
 `x86_64-unknown-linux-gnu` remains the local development/test-host target.
 macOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and
@@ -205,13 +204,14 @@ publisher-authenticity signature or trusted signing identity, background or
 automatic update, telemetry, `sudo` execution, or automatic `PATH` or
 shell-startup-file change.
 GitHub is a public source and documentation mirror, not the distribution
-authority. The complete beta.1 and beta.2 version directories remain unchanged
-and immutable. The complete beta.3 version directory is also immutable; its
-planned matrix is complete and the release is closed. Any later platform or
-version requires separate Owner authority. Linux arm64, tags, GitHub Releases,
-crates.io publication, and background or automatic update remain outside the
-completed publication. In particular, the repository's `0.1.0` source version
-does not publish, replace, or reopen any beta.3 file.
+authority. The complete beta.1, beta.2, and beta.3 version directories remain
+unchanged and immutable. The complete stable `0.1.0` version directory is also
+immutable, its planned matrix is complete, and the stable release is closed.
+Any later platform or version requires separate Owner authority. Linux arm64,
+tags, GitHub Releases, crates.io publication, and background or automatic
+update remain outside the completed publication. Stable publication added the
+`0.1.0` directory and current pointers without replacing or reopening any
+beta.3 file.
 
 ## Architecture
 
