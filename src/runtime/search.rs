@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 use crate::backwriter::anddress::{Anddress, AnddressTarget, LineBodyClass, construct_anddress};
 use crate::backwriter::search::{
     LiteralMatcher, MatchTier, PreparedLiteral, SearchError, SearchOutcome, SearchRequest,
-    SearchScopeEntry, SearchTarget,
+    SearchRequestKind, SearchScope, SearchScopeEntry, SearchTarget,
 };
 use crate::safe_path::{
     ClassifiedChild, classify_child, directory_names, open_directory, open_regular,
@@ -28,10 +28,27 @@ pub(super) fn execute(
     runtime: &WorkspaceRuntime,
     request: &SearchRequest,
 ) -> Result<SearchOutcome, SearchError> {
-    let literal = PreparedLiteral::new(request.query())?;
+    match request.kind() {
+        SearchRequestKind::Content {
+            query,
+            scope,
+            target,
+        } => execute_content(runtime, query, scope, *target),
+        SearchRequestKind::ExactFile { logical_path } => execute_exact_file(runtime, logical_path),
+    }
+}
+
+fn execute_content(
+    runtime: &WorkspaceRuntime,
+    query: &crate::backwriter::search::SearchQuery,
+    scope: &SearchScope,
+    target: SearchTarget,
+) -> Result<SearchOutcome, SearchError> {
+    let literal = PreparedLiteral::new(query)?;
     let mut executor = SearchExecutor {
         runtime,
-        request,
+        scope,
+        target,
         literal,
         full_line_results: Vec::new(),
         substring_results: Vec::new(),
@@ -48,9 +65,38 @@ pub(super) fn execute(
     })
 }
 
+fn execute_exact_file(
+    runtime: &WorkspaceRuntime,
+    logical_path: &str,
+) -> Result<SearchOutcome, SearchError> {
+    if is_backwriter_spill(logical_path) {
+        return Ok(SearchOutcome::Empty);
+    }
+    let mut file = match runtime.open_admitted_source(logical_path) {
+        Ok(file) => file,
+        Err(DirectoryAccessError::Unadmitted) => return Err(SearchError::InvalidScope),
+        Err(DirectoryAccessError::NotCurrent) => return Ok(SearchOutcome::Empty),
+        Err(DirectoryAccessError::Unavailable) => return Err(SearchError::Unavailable),
+    };
+    scan_source(&mut file, |_| Ok(())).map_err(|_| SearchError::Unavailable)?;
+    let anddress = construct_anddress(
+        &runtime.workspace_coordinate,
+        logical_path,
+        AnddressTarget::File,
+    )
+    .map_err(|_| SearchError::Unavailable)?;
+    let mut anddresses = Vec::new();
+    anddresses
+        .try_reserve_exact(1)
+        .map_err(|_| SearchError::Unavailable)?;
+    anddresses.push(anddress);
+    Ok(SearchOutcome::Found { anddresses })
+}
+
 struct SearchExecutor<'a> {
     runtime: &'a WorkspaceRuntime,
-    request: &'a SearchRequest,
+    scope: &'a SearchScope,
+    target: SearchTarget,
     literal: PreparedLiteral<'a>,
     full_line_results: Vec<Anddress>,
     substring_results: Vec<Anddress>,
@@ -58,7 +104,7 @@ struct SearchExecutor<'a> {
 
 impl SearchExecutor<'_> {
     fn preflight(&self) -> Result<(), SearchError> {
-        if let Some(entries) = self.request.scope().entries() {
+        if let Some(entries) = self.scope.entries() {
             for entry in entries {
                 self.validate_scope_entry(entry)?;
             }
@@ -67,7 +113,7 @@ impl SearchExecutor<'_> {
     }
 
     fn execute(&mut self) -> Result<(), SearchError> {
-        if let Some(entries) = self.request.scope().entries() {
+        if let Some(entries) = self.scope.entries() {
             for entry in entries {
                 if entry.is_subtree() {
                     self.search_subtree(entry.path())?;
@@ -223,7 +269,7 @@ impl SearchExecutor<'_> {
             &self.runtime.workspace_coordinate,
             path,
             &self.literal,
-            self.request.target(),
+            self.target,
             &mut self.full_line_results,
             &mut self.substring_results,
         )?;

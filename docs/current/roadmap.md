@@ -39,6 +39,22 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
+## Completed: 0.1.0 exact File lookup
+
+Core Search now has a distinct validated exact logical File request. It returns
+one File Anddress for an admitted empty or nonempty regular UTF-8, NUL-free
+source, returns Empty for a missing path or directory, and does not create an
+empty content query, synthetic Line/Paragraph, index, cache, or new wire. The
+canonical CLI exposes the request as `search /file <logical-path>` in one-shot
+human/JSON and Session forms while reusing existing outcomes and writers.
+Check accepts the resulting ordinary Search outcome, and its File Anddress can
+drive existing Apply `StartOf` and `EndOf` positions for an empty source.
+
+The Cargo package and source executable version are `0.1.0`, and `bw version`
+prints `Backwriter 0.1.0`. This source milestone does not publish a stable
+distribution. The complete public `0.1.0-beta.3` bundle remains closed and
+immutable until a separate stable-publication phase.
+
 ## Completed: CLI V1 capabilities and standalone Version/Update utilities
 
 The canonical `bw` executable implements exact `bw version`, explicit
@@ -66,9 +82,9 @@ behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
 or wire authority. Version and Update are Adapter-owned standalone utilities
 outside Core. Explicit Update invokes the canonical installer; background and
 automatic update remain deferred.
-Core/Runtime beta implementation freeze holds. CLI V1 beta implementation
-freeze is complete; work resumes only with owner authority for collection/Edit
-transport or Session machine output.
+The `0.1.0` Core/Runtime and CLI source surface is frozen after exact File
+lookup; work resumes only with owner authority for collection/Edit transport or
+Session machine output.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 `x86_64-unknown-linux-gnu` remains the local development and test-host target.
 The target choice and direct build verification are complete. The external
@@ -94,7 +110,7 @@ installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
 Windows build and installer verification make no native-runtime or native-CMD
 claim.
 The current Cargo package and library crate are `backwriter` at
-`0.1.0-beta.3`; the sole canonical executable and external Adapter command are
+`0.1.0`; the sole canonical executable and external Adapter command are
 `bw`. The public beta.1 and beta.2 files remain unchanged immutable prior
 artifacts, while the complete beta.3 Linux/macOS/Windows version directory is
 immutable. The planned matrix is complete and beta.3 is closed.
@@ -130,3 +146,5 @@ Releases, and crates.io remain deferred and require separate Owner authority.
 The completed publication
 defines no universal host-compatibility, native-macOS-runtime,
 native-Windows-runtime, or native-CMD claim.
+Stable `0.1.0` artifact building, manifest/installer changes, and publication
+are the next separate distribution phase; none started in the source milestone.

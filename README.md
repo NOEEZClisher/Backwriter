@@ -12,7 +12,9 @@ result-binding, explicit Data modes, and Adapter-owned Version and Update.
 
 ## Quick start
 
-Install the official release with the command for your platform.
+Install the currently published official beta.3 release with the command for
+your platform. The repository source is `0.1.0`; its stable distribution has
+not been published.
 
 Linux, macOS, or WSL:
 
@@ -46,10 +48,10 @@ not already on `PATH`.
 bw version
 ```
 
-The current release prints exactly:
+The current source build prints exactly:
 
 ```text
-Backwriter 0.1.0-beta.3
+Backwriter 0.1.0
 ```
 
 ### Update
@@ -58,14 +60,16 @@ Backwriter 0.1.0-beta.3
 bw update
 ```
 
-`bw update` downloads and delegates to the current official installer. The
+`bw update` downloads and delegates to the current official installer. Until a
+separate stable publication is authorized, that installer remains the closed
+`0.1.0-beta.3` distribution. The
 installer reads the current distribution manifest, verifies the selected
 artifact, and installs or reinstalls that manifest version only after
 validation succeeds. It does not run a background updater or compare release
 versions.
 
 The product is Backwriter. The Cargo package and library crate are `backwriter`
-at `0.1.0-beta.3`; the sole canonical executable and external Adapter command
+at `0.1.0`; the sole canonical executable and external Adapter command
 are `bw`. There is no `backwriter` binary, alias, or wrapper.
 
 The default workspace is the process current working directory. An explicit
@@ -87,9 +91,13 @@ bw update
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+    search /file <logical-path>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+    search /file <logical-path>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     view anddress <encoded-v3-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
@@ -106,7 +114,12 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 Version and Update do not call Backwriter Core or Runtime and create no Core
 wire or capability workflow.
 
-The CLI preserves Core Search validation and deterministic result order. View
+Content Search preserves Core literal validation, scope, projection, and
+deterministic result order. The distinct `search /file` form validates one
+logical path and returns the current File Anddress for an admitted regular
+UTF-8, NUL-free source regardless of whether it is empty or contains matching
+text. Missing paths and directories return Empty; the form has no scope
+selectors or synthetic content query. View
 decodes a v3 Anddress and writes only its exact selected text. Check decodes one
 v3 Anddress and writes only `Current`, `NotCurrent`, or `Unavailable`. Search,
 View, and Check `--json` write one compact Adapter object with exact embedded v3
@@ -197,7 +210,8 @@ and immutable. The complete beta.3 version directory is also immutable; its
 planned matrix is complete and the release is closed. Any later platform or
 version requires separate Owner authority. Linux arm64, tags, GitHub Releases,
 crates.io publication, and background or automatic update remain outside the
-completed publication.
+completed publication. In particular, the repository's `0.1.0` source version
+does not publish, replace, or reopen any beta.3 file.
 
 ## Architecture
 

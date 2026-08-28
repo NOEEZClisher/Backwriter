@@ -4,7 +4,7 @@
 
 | Letter | Word | Current status |
 | --- | --- | --- |
-| S | Search | Rust implementation with v3 target projection. |
+| S | Search | Rust implementation with v3 literal projection and exact File lookup. |
 | V | View | Rust implementation with v3 currentness. |
 | P | Pick | Rust implementation with v3 predicate semantics. |
 | A | Anchor | Rust implementation with Runtime-local live continuity. |
@@ -41,7 +41,12 @@ existing v3 Anddress objects. Raw View is an explicit Adapter exact-text
 projection and creates no Core wire or new View meaning. Data transfers exact
 clones from explicit Session values into the existing typed Core store and reads
 them back without capability execution.
-Version and Update are Adapter-owned standalone utilities outside Core;
+Content Search keeps its literal query, scope, and target projection. Its
+distinct `search /file <logical-path>` form performs exact logical File lookup
+without a content query and reuses the same human/JSON outcome writers in both
+one-shot and Session execution. Empty and nonempty admitted regular UTF-8,
+NUL-free sources return one File Anddress; missing paths and directories are
+Empty. Version and Update are Adapter-owned standalone utilities outside Core;
 explicit Update invokes the canonical distribution installer and adds no
 background or automatic updater. The Adapter adds no Core API, wire, workflow,
 provenance, automatic Data storage,
@@ -51,9 +56,9 @@ DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
 batch Check, Edit, and Apply await collection or Edit transport schema
 authority. Raw output other than completed one-shot View and further Session
 behavior remain deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
-Core/Runtime beta implementation freeze holds. CLI V1 has no remaining approved
-feature or implementation slice; its beta implementation freeze holds until
-owner authority closes collection/Edit transport or Session machine output.
+The current `0.1.0` Core/Runtime and CLI source surface is frozen after exact
+File lookup. Further Adapter work still requires owner authority for
+collection/Edit transport or Session machine output.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`; the
 GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned
@@ -86,10 +91,13 @@ platform or version requires separate Owner authority. Tags, GitHub Releases,
 crates.io publication, and GitHub distribution
 remain outside the completed publication.
 The current Cargo package and library crate are `backwriter` at
-`0.1.0-beta.3`; the sole canonical executable and external Adapter command are
+`0.1.0`; the sole canonical executable and external Adapter command are
 `bw`. There is no current `backwriter` binary, alias, or wrapper. Product prose
 continues to use Backwriter, and persisted Core wire/private-path and
-distribution artifact/domain contracts keep their existing names.
+distribution artifact/domain contracts keep their existing names. Stable
+publication has not started: the operations-owned public distribution remains
+the closed, immutable `0.1.0-beta.3` bundle, and `bw update` still delegates to
+that current official installer.
 
 ## Current-only Runtime contract
 
@@ -98,10 +106,13 @@ caller input. `WorkspaceRuntime::search`, `WorkspaceRuntime::view`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`, `WorkspaceRuntime::check`,
 `check_search`, `check_pick`, `anchor`, `view_anchored`, and
 `invalidate_anchored_source` are the implemented Runtime seams. Search traverses
-admitted Workspace Source through
-retained capability-relative no-follow handles, observes one selected regular
-file once, validates UTF-8/NUL, parses exact Line structure, matches and orders
-results, then drops that source before opening another.
+admitted Workspace Source through retained capability-relative no-follow
+handles. Content Search observes each selected regular file once, validates
+UTF-8/NUL, parses exact Line structure, matches and orders results, then drops
+that source before opening another. Exact File Search validates one logical
+path and observes that admitted regular source once under the same safety and
+text policy before returning its File Anddress; it performs no content matching
+or traversal.
 Runtime retains no observation, source, result, snapshot, lease, registry,
 history, or authenticity state.
 

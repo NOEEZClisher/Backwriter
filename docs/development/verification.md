@@ -36,6 +36,12 @@ return including the exact owned View allocation, borrowed kind/name listing,
 all-kind Rename/Remove dispatch, rename and remove priority, all three
 CheckOutcome payloads, and no fixed entry or name-length cap.
 
+Exact File Search regressions cover source-less logical-path validation,
+empty/nonempty regular sources without content matching, missing and directory
+Empty outcomes, named admission and unadmitted paths, private spill, symlink and
+hard-link boundaries, invalid UTF-8/NUL closure, one ordinary v3 File result,
+Check integration, and empty-File Apply at both `StartOf` and `EndOf`.
+
 Check streaming regressions cover chunk-boundary UTF-8, NUL, CRLF, standalone
 CR, and no-EOL handling; late invalid, incomplete, NUL, and read failure;
 forward-only access; exact final-byte/length equality; batch order and
@@ -170,6 +176,11 @@ Before handoff, verify the diff and index, confirm repository-root `.artext` is
 absent and untracked, preserve historical task/history files, and leave the
 index empty.
 
+The repository source package is `0.1.0`, and its release build must print
+exactly `Backwriter 0.1.0` plus LF. This source verification does not alter or
+publish the separately verified, closed `0.1.0-beta.3` distribution described
+above. The `0.1.0` source suite passes 193 GNU-host Rust tests.
+
 CLI process regressions cover the canonical `bw` binary without a `backwriter`
 binary, `--help`, exact `bw version`, explicit `bw update` download/exit/output
 propagation and platform handoff, default-current-directory and explicit absolute workspaces,
@@ -177,7 +188,10 @@ default and repeated admission, Line/Paragraph/File Search, repeated source and
 subtree scope selectors, Core scope rejection, deterministic human output,
 space-preserving query argv, raw-Anddress/workspace-coordinate omission, Empty,
 usage versus Runtime execution exits, unsupported deferred forms, and strict
-stdout/stderr separation. View regressions cover v3 decode, File/Paragraph/Line
+stdout/stderr separation. They also cover one-shot human/JSON and Session
+`search /file`, exact empty-File retrieval, missing/directory Empty, invalid and
+unadmitted paths, existing writer reuse, Check, and end-to-end empty-File Apply.
+View regressions cover v3 decode, File/Paragraph/Line
 exact bytes, None/LF/CR/CRLF terminators, large no-EOL output, stale/wrong-
 extent and unadmitted source closure, plus one-shot anchored/extra-operand
 rejection.

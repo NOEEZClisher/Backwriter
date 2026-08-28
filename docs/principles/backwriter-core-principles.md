@@ -20,8 +20,11 @@
    `.artext/other` is ordinary source.
 6. **Search is all-or-nothing.** Invalid text or actual allocation/I/O failure
    discards the whole result; no partial result, cache, or persistent index is
-   created. The Protocol defines v3 literal matching, target projection, and
-   ordering; live traversal and no-limit behavior remain valid.
+   created. The Protocol separates v3 literal matching and target projection
+   from exact logical File lookup. Exact lookup observes one admitted regular
+   source under the same safety and text policy and never invents a query, Line,
+   or Paragraph. Live traversal and no-limit behavior remain valid where content
+   Search uses them.
 7. **Core constructs; Search delivers.** Backwriter Core constructs and
    provides target Anddress values from an accepted current observation, and
    Search only delivers them as results. Returned values belong to the caller;

@@ -148,6 +148,36 @@ fn apply_inserts_at_each_exact_position_without_normalization() {
     assert_no_apply_temp(&root);
 }
 
+#[test]
+fn exact_file_lookup_enables_start_and_end_insert_into_empty_files() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("start.txt"), "").unwrap();
+    fs::write(root.join("end.txt"), "").unwrap();
+    let mut workspace = runtime(&root);
+
+    for (path, position) in [
+        ("start.txt", Position::StartOf as fn(Anddress) -> Position),
+        ("end.txt", Position::EndOf as fn(Anddress) -> Position),
+    ] {
+        let SearchOutcome::Found { mut anddresses } = workspace
+            .search(&SearchRequest::exact_file(path).unwrap())
+            .unwrap()
+        else {
+            panic!("empty File lookup")
+        };
+        assert_eq!(anddresses.len(), 1);
+        workspace
+            .apply(&Edit::Insert {
+                position: position(anddresses.pop().unwrap()),
+                content: "hello".to_owned(),
+            })
+            .unwrap();
+        assert_eq!(fs::read(root.join(path)).unwrap(), b"hello");
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn changed_apply_preserves_the_source_basic_mode() {

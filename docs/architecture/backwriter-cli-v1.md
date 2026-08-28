@@ -69,13 +69,15 @@ capability workflow.
 `bw version` writes exactly:
 
 ```text
-Backwriter 0.1.0-beta.3
+Backwriter 0.1.0
 ```
 
 including the final LF and no other successful output.
 
 `bw update` downloads the current platform's official installer over HTTPS and
-delegates installation to it. It performs no local version comparison, retry,
+delegates installation to it. Stable `0.1.0` distribution has not started, so
+the current official installer remains the closed `0.1.0-beta.3` publication.
+Update performs no local version comparison, retry,
 daemon or background update, and adds no compatibility alias. On Unix it uses a
 private temporary directory, runs the downloaded `install.sh` synchronously
 with `sh`, propagates its exit status, and removes the temporary directory. On
@@ -93,9 +95,13 @@ The complete syntax for this slice is:
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+    search /file <logical-path>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     search <line|paragraph|file> <query>
     [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+    search /file <logical-path>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     view anddress <encoded-v3-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
@@ -110,7 +116,8 @@ the CLI does not canonicalize it or bypass Runtime root and symlink checks.
 
 `--admit` is repeatable only before the capability. With no `--admit`, the
 single admission root is `.`. `--source` and `--subtree` are repeatable only
-after the query. With no scope selector, Search uses `AllAdmitted`.
+after a content query. With no scope selector, content Search uses
+`AllAdmitted`. Exact File Search accepts no scope selector.
 
 `--json` and `--raw` are optional mutually exclusive global output selections.
 Each appears before the capability at most once and can occur in any order among
@@ -118,11 +125,20 @@ Each appears before the capability at most once and can occur in any order among
 is one-shot View-only. Duplicate, mixed, or post-capability use is a usage
 error. Session and every other one-shot capability reject output selections.
 
-The query is exactly one argv value supplied by the host shell. The CLI has no
-secondary quoting or tokenization. It directly uses `AdmissionRoot`,
+A content query is exactly one argv value supplied by the host shell. The CLI
+has no secondary quoting or tokenization. It directly uses `AdmissionRoot`,
 `WorkspaceAdmission`, `SearchQuery`, `SearchScopeEntry`, and `SearchScope` for
-all duplicate, overlap, logical-path, and query validation. It passes a
-validated `SearchRequest` unchanged to `WorkspaceRuntime::search`.
+all duplicate, overlap, logical-path, and query validation.
+
+`search /file` is a separate exact logical File form, not a content query or
+target projection. It accepts exactly one `logical-path`, validates it with
+the Core request constructor, and passes the resulting `SearchRequest`
+unchanged to `WorkspaceRuntime::search`. An admitted regular UTF-8, NUL-free
+source returns one ordinary File Anddress whether it is empty or nonempty.
+Missing paths and directories return Empty. Invalid paths are usage errors;
+unadmitted or unavailable sources retain the existing Search execution-error
+boundary. The form creates no fake query, Line, Paragraph, wire, or Adapter
+result type.
 
 The CLI has no parser framework, Core facade, second validation model, cache,
 automatic selection, daemon, or background updater. Session state is limited to
@@ -287,8 +303,9 @@ NUL, unmatched quotes, and every other quoted escape. It creates no single-quote
 continuation, interpolation, or pipe grammar. Only the Pick predicate tail splits
 parentheses; it changes no other Session token syntax.
 
-The completed commands are `search <kind> <query> [scope]`, `let <name> =
-search <kind> <query> [scope]`, `pick @<search-or-pick-binding> <predicate>`,
+The completed commands are `search <kind> <query> [scope]`, `search /file
+<logical-path>`, `let <name> = search <kind> <query> [scope]`, `let <name> =
+search /file <logical-path>`, `pick @<search-or-pick-binding> <predicate>`,
 `let <name> = pick @<search-or-pick-binding> <predicate>`, `let <name> =
 @<name>`, `let <name> = @<name>[<index>]`, `view anddress @<name>[<index>]`,
 `check anddress @<name>[<index>]`, `check search @<search-binding>`,

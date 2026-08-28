@@ -54,7 +54,10 @@ deterministically through retained capability-relative no-follow handles. For
 each selected regular file it observes one byte sequence, validates complete
 UTF-8 and NUL policy, parses exact File/Paragraph/Line structure, matches
 literal Line content, projects the requested target, and drops its call-local
-observation before opening another file.
+observation before opening another file. Its separate exact File request
+validates one logical path, opens and observes only that admitted regular
+source under the same policy, and returns its File Anddress without content
+matching or traversal.
 
 ## Bounded source-memory authority
 
@@ -159,7 +162,9 @@ Capability → Operation → Kind → Operand(s) → Position → Payload → Qu
 Absent slots are omitted, while present slots retain that relative order. The
 normal forms are:
 
-- Search: `Kind(target) → Payload(query) → Qualifier(scope)`.
+- Search content: `Kind(target) → Payload(query) → Qualifier(scope)`. Exact
+  File lookup has one logical-path Operand and no query, target projection, or
+  scope qualifier. This semantic distinction does not assign CLI token syntax.
 - View: `Kind(input form: anddress|anchored) → Operand`.
 - Pick: `Operand(candidates) → Qualifier(predicate)`. The predicate is one
   existing Pick predicate value; this section changes neither its nesting nor
@@ -228,13 +233,34 @@ or View semantic change.
 
 Search is all-or-nothing. Invalid input, unsafe or unavailable source, invalid
 UTF-8/NUL, or actual allocation/I/O failure discards every provisional result. A
-source change after return has no Runtime-tracked lifecycle meaning. It evaluates
-the query once against each current Line content: equality is `FullLine`; any
-other contiguous match is `Substring`. Repeated occurrences within one Line do
-not add results. Existing scope, traversal, query validation, exact Line
-framing, KMP matching, target projection, tier buckets, ordering, fail-all,
-no-limit, and one-read contracts remain unchanged.
+source change after return has no Runtime-tracked lifecycle meaning.
+
+A content request evaluates its query once against each current Line content:
+equality is `FullLine`; any other contiguous match is `Substring`. Repeated
+occurrences within one Line do not add results. Existing scope, traversal,
+query validation, exact Line framing, KMP matching, target projection, tier
+buckets, ordering, fail-all, no-limit, and one-read contracts remain unchanged.
 Search adds no HashSet, global deduplication, or evidence.
+
+An exact File request is constructed only from one valid logical path. It has
+no query, requested target kind, scope selector, directory traversal, match
+tier, ranking, or projection. Runtime resolves admission and opens only that
+path capability-relatively without following links. A currently admitted
+regular source is consumed once by the existing streaming UTF-8/NUL validator;
+both empty and nonempty valid sources return `Found` with exactly one ordinary
+v3 File Anddress. A missing path or directory returns `Empty`. Invalid paths
+fail source-less validation, while unadmitted and unavailable observations fail
+closed under the existing Search error boundary. The request creates no fake
+Line or Paragraph, empty literal, separate result type, wire, registry, index,
+or cache. Its `SearchOutcome` is accepted unchanged by `check_search` and its
+File Anddress is an ordinary input to existing View, Check, Anchor, Edit, and
+Apply contracts.
+
+The public Core constructor is
+`SearchRequest::exact_file(logical_path) -> Result<SearchRequest,
+SearchInputError>`; source-less path rejection is
+`SearchInputError::InvalidFile`. `SearchRequest` keeps the content/exact choice
+private instead of exposing a second request enum or a stringly query mode.
 
 For a Line target, every matching current Line is returned exactly once as its
 v3 Line locator. For a Paragraph target, every current Paragraph containing one

@@ -112,26 +112,44 @@ pub enum SearchTarget {
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SearchRequest {
-    query: SearchQuery,
-    scope: SearchScope,
-    target: SearchTarget,
+    kind: SearchRequestKind,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum SearchRequestKind {
+    Content {
+        query: SearchQuery,
+        scope: SearchScope,
+        target: SearchTarget,
+    },
+    ExactFile {
+        logical_path: String,
+    },
 }
 impl SearchRequest {
     pub fn new(query: SearchQuery, scope: SearchScope, target: SearchTarget) -> Self {
         Self {
-            query,
-            scope,
-            target,
+            kind: SearchRequestKind::Content {
+                query,
+                scope,
+                target,
+            },
         }
     }
-    pub fn query(&self) -> &SearchQuery {
-        &self.query
+
+    pub fn exact_file(logical_path: impl AsRef<str>) -> Result<Self, SearchInputError> {
+        let logical_path = logical_path.as_ref();
+        if validate_logical_path(logical_path).is_err() {
+            return Err(SearchInputError::InvalidFile);
+        }
+        Ok(Self {
+            kind: SearchRequestKind::ExactFile {
+                logical_path: logical_path.to_owned(),
+            },
+        })
     }
-    pub fn scope(&self) -> &SearchScope {
-        &self.scope
-    }
-    pub fn target(&self) -> SearchTarget {
-        self.target
+
+    pub(crate) fn kind(&self) -> &SearchRequestKind {
+        &self.kind
     }
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -145,6 +163,8 @@ pub enum SearchInputError {
     InvalidQuery,
     #[error("search scope is invalid")]
     InvalidScope,
+    #[error("search file path is invalid")]
+    InvalidFile,
 }
 #[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
 pub enum SearchError {

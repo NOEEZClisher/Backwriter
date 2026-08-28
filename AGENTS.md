@@ -14,8 +14,9 @@ are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. Their v3 View
-currentness, Search projection, Pick predicate semantics, Anchor live
-continuity, and Check batch currentness reporting are implemented. Apply V1
+currentness, Search literal projection and exact logical File lookup, Pick
+predicate semantics, Anchor live continuity, and Check batch currentness
+reporting are implemented. Apply V1
 semantic/public API/error authority and its single-source Edit Runtime
 implementation are complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
@@ -125,6 +126,11 @@ are preserved evidence, never current authority.
 - Search matches at Line-content granularity. Its requested target kind is
   Line, Paragraph, or File and changes only returned Anddress granularity.
   Separator Lines have no Paragraph.
+- Search also accepts a distinct exact logical File request. It validates one
+  logical path, observes that admitted regular source under the same UTF-8/NUL
+  and no-follow policy, and returns its File Anddress without content matching.
+  Missing paths and directories are Empty; the operation creates no empty
+  query, synthetic Line or Paragraph, scope traversal, index, or cache.
 - Search's live scan, matching, ordering, all-or-nothing behavior, and
   no-fixed-limit contract remain valid. It constructs v3 target-local values
   directly from current coordinate, logical path, and target locators.
@@ -203,16 +209,22 @@ are preserved evidence, never current authority.
   `WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
   `check_pick(PickOutcome)`.
   There is no public Runtime enumeration or listing API. Core owns the validated
-  Search request, scope, query, target, outcome, and error types.
+  content and exact-File Search requests, scope, query, target, outcome, and
+  error types.
 - Scope is all admitted roots or a nonempty narrowing-only list of subtree and
   source selectors. Selectors use safe platform-neutral UTF-8 logical paths,
   reject explicit `.`, duplicates, cross-kind same paths, and every
   component-boundary overlap. Admission roots and selector paths have no
   semantic length or count limit; they are fully admission-validated before
   filesystem I/O.
-- Query is a nonempty literal UTF-8 value without NUL, CR, or LF. Search
-  performs case-sensitive contiguous matching on exact Line content without
-  trimming, normalization, folding, token, regex, fuzzy, or semantic behavior.
+- A content query is a nonempty literal UTF-8 value without NUL, CR, or LF.
+  Search performs case-sensitive contiguous matching on exact Line content
+  without trimming, normalization, folding, token, regex, fuzzy, or semantic
+  behavior.
+- An exact File request has one validated logical path and no query, target
+  projection, or scope selector. Only a currently admitted regular UTF-8,
+  NUL-free source returns one File Anddress; missing paths and directories
+  return Empty.
 - Search is all-or-nothing. The outcome is Empty or Found Anddresses; invalid
   input is rejected before I/O, and invalid scope or unavailable source discards
   the entire result. There is no partial, truncated, cursor, or paginated

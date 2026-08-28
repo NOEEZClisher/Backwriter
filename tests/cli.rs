@@ -383,7 +383,7 @@ fn canonical_binary_help_and_default_workspace_search() {
 
     let version = run(root.path(), &["version"]);
     assert!(version.status.success());
-    assert_eq!(version.stdout, b"Backwriter 0.1.0-beta.3\n");
+    assert_eq!(version.stdout, b"Backwriter 0.1.0\n");
     assert!(version.stderr.is_empty());
 }
 
@@ -675,6 +675,58 @@ fn one_shot_search_json_streams_exact_v3_objects_for_every_target() {
             .windows(b"\\\\".len())
             .any(|window| window == b"\\\\")
     );
+}
+
+#[test]
+fn exact_file_lookup_reuses_human_json_and_validation_boundaries() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "empty.txt", "");
+    write(
+        root.path(),
+        "nonempty.txt",
+        "no matching literal is required",
+    );
+    fs::create_dir(root.path().join("directory")).unwrap();
+
+    let human = run(root.path(), &["search", "/file", "empty.txt"]);
+    assert!(human.status.success());
+    assert_eq!(human.stdout, b"Found 1\n0\tFile\tempty.txt\n");
+    assert!(human.stderr.is_empty());
+
+    let runtime = WorkspaceRuntime::open(
+        root.path(),
+        WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+    )
+    .unwrap();
+    let expected = runtime
+        .search(&SearchRequest::exact_file("empty.txt").unwrap())
+        .unwrap();
+    assert_search_json(
+        run(root.path(), &["--json", "search", "/file", "empty.txt"]),
+        &expected,
+    );
+
+    for path in ["missing.txt", "directory"] {
+        let output = run(root.path(), &["search", "/file", path]);
+        assert!(output.status.success());
+        assert_eq!(output.stdout, b"Found 0\n");
+        assert!(output.stderr.is_empty());
+    }
+    for path in ["../escape.txt", "/absolute.txt", "a/../b.txt"] {
+        assert_usage(run(root.path(), &["search", "/file", path]));
+    }
+    assert_usage(run(
+        root.path(),
+        &["search", "/file", "empty.txt", "--source", "empty.txt"],
+    ));
+
+    let admitted = tempfile::tempdir().unwrap();
+    write(admitted.path(), "inside/empty.txt", "");
+    write(admitted.path(), "outside.txt", "");
+    assert_execution_error(run(
+        admitted.path(),
+        &["--admit", "inside", "search", "/file", "outside.txt"],
+    ));
 }
 
 #[test]
@@ -1650,6 +1702,21 @@ fn session_edit_apply_builds_each_core_edit_and_preserves_bindings() {
         );
         assert!(text(output.stdout).contains("OK\n"));
     }
+}
+
+#[test]
+fn session_exact_file_lookup_inserts_into_an_empty_file_end_to_end() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "empty.txt", "");
+
+    let output = run_shell(
+        root.path(),
+        "let files = search /file empty.txt\nlet edit = edit insert end-of @files[0] hello\napply @edit\ncheck anddress @files[0]\nexit\n",
+    );
+    assert!(output.status.success(), "{}", text(output.stderr));
+    assert_eq!(output.stdout, b"Found 1\n0\tFile\tempty.txt\nOK\nCurrent\n");
+    assert!(output.stderr.is_empty());
+    assert_eq!(fs::read(root.path().join("empty.txt")).unwrap(), b"hello");
 }
 
 #[test]

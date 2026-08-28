@@ -33,6 +33,12 @@ fn request(query: &str, scope: SearchScope, target: SearchTarget) -> SearchReque
     SearchRequest::new(SearchQuery::new(query).unwrap(), scope, target)
 }
 
+fn exact_file(runtime: &WorkspaceRuntime, logical_path: &str) -> SearchOutcome {
+    runtime
+        .search(&SearchRequest::exact_file(logical_path).unwrap())
+        .unwrap()
+}
+
 #[test]
 fn search_projects_exact_line_extent_and_paragraph_ordinal() {
     let fixture = tempdir().unwrap();
@@ -77,6 +83,123 @@ fn search_projects_exact_line_extent_and_paragraph_ordinal() {
         ]
     );
     assert_eq!(found(&workspace, "needle", SearchTarget::File).len(), 1);
+}
+
+#[test]
+fn exact_file_lookup_is_content_independent_and_integrates_with_check() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("empty.txt"), "").unwrap();
+    fs::write(root.join("nonempty.txt"), "unrelated content\n").unwrap();
+    fs::create_dir(root.join("directory")).unwrap();
+    fs::create_dir_all(root.join(".artext/bw")).unwrap();
+    fs::write(root.join(".artext/bw/hidden.txt"), "ordinary").unwrap();
+    let workspace = runtime(&root);
+
+    let empty = exact_file(&workspace, "empty.txt");
+    let SearchOutcome::Found { anddresses } = &empty else {
+        panic!("empty File lookup")
+    };
+    assert_eq!(anddresses.len(), 1);
+    assert_eq!(anddresses[0].logical_path, "empty.txt");
+    assert_eq!(anddresses[0].target, AnddressTarget::File);
+
+    let nonempty = exact_file(&workspace, "nonempty.txt");
+    let SearchOutcome::Found { anddresses } = &nonempty else {
+        panic!("nonempty File lookup")
+    };
+    assert_eq!(anddresses.len(), 1);
+    assert_eq!(anddresses[0].logical_path, "nonempty.txt");
+    assert_eq!(anddresses[0].target, AnddressTarget::File);
+
+    assert_eq!(exact_file(&workspace, "missing.txt"), SearchOutcome::Empty);
+    assert_eq!(exact_file(&workspace, "directory"), SearchOutcome::Empty);
+    assert_eq!(
+        exact_file(&workspace, ".artext/bw/hidden.txt"),
+        SearchOutcome::Empty
+    );
+
+    let checked = workspace.check_search(empty).unwrap();
+    assert_eq!(checked.report.current_count(), 1);
+    assert_eq!(checked.report.checked_count(), 1);
+    assert!(matches!(
+        checked.filtered,
+        SearchOutcome::Found { ref anddresses }
+            if anddresses.len() == 1 && anddresses[0].logical_path == "empty.txt"
+    ));
+}
+
+#[test]
+fn exact_file_lookup_reuses_path_admission_and_source_safety() {
+    for path in [
+        "",
+        ".",
+        "../escape.txt",
+        "/absolute.txt",
+        "a/../b.txt",
+        "a\\b.txt",
+        ".git/config",
+    ] {
+        assert_eq!(
+            SearchRequest::exact_file(path),
+            Err(SearchInputError::InvalidFile)
+        );
+    }
+
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::create_dir(root.join("a")).unwrap();
+    fs::create_dir(root.join("b")).unwrap();
+    fs::write(root.join("a/same.txt"), "left").unwrap();
+    fs::write(root.join("b/same.txt"), "right").unwrap();
+    fs::write(root.join("outside.txt"), "outside").unwrap();
+    fs::write(root.join("a/invalid.txt"), b"\xff").unwrap();
+    fs::write(root.join("a/zero.txt"), b"text\0").unwrap();
+    let workspace = WorkspaceRuntime::open(
+        &root,
+        WorkspaceAdmission::new([
+            AdmissionRoot::new("a").unwrap(),
+            AdmissionRoot::new("b").unwrap(),
+        ])
+        .unwrap(),
+    )
+    .unwrap();
+
+    let left = exact_file(&workspace, "a/same.txt");
+    let right = exact_file(&workspace, "b/same.txt");
+    let (
+        SearchOutcome::Found {
+            anddresses: left_addresses,
+        },
+        SearchOutcome::Found {
+            anddresses: right_addresses,
+        },
+    ) = (&left, &right)
+    else {
+        panic!("named admission File lookup")
+    };
+    assert_eq!(left_addresses.len(), 1);
+    assert_eq!(right_addresses.len(), 1);
+    assert_eq!(left_addresses[0].logical_path, "a/same.txt");
+    assert_eq!(right_addresses[0].logical_path, "b/same.txt");
+    assert_eq!(
+        left_addresses[0].workspace_coordinate,
+        right_addresses[0].workspace_coordinate
+    );
+    assert_eq!(
+        workspace.search(&SearchRequest::exact_file("outside.txt").unwrap()),
+        Err(SearchError::InvalidScope)
+    );
+    assert_eq!(
+        workspace.search(&SearchRequest::exact_file("a/invalid.txt").unwrap()),
+        Err(SearchError::Unavailable)
+    );
+    assert_eq!(
+        workspace.search(&SearchRequest::exact_file("a/zero.txt").unwrap()),
+        Err(SearchError::Unavailable)
+    );
 }
 
 #[test]
@@ -619,4 +742,16 @@ fn search_rejects_symlinks_and_keeps_hard_links_as_distinct_logical_paths() {
         )),
         Err(SearchError::Unavailable)
     );
+    assert_eq!(
+        exact_file(&runtime(&root), "link.txt"),
+        SearchOutcome::Empty
+    );
+    for path in ["hard.txt", "source.txt"] {
+        let SearchOutcome::Found { anddresses } = exact_file(&runtime(&root), path) else {
+            panic!("hard-link logical File lookup")
+        };
+        assert_eq!(anddresses.len(), 1);
+        assert_eq!(anddresses[0].logical_path, path);
+        assert_eq!(anddresses[0].target, AnddressTarget::File);
+    }
 }

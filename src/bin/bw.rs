@@ -34,7 +34,7 @@ use backwriter::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 #[cfg(unix)]
 const INSTALL_SH_URL: &str = "https://backwriter.pentagration.com/install.sh";
@@ -456,7 +456,17 @@ fn execute_search(
 }
 
 fn parse_search(arguments: &[String]) -> Result<SearchRequest, CliError> {
-    let target = match required_token(arguments, 0, "search kind")? {
+    let kind = required_token(arguments, 0, "search kind")?;
+    if kind == "/file" {
+        if arguments.len() != 2 {
+            return Err(CliError::usage(
+                "search /file accepts exactly one logical path",
+            ));
+        }
+        return SearchRequest::exact_file(&arguments[1])
+            .map_err(|error| CliError::usage(error.to_string()));
+    }
+    let target = match kind {
         "line" => SearchTarget::Line,
         "paragraph" => SearchTarget::Paragraph,
         "file" => SearchTarget::File,
