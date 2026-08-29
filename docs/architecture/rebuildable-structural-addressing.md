@@ -1,12 +1,58 @@
 # Backwriter Anddress and Exact Line Model
 
-Status: normative target-local raw locator and implemented v3 wire algebra.
+Status: normative raw-address authority. The closed `0.1.0` implementation uses
+the v3 algebra recorded below. The v4 algebra is the active unpublished `0.2.0`
+target and is not yet implemented.
 
 An Anddress describes one target in current structure and carries no past-target
 lineage or inherited identity. Backwriter establishes only the resulting current
 structure.
 
-## Raw locator algebra
+## Unpublished 0.2.0 v4 algebra
+
+An ordinary v4 Anddress has exactly this semantic identity:
+
+```text
+Anddress = WorkspaceCoordinate
+         + LogicalPath
+         + SourceStateHash
+         + SourceByteLength
+         + TargetKind
+         + [StartByte, EndByte)
+```
+
+`StartByte` is inclusive and `EndByte` is exclusive. Both are byte offsets into
+the exact source state named by `SourceStateHash` and `SourceByteLength`, with
+`0 <= StartByte <= EndByte <= SourceByteLength`. A File covers
+`[0, SourceByteLength)`; Paragraph and Line cover their exact current source
+bytes. Target text, terminator text, Paragraph or Line ordinal, and contextual
+neighbors are not v4 identity. Duplicate equal text targets are distinguished
+by their ranges within the same exact source state.
+
+Raw v4 equality is exact equality of every field above. The source-state hash
+is final currentness authority. Admission decides only whether Runtime may use
+the logical source; it is not raw equality. A changed source has a different
+authoritative state and invalidates every ordinary Anddress for the previous
+state. If the exact complete source state later reappears, raw equality may
+reappear without establishing history, survival, or continuity.
+
+Search is the only target finder and constructs v4 values while reading and
+hashing current source once. View, Check, and Apply consume the hash, length,
+kind, and range directly and never search, reparse to relocate, or context-match
+an old target. `CurrentObservation` is Runtime-private and is not part of the
+wire or equality. Anchor is not an ordinary Anddress; only its live,
+Runtime-local continuity may arithmetically transform a range across a
+Backwriter-owned Apply.
+
+The v4 wire version is `artext.backwriter-anddress.v4`. This phase fixes its
+semantic field set and range convention only. The source-hash algorithm, exact
+wire field encoding/order, and v3/v4 compatibility or migration policy remain
+unresolved Owner decisions. No algorithm, dependency, compatibility decoder,
+alias, or parallel production schema is authorized here.
+
+## Implemented 0.1.0 v3 baseline
+
+### v3 raw locator algebra
 
 Raw Anddress equality is exactly this target-local algebra:
 
@@ -42,7 +88,7 @@ are separators. A Paragraph is a maximal contiguous run of text Lines. `Block`
 is historical wording for that Paragraph and creates no type, alias, variant, or
 wire value.
 
-## V3 wire
+### v3 wire
 
 The sole Anddress wire is `artext.backwriter-anddress.v3`. Its compact JSON
 objects have these fixed encoder orders:
@@ -92,7 +138,7 @@ ordinal, as `Encoding`.
 Violations in decoded workspace coordinate, logical path, or exact extent are
 `Invalid`. Actual allocation failure is `Resource`.
 
-## Replacement cutover
+### v3 replacement cutover history
 
 v3 one-time replaced v2. There is no compatibility decoder, migration, alias,
 or parallel schema. Search, View, and Pick producers, consumers, and regressions

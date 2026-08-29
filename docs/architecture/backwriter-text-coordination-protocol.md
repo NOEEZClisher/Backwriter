@@ -1,7 +1,73 @@
 # Backwriter Protocol
 
-Status: normative current-only Core/Runtime contract with implemented v3
-Anddress and single-source Edit-to-Apply V1.
+Status: normative current-only Core/Runtime contract. The closed `0.1.0`
+implementation is the v3 and single-source Edit-to-Apply V1 baseline. The
+Anddress v4 fast path below is the active, unpublished `0.2.0` target and is not
+yet implemented.
+
+## Unpublished 0.2.0 current-observation authority
+
+The following guard sentences are normative:
+
+- **Current-only is not stateless.**
+- **No history does not mean forgetting the current observation.**
+- **Search is the only capability that finds a target.**
+- **An Anddress is the authority for its source state and byte range.**
+- **View does not search.**
+- **Check does not search.**
+- **Apply does not search.**
+- **A changed source invalidates an ordinary Anddress.**
+- **Backwriter never relocates an old target after external change.**
+- **Backwriter is not Git.**
+
+The ordinary `artext.backwriter-anddress.v4` target contains exactly the
+Runtime workspace coordinate, logical path, source-state hash, exact source
+byte length, target kind, and one byte range. The range starts inclusively and
+ends exclusively. A File range is its complete source range; Paragraph and Line
+ranges are their exact current source extents. Target text and ordinal are not
+v4 identity. Raw equality compares those v4 fields exactly. Admission remains
+Runtime availability policy rather than raw equality.
+
+The source-state hash is final currentness authority. The hash algorithm and
+the v3/v4 compatibility or migration policy are unresolved Owner decisions;
+this authority neither chooses a dependency nor authorizes a decoder, alias, or
+parallel public schema. The implemented `0.1.0` v3 wire remains the stable
+baseline until a later phase cuts every authorized producer and consumer over
+together.
+
+Search alone discovers File, Paragraph, or Line targets. During its one retained
+source read it validates source text, parses current structure, matches or
+selects the target, records exact byte ranges, and computes the source hash in
+the same pass. A separate hash pass is forbidden. Every returned ordinary v4
+Anddress carries the resulting hash, byte length, kind, and exact range.
+
+View consumes one ordinary Anddress. It validates the current source hash and
+uses the recorded length to prove the range is in bounds for that exact state;
+it does not search or parse structure to rediscover the target. Check compares
+the current source hash with the Anddress and does not search. Apply accepts the
+hash as its source-state precondition, validates the recorded range against the
+recorded length, and patches that exact range; it neither searches nor uses
+text, ordinal, context, or nearby structure to relocate a stale target. A
+mismatch fails closed before a patch.
+
+`CurrentObservation` is permitted Runtime-private current state. It may retain
+only the current source hash, exact byte length, and byte ranges minimally
+required by the current capability or fast path. It may not retain a prior
+observation, whole source, parse tree, complete Line collection, Search result,
+history, persistent index, relocation context, context-matching evidence, or
+full workspace cache. When source state changes or cannot be proven current,
+Runtime discards the observation before accepting a replacement. This state is
+neither an ordinary Anddress field nor durable authority.
+
+An ordinary Anddress has no continuity across a changed source. Re-search may
+find a target in the new state and produce a new Anddress, but View, Check, and
+Apply never do so implicitly. Reappearance of the same exact source state can
+re-establish the same raw v4 value without proving temporal continuity. Anchor
+remains the only continuity boundary: only a live Anchor may receive an
+arithmetic range transform caused by a Backwriter-owned Apply. External or
+opaque source change invalidates rather than relocates ordinary Anddresses and
+live Anchor continuity. This adds no history, watcher, retry, CAS, persistent
+index, or Git semantics.
 
 ## Current structure only
 
@@ -33,8 +99,9 @@ notification, queue, automatic scan, address re-evaluation, or reissuance. A
 source-visible mutation changes only what an observation can construct or
 validate from the bytes it reads.
 
-Raw Anddress values remain caller-owned values; Runtime neither mutates nor
-reissues them. A new observation independently reconstructs v3 locators: File
+In the shipped `0.1.0` v3 baseline, raw Anddress values remain caller-owned
+values; Runtime neither mutates nor reissues them. A new observation
+independently reconstructs v3 locators: File
 content changes may reconstruct
 the same File value; a currently existing Paragraph ordinal may reconstruct the
 same Paragraph value despite content or boundary changes; and, for the same
@@ -43,11 +110,11 @@ Line extent can therefore still produce a different value after an earlier
 insertion or deletion moves its ordinal. A source mutation neither globally
 invalidates nor reissues Anddresses.
 
-The implemented Runtime execution seams are
+The implemented `0.1.0` Runtime execution seams are
 `WorkspaceRuntime::search(&SearchRequest)`, `WorkspaceRuntime::view(&Anddress)`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`,
 `WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
-`check_pick(PickOutcome)`. Search, View, Pick, Check, and Apply retain no
+`check_pick(PickOutcome)`. In that v3 baseline, Search, View, Pick, Check, and Apply retain no
 observation object, source cache, result store, index, snapshot, lease,
 registry, or authenticity state. Search enumerates admitted Workspace Source
 deterministically through retained capability-relative no-follow handles. For
@@ -59,7 +126,7 @@ validates one logical path, opens and observes only that admitted regular
 source under the same policy, and returns its File Anddress without content
 matching or traversal.
 
-## Bounded source-memory authority
+## Implemented 0.1.0 bounded source-memory authority
 
 Bounded source-memory removes unnecessary auxiliary materialization proportional
 to complete Workspace Source. It is not a fixed-memory promise or a guarantee
@@ -95,7 +162,7 @@ Current resolve, resulting UTF-8/NUL validation, after-parse, every Anchor
 disposition and collision, and every fallible preparation complete before
 publication; successful reflection remains allocation-free and non-failing.
 
-The Check, Search, View, Anchor, and Apply streaming slices are complete. They share one private
+The v3 Check, Search, View, Anchor, and Apply streaming slices are complete. They share one private
 incremental forward scanner in `runtime/source_scan.rs`, which reads one
 retained no-follow handle with a fixed scratch buffer and retains no complete
 source. Check keeps currentness classification, while Search keeps KMP matching
@@ -111,7 +178,7 @@ Anchor dispositions before the sole rename. This direction adds no public stream
 API, spill, mmap, cache, async work,
 worker, directory traversal change, dependency, or Runtime/Anddress split.
 
-## Target-local Anddress correction
+## Implemented 0.1.0 v3 target-local Anddress baseline
 
 File, Paragraph, and Line are independent target addresses with structural
 relationships. They are not a durable parent/child identity tree. Their raw
@@ -229,7 +296,7 @@ One-shot raw View is likewise Adapter-only: it is an explicit exact-text output
 selection that reuses the existing View projection without a Core wire, state,
 or View semantic change.
 
-## Search and Pick
+## Implemented 0.1.0 Search and Pick baseline
 
 Search is all-or-nothing. Invalid input, unsafe or unavailable source, invalid
 UTF-8/NUL, or actual allocation/I/O failure discards every provisional result. A
@@ -288,7 +355,7 @@ currentness, observation, continuity, or any other field. v3 has no
 `PickRelation`, `related_to`, compatibility alias, or generic single-variant
 relation enum. Pick does not read text or call Runtime to replace them.
 
-## View
+## Implemented 0.1.0 View baseline
 
 View V1 has one `&Anddress` input and the implemented
 `WorkspaceRuntime::view(&Anddress)` seam. Its admitted capability-relative
@@ -326,7 +393,7 @@ separator Line has no Paragraph. Re-establishing an identical tuple makes only
 a current lookup succeed. It makes no continuity, authenticity, survivor, or
 historical-identity claim.
 
-## Check V1 Runtime authority
+## Implemented 0.1.0 Check V1 Runtime authority
 
 `C` is Check. V1 closes Check's semantic, public API, type, and report
 authority, and its stateless Rust Runtime implementation is complete. Its
@@ -428,7 +495,7 @@ semantics remain deferred. Any Adapter-facing Check spelling remains Adapter
 syntax rather than storage syntax or Data authority. Wire remains outside the
 Core cutline; Adapter spelling does not alter Check Core authority.
 
-## Data V1 public authority
+## Implemented 0.1.0 Data V1 public authority
 
 `D` is Data. Data V1 semantic/public API/type/error authority and Rust
 implementation are complete. Its public module is `backwriter::data`, and its
@@ -547,7 +614,7 @@ API. Search-over-Data; Append; persistence, durability, serialization, or wire;
 automatic latest or Store; stored Check mutation and its RAM commit; and Adapter
 API remain deferred.
 
-## Edit V1 public authority
+## Implemented 0.1.0 Edit V1 public authority
 
 Edit V1 semantic/public API/type/error authority and its inert Rust value
 implementation are complete. One Edit value expresses exactly one caller-owned
@@ -616,7 +683,7 @@ validation. Resolution, splice geometry, and every execution decision belong to
 the Edit-to-Apply executor contract below. V1 does not define the ordering, batch behavior,
 transaction, or atomicity of multiple Edits.
 
-## Edit-to-Apply V1 executor authority
+## Implemented 0.1.0 Edit-to-Apply V1 executor authority
 
 The single-source Apply authority, Rust implementation, and regressions
 are complete. Its public Runtime seam is exactly:
@@ -728,7 +795,7 @@ fixed chunks against staged bytes, and publishes only after every fallible
 preparation has completed. Cross- or multi-source execution, Data storage,
 wire, and Adapter forms remain deferred.
 
-## Anchor live-continuity authority
+## Implemented 0.1.0 Anchor live-continuity authority
 
 Anchor has this implemented public Runtime surface exactly:
 

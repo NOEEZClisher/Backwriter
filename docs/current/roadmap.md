@@ -1,5 +1,30 @@
 # Backwriter Roadmap
 
+## Next: 0.2.0 Anddress fast path
+
+The closed public `0.1.0` release remains the immutable implemented v3
+baseline. `0.2.0` is an unpublished local source-development target governed by
+the [seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
+Phase 1 records the semantic authority and is complete; Phase 2 profiling and
+reproducible baseline measurement are next. No v4 Rust, Cargo, benchmark,
+version, CLI, or release implementation is complete.
+
+The target replaces ordinal/exact-text identity with an ordinary Anddress that
+authorizes one exact source state and byte range: workspace coordinate, logical
+path, source-state hash, exact byte length, kind, and `[start, end)`. Search is
+the only target finder and computes the hash during its discovery read. View
+uses hash plus bounded range, Check compares the hash, and Apply requires that
+hash before patching the recorded range. These consumers never search or
+relocate an old target. A narrow `CurrentObservation` may retain only current
+hash, length, and minimum required ranges, and must be discarded on state
+change. Only Anchor may arithmetically transform live ranges across a
+Backwriter-owned Apply.
+
+History, a persistent index, context matching, external-change relocation, and
+a full workspace cache remain excluded. The source-hash algorithm and v3/v4
+compatibility policy are unresolved Owner decisions and are gates for a later
+implementation phase, not Phase 1 decisions.
+
 ## Completed: v3 target-local Anddress
 
 Production uses `artext.backwriter-anddress.v3`: independent target-local
@@ -83,8 +108,9 @@ or wire authority. Version and Update are Adapter-owned standalone utilities
 outside Core. Explicit Update invokes the canonical installer; background and
 automatic update remain deferred.
 The `0.1.0` Core/Runtime and CLI source surface is frozen after exact File
-lookup; work resumes only with owner authority for collection/Edit transport or
-Session machine output.
+lookup. The separate `0.2.0` source target proceeds only through its recorded
+phase gates; Adapter collection/Edit transport and Session machine output remain
+separate Owner decisions.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 `x86_64-unknown-linux-gnu` remains the local development and test-host target.
 The target choice and direct build verification are complete. The external

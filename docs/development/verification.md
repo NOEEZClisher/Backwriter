@@ -1,5 +1,32 @@
 # Verification
 
+## 0.2.0 authority and future verification boundary
+
+The closed `0.1.0` v3 suite below remains the implementation baseline. The
+unpublished `0.2.0` v4 target is documentation-only in Phase 1; no v4 Rust,
+Cargo, test, benchmark, or performance result exists yet. Its phase gates,
+required test matrix, reproducible drift-Wrong-Apply case, and benchmark
+conditions are tracked in
+[Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
+That task tracks progress only; the Protocol, address model, and principles own
+semantics.
+
+Future v4 verification must prove that Search computes the source hash while
+discovering exact `[start, end)` ranges in one source read; View uses hash and
+range without target search; Check compares the source hash without target search;
+and Apply rejects a mismatched source hash before patching a range. It must also
+prove that a changed source invalidates ordinary Anddresses, that no consumer
+relocates duplicate text by ordinal or context, that bounded
+`CurrentObservation` state retains only current hash, length, and minimum
+ranges, and that only Anchor transforms live ranges across Backwriter-owned
+Apply.
+
+Phase 1 is docs-only. Its local verification is offline/locked metadata plus
+Markdown fence/link, exact guard wording, diff/index, Rust/Cargo/test byte
+identity, `.artext`, public `0.1.0`, and service/tunnel invariants. The unchanged
+193-test `0.1.0` Rust result may be cited from the immediately preceding stable
+closure; the suite is not rerun for this docs-only phase.
+
 Current regressions cover SHA-256 transcript and platform-coordinate KATs,
 canonical arbitrary Naturals, strict v3 flat-wire decoding and version priority,
 exact extents, Search no-limit traversal, query and scope preflight, canonical

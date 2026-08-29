@@ -1,5 +1,14 @@
 # Backwriter Current State
 
+## Version boundary
+
+The closed public `0.1.0` release and current Rust implementation use Anddress
+v3. `0.2.0` is an unpublished local source-development target. Its Anddress v4
+and bounded `CurrentObservation` semantics are active authority, but v4 Rust,
+Cargo, tests, CLI, compatibility policy, hash algorithm, and release work have
+not started. The tracking plan is
+[Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
+
 ## Core capability inventory
 
 | Letter | Word | Current status |
@@ -101,10 +110,37 @@ publication is closed: the current installers and manifest select `0.1.0`, and
 `bw update` delegates to that official stable installer. Exact beta.3 manifest
 acceptance remains transition compatibility only.
 
-## Current-only Runtime contract
+## Unpublished 0.2.0 authority
 
-Search and View are current-only and stateless; Pick is pure and stateless over
-caller input. `WorkspaceRuntime::search`, `WorkspaceRuntime::view`,
+Current-only is not stateless. No history does not mean forgetting the current
+observation. The `0.2.0` Runtime target may retain a `CurrentObservation` only
+for current source state: source hash, exact byte length, and the minimum byte
+ranges required by the current capability. It discards that observation when
+state changes or currentness cannot be established. It retains no prior
+observation, whole source, parse tree, result, persistent index, relocation
+context, or full workspace cache.
+
+An ordinary v4 Anddress is workspace coordinate, logical path, source-state
+hash, exact byte length, target kind, and one inclusive-start/exclusive-end byte
+range. The hash is final currentness authority; target text and ordinal are not
+identity. Search is the only capability that finds a target and computes the
+hash during the same source read that discovers exact ranges. View does not
+search: it validates the hash and reads the bounded range. Check does not search:
+it compares the source hash. Apply does not search: it requires the hash as a
+precondition, validates the range against the recorded length, and patches that
+range. A changed source invalidates an ordinary Anddress, and no capability
+relocates an old target after an external change.
+
+Anchor remains the sole continuity boundary. Only a live Anchor may undergo an
+arithmetic range transform caused by a Backwriter-owned Apply. External changes
+invalidate rather than relocate ordinary Anddresses or Anchors. The source-hash
+algorithm and v3/v4 compatibility policy remain Owner decisions for later
+phases.
+
+## Implemented 0.1.0 current-only Runtime contract
+
+The shipped v3 Search and View implementation is current-only and stateless;
+Pick is pure and stateless over caller input. `WorkspaceRuntime::search`, `WorkspaceRuntime::view`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`, `WorkspaceRuntime::check`,
 `check_search`, `check_pick`, `anchor`, `view_anchored`, and
 `invalidate_anchored_source` are the implemented Runtime seams. Search traverses
@@ -139,7 +175,7 @@ cursor, Search live traversal/matching/ordering/no-limit behavior, View's
 one-read text projection, and Pick's stable-subsequence/non-relational
 predicates remain reusable foundation.
 
-## Target-local address correction
+## Implemented 0.1.0 v3 target-local address baseline
 
 File, Paragraph, and Line are independent target addresses with structural
 relationships, not a persistent parent/child identity tree. The address model
@@ -150,7 +186,8 @@ relation to past Paragraphs.
 `Block` is historical wording for the existing blank-line-bounded Paragraph and
 creates no type, alias, variant, or wire value.
 
-`artext.backwriter-anddress.v3` is the sole accepted wire and production model.
+`artext.backwriter-anddress.v3` is the sole accepted wire and production model
+for the closed `0.1.0` baseline.
 It keeps source-wide bytes, length, provenance, and fingerprints out of target
 identity, using only workspace coordinate, logical path, and target locators.
 

@@ -1,69 +1,60 @@
 # Backwriter Principles
 
-1. **Current is source-visible.** Search and View read admitted Workspace Source
-   through retained no-follow capabilities. Unsaved editor buffers are outside
-   Core; Save is not a Runtime event or automatic re-evaluation trigger.
+The closed `0.1.0` Rust and public release remain the implemented v3 baseline.
+These principles also govern the active, unpublished `0.2.0` v4 target; they do
+not claim that v4 code, a hash algorithm, compatibility, or release exists.
+
+1. **Current-only is not stateless.** Current is source-visible, and Runtime may
+   retain only the Protocol-bounded current hash, length, and minimum required
+   ranges. No history does not mean forgetting the current observation. A
+   changed or unprovable state discards it.
 2. **Backwriter is not Git.** It establishes current structure only and does not
    model merge, branch, ancestry, conflict resolution, history, rollback, or
    inheritance of past identity. Past-state recovery belongs outside
    Backwriter.
-3. **Targets are independent.** File, Paragraph, and Line have structural
-   relationships without source-wide equality or a persistent identity tree.
-   Their raw locator algebra belongs only to the address model; admission is not
-   raw equality, and ordinal movement makes a new raw address.
-4. **Observation is not target identity.** Whole-source bytes, length,
-   provenance, and fingerprints may support private call-local construction but
-   do not make a target address or prove stable live state. Source-visible does
-   not imply `fsync`, crash durability, an atomic save, retry, or a second read.
-5. **Safety remains selective.** Admission, private/unsafe policy, and symlink
+3. **Search is the only capability that finds a target.** It discovers exact
+   current ranges and computes the source hash during the same retained read.
+   It performs no separate hash pass and creates no persistent index.
+4. **An Anddress authorizes exact state and range.** A v4 ordinary Anddress
+   identifies workspace, logical path, source hash, byte length, kind, and
+   `[start, end)`. The source hash is final currentness authority; target text
+   and ordinal are not identity.
+5. **Ordinary addresses do not relocate.** A changed source invalidates an
+   ordinary Anddress. View, Check, and Apply never search, reparse, or
+   context-match to move an old target after external change. Re-search is an
+   explicit caller choice and returns a new current address.
+6. **Safety remains selective.** Admission, private/unsafe policy, and symlink
    rejection remain capability-relative. `.artext/bw` alone is ignored;
-   `.artext/other` is ordinary source.
-6. **Search is all-or-nothing.** Invalid text or actual allocation/I/O failure
-   discards the whole result; no partial result, cache, or persistent index is
-   created. The Protocol separates v3 literal matching and target projection
-   from exact logical File lookup. Exact lookup observes one admitted regular
-   source under the same safety and text policy and never invents a query, Line,
-   or Paragraph. Live traversal and no-limit behavior remain valid where content
-   Search uses them.
-7. **Core constructs; Search delivers.** Backwriter Core constructs and
-   provides target Anddress values from an accepted current observation, and
-   Search only delivers them as results. Returned values belong to the caller;
-   there is no separate registry, issuance lifecycle, lookup/reuse state,
-   durable identity, or global identity.
+   `.artext/other` is ordinary source. Unsaved editor buffers remain outside
+   Core, and source-visible does not promise durability, retry, or a second
+   read.
+7. **Capability responsibility stays narrow.** View validates hash and range
+   and returns exact bytes. Check compares the source hash. Apply requires the
+   exact source state before patching the range. None is a target finder.
 8. **Pick is pure input selection.** Pick preserves an input-order subsequence
-   of valid caller-provided Anddress values without Runtime or Workspace access.
-   Its v3 `same_file` predicate compares only WorkspaceCoordinate and
-   LogicalPath; it has no observation, paragraph, or hierarchy relation.
-9. **View reuses safe reading, not v2 equality.** Its one-read File/Paragraph/
-   Line text projection is reusable; the Protocol alone defines v3
-   target-specific currentness and related results. Plural, range, descendant,
-   and partial behavior remain pending.
-10. **Apply V1 is Runtime-controlled.** Its semantic/public API/error
-   authority and single-source Edit Runtime implementation close the editor
-   Save continuity path. It has no watcher, retry, rollback, or automatic
-   creation of a new
-   `Anchedress` or `AnchorOutcome`; it still reflects existing live Anchor
-   continuity under the Protocol. Concurrent-writer coordination is
-   caller-owned. Anchor and anchored seams are implemented after it.
-11. **Anchor stays minimal.** Its live-continuity authority and public Runtime
-   surface are implemented. It retains
-   only opaque owning Runtime-local continuity, non-aliasing `AlreadyLive`, no
-   history or persistence, and logical-source invalidation. It has no
-   source-wide transition engine, considers only source-visible mutations, and
-   cannot infer continuity from a generic file-changed signal.
-12. **Check remains stateless.** Check V1 implements its semantic, API, type,
-    and report contract without a result store or latest slot. Data V1
-    semantic/public API/type/error authority and Rust implementation are
-    complete.
+   of valid caller-provided Anddress values without Runtime or Workspace access,
+   currentness, relation discovery, or retained result state.
+9. **Anchor is the sole continuity exception.** Only live Runtime-local Anchor
+   state may arithmetically transform a range across a Backwriter-owned Apply.
+   External changes invalidate rather than relocate it; Anchor adds no history,
+   persistence, watcher, or generic transition engine.
+10. **Current observation is bounded.** It may retain current hash, byte length,
+    and minimum required ranges only. It is not a whole-source buffer, parse
+    tree, complete Line collection, Search result, history, persistent index,
+    relocation context, or full workspace cache.
+11. **Search remains all-or-nothing.** Invalid text or actual allocation/I/O
+    failure discards the whole result. Existing live traversal, exact File
+    lookup, deterministic ordering, and no-fixed-limit behavior remain baseline
+    constraints for the v4 cutover.
+12. **Check result semantics remain stateless.** Check creates no result store
+    or latest slot; permitted Runtime `CurrentObservation` state is a separate
+    bounded current-source mechanism. Data remains explicit caller-owned state.
 13. **Composition belongs to the caller.** Shared native types and explicit
     value passing establish neither provenance nor a required call order or
-    general workflow. They do not require complete capability type/state
-    isolation or prohibit the Protocol's named integration contracts.
-14. **Bound source memory without changing semantics.** The Protocol's Check,
-    Search, View, Anchor, Apply streaming slices remove only unnecessary
-    complete-source auxiliary materialization. They create no fixed-memory
-    promise, input cap, skip, truncation, retry, cache, spill, or snapshot
-    authority; Resource and I/O failures remain valid.
-15. **Edit values stay inert.** Edit V1 semantic/public API/type/error
-    authority is complete; its only execution path is single-source Runtime
-    Apply.
+    general workflow. The Protocol's named integrations remain explicit.
+14. **Bound source memory without changing semantics.** The target adds no
+    fixed input cap, skip, truncation, retry, spill, persistent cache, or
+    snapshot authority. Resource and I/O failures remain valid.
+15. **Edit values stay inert.** Edit values neither search nor retain current
+    state. Apply is their only execution boundary and must enforce the ordinary
+    Anddress source-state precondition before publication.

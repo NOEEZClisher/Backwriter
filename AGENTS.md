@@ -21,6 +21,12 @@ semantic/public API/error authority and its single-source Edit Runtime
 implementation are complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
+The closed public `0.1.0` release is the implemented v3 baseline. `0.2.0` is
+an unpublished local source-development target: its Anddress v4 and bounded
+current-observation semantics are active architecture authority, but no v4
+Rust, Cargo, CLI, compatibility, hash-algorithm, or release implementation is
+complete yet.
+
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,
 one-shot human and JSON Search/View/Check, raw View, Session Pick, batch Check,
@@ -42,6 +48,12 @@ accepted observation establishes only the current File/Paragraph/Line structure.
 A structural change creates no past-structure predecessor/successor/survivor
 lineage or reconciliation mapping. Past-state recovery belongs to Git or another
 external history system, never Backwriter.
+
+For the `0.2.0` target, current-only is not stateless: Runtime may retain only
+the bounded current observation defined by the Protocol. No history does not
+mean forgetting that current observation. Search is the only capability that
+finds a target; View, Check, and Apply consume an Anddress without searching or
+relocating it.
 
 ## Active authority
 
@@ -87,13 +99,19 @@ are preserved evidence, never current authority.
 - File, Paragraph, and Line are independent target addresses with structural
   relationships. A Line change does not automatically change its File, a
   boundary-preserved Paragraph, or unrelated Lines.
-- Production uses `artext.backwriter-anddress.v3` target-local values. Do not
-  add v2 compatibility shims, decoders, aliases, or parallel schemas.
-- Whole-source bytes, length, provenance, and fingerprints may be private
-  call-local construction context. They are not target identity, and a digest
-  computed from one read does not prove a stable source. The observation is the
-  bytes returned by one retained no-follow handle read; Runtime adds no
-  before/after stability or second-read guarantee.
+- The implemented `0.1.0` baseline uses
+  `artext.backwriter-anddress.v3` target-local values. Do not add v2
+  compatibility shims, decoders, aliases, or parallel schemas.
+- The unpublished `0.2.0` target is `artext.backwriter-anddress.v4`: workspace,
+  logical path, source-state hash, exact byte length, target kind, and one
+  inclusive-start/exclusive-end byte range are ordinary Anddress identity.
+  Target text and ordinal are not v4 identity. The hash algorithm and v3/v4
+  compatibility policy remain explicit Owner decisions.
+- In implemented v3, whole-source bytes, length, provenance, and fingerprints
+  are private call-local construction context rather than target identity. In
+  the v4 target, the source-state hash is final currentness authority and an
+  Anddress is authority for its exact source state and byte range. Neither
+  version adds a before/after stable-read or second-read guarantee.
 - The Protocol owns the bounded source-memory direction. It removes only
   unnecessary auxiliary materialization proportional to complete Workspace
   Source; it creates no fixed-memory or arbitrary-input-success promise. Its
@@ -103,18 +121,21 @@ are preserved evidence, never current authority.
   issuer. This creates no separate registry, issuance lifecycle, lookup/reuse
   state, durable identity, or global identity.
 - The [address model](docs/architecture/rebuildable-structural-addressing.md)
-  is the sole detailed raw-locator contract. It keys File by Runtime workspace
-  coordinate and observed logical path, adds a current 0-based ordinal for
-  Paragraph or Line, and adds exact extent only for Line. Admission decides
-  construct/use availability, not raw equality.
-- Search and View are current-only and stateless. Pick is pure and stateless
-  over caller-provided Anddress values without asserting currentness.
+  is the sole detailed raw-locator contract. It records the shipped v3
+  coordinate/path/ordinal/extent baseline separately from the unpublished v4
+  source-state/range target. Admission decides construct/use availability, not
+  raw equality.
+- The shipped v3 Search and View implementation is current-only and stateless.
+  The v4 target remains current-only while permitting only Protocol-bounded
+  `CurrentObservation` state. Pick remains pure and stateless over
+  caller-provided Anddress values without asserting currentness.
   `WorkspaceRuntime` exposes Search, View, Apply, Check, and anchored Runtime
-  execution seams. Outside Anchor, Runtime retains no observation, source,
-  result, snapshot, lease, or authenticity state. Anchor may retain only
-  target-local session continuity. Search observes each selected source once
-  through a retained no-follow capability, parses, projects, and drops its
-  call-local observation before opening another source.
+  execution seams. The v3 implementation retains no ordinary observation,
+  source, result, snapshot, lease, or authenticity state outside Anchor. The
+  v4 target may retain only the current hash, byte length, and minimum required
+  ranges in a `CurrentObservation`, and discards it whenever source state
+  changes or currentness cannot be established. Anchor may retain only
+  target-local session continuity.
 - Future spill belongs only to a host-provided system root. This repository does
   not create `.artext`; the exact Runtime-root-relative `.artext/bw` path and
   its descendants are ignored by Backwriter Runtime execution. Other `.artext`
@@ -136,6 +157,13 @@ are preserved evidence, never current authority.
   directly from current coordinate, logical path, and target locators.
   Search owns no registry, persistent identity, mutation lifecycle, or result
   store.
+- In the v4 target, Search remains the only target finder. It computes the
+  source-state hash during its one source read, without a separate hash pass,
+  and constructs exact byte ranges. View reads by hash and range, Check compares
+  the source hash, and Apply enforces the hash precondition before a range patch;
+  none searches, reparses to relocate, context-matches, or retries an old
+  target. Any source-state change invalidates an ordinary Anddress. Only Anchor
+  may transform a live range arithmetically across a Backwriter-owned Apply.
 - **Apply V1** has closed semantic/public API/error authority:
   Runtime-controlled Apply is the continuity-preserving editor Save path, while
   independent editor, CLI, and external writes are opaque mutations. Its
@@ -194,11 +222,11 @@ are preserved evidence, never current authority.
   transfers to no capability. Block is historical wording for the existing
   blank-line-bounded Paragraph and introduces no type, alias, variant, or wire
   value.
-- Raw File, Paragraph, and Line equality follows the address model's
-  target-local coordinate/path/ordinal/extent algebra. Separator changes create
-  only current Paragraph structure; ordinal movement creates a new raw address.
-  Raw reconstruction makes no continuity, survivor, or historical-identity
-  claim.
+- Implemented v3 raw File, Paragraph, and Line equality follows the address
+  model's target-local coordinate/path/ordinal/extent algebra. Target v4 raw
+  equality follows its exact source-state hash, byte length, kind, and byte
+  range algebra. Neither makes a continuity, survivor, relocation, or
+  historical-identity claim.
 
 ## Search execution contract
 
