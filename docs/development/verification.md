@@ -3,10 +3,11 @@
 ## 0.2.0 authority and future verification boundary
 
 The closed `0.1.0` v3 suite below remains the implementation baseline. The
-unpublished `0.2.0` v4 target is documentation-only in Phase 1; no v4 Rust,
-Cargo, test, benchmark, or performance result exists yet. Its phase gates,
-required test matrix, reproducible drift-Wrong-Apply case, and benchmark
-conditions are tracked in
+unpublished `0.2.0` v4 target remains documentation-only through Phase 2; no v4
+Rust, Cargo, or test implementation exists. Phase 2 adds only an executable v3
+drift reproduction and fixed v3 benchmark/profiler evidence. Its phase gates,
+required test matrix, byte-exact Wrong Apply, fixtures, raw samples, and profile
+results are tracked in
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 That task tracks progress only; the Protocol, address model, and principles own
 semantics.
@@ -21,11 +22,10 @@ relocates duplicate text by ordinal or context, that bounded
 ranges, and that only Anchor transforms live ranges across Backwriter-owned
 Apply.
 
-Phase 1 is docs-only. Its local verification is offline/locked metadata plus
-Markdown fence/link, exact guard wording, diff/index, Rust/Cargo/test byte
-identity, `.artext`, public `0.1.0`, and service/tunnel invariants. The unchanged
-193-test `0.1.0` Rust result may be cited from the immediately preceding stable
-closure; the suite is not rerun for this docs-only phase.
+Phase 2 is also docs-only in Git. It runs the full offline/locked gate and all
+193 unchanged `0.1.0` tests, verifies Rust/Cargo/test byte identity, removes all
+task-local harness, fixture, profiler, and target output, and confirms `.artext`,
+public `0.1.0`, service, tunnel, and DNS invariants before closure.
 
 Current regressions cover SHA-256 transcript and platform-coordinate KATs,
 canonical arbitrary Naturals, strict v3 flat-wire decoding and version priority,
