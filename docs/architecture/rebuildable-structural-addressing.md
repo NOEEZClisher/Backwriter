@@ -43,7 +43,8 @@ range without relocating an old target. Apply first enforces the exact v4
 source-state/range precondition, then Phase 3 temporarily resolves that verified
 range into its existing private call-local parser representation. This private
 ordinal/text value is neither public identity nor wire or retained state.
-`CurrentObservation` is Runtime-private and is not part of wire or equality.
+`CurrentObservation` is Runtime-private, call-local hash/length producer state
+for one selected source and is not part of wire or equality.
 Anchor is not an ordinary Anddress; only its live Runtime-local continuity may
 arithmetically transform a range across a Backwriter-owned Apply.
 

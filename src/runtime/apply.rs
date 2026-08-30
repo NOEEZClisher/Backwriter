@@ -22,8 +22,8 @@ use crate::hash::{Sha256, transcript_hex};
 use super::{
     AnchorPlanEntry, WorkspaceRuntime, is_backwriter_spill, mark_anchor_collisions,
     source_scan::{
-        ExactTargetTracker, READ_BUFFER_SIZE, SourceEvent, SourceFramer, SourceScanError,
-        SourceState, scan_source,
+        CurrentObservation, ExactTargetTracker, READ_BUFFER_SIZE, SourceEvent, SourceFramer,
+        SourceScanError, scan_source,
     },
 };
 
@@ -455,7 +455,7 @@ impl<'a> AfterPlanner<'a> {
         result
     }
 
-    fn finish(&mut self) -> Result<(SourceState, Vec<Option<Anddress>>), ApplyError> {
+    fn finish(&mut self) -> Result<(CurrentObservation, Vec<Option<Anddress>>), ApplyError> {
         let mut framer = self.framer.take().expect("after framer is present");
         let mut mark_pending = false;
         let result =
@@ -470,7 +470,7 @@ impl<'a> AfterPlanner<'a> {
         for candidate in std::mem::take(&mut self.candidates) {
             results.push(candidate.into_result());
         }
-        let state = SourceState {
+        let state = CurrentObservation {
             hash: std::mem::replace(&mut self.hash, Sha256::new())
                 .finish()
                 .to_hex(),
@@ -678,7 +678,7 @@ impl<'a> AfterPlanner<'a> {
 fn reflection_plan(
     runtime: &WorkspaceRuntime,
     path: &str,
-    state: SourceState,
+    state: CurrentObservation,
     candidates: Vec<Option<Anddress>>,
 ) -> Result<Vec<AnchorPlanEntry>, ApplyError> {
     let source = construct_source_identity(
@@ -1134,7 +1134,7 @@ fn scan_staged(
     staging: &mut Temporary<'_>,
     tracker: &mut ExactTargetTracker<'_>,
     resolver: &mut LegacyResolver<'_>,
-) -> Result<SourceState, SourceScanError> {
+) -> Result<CurrentObservation, SourceScanError> {
     let mut staged = StagedRead { source, staging };
     scan_source(&mut staged, |event| {
         tracker.consume(event)?;
@@ -1277,7 +1277,14 @@ impl<'parent, 'bindings> Output<'parent, 'bindings> {
 
     fn finish(
         mut self,
-    ) -> Result<(Temporary<'parent>, SourceState, Vec<Option<Anddress>>), ApplyError> {
+    ) -> Result<
+        (
+            Temporary<'parent>,
+            CurrentObservation,
+            Vec<Option<Anddress>>,
+        ),
+        ApplyError,
+    > {
         let (state, candidates) = self
             .after
             .as_mut()

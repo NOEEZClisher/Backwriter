@@ -14,9 +14,9 @@ are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. Their v4 View
-currentness, Search literal projection and exact logical File lookup, Pick
-predicate semantics, Anchor live continuity, and Check batch currentness
-reporting are implemented. Apply V1
+currentness, target-specific Search literal projection and exact logical File
+lookup, Pick predicate semantics, Anchor live continuity, and Check batch
+currentness reporting are implemented. Apply V1
 semantic/public API/error authority and its single-source Edit Runtime
 implementation are complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
@@ -50,11 +50,10 @@ A structural change creates no past-structure predecessor/successor/survivor
 lineage or reconciliation mapping. Past-state recovery belongs to Git or another
 external history system, never Backwriter.
 
-For the `0.2.0` target, current-only is not stateless: Runtime may retain only
-the bounded current observation defined by the Protocol. No history does not
-mean forgetting that current observation. Search is the only capability that
-finds a target; View, Check, and Apply consume an Anddress without searching or
-relocating it.
+For the `0.2.0` target, current-only is not history: a capability may hold only
+the bounded call-local observation defined by the Protocol while that call is
+running. Search is the only capability that finds a target; View, Check, and
+Apply consume an Anddress without searching or relocating it.
 
 ## Active authority
 
@@ -124,16 +123,16 @@ are preserved evidence, never current authority.
   is the sole detailed raw-locator contract. Its active production algebra is
   v4 source-state/range identity; the shipped v3 baseline is historical release
   evidence only. Admission decides construct/use availability, not raw equality.
-- Search and View remain current-only. The v4 target permits only Protocol-bounded
-  `CurrentObservation` state. Pick remains pure and stateless over
-  caller-provided Anddress values without asserting currentness.
+- Search and View remain current-only. The v4 target permits only
+  Protocol-bounded, source-local `CurrentObservation` state during one call.
+  Pick remains pure and stateless over caller-provided Anddress values without
+  asserting currentness.
   `WorkspaceRuntime` exposes Search, View, Apply, Check, and anchored Runtime
-  execution seams. Current Phase 3 code retains no ordinary observation,
-  source, result, snapshot, lease, or authenticity state outside Anchor. A
-  later fast path may retain only the current hash, byte length, and minimum required
-  ranges in a `CurrentObservation`, and discards it whenever source state
-  changes or currentness cannot be established. Anchor may retain only
-  target-local session continuity.
+  execution seams. Phase 4 retains no ordinary observation, source, result,
+  snapshot, lease, or authenticity state across calls or selected sources.
+  `CurrentObservation` contains only the current hash and exact byte length and
+  is consumed or discarded before Search opens another source. Anchor may
+  retain only target-local session continuity.
 - Future spill belongs only to a host-provided system root. This repository does
   not create `.artext`; the exact Runtime-root-relative `.artext/bw` path and
   its descendants are ignored by Backwriter Runtime execution. Other `.artext`
@@ -147,7 +146,8 @@ are preserved evidence, never current authority.
   Separator Lines have no Paragraph.
 - Search also accepts a distinct exact logical File request. It validates one
   logical path, observes that admitted regular source under the same UTF-8/NUL
-  and no-follow policy, and returns its File Anddress without content matching.
+  and no-follow policy, and returns its File Anddress without content matching
+  or Line framing.
   Missing paths and directories are Empty; the operation creates no empty
   query, synthetic Line or Paragraph, scope traversal, index, or cache.
 - Search's live scan, matching, ordering, all-or-nothing behavior, and
@@ -157,8 +157,10 @@ are preserved evidence, never current authority.
   store.
 - In the v4 target, Search remains the only target finder. It computes the
   source-state hash during its one source read, without a separate hash pass,
-  and constructs exact byte ranges. View reads by hash and range, Check compares
-  the source hash, and Apply enforces the hash precondition before a range patch;
+  and its File, Paragraph, and Line projections retain only target-required
+  matching and range state before constructing exact byte ranges. View reads by
+  hash and range, Check compares the source hash, and Apply enforces the hash
+  precondition before a range patch;
   none searches, reparses to relocate, context-matches, or retries an old
   target. Any source-state change invalidates an ordinary Anddress. Only Anchor
   may transform a live range arithmetically across a Backwriter-owned Apply.

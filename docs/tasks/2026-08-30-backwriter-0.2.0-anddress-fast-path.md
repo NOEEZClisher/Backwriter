@@ -1,6 +1,6 @@
 # Backwriter 0.2.0 Anddress Fast Path
 
-Status: Phases 1–3 completed; Phase 4 next; Phases 4–7 pending.
+Status: Phases 1–4 completed; Phase 5 next; Phases 5–7 pending.
 
 This is the sole progress tracker for the redesign. It records gates and
 evidence but does not own semantics; the active Protocol, address model, and
@@ -11,8 +11,8 @@ principles do. Historical task evidence never overrides active authority.
 Keep the closed public `0.1.0` v3 release immutable while developing an
 unpublished `0.2.0` v4 exact-source-state fast path. Search alone finds targets.
 View, Check, and Apply consume an ordinary Anddress without searching,
-reparsing to relocate, or context-matching an old target. Runtime may remember
-only bounded current observation state, never history.
+reparsing to relocate, or context-matching an old target. Runtime may hold only
+bounded call-local current observation state, never cross-call state or history.
 
 ## V3 problem and drift-Wrong-Apply reproduction
 
@@ -59,11 +59,12 @@ receive an arithmetic range transform across a successful Backwriter-owned
 Apply. External or opaque source change invalidates continuity. Anchor does not
 mutate an ordinary Anddress or add history, search, or context relocation.
 
-`CurrentObservation` is Runtime-private current state. It may retain only the
-current hash, exact length, and byte ranges minimally required by the current
-capability or fast path. It is discarded when state changes or cannot be proven
-current. It may not retain prior observations, whole-source bytes, a parse tree,
-a complete Line collection, Search results, history, a persistent index,
+`CurrentObservation` is Runtime-private producer state for one call-local
+source. It contains only the current hash and exact length. Search owns its
+target-required provisional ranges separately, consumes both states immediately
+after success, and discards both on failure before opening another source. It
+may not retain prior observations, whole-source bytes, a parse tree, a complete
+Line collection, Search results, history, a persistent index,
 relocation/context evidence, a full workspace cache, a watcher, or durability.
 
 Capability responsibilities are fixed: Search hashes while discovering ranges
@@ -94,7 +95,7 @@ before patching. View, Check, and Apply do not search.
 | Search | Content and exact File; all kinds/ranges; CR/LF/CRLF/no-EOL, Unicode, empty/separator Lines, duplicates/order; one-read hash integration, no hash replay, late failure discard. |
 | View/Check | Exact range bytes; changes inside/outside range; hash/length/bounds mismatch; Current/NotCurrent/Unavailable batch order and multiplicity; no search, refresh, or relocation. |
 | Apply/Anchor | Every Edit range geometry; stale precondition/no wrong publication; no-op, race, cleanup, resource and uncertain publication; Anchor transform/collision/invalidation and no ordinary-address mutation. |
-| CurrentObservation | Allowed fields only, minimum ranges, discard on mismatch/change/failure, and structural absence of history, whole source, parse tree, result store, index, or full workspace cache. |
+| CurrentObservation | Hash and exact length only; Search-owned minimum provisional ranges; consume/discard on success/failure; structural absence of cross-call state, history, whole source, parse tree, result store, index, or full workspace cache. |
 | Regression | Admission/no-follow/private path, no fixed semantic limit, Search determinism, Pick purity, Data explicitness, and existing public API/error/CLI boundaries until separately authorized. |
 
 ## Benchmark baseline and goals
@@ -366,7 +367,7 @@ versioning, release construction, and publication.
 - [x] Phase 1 — authority record (completed 2026-08-30)
 - [x] Phase 2 — reproduction, profile, and baseline (completed 2026-08-30)
 - [x] Phase 3 — v4 value and wire kernel (completed 2026-08-30)
-- [ ] Phase 4 — Search producer and `CurrentObservation`
+- [x] Phase 4 — Search producer and `CurrentObservation` (completed 2026-08-30)
 - [ ] Phase 5 — View and Check consumers
 - [ ] Phase 6 — Apply and Anchor cutover
 - [ ] Phase 7 — integrated verification and release decision
@@ -397,5 +398,14 @@ Evidence:
   transitional execution path remains Phase 6 work. All 186 GNU-host tests and
   every offline/locked Phase 3 gate pass. No benchmark or release claim is
   made.
-- Phases 4–7: pending. Phase 4 next introduces only the bounded retained
-  observation producer fast path defined by active authority.
+- Phase 4: one fixed-scratch chunk observer now owns UTF-8/NUL validation,
+  incremental SHA-256, and checked byte length. Exact File uses that observer
+  without Line framing; content Search uses File-, Paragraph-, or Line-specific
+  projections without generic per-byte `SourceEvent` callbacks. Late source
+  failure discards source-local provisional results, same-source output shares
+  one v4 source identity, and the existing deterministic bucket sort remains
+  because component DFS does not prove whole-path byte order. All 191 GNU-host
+  tests and every offline/locked Phase 4 gate pass. No benchmark or release
+  claim is made.
+- Phases 5–7: pending. Phase 5 next removes View/Check target reparse while
+  preserving their public behavior.

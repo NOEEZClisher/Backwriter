@@ -1,6 +1,6 @@
 # Backwriter Roadmap
 
-## Next: Phase 4 retained-observation producer fast path
+## Next: Phase 5 direct View and Check consumers
 
 The closed public `0.1.0` release remains immutable v3 evidence. `0.2.0` is an
 unpublished local source-development line governed by
@@ -8,9 +8,11 @@ the [seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.0-anddress-fa
 Phases 1 and 2 recorded semantic authority and reproducible v3 evidence. Phase
 3 is complete: Cargo is `0.2.0`, the public Rust API and sole production wire
 are v4, Search computes SHA-256 and ranges in its one read, every current caller
-accepts v4, and v3 is rejected without a compatibility seam. Phase 4 is next;
-no retained-observation fast path, Phase 7 benchmark result, artifact, or
-release is complete.
+accepts v4, and v3 is rejected without a compatibility seam. Phase 4 is also
+complete: Search uses one call-local observation and target-specific projection
+without its former generic per-byte event path. Phase 5 is next; no direct
+View/Check consumer fast path, Phase 7 benchmark result, artifact, or release is
+complete.
 
 The target replaces ordinal/exact-text identity with an ordinary Anddress that
 authorizes one exact source state and byte range: workspace coordinate, logical
@@ -18,14 +20,33 @@ path, source-state hash, exact byte length, kind, and `[start, end)`. Search is
 the only target finder and computes the hash during its discovery read. View
 uses hash plus bounded range, Check compares the hash, and Apply requires that
 hash before patching the recorded range. These consumers never search or
-relocate an old target. A narrow `CurrentObservation` may retain only current
-hash, length, and minimum required ranges, and must be discarded on state
-change. Only Anchor may arithmetically transform live ranges across a
+relocate an old target. A narrow call-local `CurrentObservation` contains only
+the current hash and length; Search owns any target-required provisional ranges
+and consumes or discards all of that source-local state before opening another
+source. Only Anchor may arithmetically transform live ranges across a
 Backwriter-owned Apply.
 
 History, a persistent index, context matching, external-change relocation, and
 a full workspace cache remain excluded. SHA-256 and the v4 hard cutover are
 closed Owner decisions implemented in Phase 3.
+
+## Completed: Phase 4 target-specific Search observation
+
+One common fixed-scratch reader now owns each retained source read, incremental
+SHA-256, checked byte length, and UTF-8/NUL validation. Content Search selects a
+minimal File, Paragraph, or Line projection instead of receiving generic
+per-byte `SourceEvent` callbacks. Exact File lookup performs validation and hash
+only, with no content matcher or Line framer. File content stops matcher and
+framing work once `FullLine` is final while the common reader still validates
+and hashes the remaining bytes. Paragraph and Line retain only their required
+boundary, matcher, and provisional result-range state.
+
+The observation and projections are private to one selected source and are
+consumed immediately into shared v4 source identity and results after success;
+late text, I/O, or resource failure discards them and publishes nothing. Search
+retains no cross-call or cross-source observation. The existing final result
+bucket sort remains required because component-wise directory DFS and mixed
+scope traversal do not prove whole logical-path byte order.
 
 ## Completed: Phase 3 Anddress v4 value/wire kernel
 

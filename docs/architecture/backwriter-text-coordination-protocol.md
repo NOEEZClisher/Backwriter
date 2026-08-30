@@ -2,15 +2,16 @@
 
 Status: normative current-only Core/Runtime contract. The closed public `0.1.0`
 release remains immutable v3 evidence. Current unpublished `0.2.0` source uses
-the hard-cutover v4 value/wire and all production callers; the retained-
-observation and direct consumer fast paths remain Phase 4–6 work.
+the hard-cutover v4 value/wire and all production callers. The call-local
+target-specific Search observation is complete; direct consumer fast paths
+remain Phase 5–6 work.
 
 ## Unpublished 0.2.0 current-observation authority
 
 The following guard sentences are normative:
 
-- **Current-only is not stateless.**
-- **No history does not mean forgetting the current observation.**
+- **Current-only permits bounded call-local observation state.**
+- **No history does not require cross-call observation retention.**
 - **Search is the only capability that finds a target.**
 - **An Anddress is the authority for its source state and byte range.**
 - **View does not search.**
@@ -50,15 +51,17 @@ ordinal/text representation is not identity, wire, or retained state. Direct
 bounded-range consumer paths remain Phase 5–6 work. A mismatch fails closed
 before publication.
 
-`CurrentObservation` is permitted Runtime-private current state for later fast
-paths; Phase 3 retains no such state across calls. It may retain
-only the current source hash, exact byte length, and byte ranges minimally
-required by the current capability or fast path. It may not retain a prior
-observation, whole source, parse tree, complete Line collection, Search result,
-history, persistent index, relocation context, context-matching evidence, or
-full workspace cache. When source state changes or cannot be proven current,
-Runtime discards the observation before accepting a replacement. This state is
-neither an ordinary Anddress field nor durable authority.
+`CurrentObservation` is Runtime-private call-local producer state for one
+selected source. It contains only the current source hash and exact byte length.
+Search owns its separate target-required matcher, boundary, and provisional
+range state. On success those values are consumed immediately into v4 source
+identity and results; on text, I/O, or resource failure they are discarded
+without publication. Runtime stores none of them in `WorkspaceRuntime`, wire,
+or Anchor and retains none across sources or calls. No observation may retain a
+prior observation, whole source, parse tree, complete Line collection, Search
+result, history, persistent index, relocation context, context-matching
+evidence, or full workspace cache. It is neither an ordinary Anddress field nor
+durable authority.
 
 An ordinary Anddress has no continuity across a changed source. Re-search may
 find a target in the new state and produce a new Anddress, but View, Check, and
@@ -111,17 +114,18 @@ The implemented `0.2.0` Runtime execution seams are
 `WorkspaceRuntime::search(&SearchRequest)`, `WorkspaceRuntime::view(&Anddress)`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`,
 `WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
-`check_pick(PickOutcome)`. In current Phase 3, Search, View, Pick, Check, and Apply retain no
-observation object, source cache, result store, index, snapshot, lease,
-registry, or authenticity state. Search enumerates admitted Workspace Source
-deterministically through retained capability-relative no-follow handles. For
-each selected regular file it observes one byte sequence, validates complete
-UTF-8 and NUL policy, parses exact File/Paragraph/Line structure, matches
-literal Line content, projects the requested target, and drops its call-local
-observation before opening another file. Its separate exact File request
-validates one logical path, opens and observes only that admitted regular
-source under the same policy, and returns its File Anddress without content
-matching or traversal.
+`check_pick(PickOutcome)`. Across calls, Search, View, Pick, Check, and Apply
+retain no ordinary observation object, source cache, result store, index,
+snapshot, lease, registry, or authenticity state. Search enumerates admitted
+Workspace Source deterministically through retained capability-relative
+no-follow handles. For each selected regular file one common fixed-scratch
+reader validates complete UTF-8 and NUL policy, computes SHA-256 and checked
+length, and feeds one minimal File, Paragraph, or Line projection. The
+projection matches literal Line content and retains only target-required
+boundaries and provisional ranges, then drops its call-local state before
+another file opens. Its separate exact File request validates one logical path,
+opens and observes only that admitted regular source under the same policy, and
+returns its File Anddress without content matching, Line framing, or traversal.
 
 ## Implemented 0.1.0 bounded source-memory authority
 
@@ -144,8 +148,10 @@ View V1 keeps its public API. A File, Paragraph, or Line result can itself be
 source-sized, so its permitted working space is a streaming buffer plus its
 returned target. Search may retain its public result and call-local range
 projection state; deterministic byte-order directory-name materialization
-remains in scope for now. The shared scanner reads retained source through its fixed input scratch
-array. Apply separately owns an equally sized fixed output batch. It writes the
+remains in scope for now. The shared chunk observer reads retained source
+through its fixed input scratch array; target-specific Search projections and
+the retained consumer framer receive those validated chunks. Apply separately
+owns an equally sized fixed output batch. It writes the
 accepted before observation to one same-parent staging entry, then writes each
 flushed source batch and replacement or required semantic slice to one
 prospective-after temporary through the same incremental framing contract. Its
@@ -160,17 +166,18 @@ disposition and collision, and every fallible preparation complete before
 publication; successful reflection remains allocation-free and non-failing.
 
 The v4 Check, Search, View, Anchor, and Apply streaming slices share one private
-incremental forward scanner in `runtime/source_scan.rs`, which reads one
-retained no-follow handle with a fixed scratch buffer, incrementally hashes the
-same bytes, and retains no complete source. Check keeps currentness
-classification, while Search keeps KMP matching and range projection. Search
-shares one immutable source identity across results from the same source and
-copies no Line text into Anddress. View accumulates only its returned text and
-the minimum candidate bytes needed by its transitional structural scan. Anchor
-shares exact-target evidence with its selected binding observation. Apply
-reuses the framer for source-state/range proof, its private call-local parser,
-and prospective-after parsing, then prepares Anchor dispositions before the
-sole rename. This direction adds no public stream
+incremental chunk observer in `runtime/source_scan.rs`, which reads one retained
+no-follow handle with a fixed scratch buffer, incrementally hashes and validates
+the same bytes, and retains no complete source. Search consumes those chunks
+directly through target-specific projections and does not use the generic
+`SourceEvent` path. Search shares one immutable source identity across results
+from the same source and copies no Line text into Anddress. The retained event
+framer remains an actual View, Check, and Apply consumer path pending Phases 5–6:
+View accumulates only its returned text and minimum transitional candidate
+bytes, Anchor shares exact-target evidence with its selected binding
+observation, and Apply reuses the framer for source-state/range proof, its
+private call-local parser, and prospective-after parsing. This direction adds
+no public stream
 API, spill, mmap, cache, async work,
 worker, directory traversal change, dependency, or Runtime/Anddress split.
 

@@ -15,7 +15,7 @@ pub(crate) enum SourceScanError {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(crate) struct SourceState {
+pub(crate) struct CurrentObservation {
     pub(crate) hash: String,
     pub(crate) byte_length: usize,
 }
@@ -82,7 +82,7 @@ impl<'a> ExactTargetTracker<'a> {
         }
     }
 
-    pub(crate) fn finish(&mut self, state: &SourceState) {
+    pub(crate) fn finish(&mut self, state: &CurrentObservation) {
         self.finish_paragraph();
         for &index in self.indexes {
             let input = &self.inputs[index];
@@ -228,6 +228,14 @@ impl SourceFramer {
         if !self.utf8.push(bytes) {
             return Err(SourceScanError::InvalidSource);
         }
+        self.push_validated(bytes, on_event)
+    }
+
+    fn push_validated(
+        &mut self,
+        bytes: &[u8],
+        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
+    ) -> Result<(), SourceScanError> {
         for &byte in bytes {
             if self.pending_cr {
                 if byte == b'\n' {
@@ -283,6 +291,13 @@ impl SourceFramer {
         if !self.utf8.finish() {
             return Err(SourceScanError::InvalidSource);
         }
+        self.finish_validated(on_event)
+    }
+
+    fn finish_validated(
+        &mut self,
+        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
+    ) -> Result<(), SourceScanError> {
         if self.line_started {
             self.finish_line(on_event)?;
         }
@@ -332,26 +347,52 @@ impl SourceFramer {
     }
 }
 
-pub(crate) fn scan_source(
+/// Reads one call-local source observation while owning its text policy,
+/// incremental digest, and checked byte length. The consumer sees each chunk
+/// only after it has passed UTF-8 and NUL validation.
+pub(crate) fn observe_source(
     reader: &mut impl Read,
-    mut on_event: impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
-) -> Result<SourceState, SourceScanError> {
-    let mut scanner = SourceFramer::new()?;
+    mut on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
+) -> Result<CurrentObservation, SourceScanError> {
+    let mut utf8 = Utf8Validator::default();
     let mut hash = Sha256::new();
+    let mut byte_length = 0_usize;
     let mut scratch = [0_u8; READ_BUFFER_SIZE];
     loop {
         let count = reader
             .read(&mut scratch)
             .map_err(|_| SourceScanError::Read)?;
         if count == 0 {
-            scanner.finish(&mut on_event)?;
-            return Ok(SourceState {
+            if !utf8.finish() {
+                return Err(SourceScanError::InvalidSource);
+            }
+            return Ok(CurrentObservation {
                 hash: hash.finish().to_hex(),
-                byte_length: scanner.byte_offset,
+                byte_length,
             });
         }
+        let chunk_start = byte_length;
+        byte_length = byte_length
+            .checked_add(count)
+            .ok_or(SourceScanError::Resource)?;
         let bytes = &scratch[..count];
+        if !utf8.push(bytes) {
+            return Err(SourceScanError::InvalidSource);
+        }
         hash.update(bytes);
-        scanner.push(bytes, &mut on_event)?;
+        on_chunk(bytes, chunk_start)?;
     }
+}
+
+pub(crate) fn scan_source(
+    reader: &mut impl Read,
+    mut on_event: impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
+) -> Result<CurrentObservation, SourceScanError> {
+    let mut scanner = SourceFramer::new()?;
+    let observation = observe_source(reader, |bytes, _| {
+        scanner.push_validated(bytes, &mut on_event)
+    })?;
+    scanner.finish_validated(&mut on_event)?;
+    debug_assert_eq!(scanner.byte_offset, observation.byte_length);
+    Ok(observation)
 }

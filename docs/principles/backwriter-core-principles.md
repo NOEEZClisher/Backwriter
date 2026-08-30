@@ -4,11 +4,11 @@ The closed public `0.1.0` release remains immutable v3 evidence. Current
 unpublished `0.2.0` Rust implements the hard-cutover v4 value/wire with SHA-256;
 these principles claim no `0.2.0` artifact or publication.
 
-1. **Current-only permits bounded state.** Current is source-visible, and a
-   later fast path may
-   retain only the Protocol-bounded current hash, length, and minimum required
-   ranges. No history does not mean forgetting the current observation. A
-   changed or unprovable state discards it.
+1. **Current-only permits bounded call-local state.** Current is source-visible.
+   One source observation may retain only its hash and length while its
+   capability call runs; Search separately retains only target-required
+   boundaries and provisional ranges. Success consumes it and failure discards
+   it. No observation persists across sources or calls.
 2. **Backwriter is not Git.** It establishes current structure only and does not
    model merge, branch, ancestry, conflict resolution, history, rollback, or
    inheritance of past identity. Past-state recovery belongs outside
@@ -41,18 +41,18 @@ these principles claim no `0.2.0` artifact or publication.
    state may arithmetically transform a range across a Backwriter-owned Apply.
    External changes invalidate rather than relocate it; Anchor adds no history,
    persistence, watcher, or generic transition engine.
-10. **Future current observation is bounded.** Phase 3 retains none across
-    calls. A later fast path may retain current hash, byte length,
-    and minimum required ranges only. It is not a whole-source buffer, parse
-    tree, complete Line collection, Search result, history, persistent index,
-    relocation context, or full workspace cache.
+10. **Current observation is bounded and ephemeral.** Phase 4's private
+    `CurrentObservation` holds only one selected source's hash and byte length
+    until Search constructs or discards its v4 results. It is not a whole-source
+    buffer, parse tree, complete Line collection, Search result, history,
+    persistent index, relocation context, or full workspace cache.
 11. **Search remains all-or-nothing.** Invalid text or actual allocation/I/O
     failure discards the whole result. Existing live traversal, exact File
     lookup, deterministic ordering, and no-fixed-limit behavior remain baseline
     constraints for the v4 cutover.
 12. **Check result semantics remain stateless.** Check creates no result store
-    or latest slot; permitted Runtime `CurrentObservation` state is a separate
-    bounded current-source mechanism. Data remains explicit caller-owned state.
+    or latest slot; Runtime stores no `CurrentObservation` across calls. Data
+    remains explicit caller-owned state.
 13. **Composition belongs to the caller.** Shared native types and explicit
     value passing establish neither provenance nor a required call order or
     general workflow. The Protocol's named integrations remain explicit.

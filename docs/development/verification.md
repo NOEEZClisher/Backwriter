@@ -1,13 +1,13 @@
 # Verification
 
-## 0.2.0 Phase 3 verification boundary
+## 0.2.0 Phase 4 verification boundary
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current
 unpublished `0.2.0` Rust, Cargo, CLI, and tests use only Anddress v4. Phase 3
-implements the SHA-256 source-state/value/wire kernel, one-read Search hash and
-range projection, hard-cutover decoding, and compilation of every existing
-capability consumer. Its phase gates, the historical v3 drift reproduction,
-fixtures, raw samples, and profile results are tracked in
+implements the SHA-256 source-state/value/wire kernel and hard-cutover decoding.
+Phase 4 implements one-read target-specific Search observation and compiles
+every existing capability consumer. Its phase gates, the historical v3 drift
+reproduction, fixtures, raw samples, and profile results are tracked in
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 That task tracks progress only; the Protocol, address model, and principles own
 semantics.
@@ -19,8 +19,8 @@ unknown/wrong-type handling; well-formed v3 `UnsupportedVersion`; shared private
 source identity across same-source results; one-read hash/range Search; v4
 human/JSON/Session round trips; and full existing capability regressions. The
 canonical duplicate-Line drift fixture must return `Unavailable` without
-publication. Phase 4–6 must later prove the retained-observation and direct
-consumer fast paths without changing those results.
+publication. Phase 5–6 must later prove the direct consumer fast paths without
+changing those results.
 
 Current regressions cover SHA-256 transcript and platform-coordinate KATs,
 strict v4 flat-wire encoding/decoding and error priority, zero/nonzero/maximum
@@ -70,20 +70,26 @@ forward-only access; exact final-byte/length equality; batch order and
 multiplicity; unsorted mixed File/Paragraph/Line inputs; duplicate Line and
 Paragraph occurrences; same-text differing Line ranges; leading and
 consecutive separators; missing ranges; and Anchor non-mutation.
-Search streaming regressions cover the
-same forward scanner boundaries, Line-scoped KMP, complete matching ranges,
-one-read incremental SHA-256, shared same-source identity, and late source
-failure discard. Check tracker regressions cover exact hash/length/range
+Search streaming regressions cover target-specific File, Paragraph, and Line
+projection; 8,191/8,192/8,193 scratch boundaries; split multibyte UTF-8, CRLF,
+and literals; Line-scoped KMP; complete matching ranges; one-read incremental
+SHA-256; shared same-source identity; File `FullLine` projection stop with
+continued validation; and late text/read failure discard. Exact File structure
+audits prove one common observation and no generic Line framer. Check tracker
+regressions cover exact hash/length/range
 comparison across decimal digit boundaries while preserving unsorted
 duplicates. View/Anchor streaming regressions cover the same
 forward scanner boundaries, exact Line-range construction,
 target-only Paragraph candidate buffering, late invalid/read closure,
 tracker-only File/Paragraph observations without a View outcome, selected
 anchored-binding success beside a stale sibling, and exact-path fail-close on
-the selected mismatch. Structural audits keep the forward read loop in
-`source_scan.rs`, exclude stale Line-content buffers and the retired scanner
-error alias, keep raw Anchor out of `ViewCapture`/`ViewOutcome`, and leave
-File-only Check groups tracker-free. Apply streaming regressions cover its
+the selected mismatch. Structural audits keep the forward read loop, SHA-256,
+checked length, and text policy in `source_scan.rs`; exclude Search's generic
+`SourceEvent`/`scan_source` path, second hash pass, persistent observation,
+stale Line-content buffers, and the retired scanner error alias; keep raw Anchor
+out of `ViewCapture`/`ViewOutcome`; and leave File-only Check groups
+tracker-free. The event/framer path remains for its actual View, Check, and
+Apply consumers until Phases 5–6. Apply streaming regressions cover its
 single source forward scan, scanner-sized fixed retained-source batches,
 incremental after framer, one rename, and absence of whole-source/after
 materialization. They cover 8,191/8,192/8,193 UTF-8 and CR/LF/CRLF/no-EOL

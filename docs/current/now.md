@@ -4,8 +4,9 @@
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current Rust,
 Cargo, tests, and CLI use the unpublished `0.2.0` hard-cutover Anddress v4 API
-and wire. Phase 3 implements SHA-256 source identity, exact byte length, target
-kind, and `[start,end)` range without a v3 compatibility seam. No `0.2.0`
+and wire. Phases 3–4 implement SHA-256 source identity, exact byte length,
+target kind, `[start,end)` range, and target-specific Search observation without
+a v3 compatibility seam. No `0.2.0`
 artifact or publication exists. The tracking plan is
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 
@@ -13,7 +14,7 @@ artifact or publication exists. The tracking plan is
 
 | Letter | Word | Current status |
 | --- | --- | --- |
-| S | Search | Rust implementation with one-read v4 literal projection and exact File lookup. |
+| S | Search | Rust implementation with one-read target-specific v4 projection and exact File lookup. |
 | V | View | Rust implementation with v4 exact-source currentness. |
 | P | Pick | Rust implementation over complete v4 values. |
 | A | Anchor | Rust implementation with Runtime-local live continuity. |
@@ -113,13 +114,14 @@ acceptance remains transition compatibility only.
 
 ## Unpublished 0.2.0 authority
 
-Current-only does not require historical identity. Phase 3 keeps observations
-call-local; a later fast path may retain a `CurrentObservation` only for current
-source state: source hash, exact byte length, and the minimum byte ranges
-required by the current capability. It must discard that observation when state
-changes or currentness cannot be established, and may retain no prior
-observation, whole source, parse tree, result, persistent index, relocation
-context, or full workspace cache.
+Current-only does not require historical identity. Phase 4 keeps each
+`CurrentObservation` call-local to one selected source. It contains only the
+current source hash and exact byte length; Search projections separately retain
+only their target-required matcher, boundary, and provisional range state.
+Success consumes that state immediately into v4 identity and results, while any
+text, I/O, or resource failure discards it without publication. Runtime retains
+no prior observation, whole source, parse tree, result, persistent index,
+relocation context, or full workspace cache.
 
 An ordinary v4 Anddress is workspace coordinate, logical path, complete-source
 SHA-256, exact byte length, target kind, and one inclusive-start/exclusive-end
@@ -145,14 +147,15 @@ Pick is pure and stateless over caller input. `WorkspaceRuntime::search`, `Works
 `check_search`, `check_pick`, `anchor`, `view_anchored`, and
 `invalidate_anchored_source` are the implemented Runtime seams. Search traverses
 admitted Workspace Source through retained capability-relative no-follow
-handles. Content Search observes each selected regular file once, validates
-UTF-8/NUL, parses exact Line structure, matches and orders results, then drops
-that source before opening another. Exact File Search validates one logical
-path and observes that admitted regular source once under the same safety and
-text policy before returning its File Anddress; it performs no content matching
-or traversal.
-Runtime retains no observation, source, result, snapshot, lease, registry,
-history, or authenticity state.
+handles. Content Search observes each selected regular file once through a
+common fixed-scratch reader that owns UTF-8/NUL validation, SHA-256, and checked
+byte length. It chooses a File-, Paragraph-, or Line-specific projection,
+orders the completed results, then drops that source before opening another.
+Exact File Search validates one logical path and observes that admitted regular
+source once under the same safety and text policy before returning its File
+Anddress; it performs no content matching, Line framing, or traversal.
+After a capability call returns, Runtime retains no ordinary observation,
+source, result, snapshot, lease, registry, history, or authenticity state.
 
 An accepted current observation is the bytes returned by a retained no-follow
 read of currently admitted Workspace Source. Unsaved editor buffers,

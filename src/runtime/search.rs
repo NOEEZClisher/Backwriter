@@ -16,7 +16,7 @@ use crate::source::validate_logical_path;
 
 use super::{
     DirectoryAccessError, WorkspaceRuntime, is_backwriter_spill, path_is_within_root,
-    source_scan::{SourceEvent, SourceScanError, scan_source},
+    source_scan::{SourceScanError, observe_source},
 };
 
 struct SearchDirectory {
@@ -80,7 +80,7 @@ fn execute_exact_file(
         Err(DirectoryAccessError::NotCurrent) => return Ok(SearchOutcome::Empty),
         Err(DirectoryAccessError::Unavailable) => return Err(SearchError::Unavailable),
     };
-    let state = scan_source(&mut file, |_| Ok(())).map_err(|_| SearchError::Unavailable)?;
+    let state = observe_source(&mut file, |_, _| Ok(())).map_err(|_| SearchError::Unavailable)?;
     let source = construct_source_identity(
         &runtime.workspace_coordinate,
         logical_path,
@@ -295,12 +295,34 @@ struct ProvisionalTarget {
     byte_end: usize,
 }
 
-struct StreamProjection<'a> {
-    target: SearchTarget,
+struct FileProjection<'a> {
     matcher: LiteralMatcher<'a>,
-    paragraph: Option<ParagraphState>,
-    file_best: Option<MatchTier>,
+    best_tier: Option<MatchTier>,
+    line_started: bool,
+    pending_cr: bool,
+}
+
+struct LineProjection<'a> {
+    matcher: LiteralMatcher<'a>,
+    line_start: usize,
+    line_started: bool,
+    pending_cr: bool,
     provisional: Vec<ProvisionalTarget>,
+}
+
+struct ParagraphProjection<'a> {
+    matcher: LiteralMatcher<'a>,
+    line_start: usize,
+    line_started: bool,
+    pending_cr: bool,
+    body_class: LineBodyClass,
+    paragraph: Option<ParagraphState>,
+    provisional: Vec<ProvisionalTarget>,
+}
+
+enum ProjectionOutcome {
+    File(Option<MatchTier>),
+    Targets(Vec<ProvisionalTarget>),
 }
 
 fn scan_open_source(
@@ -312,16 +334,36 @@ fn scan_open_source(
     full_line_results: &mut Vec<Anddress>,
     substring_results: &mut Vec<Anddress>,
 ) -> Result<(), SearchError> {
-    let mut projection = StreamProjection {
-        target,
-        matcher: literal.matcher(),
-        paragraph: None,
-        file_best: None,
-        provisional: Vec::new(),
+    let (state, outcome) = match target {
+        SearchTarget::File => {
+            let mut projection = FileProjection::new(literal);
+            let state = observe_source(reader, |bytes, _| projection.push(bytes))
+                .map_err(|_| SearchError::Unavailable)?;
+            (state, ProjectionOutcome::File(projection.finish()))
+        }
+        SearchTarget::Paragraph => {
+            let mut projection = ParagraphProjection::new(literal);
+            let state = observe_source(reader, |bytes, chunk_start| {
+                projection.push(bytes, chunk_start)
+            })
+            .map_err(|_| SearchError::Unavailable)?;
+            projection
+                .finish(state.byte_length)
+                .map_err(|_| SearchError::Unavailable)?;
+            (state, ProjectionOutcome::Targets(projection.provisional))
+        }
+        SearchTarget::Line => {
+            let mut projection = LineProjection::new(literal);
+            let state = observe_source(reader, |bytes, chunk_start| {
+                projection.push(bytes, chunk_start)
+            })
+            .map_err(|_| SearchError::Unavailable)?;
+            projection
+                .finish(state.byte_length)
+                .map_err(|_| SearchError::Unavailable)?;
+            (state, ProjectionOutcome::Targets(projection.provisional))
+        }
     };
-    let state = scan_source(reader, |event| projection.handle(event))
-        .map_err(|_| SearchError::Unavailable)?;
-    projection.finish(state.byte_length)?;
     let source = construct_source_identity(
         workspace_coordinate,
         logical_path,
@@ -329,99 +371,252 @@ fn scan_open_source(
         state.byte_length,
     )
     .map_err(|_| SearchError::Unavailable)?;
-    for provisional in projection.provisional {
-        let bucket = match provisional.tier {
-            MatchTier::FullLine => &mut *full_line_results,
-            MatchTier::Substring => &mut *substring_results,
-        };
-        bucket
-            .try_reserve(1)
-            .map_err(|_| SearchError::Unavailable)?;
-        bucket.push(
-            construct_anddress(
-                &source,
-                provisional.target,
-                provisional.byte_start,
-                provisional.byte_end,
-            )
-            .map_err(|_| SearchError::Unavailable)?,
-        );
+    match outcome {
+        ProjectionOutcome::File(Some(tier)) => push_result(
+            full_line_results,
+            substring_results,
+            tier,
+            construct_anddress(&source, AnddressTarget::File, 0, state.byte_length)
+                .map_err(|_| SearchError::Unavailable)?,
+        )?,
+        ProjectionOutcome::File(None) => {}
+        ProjectionOutcome::Targets(provisional) => {
+            for provisional in provisional {
+                push_result(
+                    full_line_results,
+                    substring_results,
+                    provisional.tier,
+                    construct_anddress(
+                        &source,
+                        provisional.target,
+                        provisional.byte_start,
+                        provisional.byte_end,
+                    )
+                    .map_err(|_| SearchError::Unavailable)?,
+                )?;
+            }
+        }
     }
     Ok(())
 }
 
-impl StreamProjection<'_> {
-    fn handle(&mut self, event: SourceEvent) -> Result<(), SourceScanError> {
-        match event {
-            SourceEvent::StartLine { .. } => {
-                self.matcher.reset();
-            }
-            SourceEvent::Byte { byte, content } => {
-                if content {
-                    self.matcher.push(byte);
+impl<'a> FileProjection<'a> {
+    fn new(literal: &'a PreparedLiteral<'a>) -> Self {
+        Self {
+            matcher: literal.matcher(),
+            best_tier: None,
+            line_started: false,
+            pending_cr: false,
+        }
+    }
+
+    fn push(&mut self, bytes: &[u8]) -> Result<(), SourceScanError> {
+        if self.best_tier == Some(MatchTier::FullLine) {
+            return Ok(());
+        }
+        for &byte in bytes {
+            if self.pending_cr {
+                if byte == b'\n' {
+                    self.finish_line();
+                    if self.best_tier == Some(MatchTier::FullLine) {
+                        return Ok(());
+                    }
+                    continue;
+                }
+                self.finish_line();
+                if self.best_tier == Some(MatchTier::FullLine) {
+                    return Ok(());
                 }
             }
-            SourceEvent::EndLine {
-                byte_start,
-                byte_end,
-                body_class,
-                ..
-            } => self.finish_line(byte_start, byte_end, body_class)?,
+            self.begin_line();
+            match byte {
+                b'\r' => self.pending_cr = true,
+                b'\n' => self.finish_line(),
+                _ => self.matcher.push(byte),
+            }
+            if self.best_tier == Some(MatchTier::FullLine) {
+                return Ok(());
+            }
         }
         Ok(())
     }
 
-    fn finish_line(
-        &mut self,
-        byte_start: usize,
-        byte_end: usize,
-        body_class: LineBodyClass,
-    ) -> Result<(), SourceScanError> {
-        let tier = self.matcher.finish();
-        if self.target == SearchTarget::File
-            && tier.is_some_and(|tier| self.file_best.is_none_or(|best| tier < best))
-        {
-            self.file_best = tier;
+    fn finish(mut self) -> Option<MatchTier> {
+        if self.line_started && self.best_tier != Some(MatchTier::FullLine) {
+            self.finish_line();
         }
-        if body_class == LineBodyClass::Text {
+        self.best_tier
+    }
+
+    fn begin_line(&mut self) {
+        if !self.line_started {
+            self.line_started = true;
+            self.matcher.reset();
+        }
+    }
+
+    fn finish_line(&mut self) {
+        let tier = self.matcher.finish();
+        if let Some(tier) = tier {
+            prefer_tier(&mut self.best_tier, tier);
+        }
+        self.line_started = false;
+        self.pending_cr = false;
+    }
+}
+
+impl<'a> LineProjection<'a> {
+    fn new(literal: &'a PreparedLiteral<'a>) -> Self {
+        Self {
+            matcher: literal.matcher(),
+            line_start: 0,
+            line_started: false,
+            pending_cr: false,
+            provisional: Vec::new(),
+        }
+    }
+
+    fn push(&mut self, bytes: &[u8], chunk_start: usize) -> Result<(), SourceScanError> {
+        for (index, &byte) in bytes.iter().enumerate() {
+            let byte_start = chunk_start
+                .checked_add(index)
+                .ok_or(SourceScanError::Resource)?;
+            if self.pending_cr {
+                if byte == b'\n' {
+                    self.finish_line(byte_start.checked_add(1).ok_or(SourceScanError::Resource)?)?;
+                    continue;
+                }
+                self.finish_line(byte_start)?;
+            }
+            self.begin_line(byte_start);
+            match byte {
+                b'\r' => self.pending_cr = true,
+                b'\n' => {
+                    self.finish_line(byte_start.checked_add(1).ok_or(SourceScanError::Resource)?)?
+                }
+                _ => self.matcher.push(byte),
+            }
+        }
+        Ok(())
+    }
+
+    fn finish(&mut self, source_byte_length: usize) -> Result<(), SourceScanError> {
+        if self.line_started {
+            self.finish_line(source_byte_length)?;
+        }
+        Ok(())
+    }
+
+    fn begin_line(&mut self, byte_start: usize) {
+        if !self.line_started {
+            self.line_started = true;
+            self.line_start = byte_start;
+            self.matcher.reset();
+        }
+    }
+
+    fn finish_line(&mut self, byte_end: usize) -> Result<(), SourceScanError> {
+        if let Some(tier) = self.matcher.finish() {
+            push_provisional(
+                &mut self.provisional,
+                tier,
+                AnddressTarget::Line,
+                self.line_start,
+                byte_end,
+            )?;
+        }
+        self.line_started = false;
+        self.pending_cr = false;
+        Ok(())
+    }
+}
+
+impl<'a> ParagraphProjection<'a> {
+    fn new(literal: &'a PreparedLiteral<'a>) -> Self {
+        Self {
+            matcher: literal.matcher(),
+            line_start: 0,
+            line_started: false,
+            pending_cr: false,
+            body_class: LineBodyClass::Empty,
+            paragraph: None,
+            provisional: Vec::new(),
+        }
+    }
+
+    fn push(&mut self, bytes: &[u8], chunk_start: usize) -> Result<(), SourceScanError> {
+        for (index, &byte) in bytes.iter().enumerate() {
+            let byte_start = chunk_start
+                .checked_add(index)
+                .ok_or(SourceScanError::Resource)?;
+            if self.pending_cr {
+                if byte == b'\n' {
+                    self.finish_line(byte_start.checked_add(1).ok_or(SourceScanError::Resource)?)?;
+                    continue;
+                }
+                self.finish_line(byte_start)?;
+            }
+            self.begin_line(byte_start);
+            match byte {
+                b'\r' => self.pending_cr = true,
+                b'\n' => {
+                    self.finish_line(byte_start.checked_add(1).ok_or(SourceScanError::Resource)?)?
+                }
+                _ => {
+                    self.matcher.push(byte);
+                    if !matches!(byte, b' ' | b'\t') {
+                        self.body_class = LineBodyClass::Text;
+                    } else if self.body_class == LineBodyClass::Empty {
+                        self.body_class = LineBodyClass::HorizontalWhitespace;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn finish(&mut self, source_byte_length: usize) -> Result<(), SourceScanError> {
+        if self.line_started {
+            self.finish_line(source_byte_length)?;
+        }
+        self.close_paragraph()
+    }
+
+    fn begin_line(&mut self, byte_start: usize) {
+        if !self.line_started {
+            self.line_started = true;
+            self.line_start = byte_start;
+            self.matcher.reset();
+        }
+    }
+
+    fn finish_line(&mut self, byte_end: usize) -> Result<(), SourceScanError> {
+        let tier = self.matcher.finish();
+        if self.body_class == LineBodyClass::Text {
             let paragraph = self.paragraph.get_or_insert(ParagraphState {
                 best_tier: None,
-                byte_start,
+                byte_start: self.line_start,
                 byte_end,
             });
             paragraph.byte_end = byte_end;
             if let Some(tier) = tier {
-                match self.target {
-                    SearchTarget::Line => {
-                        self.push(tier, AnddressTarget::Line, byte_start, byte_end)?
-                    }
-                    SearchTarget::Paragraph
-                        if paragraph.best_tier.is_none_or(|best| tier < best) =>
-                    {
-                        paragraph.best_tier = Some(tier)
-                    }
-                    _ => {}
-                }
+                prefer_tier(&mut paragraph.best_tier, tier);
             }
         } else {
             self.close_paragraph()?;
-            if self.target == SearchTarget::Line
-                && let Some(tier) = tier
-            {
-                self.push(tier, AnddressTarget::Line, byte_start, byte_end)?;
-            }
         }
+        self.line_started = false;
+        self.pending_cr = false;
+        self.body_class = LineBodyClass::Empty;
         Ok(())
     }
 
     fn close_paragraph(&mut self) -> Result<(), SourceScanError> {
-        let Some(paragraph) = self.paragraph.take() else {
-            return Ok(());
-        };
-        if self.target == SearchTarget::Paragraph
+        if let Some(paragraph) = self.paragraph.take()
             && let Some(tier) = paragraph.best_tier
         {
-            self.push(
+            push_provisional(
+                &mut self.provisional,
                 tier,
                 AnddressTarget::Paragraph,
                 paragraph.byte_start,
@@ -430,37 +625,48 @@ impl StreamProjection<'_> {
         }
         Ok(())
     }
+}
 
-    fn push(
-        &mut self,
-        tier: MatchTier,
-        target: AnddressTarget,
-        byte_start: usize,
-        byte_end: usize,
-    ) -> Result<(), SourceScanError> {
-        self.provisional
-            .try_reserve(1)
-            .map_err(|_| SourceScanError::Resource)?;
-        self.provisional.push(ProvisionalTarget {
-            tier,
-            target,
-            byte_start,
-            byte_end,
-        });
-        Ok(())
+fn prefer_tier(best: &mut Option<MatchTier>, tier: MatchTier) {
+    if best.is_none_or(|current| tier < current) {
+        *best = Some(tier);
     }
+}
 
-    fn finish(&mut self, source_byte_length: usize) -> Result<(), SearchError> {
-        self.close_paragraph()
-            .map_err(|_| SearchError::Unavailable)?;
-        if self.target == SearchTarget::File
-            && let Some(tier) = self.file_best
-        {
-            self.push(tier, AnddressTarget::File, 0, source_byte_length)
-                .map_err(|_| SearchError::Unavailable)?;
-        }
-        Ok(())
-    }
+fn push_provisional(
+    provisional: &mut Vec<ProvisionalTarget>,
+    tier: MatchTier,
+    target: AnddressTarget,
+    byte_start: usize,
+    byte_end: usize,
+) -> Result<(), SourceScanError> {
+    provisional
+        .try_reserve(1)
+        .map_err(|_| SourceScanError::Resource)?;
+    provisional.push(ProvisionalTarget {
+        tier,
+        target,
+        byte_start,
+        byte_end,
+    });
+    Ok(())
+}
+
+fn push_result(
+    full_line_results: &mut Vec<Anddress>,
+    substring_results: &mut Vec<Anddress>,
+    tier: MatchTier,
+    anddress: Anddress,
+) -> Result<(), SearchError> {
+    let bucket = match tier {
+        MatchTier::FullLine => full_line_results,
+        MatchTier::Substring => substring_results,
+    };
+    bucket
+        .try_reserve(1)
+        .map_err(|_| SearchError::Unavailable)?;
+    bucket.push(anddress);
+    Ok(())
 }
 
 enum Next {
@@ -535,6 +741,7 @@ mod tests {
     struct FixtureReader<'a> {
         bytes: &'a [u8],
         cursor: usize,
+        max_chunk: usize,
         fail_after: Option<usize>,
         returned_eof: bool,
         failed: bool,
@@ -553,7 +760,8 @@ mod tests {
                 return Ok(0);
             }
             let boundary = self.fail_after.unwrap_or(self.bytes.len());
-            let count = 1_usize
+            let count = self
+                .max_chunk
                 .min(buffer.len())
                 .min(boundary - self.cursor)
                 .min(self.bytes.len() - self.cursor);
@@ -570,11 +778,22 @@ mod tests {
         target: SearchTarget,
         fail_after: Option<usize>,
     ) -> Result<(Vec<Anddress>, Vec<Anddress>), SearchError> {
+        project_chunked(bytes, query, target, fail_after, 1)
+    }
+
+    fn project_chunked(
+        bytes: &[u8],
+        query: &str,
+        target: SearchTarget,
+        fail_after: Option<usize>,
+        max_chunk: usize,
+    ) -> Result<(Vec<Anddress>, Vec<Anddress>), SearchError> {
         let query = SearchQuery::new(query).unwrap();
         let literal = PreparedLiteral::new(&query)?;
         let mut reader = FixtureReader {
             bytes,
             cursor: 0,
+            max_chunk,
             fail_after,
             returned_eof: false,
             failed: false,
@@ -591,6 +810,16 @@ mod tests {
             &mut substring,
         )?;
         Ok((full, substring))
+    }
+
+    fn only_result(bytes: &[u8], query: &str, target: SearchTarget) -> (MatchTier, Anddress) {
+        let (mut full, mut substring) =
+            project_chunked(bytes, query, target, None, READ_BUFFER_SIZE).unwrap();
+        match (full.pop(), substring.pop()) {
+            (Some(anddress), None) => (MatchTier::FullLine, anddress),
+            (None, Some(anddress)) => (MatchTier::Substring, anddress),
+            _ => panic!("expected exactly one projected result"),
+        }
     }
 
     #[test]
@@ -648,6 +877,147 @@ mod tests {
         assert_eq!(
             (substring[0].byte_start(), substring[0].byte_end()),
             (0, line.len())
+        );
+    }
+
+    #[test]
+    fn target_projections_preserve_scratch_and_token_boundaries() {
+        for length in [READ_BUFFER_SIZE - 1, READ_BUFFER_SIZE, READ_BUFFER_SIZE + 1] {
+            let mut source = b"needle".to_vec();
+            source.resize(length - 1, b'x');
+            source.push(b'\n');
+            for target in [
+                SearchTarget::File,
+                SearchTarget::Paragraph,
+                SearchTarget::Line,
+            ] {
+                let (tier, anddress) = only_result(&source, "needle", target);
+                assert_eq!(tier, MatchTier::Substring);
+                assert_eq!((anddress.byte_start(), anddress.byte_end()), (0, length));
+            }
+        }
+
+        let utf8_split = format!("{}éneedle\r\n", "x".repeat(READ_BUFFER_SIZE - 1));
+        let (_, line) = only_result(utf8_split.as_bytes(), "needle", SearchTarget::Line);
+        assert_eq!((line.byte_start(), line.byte_end()), (0, utf8_split.len()));
+
+        let crlf_split = format!("{}\r\nneedle\n", "x".repeat(READ_BUFFER_SIZE - 1));
+        let (tier, line) = only_result(crlf_split.as_bytes(), "needle", SearchTarget::Line);
+        assert_eq!(tier, MatchTier::FullLine);
+        assert_eq!(
+            (line.byte_start(), line.byte_end()),
+            (READ_BUFFER_SIZE + 1, crlf_split.len())
+        );
+
+        let literal_split = format!("{}needle\n", "x".repeat(READ_BUFFER_SIZE - 3));
+        let (_, line) = only_result(literal_split.as_bytes(), "needle", SearchTarget::Line);
+        assert_eq!(
+            (line.byte_start(), line.byte_end()),
+            (0, literal_split.len())
+        );
+    }
+
+    #[test]
+    fn exact_file_uses_one_observation_without_search_framing() {
+        for bytes in [b"".as_slice(), b"one\r\ntwo\n".as_slice()] {
+            let mut reader = FixtureReader {
+                bytes,
+                cursor: 0,
+                max_chunk: READ_BUFFER_SIZE,
+                fail_after: None,
+                returned_eof: false,
+                failed: false,
+            };
+            let mut observed = 0_usize;
+            let state = observe_source(&mut reader, |chunk, start| {
+                assert_eq!(start, observed);
+                observed = observed
+                    .checked_add(chunk.len())
+                    .ok_or(SourceScanError::Resource)?;
+                Ok(())
+            })
+            .unwrap();
+            let mut hash = crate::hash::Sha256::new();
+            hash.update(bytes);
+            assert_eq!(state.hash, hash.finish().to_hex());
+            assert_eq!(state.byte_length, bytes.len());
+            assert_eq!(observed, bytes.len());
+            assert!(reader.returned_eof);
+        }
+
+        let production = include_str!("search.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let exact_file = production
+            .split("fn execute_exact_file")
+            .nth(1)
+            .unwrap()
+            .split("struct SearchExecutor")
+            .next()
+            .unwrap();
+        assert_eq!(exact_file.matches("observe_source(").count(), 1);
+        assert!(!exact_file.contains("scan_source"));
+        assert!(!exact_file.contains("SourceFramer"));
+    }
+
+    #[test]
+    fn file_full_line_stops_projection_but_not_observation_validation() {
+        let query = SearchQuery::new("needle").unwrap();
+        let literal = PreparedLiteral::new(&query).unwrap();
+        let mut projection = FileProjection::new(&literal);
+        projection.push(b"needle\n").unwrap();
+        assert_eq!(projection.best_tier, Some(MatchTier::FullLine));
+        assert!(!projection.line_started);
+        projection.push(b"ignored\rstill ignored\n").unwrap();
+        assert_eq!(projection.best_tier, Some(MatchTier::FullLine));
+        assert!(!projection.line_started);
+
+        assert_eq!(
+            project(b"needle\n\xff", "needle", SearchTarget::File, None),
+            Err(SearchError::Unavailable)
+        );
+    }
+
+    #[test]
+    fn search_production_has_no_generic_event_scan_or_persistent_observation() {
+        let production = include_str!("search.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        assert!(!production.contains("SourceEvent"));
+        assert!(!production.contains("scan_source("));
+        assert!(!production.contains("Sha256"));
+        assert!(!include_str!("../runtime.rs").contains("CurrentObservation"));
+        assert_eq!(production.matches("observe_source(").count(), 4);
+    }
+
+    #[test]
+    fn projection_resource_failure_stays_local_until_observation_succeeds() {
+        let query = SearchQuery::new("needle").unwrap();
+        let literal = PreparedLiteral::new(&query).unwrap();
+        let mut projection = LineProjection::new(&literal);
+        projection.push(b"needle\n", 0).unwrap();
+        assert_eq!(projection.provisional.len(), 1);
+        assert_eq!(
+            projection.push(b"xx", usize::MAX),
+            Err(SourceScanError::Resource)
+        );
+
+        let production = include_str!("search.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let scan = production
+            .split("fn scan_open_source")
+            .nth(1)
+            .unwrap()
+            .split("impl<'a> FileProjection")
+            .next()
+            .unwrap();
+        assert!(
+            scan.find("let source = construct_source_identity")
+                > scan.find("let (state, outcome) = match target")
         );
     }
 
