@@ -9,7 +9,7 @@ use crate::source::validate_logical_path;
 
 use super::{
     AnchorBinding, WorkspaceRuntime, is_backwriter_spill,
-    view::{Observation, ObservationError, observe},
+    view::{AnchoredObservation, ObservationError, observe_anchored},
 };
 
 pub(super) fn anchor(
@@ -122,7 +122,7 @@ fn observe_current(
     input: &Anddress,
     inputs: &[Anddress],
     capture_focus: Option<usize>,
-) -> Result<Observation, ObservationError> {
+) -> Result<AnchoredObservation, ObservationError> {
     if input.workspace_coordinate() != runtime.workspace_coordinate
         || is_backwriter_spill(input.logical_path())
     {
@@ -131,7 +131,7 @@ fn observe_current(
     let mut file = runtime
         .open_admitted_source(input.logical_path())
         .map_err(|_| ObservationError::Read)?;
-    observe(&mut file, inputs, capture_focus)
+    observe_anchored(&mut file, inputs, capture_focus)
 }
 
 fn path_inputs(

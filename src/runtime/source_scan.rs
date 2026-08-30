@@ -96,10 +96,6 @@ impl<'a> ExactTargetTracker<'a> {
         }
     }
 
-    pub(crate) fn is_current(&self, index: usize) -> bool {
-        self.current[index]
-    }
-
     pub(crate) fn into_current(self) -> Vec<bool> {
         self.current
     }

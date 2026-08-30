@@ -1,13 +1,14 @@
 # Verification
 
-## 0.2.0 Phase 4 verification boundary
+## 0.2.0 Phase 5 verification boundary
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current
 unpublished `0.2.0` Rust, Cargo, CLI, and tests use only Anddress v4. Phase 3
 implements the SHA-256 source-state/value/wire kernel and hard-cutover decoding.
-Phase 4 implements one-read target-specific Search observation and compiles
-every existing capability consumer. Its phase gates, the historical v3 drift
-reproduction, fixtures, raw samples, and profile results are tracked in
+Phase 4 implements one-read target-specific Search observation. Phase 5 makes
+ordinary View and Check direct consumers of the same hash/length observer,
+without structural currentness replay. Their phase gates, the historical v3
+drift reproduction, fixtures, raw samples, and profile results are tracked in
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 That task tracks progress only; the Protocol, address model, and principles own
 semantics.
@@ -19,16 +20,16 @@ unknown/wrong-type handling; well-formed v3 `UnsupportedVersion`; shared private
 source identity across same-source results; one-read hash/range Search; v4
 human/JSON/Session round trips; and full existing capability regressions. The
 canonical duplicate-Line drift fixture must return `Unavailable` without
-publication. Phase 5–6 must later prove the direct consumer fast paths without
-changing those results.
+publication. Phase 6 must later remove the remaining Apply/Anchor consumer
+indirection without changing those results.
 
 Current regressions cover SHA-256 transcript and platform-coordinate KATs,
 strict v4 flat-wire encoding/decoding and error priority, zero/nonzero/maximum
 machine ranges, exact source identity sharing, Search no-limit traversal, query
 and scope preflight, canonical range ordering, selected-source fail-all,
 NUL/invalid UTF-8 source handling, spill boundaries, no-follow symlinks and hard
-links, View exact-source/range currentness and related v4 addresses, terminator
-and Unicode reconstruction, and Pick stable order, multiplicity, target kinds,
+links, View exact-source direct range projection and related v4 addresses,
+terminator and Unicode reconstruction, and Pick stable order, multiplicity, target kinds,
 complete-v4-value OneOf, and deep iterative boolean composition. Apply regressions cover Edit validation
 priority, exact File/Paragraph/Line splice geometry, all line terminators,
 Unicode and scratch boundaries, cross-source rejection, no-op publication
@@ -64,32 +65,32 @@ Empty outcomes, named admission and unadmitted paths, private spill, symlink and
 hard-link boundaries, invalid UTF-8/NUL closure, one ordinary v4 File result,
 Check integration, and empty-File Apply at both `StartOf` and `EndOf`.
 
-Check streaming regressions cover chunk-boundary UTF-8, NUL, CRLF, standalone
-CR, and no-EOL handling; late invalid, incomplete, NUL, and read failure;
-forward-only access; exact final-byte/length equality; batch order and
-multiplicity; unsorted mixed File/Paragraph/Line inputs; duplicate Line and
-Paragraph occurrences; same-text differing Line ranges; leading and
-consecutive separators; missing ranges; and Anchor non-mutation.
+Check streaming regressions cover chunk-boundary UTF-8 and NUL validation; late
+invalid, incomplete, NUL, and read failure; forward-only access; exact
+hash/length equality; batch order and multiplicity; mixed hash/kind/range
+inputs; duplicate occurrences; raw-valid nonstructural ranges; and Anchor
+non-mutation.
 Search streaming regressions cover target-specific File, Paragraph, and Line
 projection; 8,191/8,192/8,193 scratch boundaries; split multibyte UTF-8, CRLF,
 and literals; Line-scoped KMP; complete matching ranges; one-read incremental
 SHA-256; shared same-source identity; File `FullLine` projection stop with
 continued validation; and late text/read failure discard. Exact File structure
-audits prove one common observation and no generic Line framer. Check tracker
-regressions cover exact hash/length/range
-comparison across decimal digit boundaries while preserving unsorted
-duplicates. View/Anchor streaming regressions cover the same
-forward scanner boundaries, exact Line-range construction,
-target-only Paragraph candidate buffering, late invalid/read closure,
+audits prove one common observation and no generic Line framer. Ordinary View
+regressions cover File/Paragraph/Line exact bytes, terminators, Unicode,
+8,191/8,192/8,193 scratch boundaries, raw-valid nonstructural ranges, UTF-8
+scalar-cut failure, every source-state mutation class, exact-state
+reappearance, and late failure/resource discard. Its minimal Line relation
+state preserves the optional Paragraph only for an exact current text Line.
+Check regressions prove exact hash/length-only comparison while preserving
+unsorted mixed geometry and duplicates. Anchor streaming regressions retain
 tracker-only File/Paragraph observations without a View outcome, selected
 anchored-binding success beside a stale sibling, and exact-path fail-close on
 the selected mismatch. Structural audits keep the forward read loop, SHA-256,
-checked length, and text policy in `source_scan.rs`; exclude Search's generic
-`SourceEvent`/`scan_source` path, second hash pass, persistent observation,
-stale Line-content buffers, and the retired scanner error alias; keep raw Anchor
-out of `ViewCapture`/`ViewOutcome`; and leave File-only Check groups
-tracker-free. The event/framer path remains for its actual View, Check, and
-Apply consumers until Phases 5–6. Apply streaming regressions cover its
+checked length, and text policy in `source_scan.rs`; exclude ordinary View and
+Check from `SourceEvent`/`scan_source`/`ExactTargetTracker`, second reads,
+persistent observation, and target-kind Check branches; and keep raw Anchor out
+of anchored View capture. The event/framer path remains for Anchor creation,
+anchored View, and Apply until Phase 6. Apply streaming regressions cover its
 single source forward scan, scanner-sized fixed retained-source batches,
 incremental after framer, one rename, and absence of whole-source/after
 materialization. They cover 8,191/8,192/8,193 UTF-8 and CR/LF/CRLF/no-EOL
@@ -229,7 +230,7 @@ The repository source package is unpublished `0.2.0`, and its release build
 must print exactly `Backwriter 0.2.0` plus LF. Source verification remains
 distinct from the separately executed operations publication: the current official
 distribution is the closed stable `0.1.0` release, while prior beta files remain
-immutable. The current `0.2.0` source suite passes 186 GNU-host Rust tests; the
+immutable. The current `0.2.0` source suite passes 200 GNU-host Rust tests; the
 historical `0.1.0` source suite passed 193.
 
 CLI process regressions cover the canonical `bw` binary without a `backwriter`

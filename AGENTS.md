@@ -13,10 +13,11 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-Search, View, Pick, Anchor, and Check have Rust implementations. Their v4 View
-currentness, target-specific Search literal projection and exact logical File
-lookup, Pick predicate semantics, Anchor live continuity, and Check batch
-currentness reporting are implemented. Apply V1
+Search, View, Pick, Anchor, and Check have Rust implementations. Their v4
+direct View source-state/range projection, target-specific Search literal
+projection and exact logical File lookup, Pick predicate semantics, Anchor live
+continuity, and hash/length-only Check batch currentness reporting are
+implemented. Apply V1
 semantic/public API/error authority and its single-source Edit Runtime
 implementation are complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
@@ -128,11 +129,11 @@ are preserved evidence, never current authority.
   Pick remains pure and stateless over caller-provided Anddress values without
   asserting currentness.
   `WorkspaceRuntime` exposes Search, View, Apply, Check, and anchored Runtime
-  execution seams. Phase 4 retains no ordinary observation, source, result,
+  execution seams. Phase 5 retains no ordinary observation, source, result,
   snapshot, lease, or authenticity state across calls or selected sources.
   `CurrentObservation` contains only the current hash and exact byte length and
-  is consumed or discarded before Search opens another source. Anchor may
-  retain only target-local session continuity.
+  is consumed or discarded before Search opens another source or ordinary
+  View/Check returns. Anchor may retain only target-local session continuity.
 - Future spill belongs only to a host-provided system root. This repository does
   not create `.artext`; the exact Runtime-root-relative `.artext/bw` path and
   its descendants are ignored by Backwriter Runtime execution. Other `.artext`
@@ -158,8 +159,9 @@ are preserved evidence, never current authority.
 - In the v4 target, Search remains the only target finder. It computes the
   source-state hash during its one source read, without a separate hash pass,
   and its File, Paragraph, and Line projections retain only target-required
-  matching and range state before constructing exact byte ranges. View reads by
-  hash and range, Check compares the source hash, and Apply enforces the hash
+  matching and range state before constructing exact byte ranges. View validates
+  source hash and length while capturing the caller range, Check compares only
+  source hash and length, and Apply enforces the hash
   precondition before a range patch;
   none searches, reparses to relocate, context-matches, or retries an old
   target. Any source-state change invalidates an ordinary Anddress. Only Anchor

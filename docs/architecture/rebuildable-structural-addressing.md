@@ -38,8 +38,11 @@ state. If the exact complete source state later reappears, raw equality may
 reappear without establishing history, survival, or continuity.
 
 Search is the only target finder and constructs v4 values while reading and
-hashing current source once. View and Check consume the hash, length, kind, and
-range without relocating an old target. Apply first enforces the exact v4
+hashing current source once. Ordinary View validates hash and length while
+copying the caller range; Check currentness compares only hash and length.
+Neither relocates or structurally revalidates an old target, and a valid
+caller-built nonstructural Paragraph or Line range remains consumable. Apply
+first enforces the exact v4
 source-state/range precondition, then Phase 3 temporarily resolves that verified
 range into its existing private call-local parser representation. This private
 ordinal/text value is neither public identity nor wire or retained state.

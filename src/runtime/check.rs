@@ -2,9 +2,9 @@
 
 use super::{
     DirectoryAccessError, WorkspaceRuntime, is_backwriter_spill,
-    source_scan::{ExactTargetTracker, SourceScanError, scan_source},
+    source_scan::{SourceScanError, observe_source},
 };
-use crate::backwriter::anddress::{Anddress, AnddressError, AnddressTarget};
+use crate::backwriter::anddress::{Anddress, AnddressError};
 use crate::backwriter::check::{CheckError, CheckOutcome, CheckReport};
 use crate::backwriter::pick::PickOutcome;
 use crate::backwriter::search::SearchOutcome;
@@ -173,37 +173,14 @@ fn classify_observed_source(
     group: &[usize],
     statuses: &mut [Currentness],
 ) -> Result<(), CheckError> {
-    let needs_structure = group
-        .iter()
-        .any(|&index| inputs[index].target() != AnddressTarget::File);
-    let mut tracker = needs_structure
-        .then(|| ExactTargetTracker::new(inputs, group))
-        .transpose()
-        .map_err(|_| CheckError::Resource)?;
-    let scanned = scan_source(reader, |event| match tracker.as_mut() {
-        Some(tracker) => tracker.consume(event),
-        None => Ok(()),
-    });
-    match scanned {
+    match observe_source(reader, |_, _| Ok(())) {
         Ok(state) => {
-            match tracker {
-                Some(mut tracker) => {
-                    tracker.finish(&state);
-                    for &index in group {
-                        if tracker.is_current(index) {
-                            statuses[index] = Currentness::Current;
-                        }
-                    }
-                }
-                None => {
-                    for &index in group {
-                        let input = &inputs[index];
-                        if input.source_byte_length() == state.byte_length
-                            && input.source_state_hash() == state.hash
-                        {
-                            statuses[index] = Currentness::Current;
-                        }
-                    }
+            for &index in group {
+                let input = &inputs[index];
+                if input.source_byte_length() == state.byte_length
+                    && input.source_state_hash() == state.hash
+                {
+                    statuses[index] = Currentness::Current;
                 }
             }
             Ok(())
@@ -363,7 +340,7 @@ mod tests {
     }
 
     #[test]
-    fn one_byte_reads_preserve_utf8_terminators_and_forward_only_access() {
+    fn one_byte_reads_compare_only_source_hash_and_length() {
         let bytes = "é€🦀\r\nnext\rthird".as_bytes();
         let inputs = vec![
             address(bytes, AnddressTarget::File, 0, bytes.len()),
@@ -379,6 +356,7 @@ mod tests {
         classify_observed_source(&mut source, &inputs, &group, &mut statuses).unwrap();
 
         assert_eq!(statuses, vec![Currentness::Current; inputs.len()]);
+        assert!(source.returned_eof);
     }
 
     #[test]
@@ -418,21 +396,30 @@ mod tests {
     }
 
     #[test]
-    fn large_line_range_requires_the_complete_final_byte_and_length() {
+    fn mixed_geometry_is_current_and_hash_mismatch_is_not_current() {
         let source = format!("{}\n", "x".repeat(READ_BUFFER_SIZE * 3));
         let mut mismatched = source.clone();
         mismatched.pop();
         mismatched.push('!');
+        let raw = address(
+            source.as_bytes(),
+            AnddressTarget::Paragraph,
+            1,
+            source.len() - 1,
+        );
         let inputs = vec![
-            address(source.as_bytes(), AnddressTarget::Line, 0, source.len()),
+            address(source.as_bytes(), AnddressTarget::File, 0, source.len()),
+            raw.clone(),
+            address(source.as_bytes(), AnddressTarget::Line, 7, 7),
             address(
                 mismatched.as_bytes(),
                 AnddressTarget::Line,
                 0,
                 mismatched.len(),
             ),
+            raw,
         ];
-        let group = [0, 1];
+        let group = [0, 1, 2, 3, 4];
         let mut statuses = vec![Currentness::NotCurrent; inputs.len()];
         let mut observed = FixtureReader {
             bytes: source.as_bytes(),
@@ -445,6 +432,41 @@ mod tests {
 
         classify_observed_source(&mut observed, &inputs, &group, &mut statuses).unwrap();
 
-        assert_eq!(statuses, [Currentness::Current, Currentness::NotCurrent]);
+        assert_eq!(
+            statuses,
+            [
+                Currentness::Current,
+                Currentness::Current,
+                Currentness::Current,
+                Currentness::NotCurrent,
+                Currentness::Current,
+            ]
+        );
+        assert!(observed.returned_eof);
+    }
+
+    #[test]
+    fn check_production_has_no_structural_scanner_or_target_branch() {
+        let production = include_str!("check.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        for forbidden in [
+            "ExactTargetTracker",
+            "SourceEvent",
+            "scan_source(",
+            "AnddressTarget",
+        ] {
+            assert!(!production.contains(forbidden));
+        }
+        assert_eq!(production.matches("observe_source(").count(), 1);
+
+        let source_scan = include_str!("source_scan.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        assert!(!source_scan.contains("fn is_current"));
+        assert!(include_str!("apply.rs").contains("scan_source("));
+        assert!(include_str!("anchor.rs").contains("observe_anchored"));
     }
 }

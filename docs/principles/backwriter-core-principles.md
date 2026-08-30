@@ -22,17 +22,18 @@ these principles claim no `0.2.0` artifact or publication.
    and ordinal are not identity.
 5. **Ordinary addresses do not relocate.** A changed source invalidates an
    ordinary Anddress. View, Check, and Apply never search, reparse, or
-   context-match to move an old target after external change. Phase 3 may parse
-   only to prove that an already verified range has the requested kind. Re-search is an
+   context-match to move an old target after external change. Ordinary View and
+   Check do not structurally revalidate ranges; Apply retains only its Phase 6
+   private execution parser after exact source-state proof. Re-search is an
    explicit caller choice and returns a new current address.
 6. **Safety remains selective.** Admission, private/unsafe policy, and symlink
    rejection remain capability-relative. `.artext/bw` alone is ignored;
    `.artext/other` is ordinary source. Unsaved editor buffers remain outside
    Core, and source-visible does not promise durability, retry, or a second
    read.
-7. **Capability responsibility stays narrow.** View validates hash, kind, and
-   range and returns exact bytes. Check compares source state and structural
-   range. Apply requires the exact source state before its private call-local
+7. **Capability responsibility stays narrow.** View validates source hash and
+   length and returns exact caller-range bytes. Check compares only source hash
+   and length. Apply requires the exact source state before its private call-local
    execution mapping and publication. None is a target finder.
 8. **Pick is pure input selection.** Pick preserves an input-order subsequence
    of valid caller-provided Anddress values without Runtime or Workspace access,
@@ -41,11 +42,11 @@ these principles claim no `0.2.0` artifact or publication.
    state may arithmetically transform a range across a Backwriter-owned Apply.
    External changes invalidate rather than relocate it; Anchor adds no history,
    persistence, watcher, or generic transition engine.
-10. **Current observation is bounded and ephemeral.** Phase 4's private
+10. **Current observation is bounded and ephemeral.** The private
     `CurrentObservation` holds only one selected source's hash and byte length
-    until Search constructs or discards its v4 results. It is not a whole-source
-    buffer, parse tree, complete Line collection, Search result, history,
-    persistent index, relocation context, or full workspace cache.
+    until Search, ordinary View, or Check consumes or discards it. It is not a
+    whole-source buffer, parse tree, complete Line collection, Search result,
+    history, persistent index, relocation context, or full workspace cache.
 11. **Search remains all-or-nothing.** Invalid text or actual allocation/I/O
     failure discards the whole result. Existing live traversal, exact File
     lookup, deterministic ordering, and no-fixed-limit behavior remain baseline

@@ -158,6 +158,76 @@ fn check_matches_ranges_across_decimal_digit_boundaries_without_reordering() {
 }
 
 #[test]
+fn check_treats_raw_nonstructural_ranges_as_current_source_sentinels() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source = b"seed\none\r\ntwo";
+    fs::write(root.join("note.txt"), source).unwrap();
+    let workspace = runtime(&root, ".");
+    let coordinate = coordinate(&workspace);
+    let raw_paragraph = support::address(
+        &coordinate,
+        "note.txt",
+        source,
+        AnddressTarget::Paragraph,
+        2,
+        9,
+    );
+    let raw_line = support::address(&coordinate, "note.txt", source, AnddressTarget::Line, 1, 1);
+
+    for input in [raw_paragraph, raw_line] {
+        let checked = workspace.check(input.clone()).unwrap();
+        assert_eq!(checked.filtered, Some(input));
+        assert_eq!(checked.report.current_count(), 1);
+        assert!(checked.report.removed().is_empty());
+    }
+}
+
+#[test]
+fn check_groups_mixed_hash_kind_range_and_duplicates_without_reordering() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source = b"seed\none\n";
+    fs::write(root.join("note.txt"), source).unwrap();
+    let workspace = runtime(&root, ".");
+    let coordinate = coordinate(&workspace);
+    let current_file = support::file(&coordinate, "note.txt", source);
+    let current_raw = support::address(&coordinate, "note.txt", source, AnddressTarget::Line, 1, 7);
+    let stale = support::address(
+        &coordinate,
+        "note.txt",
+        b"seed\ntwo\n",
+        AnddressTarget::Paragraph,
+        0,
+        5,
+    );
+    let candidates = vec![
+        current_raw.clone(),
+        stale.clone(),
+        current_file.clone(),
+        current_raw.clone(),
+    ];
+
+    let checked = workspace
+        .check_pick(PickOutcome::Selected {
+            anddresses: candidates,
+        })
+        .unwrap();
+
+    assert_eq!(
+        checked.filtered,
+        PickOutcome::Selected {
+            anddresses: vec![current_raw.clone(), current_file, current_raw]
+        }
+    );
+    assert_eq!(checked.report.current_count(), 3);
+    assert_eq!(checked.report.removed(), &[stale]);
+    assert!(checked.report.unavailable().is_empty());
+}
+
+#[test]
 fn check_marks_every_target_removed_after_any_source_state_change() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");

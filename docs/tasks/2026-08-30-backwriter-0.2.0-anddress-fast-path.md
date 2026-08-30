@@ -1,6 +1,6 @@
 # Backwriter 0.2.0 Anddress Fast Path
 
-Status: Phases 1–4 completed; Phase 5 next; Phases 5–7 pending.
+Status: Phases 1–5 completed; Phase 6 next; Phases 6–7 pending.
 
 This is the sole progress tracker for the redesign. It records gates and
 evidence but does not own semantics; the active Protocol, address model, and
@@ -62,14 +62,17 @@ mutate an ordinary Anddress or add history, search, or context relocation.
 `CurrentObservation` is Runtime-private producer state for one call-local
 source. It contains only the current hash and exact length. Search owns its
 target-required provisional ranges separately, consumes both states immediately
-after success, and discards both on failure before opening another source. It
-may not retain prior observations, whole-source bytes, a parse tree, a complete
-Line collection, Search results, history, a persistent index,
+after success, and discards both on failure before opening another source.
+Ordinary View adds only returned-range and optional Line-relation state; Check
+adds no target projection. Each consumes or discards the observation before
+return. It may not retain prior observations, whole-source bytes, a parse tree,
+a complete Line collection, Search results, history, a persistent index,
 relocation/context evidence, a full workspace cache, a watcher, or durability.
 
 Capability responsibilities are fixed: Search hashes while discovering ranges
-in its one source read and performs no separate hash pass; View validates hash,
-length, and range and returns exact bytes; Check compares the source hash; Apply
+in its one source read and performs no separate hash pass; View validates hash
+and length while returning exact caller-range bytes; Check compares only source
+hash and length; Apply
 requires a matching hash and validates the range against the recorded length
 before patching. View, Check, and Apply do not search.
 
@@ -81,7 +84,7 @@ before patching. View, Check, and Apply do not search.
 | 2. Reproduce/profile/baseline | Phase 1 committed, pushed, and clean. | Drift-Wrong-Apply is executable; release-build profiles locate actual parse/hash/allocation/I/O cost; fixed fixtures, commands, host/toolchain facts, repeated raw results, and variance are recorded without improvement claims. |
 | 3. V4 value/wire kernel | Phase 2 evidence plus Owner decisions for hash algorithm, compatibility/cutover, and any dependency. | One canonical v4 value implements validation, equality, encoding/decoding, checked arbitrary-size length/range arithmetic, error priority, KATs, and decided cutover without hidden ordinal/text identity. |
 | 4. Search/observation | Phase 3 v4 Search production is complete and all retained-state consumers are mapped. | The bounded observation producer and discard rules hold without changing Phase 3 one-read hash/range results, ordering, multiplicity, fail-all, Unicode/terminators, admission, or no-limit behavior. |
-| 5. View/Check | Search produces accepted v4 values. | View uses hash+range without target search/reparse; Check compares the source hash without search/refresh; duplicate, rewrite, bounds, unavailable, text-policy, and resource regressions pass; retired v3 currentness remains only if explicitly authorized. |
+| 5. View/Check | Search produces accepted v4 values. | View validates hash/length while copying its range without target search/reparse; Check compares only source hash/length without search/refresh; raw nonstructural ranges, duplicate, rewrite, bounds, unavailable, text-policy, and resource regressions pass. |
 | 6. Apply/Anchor | Ordinary View and Check consume v4 authority. | Apply enforces the hash precondition and range bounds before patching, and Wrong Apply fails without publication; publication/safety/resource boundaries remain; only Anchor transforms a live range under Backwriter-owned Apply; external change invalidates continuity. |
 | 7. Integrate/release decision | Phases 3–6 individually green. | Full matrix and fixed benchmarks pass; structural audits exclude consumer search, second Search hash pass, history/index/relocation/context/cache; docs report actual evidence; version, compatibility, artifacts, and publication receive separate Owner decisions. |
 
@@ -95,7 +98,7 @@ before patching. View, Check, and Apply do not search.
 | Search | Content and exact File; all kinds/ranges; CR/LF/CRLF/no-EOL, Unicode, empty/separator Lines, duplicates/order; one-read hash integration, no hash replay, late failure discard. |
 | View/Check | Exact range bytes; changes inside/outside range; hash/length/bounds mismatch; Current/NotCurrent/Unavailable batch order and multiplicity; no search, refresh, or relocation. |
 | Apply/Anchor | Every Edit range geometry; stale precondition/no wrong publication; no-op, race, cleanup, resource and uncertain publication; Anchor transform/collision/invalidation and no ordinary-address mutation. |
-| CurrentObservation | Hash and exact length only; Search-owned minimum provisional ranges; consume/discard on success/failure; structural absence of cross-call state, history, whole source, parse tree, result store, index, or full workspace cache. |
+| CurrentObservation | Hash and exact length only; capability-owned minimum projection state; consume/discard on success/failure; structural absence of cross-call state, history, whole source, parse tree, result store, index, or full workspace cache. |
 | Regression | Admission/no-follow/private path, no fixed semantic limit, Search determinism, Pick purity, Data explicitness, and existing public API/error/CLI boundaries until separately authorized. |
 
 ## Benchmark baseline and goals
@@ -368,7 +371,7 @@ versioning, release construction, and publication.
 - [x] Phase 2 — reproduction, profile, and baseline (completed 2026-08-30)
 - [x] Phase 3 — v4 value and wire kernel (completed 2026-08-30)
 - [x] Phase 4 — Search producer and `CurrentObservation` (completed 2026-08-30)
-- [ ] Phase 5 — View and Check consumers
+- [x] Phase 5 — View and Check consumers (completed 2026-08-30)
 - [ ] Phase 6 — Apply and Anchor cutover
 - [ ] Phase 7 — integrated verification and release decision
 
@@ -407,5 +410,15 @@ Evidence:
   because component DFS does not prove whole-path byte order. All 191 GNU-host
   tests and every offline/locked Phase 4 gate pass. No benchmark or release
   claim is made.
-- Phases 5–7: pending. Phase 5 next removes View/Check target reparse while
-  preserving their public behavior.
+- Phase 5: ordinary View now captures File or exact target-range output during
+  one common UTF-8/NUL/hash/length observation. Minimal Line boundary state
+  projects an optional related Paragraph only for an exact current text Line;
+  raw-valid nonstructural ranges remain accepted and do not assert that
+  relation. Check retains grouping, filtering, reports, order, and multiplicity
+  while comparing only source hash and length once per eligible source. The
+  ordinary View and Check paths have no generic event scanner or target
+  tracker; Anchor creation/anchored View and Apply retain their Phase 6
+  consumers. All 200 GNU-host tests and every offline/locked Phase 5 gate pass.
+  No benchmark or release claim is made.
+- Phases 6–7: pending. Phase 6 next removes the remaining Apply/Anchor consumer
+  indirection while preserving public behavior.

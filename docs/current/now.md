@@ -4,9 +4,9 @@
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current Rust,
 Cargo, tests, and CLI use the unpublished `0.2.0` hard-cutover Anddress v4 API
-and wire. Phases 3–4 implement SHA-256 source identity, exact byte length,
-target kind, `[start,end)` range, and target-specific Search observation without
-a v3 compatibility seam. No `0.2.0`
+and wire. Phases 3–5 implement SHA-256 source identity, exact byte length,
+target kind, `[start,end)` range, target-specific Search observation, and direct
+View/Check consumption without a v3 compatibility seam. No `0.2.0`
 artifact or publication exists. The tracking plan is
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 
@@ -15,10 +15,10 @@ artifact or publication exists. The tracking plan is
 | Letter | Word | Current status |
 | --- | --- | --- |
 | S | Search | Rust implementation with one-read target-specific v4 projection and exact File lookup. |
-| V | View | Rust implementation with v4 exact-source currentness. |
+| V | View | Rust implementation with direct v4 exact-source/range projection. |
 | P | Pick | Rust implementation over complete v4 values. |
 | A | Anchor | Rust implementation with Runtime-local live continuity. |
-| C | Check | Rust implementation with V1 batch currentness reporting. |
+| C | Check | Rust implementation with v4 hash/length-only batch currentness reporting. |
 | D | Data | Rust implementation with V1 typed caller-owned storage. |
 | E | Edit | V1 values and single-source Apply Runtime implementation. |
 | unassigned | Apply | V1 public authority and Runtime implementation complete. |
@@ -114,7 +114,7 @@ acceptance remains transition compatibility only.
 
 ## Unpublished 0.2.0 authority
 
-Current-only does not require historical identity. Phase 4 keeps each
+Current-only does not require historical identity. Phase 5 keeps each
 `CurrentObservation` call-local to one selected source. It contains only the
 current source hash and exact byte length; Search projections separately retain
 only their target-required matcher, boundary, and provisional range state.
@@ -127,8 +127,10 @@ An ordinary v4 Anddress is workspace coordinate, logical path, complete-source
 SHA-256, exact byte length, target kind, and one inclusive-start/exclusive-end
 byte range. Phase 3 implements this value/wire and all current production
 callers. Search computes the hash during the same source read that discovers
-exact ranges. View and Check enforce the hash, length, kind, and range from
-their one-read observations. Apply first enforces the complete source-state
+exact ranges. Ordinary View validates hash and length while capturing the
+caller-provided range from that same one-read observation. Check compares only
+hash and length; kind and range are not currentness evidence. Apply first
+enforces the complete source-state
 precondition, then temporarily resolves the verified range into its existing
 private call-local parser representation. It does not relocate across source
 drift. A changed source invalidates an ordinary Anddress.
@@ -154,6 +156,13 @@ orders the completed results, then drops that source before opening another.
 Exact File Search validates one logical path and observes that admitted regular
 source once under the same safety and text policy before returning its File
 Anddress; it performs no content matching, Line framing, or traversal.
+Ordinary View uses that common observer directly: File captures its returned
+text, Paragraph captures only its range overlap, and Line captures only its
+range before classifying a tail terminator. The same pass keeps only minimal
+Paragraph-boundary state for a Search-issued Line's optional related Paragraph;
+a valid caller-built nonstructural Line still returns exact range bytes and may
+have no related Paragraph. Check groups by coordinate/path, observes each
+eligible source once, and compares each occurrence's hash and length only.
 After a capability call returns, Runtime retains no ordinary observation,
 source, result, snapshot, lease, registry, history, or authenticity state.
 
@@ -202,8 +211,9 @@ identity, or global identity.
 
 Search projects v4 source identity and ranges directly; Pick provides
 `same_file` instead of observation, paragraph, or hierarchy relations; and
-View checks exact source state and range from one current read. There is no
-compatibility decoder, migration, alias, or parallel schema. The algebra
+View checks exact source state and captures the caller range from one current
+read. Check currentness uses only that source state's hash and length. There is
+no compatibility decoder, migration, alias, or parallel schema. The algebra
 creates no continuity or historical-identity claim.
 
 ## Anchor

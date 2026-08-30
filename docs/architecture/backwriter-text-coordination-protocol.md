@@ -3,8 +3,8 @@
 Status: normative current-only Core/Runtime contract. The closed public `0.1.0`
 release remains immutable v3 evidence. Current unpublished `0.2.0` source uses
 the hard-cutover v4 value/wire and all production callers. The call-local
-target-specific Search observation is complete; direct consumer fast paths
-remain Phase 5–6 work.
+target-specific Search observation and direct ordinary View/Check consumers are
+complete; Apply/Anchor consumer cutover remains Phase 6 work.
 
 ## Unpublished 0.2.0 current-observation authority
 
@@ -41,23 +41,26 @@ selects the target, records exact byte ranges, and computes the source hash in
 the same pass. A separate hash pass is forbidden. Every returned ordinary v4
 Anddress carries the resulting hash, byte length, kind, and exact range.
 
-View consumes one ordinary Anddress. Phase 3 validates the current source hash,
-length, kind, and range during its existing one-read structural scan; it never
-relocates a stale target. Check compares the source state and exact structural
-range without searching. Apply accepts the hash as its source-state
+View consumes one ordinary Anddress. It validates the current source hash and
+length while capturing the caller-provided range during one direct observation;
+it never relocates or structurally revalidates a target. Check compares only
+source hash and exact length without searching or parsing target structure.
+Apply accepts the hash as its source-state
 precondition, validates the recorded range, and only then maps the verified
 target to its existing private call-local parser representation. That temporary
-ordinal/text representation is not identity, wire, or retained state. Direct
-bounded-range consumer paths remain Phase 5–6 work. A mismatch fails closed
-before publication.
+ordinal/text representation is not identity, wire, or retained state. Removing
+that Apply/Anchor execution indirection remains Phase 6 work. A mismatch fails
+closed before publication.
 
 `CurrentObservation` is Runtime-private call-local producer state for one
 selected source. It contains only the current source hash and exact byte length.
 Search owns its separate target-required matcher, boundary, and provisional
-range state. On success those values are consumed immediately into v4 source
-identity and results; on text, I/O, or resource failure they are discarded
-without publication. Runtime stores none of them in `WorkspaceRuntime`, wire,
-or Anchor and retains none across sources or calls. No observation may retain a
+range state. Ordinary View owns only its returned-range buffer and optional
+Line relation state; Check needs no target projection. On success each
+capability consumes its call-local state immediately; on text, I/O, or resource
+failure it is discarded without publication. Runtime stores none of it in
+`WorkspaceRuntime`, wire, or Anchor and retains none across sources or calls.
+No observation may retain a
 prior observation, whole source, parse tree, complete Line collection, Search
 result, history, persistent index, relocation context, context-matching
 evidence, or full workspace cache. It is neither an ordinary Anddress field nor
@@ -150,7 +153,8 @@ returned target. Search may retain its public result and call-local range
 projection state; deterministic byte-order directory-name materialization
 remains in scope for now. The shared chunk observer reads retained source
 through its fixed input scratch array; target-specific Search projections and
-the retained consumer framer receive those validated chunks. Apply separately
+direct ordinary View/Check consumers receive those validated chunks. The
+retained Anchor/Apply framer receives them only on those paths. Apply separately
 owns an equally sized fixed output batch. It writes the
 accepted before observation to one same-parent staging entry, then writes each
 flushed source batch and replacement or required semantic slice to one
@@ -171,13 +175,14 @@ no-follow handle with a fixed scratch buffer, incrementally hashes and validates
 the same bytes, and retains no complete source. Search consumes those chunks
 directly through target-specific projections and does not use the generic
 `SourceEvent` path. Search shares one immutable source identity across results
-from the same source and copies no Line text into Anddress. The retained event
-framer remains an actual View, Check, and Apply consumer path pending Phases 5–6:
-View accumulates only its returned text and minimum transitional candidate
-bytes, Anchor shares exact-target evidence with its selected binding
-observation, and Apply reuses the framer for source-state/range proof, its
-private call-local parser, and prospective-after parsing. This direction adds
-no public stream
+from the same source and copies no Line text into Anddress. Ordinary View
+captures only its returned range and minimal optional Line relation state;
+Check consumes only the completed hash and length. Neither uses `SourceEvent`.
+The retained event framer remains an actual Anchor creation, anchored View, and
+Apply consumer pending Phase 6: Anchor shares exact-target evidence with its
+selected binding observation, and Apply reuses the framer for
+source-state/range proof, its private call-local parser, and prospective-after
+parsing. This direction adds no public stream
 API, spill, mmap, cache, async work,
 worker, directory traversal change, dependency, or Runtime/Anddress split.
 
@@ -370,7 +375,7 @@ View first performs source-less v4 validation before any I/O. It preserves the
 existing `UnsupportedVersion`, `InvalidInput`, and `Unavailable` errors and the
 existing `ViewOutcome` shape. Unsupported version or invalid source-less v4
 input returns the corresponding first two errors. After that validation, every
-coordinate, admission, open, read, UTF-8/NUL, source-state, structural-range,
+coordinate, admission, open, read, UTF-8/NUL, source-state, range-text,
 or resource failure returns `Unavailable`. View adds no public evidence,
 registry, cache, retry, second read, error, or type.
 
@@ -380,17 +385,20 @@ match and whose range is `[0,length)`. Admission is not raw equality: another
 Runtime with the same workspace coordinate may use the same value whenever it
 currently admits that path and observes the exact same source state.
 
-A Paragraph or Line is current only when the complete source identity matches
-and the recorded range is exactly a current Paragraph or Line range. Phase 3
-uses the shared structural scanner for that proof; it never searches for equal
-text at another range.
+A Paragraph or Line is current when the complete source hash and byte length
+match. The validated caller range is then copied directly from the same
+observation; kind and structural range membership are not separate currentness
+evidence. If the range cuts a UTF-8 scalar and cannot form its public text,
+View returns `Unavailable`.
 
 For a successful Paragraph, the returned File is constructed with the same v4
 source identity from the one-read observation. For a successful Line, its
-returned File and optional Paragraph share that same identity; a
-separator Line has no Paragraph. Re-establishing an identical tuple makes only
-a current lookup succeed. It makes no continuity, authenticity, survivor, or
-historical-identity claim.
+returned File shares that identity. The same pass may project an optional
+related Paragraph only when the caller range is exactly one current text Line;
+a separator or caller-built nonstructural Line has no Paragraph. This relation
+does not affect range acceptance or currentness. Re-establishing an identical
+tuple makes only a current lookup succeed. It makes no continuity,
+authenticity, survivor, or historical-identity claim.
 
 ## Implemented 0.1.0 Check V1 Runtime authority
 
@@ -470,9 +478,9 @@ Check preserves `Current` and `Unavailable` occurrences, excluding only
 `NotCurrent`. Report counts, removed occurrences, and unavailable occurrences
 are occurrence-based and preserve their original order and multiplicity.
 `NotCurrent` means a coordinate mismatch; a confirmed unadmitted, missing,
-nonregular, or symlink source; a complete-source hash/length mismatch; or a
-Paragraph or Line range/kind mismatch in an otherwise normal source. Transient
-I/O or resource failure, or UTF-8/NUL
+nonregular, or symlink source; or a complete-source hash/length mismatch. Kind
+and range are not Check currentness evidence. Transient I/O or resource failure,
+or UTF-8/NUL
 classification failure, is `Unavailable` and is never automatically excluded.
 Every occurrence completes source-less validation in input order before I/O.
 Any failure returns `UnsupportedVersion` or `InvalidInput` without a partial
@@ -483,10 +491,11 @@ hold.
 
 For each call, only a group at the current Runtime coordinate and an admitted
 logical path that needs source observation uses at most one retained read. For
-normal observed bytes, a group uses one private incremental forward scanner pass
-only when a locator needs adjudication. A coordinate mismatch or confirmed
+normal observed bytes, a group uses one private incremental forward observation
+to compute hash and exact length only. A coordinate mismatch or confirmed
 unadmitted, missing, nonregular, or symlink source requires neither read nor
-parse. Check has no snapshot, retry, or second read. It does not re-evaluate
+parse. Check performs no target-kind branch or structural parse and has no
+snapshot, retry, or second read. It does not re-evaluate
 Search or Pick, refresh View, retarget, create an Anddress, mutate Anchor or
 Workspace state, or otherwise mutate Core state. It introduces no `CheckInput`,
 request, builder, disposition enum, public trait, state, or store. Anchedress

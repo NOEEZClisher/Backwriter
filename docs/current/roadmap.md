@@ -1,6 +1,6 @@
 # Backwriter Roadmap
 
-## Next: Phase 5 direct View and Check consumers
+## Next: Phase 6 direct Apply and Anchor consumers
 
 The closed public `0.1.0` release remains immutable v3 evidence. `0.2.0` is an
 unpublished local source-development line governed by
@@ -10,15 +10,17 @@ Phases 1 and 2 recorded semantic authority and reproducible v3 evidence. Phase
 are v4, Search computes SHA-256 and ranges in its one read, every current caller
 accepts v4, and v3 is rejected without a compatibility seam. Phase 4 is also
 complete: Search uses one call-local observation and target-specific projection
-without its former generic per-byte event path. Phase 5 is next; no direct
-View/Check consumer fast path, Phase 7 benchmark result, artifact, or release is
-complete.
+without its former generic per-byte event path. Phase 5 is complete: ordinary
+View and Check now consume the common hash/length observation directly without
+structural currentness replay. Phase 6 is next; no direct Apply/Anchor consumer
+cutover, Phase 7 benchmark result, artifact, or release is complete.
 
 The target replaces ordinal/exact-text identity with an ordinary Anddress that
 authorizes one exact source state and byte range: workspace coordinate, logical
 path, source-state hash, exact byte length, kind, and `[start, end)`. Search is
 the only target finder and computes the hash during its discovery read. View
-uses hash plus bounded range, Check compares the hash, and Apply requires that
+validates hash and length while capturing its bounded range, Check compares
+only hash and length, and Apply requires that
 hash before patching the recorded range. These consumers never search or
 relocate an old target. A narrow call-local `CurrentObservation` contains only
 the current hash and length; Search owns any target-required provisional ranges
@@ -29,6 +31,24 @@ Backwriter-owned Apply.
 History, a persistent index, context matching, external-change relocation, and
 a full workspace cache remain excluded. SHA-256 and the v4 hard cutover are
 closed Owner decisions implemented in Phase 3.
+
+## Completed: Phase 5 direct View and Check consumers
+
+Ordinary View now performs one retained no-follow forward observation through
+the common fixed-scratch UTF-8/NUL/hash/length reader. File retains only its
+returned text, Paragraph retains only overlapping range bytes, and Line retains
+only its range bytes plus minimal Paragraph-boundary state for the optional
+relation of an exact current Line. The relation is output projection, not
+currentness: caller-built valid nonstructural ranges return their exact UTF-8
+bytes, and a nonstructural Line may have no related Paragraph.
+
+Check retains coordinate/path grouping, original occurrence status, filtering,
+reporting, order, and multiplicity, but each eligible source group now uses one
+common observation and compares only SHA-256 and exact length. Kind and range
+are not Check currentness evidence. Ordinary View and Check no longer consume
+the generic event scanner or target tracker. Anchor creation and anchored View
+still consume the tracker, while Apply still consumes the framer/parser; those
+are Phase 6 work.
 
 ## Completed: Phase 4 target-specific Search observation
 

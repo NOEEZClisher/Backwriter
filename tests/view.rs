@@ -236,7 +236,41 @@ fn every_target_is_bound_to_the_complete_source_state() {
 }
 
 #[test]
-fn view_rejects_missing_ranges_invalid_text_wrong_coordinate_and_nonregular_sources() {
+fn view_discards_same_length_inside_and_outside_mutations_truncation_and_growth() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source = b"one\ntwo\nthree";
+    fs::write(root.join("note.txt"), source).unwrap();
+    let workspace = runtime(&root);
+    let input = address(
+        coordinate(&workspace),
+        "note.txt",
+        source,
+        AnddressTarget::Line,
+        4,
+        8,
+    );
+
+    for changed in [
+        b"one\nTWO\nthree".as_slice(),
+        b"ONE\ntwo\nthree".as_slice(),
+        b"one\ntwo".as_slice(),
+        b"one\ntwo\nthree!".as_slice(),
+    ] {
+        fs::write(root.join("note.txt"), changed).unwrap();
+        assert_eq!(workspace.view(&input), Err(ViewError::Unavailable));
+    }
+
+    fs::write(root.join("note.txt"), source).unwrap();
+    assert!(matches!(
+        workspace.view(&input),
+        Ok(ViewOutcome::Line { content, .. }) if content == "two"
+    ));
+}
+
+#[test]
+fn view_accepts_raw_empty_range_and_rejects_invalid_text_wrong_coordinate_and_nonregular_sources() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
@@ -244,7 +278,7 @@ fn view_rejects_missing_ranges_invalid_text_wrong_coordinate_and_nonregular_sour
     fs::create_dir(root.join("directory")).unwrap();
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
-    assert_eq!(
+    assert!(matches!(
         workspace.view(&address(
             coordinate.clone(),
             "note.txt",
@@ -253,8 +287,13 @@ fn view_rejects_missing_ranges_invalid_text_wrong_coordinate_and_nonregular_sour
             1,
             1,
         )),
-        Err(ViewError::Unavailable)
-    );
+        Ok(ViewOutcome::Line {
+            content,
+            terminator: LineTerminator::None,
+            paragraph: None,
+            ..
+        }) if content.is_empty()
+    ));
     assert_eq!(
         workspace.view(&address(
             "b".repeat(64),
@@ -316,7 +355,7 @@ fn view_rejects_missing_ranges_invalid_text_wrong_coordinate_and_nonregular_sour
 }
 
 #[test]
-fn separator_line_has_no_paragraph_and_range_mismatch_is_unavailable() {
+fn separator_line_has_no_paragraph_and_raw_paragraph_range_is_exact() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
@@ -325,7 +364,7 @@ fn separator_line_has_no_paragraph_and_range_mismatch_is_unavailable() {
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
 
-    assert_eq!(
+    assert!(matches!(
         workspace.view(&address(
             coordinate.clone(),
             "note.txt",
@@ -334,8 +373,8 @@ fn separator_line_has_no_paragraph_and_range_mismatch_is_unavailable() {
             1,
             1,
         )),
-        Err(ViewError::Unavailable)
-    );
+        Ok(ViewOutcome::Paragraph { text, .. }) if text.is_empty()
+    ));
     let ViewOutcome::Line { paragraph, .. } = workspace
         .view(&address(
             coordinate,
@@ -350,6 +389,96 @@ fn separator_line_has_no_paragraph_and_range_mismatch_is_unavailable() {
         panic!("separator")
     };
     assert!(paragraph.is_none());
+}
+
+#[test]
+fn raw_nonstructural_ranges_return_exact_bytes_without_asserting_relations() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source = "zero\none\r\ntwo".as_bytes();
+    fs::write(root.join("note.txt"), source).unwrap();
+    let workspace = runtime(&root);
+    let coordinate = coordinate(&workspace);
+
+    assert!(matches!(
+        workspace.view(&address(
+            coordinate.clone(),
+            "note.txt",
+            source,
+            AnddressTarget::Paragraph,
+            2,
+            10,
+        )),
+        Ok(ViewOutcome::Paragraph { text, .. }) if text == "ro\none\r\n"
+    ));
+    assert!(matches!(
+        workspace.view(&address(
+            coordinate.clone(),
+            "note.txt",
+            source,
+            AnddressTarget::Line,
+            2,
+            10,
+        )),
+        Ok(ViewOutcome::Line {
+            content,
+            terminator: LineTerminator::Crlf,
+            paragraph: None,
+            ..
+        }) if content == "ro\none"
+    ));
+
+    let unicode = "aéz".as_bytes();
+    fs::write(root.join("note.txt"), unicode).unwrap();
+    for target in [AnddressTarget::Paragraph, AnddressTarget::Line] {
+        assert_eq!(
+            workspace.view(&address(
+                coordinate.clone(),
+                "note.txt",
+                unicode,
+                target,
+                2,
+                3,
+            )),
+            Err(ViewError::Unavailable)
+        );
+    }
+}
+
+#[test]
+fn view_preserves_ranges_at_every_source_scratch_boundary() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("coordinate.txt"), b"one").unwrap();
+    let workspace = runtime(&root);
+    let coordinate = coordinate(&workspace);
+
+    for boundary in [8_191, 8_192, 8_193] {
+        let mut source = vec![b'x'; boundary];
+        source.extend_from_slice("é".as_bytes());
+        source.extend_from_slice(b"\r\ntail");
+        fs::write(root.join("note.txt"), &source).unwrap();
+        let end = boundary + "é".len() + 2;
+        let input = address(
+            coordinate.clone(),
+            "note.txt",
+            &source,
+            AnddressTarget::Line,
+            0,
+            end,
+        );
+        assert!(matches!(
+            workspace.view(&input),
+            Ok(ViewOutcome::Line {
+                content,
+                terminator: LineTerminator::Crlf,
+                paragraph: Some(_),
+                ..
+            }) if content == format!("{}é", "x".repeat(boundary))
+        ));
+    }
 }
 
 #[test]
