@@ -223,7 +223,7 @@ fn raw_anchor_tracks_large_file_and_paragraph_without_view_capture() {
 }
 
 #[test]
-fn raw_anchor_uses_tracker_only_observation() {
+fn anchor_uses_direct_target_projection_without_view_capture() {
     let source = include_str!("../src/runtime/anchor.rs");
     let raw_anchor = source
         .split_once("pub(super) fn anchor")
@@ -644,7 +644,7 @@ fn copy_source_member_rebinds_a_joined_terminal_line_exactly() {
 }
 
 #[test]
-fn copy_source_member_rebinds_across_after_planner_source_batch_boundaries() {
+fn copy_source_member_rebinds_across_after_projector_chunk_boundaries() {
     for length in [8_191_usize, 8_192, 8_193] {
         let fixture = tempdir().unwrap();
         let body = format!("one{}", "x".repeat(length - 3));
@@ -1330,6 +1330,57 @@ fn apply_noop_leaves_live_anchor_continuity_unchanged() {
 }
 
 #[test]
+fn zero_range_apply_noops_preserve_live_anchor_continuity() {
+    let fixture = tempdir().unwrap();
+    let source = b"one\nb\n";
+    fs::write(fixture.path().join("note.txt"), source).unwrap();
+    let mut workspace = runtime(fixture.path());
+    let live = current(
+        &workspace,
+        AnddressTarget::Line {
+            ordinal: Natural::one(),
+            exact_extent: "b\n".to_owned(),
+        },
+    );
+    let handle = match workspace.anchor(&live).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("anchor"),
+    };
+    let raw = support::address(
+        &coordinate(&workspace),
+        "note.txt",
+        source,
+        PublicAnddressTarget::Line,
+        2,
+        2,
+    );
+
+    for edit in [
+        Edit::Delete {
+            target: raw.clone(),
+        },
+        Edit::Copy {
+            target: raw.clone(),
+            position: Position::Before(live.clone()),
+        },
+        Edit::Move {
+            target: raw.clone(),
+            position: Position::After(live.clone()),
+        },
+        Edit::Replace {
+            target: raw,
+            content: String::new(),
+        },
+    ] {
+        workspace.apply(&edit).unwrap();
+        assert_eq!(fs::read(fixture.path().join("note.txt")).unwrap(), source);
+        assert!(
+            matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::Line { content, .. }) if content == "b")
+        );
+    }
+}
+
+#[test]
 fn empty_insert_preserves_live_file_and_line_anchors_after_validation() {
     let fixture = tempdir().unwrap();
     fs::write(fixture.path().join("note.txt"), "one\nb\n").unwrap();
@@ -1551,6 +1602,27 @@ fn raw_view_never_changes_live_anchor_continuity() {
     assert!(matches!(
         workspace.view_anchored(&handle),
         Ok(ViewOutcome::Line { content, .. }) if content == "one"
+    ));
+}
+
+#[test]
+fn anchor_rejects_a_raw_valid_nonstructural_range() {
+    let fixture = tempdir().unwrap();
+    let source = b"one\n";
+    fs::write(fixture.path().join("note.txt"), source).unwrap();
+    let mut workspace = runtime(fixture.path());
+    let raw = support::address(
+        &coordinate(&workspace),
+        "note.txt",
+        source,
+        PublicAnddressTarget::Line,
+        1,
+        2,
+    );
+
+    assert!(matches!(
+        workspace.anchor(&raw),
+        Err(AnchorError::Unavailable)
     ));
 }
 

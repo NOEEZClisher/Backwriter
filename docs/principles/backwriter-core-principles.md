@@ -23,8 +23,8 @@ these principles claim no `0.2.0` artifact or publication.
 5. **Ordinary addresses do not relocate.** A changed source invalidates an
    ordinary Anddress. View, Check, and Apply never search, reparse, or
    context-match to move an old target after external change. Ordinary View and
-   Check do not structurally revalidate ranges; Apply retains only its Phase 6
-   private execution parser after exact source-state proof. Re-search is an
+   Check do not structurally revalidate ranges; Apply patches the exact public
+   range only after exact source-state proof. Re-search is an
    explicit caller choice and returns a new current address.
 6. **Safety remains selective.** Admission, private/unsafe policy, and symlink
    rejection remain capability-relative. `.artext/bw` alone is ignored;
@@ -33,8 +33,8 @@ these principles claim no `0.2.0` artifact or publication.
    read.
 7. **Capability responsibility stays narrow.** View validates source hash and
    length and returns exact caller-range bytes. Check compares only source hash
-   and length. Apply requires the exact source state before its private call-local
-   execution mapping and publication. None is a target finder.
+   and length. Apply requires the exact source state before direct range splice
+   preparation and publication. None is a target finder.
 8. **Pick is pure input selection.** Pick preserves an input-order subsequence
    of valid caller-provided Anddress values without Runtime or Workspace access,
    currentness, relation discovery, or retained result state.
@@ -44,7 +44,8 @@ these principles claim no `0.2.0` artifact or publication.
    persistence, watcher, or generic transition engine.
 10. **Current observation is bounded and ephemeral.** The private
     `CurrentObservation` holds only one selected source's hash and byte length
-    until Search, ordinary View, or Check consumes or discards it. It is not a
+    until the current Search, View, Check, Apply, or Anchor consumer discards
+    it. It is not a
     whole-source buffer, parse tree, complete Line collection, Search result,
     history, persistent index, relocation context, or full workspace cache.
 11. **Search remains all-or-nothing.** Invalid text or actual allocation/I/O

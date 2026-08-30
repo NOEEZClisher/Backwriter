@@ -15,11 +15,11 @@ payload, error model, or adapter behavior.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. Their v4
 direct View source-state/range projection, target-specific Search literal
-projection and exact logical File lookup, Pick predicate semantics, Anchor live
-continuity, and hash/length-only Check batch currentness reporting are
-implemented. Apply V1
+projection and exact logical File lookup, Pick predicate semantics, direct
+Anchor target projection and live continuity, and hash/length-only Check batch
+currentness reporting are implemented. Apply V1
 semantic/public API/error authority and its single-source Edit Runtime
-implementation are complete. Data V1
+implementation uses direct v4 ranges and provenance and is complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
 The closed public `0.1.0` release is the immutable v3 baseline. Current source
@@ -129,11 +129,12 @@ are preserved evidence, never current authority.
   Pick remains pure and stateless over caller-provided Anddress values without
   asserting currentness.
   `WorkspaceRuntime` exposes Search, View, Apply, Check, and anchored Runtime
-  execution seams. Phase 5 retains no ordinary observation, source, result,
+  execution seams. Runtime retains no ordinary observation, source, result,
   snapshot, lease, or authenticity state across calls or selected sources.
   `CurrentObservation` contains only the current hash and exact byte length and
-  is consumed or discarded before Search opens another source or ordinary
-  View/Check returns. Anchor may retain only target-local session continuity.
+  is consumed or discarded before Search opens another source or any View,
+  Check, Apply, or Anchor call returns. Anchor may retain only target-local
+  session continuity.
 - Future spill belongs only to a host-provided system root. This repository does
   not create `.artext`; the exact Runtime-root-relative `.artext/bw` path and
   its descendants are ignored by Backwriter Runtime execution. Other `.artext`
@@ -162,7 +163,7 @@ are preserved evidence, never current authority.
   matching and range state before constructing exact byte ranges. View validates
   source hash and length while capturing the caller range, Check compares only
   source hash and length, and Apply enforces the hash
-  precondition before a range patch;
+  precondition before patching the public v4 range directly;
   none searches, reparses to relocate, context-matches, or retries an old
   target. Any source-state change invalidates an ordinary Anddress. Only Anchor
   may transform a live range arithmetically across a Backwriter-owned Apply.
@@ -171,7 +172,8 @@ are preserved evidence, never current authority.
   independent editor, CLI, and external writes are opaque mutations. Its
   single-source Edit Runtime implementation is complete; it creates no registry, retry,
   watcher, or automatic creation of a new `Anchedress` or `AnchorOutcome`;
-  existing live Anchor continuity is reflected under the Protocol. Check V1
+  existing live Anchor continuity is reflected by direct range/provenance
+  projection under the Protocol. Check V1
   semantic/API/type/report authority and
   Rust implementation are complete; Data V1 semantic/public API/type/error
   authority and Rust implementation are complete; Edit V1 semantic/public

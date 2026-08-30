@@ -1,6 +1,6 @@
 # Backwriter 0.2.0 Anddress Fast Path
 
-Status: Phases 1–5 completed; Phase 6 next; Phases 6–7 pending.
+Status: Phases 1–6 completed; Phase 7 next.
 
 This is the sole progress tracker for the redesign. It records gates and
 evidence but does not own semantics; the active Protocol, address model, and
@@ -372,7 +372,7 @@ versioning, release construction, and publication.
 - [x] Phase 3 — v4 value and wire kernel (completed 2026-08-30)
 - [x] Phase 4 — Search producer and `CurrentObservation` (completed 2026-08-30)
 - [x] Phase 5 — View and Check consumers (completed 2026-08-30)
-- [ ] Phase 6 — Apply and Anchor cutover
+- [x] Phase 6 — Apply and Anchor cutover (completed 2026-08-30)
 - [ ] Phase 7 — integrated verification and release decision
 
 Evidence:
@@ -420,5 +420,15 @@ Evidence:
   tracker; Anchor creation/anchored View and Apply retain their Phase 6
   consumers. All 200 GNU-host tests and every offline/locked Phase 5 gate pass.
   No benchmark or release claim is made.
-- Phases 6–7: pending. Phase 6 next removes the remaining Apply/Anchor consumer
-  indirection while preserving public behavior.
+- Phase 6: Apply now stages one accepted source observation and patches public
+  v4 ranges directly with fixed-chunk readback. Direct after projection keeps
+  only exact structural candidates and provenance markers for Anchor
+  reflection. Anchor creation uses direct target projection and anchored View
+  reuses direct View capture. The private ordinal/text mapper, resolver,
+  extractor, target tracker, and generic event framer are removed. Raw-valid
+  nonstructural Apply ranges and direct no-ops are covered; raw-valid
+  nonstructural Anchor creation remains unavailable. The full GNU-host suite
+  and every offline/locked Phase 6 gate pass. No benchmark or release claim is
+  made.
+- Phase 7: pending integrated verification, benchmark comparison, and release
+  decision.

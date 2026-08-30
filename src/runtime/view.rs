@@ -2,14 +2,12 @@
 
 use std::io::Read;
 
-use crate::backwriter::anddress::{
-    Anddress, AnddressTarget, LineBodyClass, LineTerminator, construct_anddress,
-};
+use crate::backwriter::anddress::{Anddress, AnddressTarget, LineTerminator, construct_anddress};
 use crate::backwriter::view::{ViewError, ViewOutcome, validate_input};
 
 use super::{
     WorkspaceRuntime, is_backwriter_spill,
-    source_scan::{ExactTargetTracker, SourceEvent, SourceScanError, observe_source, scan_source},
+    source_scan::{SourceScanError, TargetProjection, observe_source},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -30,25 +28,22 @@ pub(super) fn observe_anchored(
     capture_focus: Option<usize>,
 ) -> Result<AnchoredObservation, ObservationError> {
     let indexes = indices(inputs.len())?;
-    let mut tracker = ExactTargetTracker::new(inputs, &indexes).map_err(map_scan_error)?;
-    let mut capture = capture_focus
-        .map(|focus| AnchoredViewCapture::new(&inputs[focus]))
-        .transpose()
-        .map_err(map_scan_error)?;
-    let state = scan_source(reader, |event| {
+    let mut targets = TargetProjection::new(inputs, &indexes).map_err(map_scan_error)?;
+    let mut capture = capture_focus.map(|focus| DirectViewProjection::new(&inputs[focus]));
+    let state = observe_source(reader, |bytes, chunk_start| {
         if let Some(capture) = capture.as_mut() {
-            capture.consume(event)?;
+            capture.push(bytes, chunk_start)?;
         }
-        tracker.consume(event)
+        targets.push(bytes, chunk_start)
     })
     .map_err(map_scan_error)?;
-    tracker.finish(&state);
-    let current = tracker.into_current();
+    targets.finish(&state);
+    let current = targets.into_current();
     let outcome = if capture_focus.is_some_and(|focus| current[focus]) {
         Some(
             capture
                 .expect("capture focus creates a View capture")
-                .finish()
+                .finish(state.byte_length)
                 .map_err(map_scan_error)?,
         )
     } else {
@@ -75,7 +70,7 @@ pub(super) fn execute(
         .ok_or(ViewError::Unavailable)
 }
 
-fn observe_direct(
+pub(super) fn observe_direct(
     reader: &mut impl Read,
     input: &Anddress,
 ) -> Result<Option<ViewOutcome>, SourceScanError> {
@@ -291,144 +286,6 @@ fn map_scan_error(error: SourceScanError) -> ObservationError {
     }
 }
 
-struct AnchoredViewCapture<'a> {
-    input: &'a Anddress,
-    file: Vec<u8>,
-    paragraph: Vec<u8>,
-    current_line: Vec<u8>,
-    line_selected: bool,
-    paragraph_candidate: bool,
-    line_paragraph: Option<(usize, usize)>,
-    paragraph_start: usize,
-    paragraph_end: usize,
-    selected_line_in_paragraph: bool,
-    in_paragraph: bool,
-}
-
-impl<'a> AnchoredViewCapture<'a> {
-    fn new(input: &'a Anddress) -> Result<Self, SourceScanError> {
-        Ok(Self {
-            input,
-            file: Vec::new(),
-            paragraph: Vec::new(),
-            current_line: Vec::new(),
-            line_selected: false,
-            paragraph_candidate: false,
-            line_paragraph: None,
-            paragraph_start: 0,
-            paragraph_end: 0,
-            selected_line_in_paragraph: false,
-            in_paragraph: false,
-        })
-    }
-
-    fn consume(&mut self, event: SourceEvent) -> Result<(), SourceScanError> {
-        match event {
-            SourceEvent::StartLine { byte_start, .. } => {
-                self.start_line(byte_start);
-                Ok(())
-            }
-            SourceEvent::Byte { byte, content } => self.push_byte(byte, content),
-            SourceEvent::EndLine {
-                byte_start,
-                byte_end,
-                body_class,
-                ..
-            } => self.finish_line(byte_start, byte_end, body_class),
-        }
-    }
-
-    fn start_line(&mut self, byte_start: usize) {
-        if self.input.target() == AnddressTarget::Paragraph
-            || (self.input.target() == AnddressTarget::Line
-                && byte_start == self.input.byte_start())
-        {
-            self.current_line.clear();
-        }
-        self.paragraph_candidate = self.input.target() == AnddressTarget::Paragraph
-            && byte_start >= self.input.byte_start()
-            && byte_start < self.input.byte_end();
-        self.line_selected =
-            self.input.target() == AnddressTarget::Line && byte_start == self.input.byte_start();
-        if self.line_selected {
-            self.line_paragraph = None;
-            self.selected_line_in_paragraph = false;
-        }
-    }
-
-    fn push_byte(&mut self, byte: u8, _content: bool) -> Result<(), SourceScanError> {
-        if self.input.target() == AnddressTarget::File {
-            push_byte(&mut self.file, byte)?;
-        }
-        if self.paragraph_candidate {
-            push_byte(&mut self.current_line, byte)?;
-        }
-        if self.line_selected {
-            push_byte(&mut self.current_line, byte)?;
-        }
-        Ok(())
-    }
-
-    fn finish_line(
-        &mut self,
-        byte_start: usize,
-        byte_end: usize,
-        body_class: LineBodyClass,
-    ) -> Result<(), SourceScanError> {
-        if body_class == LineBodyClass::Text {
-            if self.paragraph_candidate {
-                append(&mut self.paragraph, &self.current_line)?;
-            }
-            if !self.in_paragraph {
-                self.paragraph_start = byte_start;
-                self.in_paragraph = true;
-            }
-            self.paragraph_end = byte_end;
-            self.selected_line_in_paragraph |= self.line_selected;
-        } else if self.in_paragraph {
-            self.finish_paragraph();
-        }
-        Ok(())
-    }
-
-    fn finish(mut self) -> Result<ViewOutcome, SourceScanError> {
-        self.finish_paragraph();
-        match self.input.target() {
-            AnddressTarget::File => Ok(ViewOutcome::File {
-                text: String::from_utf8(self.file).map_err(|_| SourceScanError::InvalidSource)?,
-            }),
-            AnddressTarget::Paragraph => Ok(ViewOutcome::Paragraph {
-                text: String::from_utf8(self.paragraph)
-                    .map_err(|_| SourceScanError::InvalidSource)?,
-                file: file_address(self.input)?,
-            }),
-            AnddressTarget::Line => {
-                let (content, terminator) = line_parts(self.current_line)?;
-                Ok(ViewOutcome::Line {
-                    content,
-                    terminator,
-                    file: file_address(self.input)?,
-                    paragraph: self
-                        .line_paragraph
-                        .map(|(start, end)| paragraph_address(self.input, start, end))
-                        .transpose()?,
-                })
-            }
-        }
-    }
-
-    fn finish_paragraph(&mut self) {
-        if !self.in_paragraph {
-            return;
-        }
-        if self.selected_line_in_paragraph {
-            self.line_paragraph = Some((self.paragraph_start, self.paragraph_end));
-        }
-        self.in_paragraph = false;
-        self.selected_line_in_paragraph = false;
-    }
-}
-
 fn line_parts(mut line_bytes: Vec<u8>) -> Result<(String, LineTerminator), SourceScanError> {
     let (length, terminator) = if line_bytes.ends_with(b"\r\n") {
         (line_bytes.len() - 2, LineTerminator::Crlf)
@@ -443,14 +300,6 @@ fn line_parts(mut line_bytes: Vec<u8>) -> Result<(String, LineTerminator), Sourc
     String::from_utf8(line_bytes)
         .map(|content| (content, terminator))
         .map_err(|_| SourceScanError::InvalidSource)
-}
-
-fn push_byte(output: &mut Vec<u8>, byte: u8) -> Result<(), SourceScanError> {
-    output
-        .try_reserve(1)
-        .map_err(|_| SourceScanError::Resource)?;
-    output.push(byte);
-    Ok(())
 }
 
 fn append(output: &mut Vec<u8>, bytes: &[u8]) -> Result<(), SourceScanError> {
@@ -606,13 +455,7 @@ mod tests {
             .split("#[cfg(test)]")
             .next()
             .unwrap();
-        let direct = production
-            .split("fn observe_direct")
-            .nth(1)
-            .unwrap()
-            .split("struct AnchoredViewCapture")
-            .next()
-            .unwrap();
+        let direct = production.split("fn observe_direct").nth(1).unwrap();
         for forbidden in ["scan_source(", "SourceEvent", "ExactTargetTracker"] {
             assert!(!direct.contains(forbidden));
         }
@@ -625,8 +468,10 @@ mod tests {
             .split("pub(super) fn execute")
             .next()
             .unwrap();
-        assert!(anchored.contains("ExactTargetTracker"));
-        assert!(anchored.contains("scan_source("));
+        assert!(anchored.contains("TargetProjection"));
+        assert!(anchored.contains("observe_source("));
+        assert!(anchored.contains("targets.push("));
+        assert!(!anchored.contains("scan_source("));
     }
 
     #[test]
@@ -685,7 +530,7 @@ mod tests {
     }
 
     #[test]
-    fn tracker_only_observation_leaves_view_outcome_absent() {
+    fn target_only_observation_leaves_view_outcome_absent() {
         let inputs = [
             address(b"one\n", AnddressTarget::File, 0, 4),
             address(b"one\n", AnddressTarget::Paragraph, 0, 4),
@@ -705,7 +550,7 @@ mod tests {
     }
 
     #[test]
-    fn tracker_only_observation_keeps_late_source_errors() {
+    fn target_only_observation_keeps_late_source_errors() {
         let inputs = [address(b"one\n", AnddressTarget::File, 0, 4)];
         for (bytes, fail_at, expected) in [
             (

@@ -1,13 +1,14 @@
 # Verification
 
-## 0.2.0 Phase 5 verification boundary
+## 0.2.0 Phase 6 verification boundary
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current
 unpublished `0.2.0` Rust, Cargo, CLI, and tests use only Anddress v4. Phase 3
 implements the SHA-256 source-state/value/wire kernel and hard-cutover decoding.
 Phase 4 implements one-read target-specific Search observation. Phase 5 makes
-ordinary View and Check direct consumers of the same hash/length observer,
-without structural currentness replay. Their phase gates, the historical v3
+ordinary View and Check direct consumers of the same hash/length observer.
+Phase 6 makes Apply and Anchor direct v4 range/provenance consumers and removes
+the last legacy locator/parser and generic event-framer path. Their phase gates, the historical v3
 drift reproduction, fixtures, raw samples, and profile results are tracked in
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 That task tracks progress only; the Protocol, address model, and principles own
@@ -19,9 +20,9 @@ hash, length, kind, and range equality; strict malformed/duplicate/missing/
 unknown/wrong-type handling; well-formed v3 `UnsupportedVersion`; shared private
 source identity across same-source results; one-read hash/range Search; v4
 human/JSON/Session round trips; and full existing capability regressions. The
-canonical duplicate-Line drift fixture must return `Unavailable` without
-publication. Phase 6 must later remove the remaining Apply/Anchor consumer
-indirection without changing those results.
+canonical duplicate-Line drift fixture returns `Unavailable` without
+publication. Phase 6 preserves those results without an Apply/Anchor consumer
+indirection.
 
 Current regressions cover SHA-256 transcript and platform-coordinate KATs,
 strict v4 flat-wire encoding/decoding and error priority, zero/nonzero/maximum
@@ -31,15 +32,17 @@ NUL/invalid UTF-8 source handling, spill boundaries, no-follow symlinks and hard
 links, View exact-source direct range projection and related v4 addresses,
 terminator and Unicode reconstruction, and Pick stable order, multiplicity, target kinds,
 complete-v4-value OneOf, and deep iterative boolean composition. Apply regressions cover Edit validation
-priority, exact File/Paragraph/Line splice geometry, all line terminators,
-Unicode and scratch boundaries, cross-source rejection, no-op publication
-avoidance, and late invalid/incomplete/NUL source closure. They also cover
+priority, exact File/Paragraph/Line and raw-valid range splice geometry, all
+line terminators, Unicode and scratch boundaries, cross-source rejection,
+zero-range and byte-identical no-op publication avoidance, and late
+invalid/incomplete/NUL/read/write closure. They also cover
 same-parent staging cleanup, failed-publication prospective-after cleanup,
 deterministic temporary-name collision preservation, logical-path independence
 for hard links, Unix basic-mode preservation across changed publication,
 unavailable and no-follow sources, and large whitespace Lines without
 unnecessary Paragraph state.
-Anchor regressions cover Runtime-local opaque handles, duplicate anchoring,
+Anchor regressions cover Runtime-local opaque handles, direct structural
+projection and nonstructural-range rejection, duplicate anchoring,
 drop-and-reanchor, foreign handles, stale-input preservation, one-read Apply
 preparation, known-invalid-source and transient-read handling, exact
 direct-target distinctions, unique post-splice target overlap across separators,
@@ -82,38 +85,35 @@ scalar-cut failure, every source-state mutation class, exact-state
 reappearance, and late failure/resource discard. Its minimal Line relation
 state preserves the optional Paragraph only for an exact current text Line.
 Check regressions prove exact hash/length-only comparison while preserving
-unsorted mixed geometry and duplicates. Anchor streaming regressions retain
-tracker-only File/Paragraph observations without a View outcome, selected
-anchored-binding success beside a stale sibling, and exact-path fail-close on
-the selected mismatch. Structural audits keep the forward read loop, SHA-256,
-checked length, and text policy in `source_scan.rs`; exclude ordinary View and
-Check from `SourceEvent`/`scan_source`/`ExactTargetTracker`, second reads,
-persistent observation, and target-kind Check branches; and keep raw Anchor out
-of anchored View capture. The event/framer path remains for Anchor creation,
-anchored View, and Apply until Phase 6. Apply streaming regressions cover its
-single source forward scan, scanner-sized fixed retained-source batches,
-incremental after framer, one rename, and absence of whole-source/after
-materialization. They cover 8,191/8,192/8,193 UTF-8 and CR/LF/CRLF/no-EOL
-source-to-replacement boundaries, Paragraph-input leading-whitespace
-suppression and ending separators, live Paragraph binding beside large leading
-whitespace, terminal removal after three prospective targets, late invalid
-source after a partial batch without publication or a temporary leak, and a
-late injected read failure that drops a partial batch's temporary. They
-also cover after-framer feed and physical-Line marker boundaries, including
-Line Copy from the tracker-verified caller byte range and copied terminal-Line
-rebinding across retained-source batch boundaries. They distinguish absence of
-source-sized complete-Line capture without an eligible live Line candidate from
-selected-Paragraph semantic pending, and preserve a
-File-only live Anchor through a non-no-op File replacement without a relation
-pass, and remove same-path Paragraph/Line Anchors while preserving that File
-Anchor without a File-target relation scan. Structural audits
-exclude source reopen/retry and source-sized complete before/after materialization;
-the private staging entry is the only permitted replay input. Same-kind
-Line/Paragraph source-target Anchor relations currently use a private
-call-local parser mapping after tracker-confirmed v4 ranges
-without a staging relation scan; cross-kind relations retain that scan. Collision
-marking starts only from prospective Rebind left entries while retaining every
-Rebind-to-Rebind pair and multiway disposition.
+unsorted mixed geometry and duplicates. Anchor streaming regressions cover
+direct File/Paragraph/Line projection without a View outcome, raw-valid
+nonstructural rejection, selected anchored-binding success beside a stale
+sibling, and exact-path fail-close on the selected mismatch. Anchored View uses
+the ordinary direct target capture rather than a second parser.
+
+Apply streaming regressions cover one retained no-follow source observation,
+fixed-scratch staging readback, direct public v4 range geometry, incremental
+prospective-after UTF-8/NUL/hash/length validation, one rename, and absence of
+whole-source/after materialization. They cover 8,191/8,192/8,193 UTF-8 and
+CR/LF/CRLF/no-EOL boundaries; exact File/Paragraph/Line and raw ranges; every
+Position and forward/reverse Copy/Move direction; strict interior Move
+rejection; zero-range, empty, boundary, and byte-identical no-ops; duplicate
+Line/Paragraph drift; late source read and staging write failure; temporary
+collision/cleanup; Unix basic mode; and uncertain rename. Source-target
+containment and overlap use only direct before ranges. The after projector
+retains exact same-kind candidates and minimal original/copied/replacement
+provenance, preserving unique rebind while removing split, join, absorption,
+ambiguity, and collision cases. Copy follows only the original occurrence and
+Position contributes geometry, never provenance.
+
+Structural audits keep the forward observer, SHA-256, checked length, and text
+policy in `source_scan.rs`; require one Apply source observation and staging as
+the only readback input; and exclude `Natural`, `DecimalOrdinal`, private Apply
+Anddress/Edit/Position, `LegacyResolver`, `ExactTargetTracker`, `SourceEvent`,
+`SourceFramer`, `scan_source`, target extraction, source reopen/retry,
+persistent observation, and source-sized complete before/after buffers from
+production. Successful Anchor reflection remains allocation-free and
+non-failing after all fallible planning completes.
 
 Edit V1 semantic/public API/type/error authority and inert Rust value
 implementation are complete; the single-source Apply Runtime execution
@@ -122,23 +122,16 @@ Value regressions cover every operation and position target-kind boundary,
 source-less Anddress error mapping and field priority, exact empty/Unicode/CR/
 LF/CRLF content, NUL rejection, and absence of relation or fixed-size
 constraints. They use no filesystem or Runtime. Runtime regressions cover every
-Edit operation and exact position boundary; same-source rejection, strict Move
-interior rejection, late UTF-8/NUL/read failure, explicit staging removal and
-removal-failure closure, Empty Insert direct success after File/Line Anchor
-currentness, Line/Paragraph Move self and adjacent-boundary direct success,
-short-read comparison for Replace and nonidentity Move (File Replace retains its
-initial accepted-source scan and required comparison, but skips probe/final source
-replay; probe-only Line Move uses the tracker-verified caller byte range without
-a target-extraction staging pass;
-final and Paragraph Move retain Extractor provenance), and direct final replay
-for length-changing Insert/Delete/Copy,
-horizontal-whitespace Paragraph separation,
-bounded whitespace pending only for Paragraph candidates, source currentness,
-and prepared live-Anchor reflection for Move and Copy.
-They also cover source-target-only replacement provenance, split removal and
-unique replacement rebinding, Position-only Insert effects, no-EOL and
-terminator Copy behavior, and reverse Move rebinding for source-contained Line
-and Paragraph bindings.
+Edit operation and exact position boundary; same-coordinate/path validation;
+source-state drift; strict Move interior rejection; raw and zero ranges; late
+UTF-8/NUL/read/write failure; staging cleanup; and exact source/Anchor
+preservation for direct no-ops. Changed operations compare fixed staging chunks
+against generated output, validate the result incrementally, prepare direct
+Line/Paragraph candidates, and publish only after the full Anchor plan exists.
+They also cover source-target-only replacement and Move provenance, Copy's
+original-occurrence rule, split removal, unique replacement rebinding,
+Position-only geometry, no-EOL and terminator behavior, and reverse Move for
+source-contained Line and Paragraph bindings.
 Edit still adds no Data
 payload, wire form, or distinct anchored executor/publication path.
 

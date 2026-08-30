@@ -1,4 +1,4 @@
-//! Private forward framing shared by Runtime source observers.
+//! Private one-pass source observation and exact target projection.
 
 use std::io::Read;
 
@@ -20,34 +20,21 @@ pub(crate) struct CurrentObservation {
     pub(crate) byte_length: usize,
 }
 
-#[derive(Clone, Copy)]
-pub(crate) enum SourceEvent {
-    StartLine {
-        byte_start: usize,
-        line_index: usize,
-    },
-    Byte {
-        byte: u8,
-        content: bool,
-    },
-    EndLine {
-        byte_start: usize,
-        byte_end: usize,
-        body_class: LineBodyClass,
-    },
-}
-
 /// Tracks exact current target evidence without retaining source bytes.
-pub(crate) struct ExactTargetTracker<'a> {
+pub(crate) struct TargetProjection<'a> {
     inputs: &'a [Anddress],
     indexes: &'a [usize],
     current: Vec<bool>,
+    line_start: usize,
+    line_started: bool,
+    pending_cr: bool,
+    line_has_text: bool,
     paragraph_start: usize,
     paragraph_end: usize,
     in_paragraph: bool,
 }
 
-impl<'a> ExactTargetTracker<'a> {
+impl<'a> TargetProjection<'a> {
     pub(crate) fn new(
         inputs: &'a [Anddress],
         indexes: &'a [usize],
@@ -61,28 +48,49 @@ impl<'a> ExactTargetTracker<'a> {
             inputs,
             indexes,
             current,
+            line_start: 0,
+            line_started: false,
+            pending_cr: false,
+            line_has_text: false,
             paragraph_start: 0,
             paragraph_end: 0,
             in_paragraph: false,
         })
     }
 
-    pub(crate) fn consume(&mut self, event: SourceEvent) -> Result<(), SourceScanError> {
-        match event {
-            SourceEvent::StartLine { .. } | SourceEvent::Byte { .. } => Ok(()),
-            SourceEvent::EndLine {
-                byte_start,
-                byte_end,
-                body_class,
-                ..
-            } => {
-                self.finish_line(byte_start, byte_end, body_class);
-                Ok(())
+    pub(crate) fn push(&mut self, bytes: &[u8], chunk_start: usize) -> Result<(), SourceScanError> {
+        for (index, &byte) in bytes.iter().enumerate() {
+            let byte_start = chunk_start
+                .checked_add(index)
+                .ok_or(SourceScanError::Resource)?;
+            if self.pending_cr {
+                if byte == b'\n' {
+                    self.finish_direct_line(
+                        byte_start.checked_add(1).ok_or(SourceScanError::Resource)?,
+                    );
+                    continue;
+                }
+                self.finish_direct_line(byte_start);
+            }
+            if !self.line_started {
+                self.line_started = true;
+                self.line_start = byte_start;
+            }
+            match byte {
+                b'\r' => self.pending_cr = true,
+                b'\n' => self.finish_direct_line(
+                    byte_start.checked_add(1).ok_or(SourceScanError::Resource)?,
+                ),
+                _ => self.line_has_text |= !matches!(byte, b' ' | b'\t'),
             }
         }
+        Ok(())
     }
 
     pub(crate) fn finish(&mut self, state: &CurrentObservation) {
+        if self.line_started {
+            self.finish_direct_line(state.byte_length);
+        }
         self.finish_paragraph();
         for &index in self.indexes {
             let input = &self.inputs[index];
@@ -122,6 +130,17 @@ impl<'a> ExactTargetTracker<'a> {
         }
     }
 
+    fn finish_direct_line(&mut self, byte_end: usize) {
+        self.finish_line(
+            self.line_start,
+            byte_end,
+            LineBodyClass::from_has_text(self.line_has_text),
+        );
+        self.line_started = false;
+        self.pending_cr = false;
+        self.line_has_text = false;
+    }
+
     fn finish_paragraph(&mut self) {
         if !self.in_paragraph {
             return;
@@ -139,10 +158,57 @@ impl<'a> ExactTargetTracker<'a> {
     }
 }
 
+impl LineBodyClass {
+    fn from_has_text(has_text: bool) -> Self {
+        if has_text { Self::Text } else { Self::Empty }
+    }
+}
+
 #[derive(Default)]
 struct Utf8Validator {
     incomplete: [u8; 4],
     length: usize,
+}
+
+/// Incremental source-policy and exact-state accumulator shared by retained
+/// source observation and generated Apply output.
+pub(crate) struct ObservationBuilder {
+    utf8: Utf8Validator,
+    hash: Sha256,
+    byte_length: usize,
+}
+
+impl ObservationBuilder {
+    pub(crate) fn new() -> Result<Self, SourceScanError> {
+        Ok(Self {
+            utf8: Utf8Validator::default(),
+            hash: Sha256::new(),
+            byte_length: 0,
+        })
+    }
+
+    pub(crate) fn push(&mut self, bytes: &[u8]) -> Result<usize, SourceScanError> {
+        if !self.utf8.push(bytes) {
+            return Err(SourceScanError::InvalidSource);
+        }
+        let chunk_start = self.byte_length;
+        self.byte_length = self
+            .byte_length
+            .checked_add(bytes.len())
+            .ok_or(SourceScanError::Resource)?;
+        self.hash.update(bytes);
+        Ok(chunk_start)
+    }
+
+    pub(crate) fn finish(self) -> Result<CurrentObservation, SourceScanError> {
+        if !self.utf8.finish() {
+            return Err(SourceScanError::InvalidSource);
+        }
+        Ok(CurrentObservation {
+            hash: self.hash.finish().to_hex(),
+            byte_length: self.byte_length,
+        })
+    }
 }
 
 impl Utf8Validator {
@@ -191,158 +257,6 @@ impl Utf8Validator {
     }
 }
 
-/// One incremental UTF-8/NUL validator and exact-Line framer.  Consumers may
-/// feed generated bytes through the same framing contract as retained source.
-pub(crate) struct SourceFramer {
-    byte_offset: usize,
-    line_start: usize,
-    line_index: usize,
-    line_started: bool,
-    pending_cr: bool,
-    body_class: LineBodyClass,
-    utf8: Utf8Validator,
-}
-
-impl SourceFramer {
-    pub(crate) fn new() -> Result<Self, SourceScanError> {
-        Ok(Self {
-            byte_offset: 0,
-            line_start: 0,
-            line_index: 0,
-            line_started: false,
-            pending_cr: false,
-            body_class: LineBodyClass::Empty,
-            utf8: Utf8Validator::default(),
-        })
-    }
-
-    pub(crate) fn push(
-        &mut self,
-        bytes: &[u8],
-        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
-    ) -> Result<(), SourceScanError> {
-        if !self.utf8.push(bytes) {
-            return Err(SourceScanError::InvalidSource);
-        }
-        self.push_validated(bytes, on_event)
-    }
-
-    fn push_validated(
-        &mut self,
-        bytes: &[u8],
-        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
-    ) -> Result<(), SourceScanError> {
-        for &byte in bytes {
-            if self.pending_cr {
-                if byte == b'\n' {
-                    on_event(SourceEvent::Byte {
-                        byte,
-                        content: false,
-                    })?;
-                    self.advance()?;
-                    self.finish_line(on_event)?;
-                    continue;
-                }
-                self.finish_line(on_event)?;
-            }
-            self.begin_line(on_event)?;
-            match byte {
-                b'\r' => {
-                    on_event(SourceEvent::Byte {
-                        byte,
-                        content: false,
-                    })?;
-                    self.advance()?;
-                    self.pending_cr = true;
-                }
-                b'\n' => {
-                    on_event(SourceEvent::Byte {
-                        byte,
-                        content: false,
-                    })?;
-                    self.advance()?;
-                    self.finish_line(on_event)?;
-                }
-                _ => {
-                    on_event(SourceEvent::Byte {
-                        byte,
-                        content: true,
-                    })?;
-                    self.advance()?;
-                    if !matches!(byte, b' ' | b'\t') {
-                        self.body_class = LineBodyClass::Text;
-                    } else if self.body_class == LineBodyClass::Empty {
-                        self.body_class = LineBodyClass::HorizontalWhitespace;
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-    pub(crate) fn finish(
-        &mut self,
-        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
-    ) -> Result<(), SourceScanError> {
-        if !self.utf8.finish() {
-            return Err(SourceScanError::InvalidSource);
-        }
-        self.finish_validated(on_event)
-    }
-
-    fn finish_validated(
-        &mut self,
-        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
-    ) -> Result<(), SourceScanError> {
-        if self.line_started {
-            self.finish_line(on_event)?;
-        }
-        Ok(())
-    }
-
-    fn begin_line(
-        &mut self,
-        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
-    ) -> Result<(), SourceScanError> {
-        if !self.line_started {
-            self.line_started = true;
-            self.line_start = self.byte_offset;
-            on_event(SourceEvent::StartLine {
-                byte_start: self.line_start,
-                line_index: self.line_index,
-            })?;
-        }
-        Ok(())
-    }
-
-    fn finish_line(
-        &mut self,
-        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
-    ) -> Result<(), SourceScanError> {
-        on_event(SourceEvent::EndLine {
-            byte_start: self.line_start,
-            byte_end: self.byte_offset,
-            body_class: self.body_class,
-        })?;
-        self.line_index = self
-            .line_index
-            .checked_add(1)
-            .ok_or(SourceScanError::Resource)?;
-        self.line_started = false;
-        self.pending_cr = false;
-        self.body_class = LineBodyClass::Empty;
-        Ok(())
-    }
-
-    fn advance(&mut self) -> Result<(), SourceScanError> {
-        self.byte_offset = self
-            .byte_offset
-            .checked_add(1)
-            .ok_or(SourceScanError::Resource)?;
-        Ok(())
-    }
-}
-
 /// Reads one call-local source observation while owning its text policy,
 /// incremental digest, and checked byte length. The consumer sees each chunk
 /// only after it has passed UTF-8 and NUL validation.
@@ -350,45 +264,17 @@ pub(crate) fn observe_source(
     reader: &mut impl Read,
     mut on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
 ) -> Result<CurrentObservation, SourceScanError> {
-    let mut utf8 = Utf8Validator::default();
-    let mut hash = Sha256::new();
-    let mut byte_length = 0_usize;
+    let mut observation = ObservationBuilder::new()?;
     let mut scratch = [0_u8; READ_BUFFER_SIZE];
     loop {
         let count = reader
             .read(&mut scratch)
             .map_err(|_| SourceScanError::Read)?;
         if count == 0 {
-            if !utf8.finish() {
-                return Err(SourceScanError::InvalidSource);
-            }
-            return Ok(CurrentObservation {
-                hash: hash.finish().to_hex(),
-                byte_length,
-            });
+            return observation.finish();
         }
-        let chunk_start = byte_length;
-        byte_length = byte_length
-            .checked_add(count)
-            .ok_or(SourceScanError::Resource)?;
         let bytes = &scratch[..count];
-        if !utf8.push(bytes) {
-            return Err(SourceScanError::InvalidSource);
-        }
-        hash.update(bytes);
+        let chunk_start = observation.push(bytes)?;
         on_chunk(bytes, chunk_start)?;
     }
-}
-
-pub(crate) fn scan_source(
-    reader: &mut impl Read,
-    mut on_event: impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
-) -> Result<CurrentObservation, SourceScanError> {
-    let mut scanner = SourceFramer::new()?;
-    let observation = observe_source(reader, |bytes, _| {
-        scanner.push_validated(bytes, &mut on_event)
-    })?;
-    scanner.finish_validated(&mut on_event)?;
-    debug_assert_eq!(scanner.byte_offset, observation.byte_length);
-    Ok(observation)
 }

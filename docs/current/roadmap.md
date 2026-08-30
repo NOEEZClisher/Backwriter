@@ -1,6 +1,6 @@
 # Backwriter Roadmap
 
-## Next: Phase 6 direct Apply and Anchor consumers
+## Next: Phase 7 integrated verification and release decision
 
 The closed public `0.1.0` release remains immutable v3 evidence. `0.2.0` is an
 unpublished local source-development line governed by
@@ -11,9 +11,10 @@ are v4, Search computes SHA-256 and ranges in its one read, every current caller
 accepts v4, and v3 is rejected without a compatibility seam. Phase 4 is also
 complete: Search uses one call-local observation and target-specific projection
 without its former generic per-byte event path. Phase 5 is complete: ordinary
-View and Check now consume the common hash/length observation directly without
-structural currentness replay. Phase 6 is next; no direct Apply/Anchor consumer
-cutover, Phase 7 benchmark result, artifact, or release is complete.
+View and Check consume the common hash/length observation directly without
+structural currentness replay. Phase 6 is complete: Apply patches direct v4
+ranges from staging and Anchor uses direct structural/provenance projection.
+No Phase 7 benchmark result, artifact, or release is complete.
 
 The target replaces ordinal/exact-text identity with an ordinary Anddress that
 authorizes one exact source state and byte range: workspace coordinate, logical
@@ -25,12 +26,31 @@ hash before patching the recorded range. These consumers never search or
 relocate an old target. A narrow call-local `CurrentObservation` contains only
 the current hash and length; Search owns any target-required provisional ranges
 and consumes or discards all of that source-local state before opening another
-source. Only Anchor may arithmetically transform live ranges across a
-Backwriter-owned Apply.
+source. Only Anchor may carry live continuity across a Backwriter-owned Apply,
+using direct before-range provenance and one unique same-kind after candidate.
 
 History, a persistent index, context matching, external-change relocation, and
 a full workspace cache remain excluded. SHA-256 and the v4 hard cutover are
 closed Owner decisions implemented in Phase 3.
+
+## Completed: Phase 6 direct Apply and Anchor consumers
+
+Apply writes its one accepted no-follow source observation to same-parent
+staging, verifies every operand and same-path live Anchor against that completed
+hash/length state, and applies public v4 `[start,end)` geometry directly. Fixed
+scratch readback of staging is the only before-source replay. Generated output
+is incrementally validated and hashed while a direct prospective-after
+projector retains only exact Line/Paragraph candidates and provenance markers.
+No ordinal, exact-text locator, public-to-private mapper, target extractor, or
+generic source event framer remains in production.
+
+Anchor creation confirms an exact structural File, Paragraph, or Line with the
+shared direct target projection. Anchored View reuses direct View projection.
+After Apply, File continuity follows the new source identity; Paragraph/Line
+continuity requires one same-kind candidate satisfying the existing
+provenance, split/join/absorption, ambiguity, and collision rules. Raw-valid
+nonstructural ranges remain ordinary View/Check/Apply inputs but cannot create
+new Anchors.
 
 ## Completed: Phase 5 direct View and Check consumers
 
@@ -47,8 +67,8 @@ reporting, order, and multiplicity, but each eligible source group now uses one
 common observation and compares only SHA-256 and exact length. Kind and range
 are not Check currentness evidence. Ordinary View and Check no longer consume
 the generic event scanner or target tracker. Anchor creation and anchored View
-still consume the tracker, while Apply still consumes the framer/parser; those
-are Phase 6 work.
+now reuse the same direct target and View projection primitives completed in
+Phase 6.
 
 ## Completed: Phase 4 target-specific Search observation
 
@@ -87,10 +107,9 @@ they do not impose v2 source-wide identity.
 
 The address model owns the exact-source/range algebra and sole v4 wire. Rust
 producers, consumers, CLI round trips, and regressions cut over together
-without a v3 decoder, encoder, migration, alias, or parallel schema. The
-existing Apply parser retains ordinal/text only as a private call-local
-representation after v4 source-state and range verification; Phase 6 removes
-that remaining execution-path indirection.
+without a v3 decoder, encoder, migration, alias, or parallel schema. Apply and
+Anchor consume v4 source-state/range identity directly; no private ordinal/text
+compatibility representation remains.
 
 ## Remaining owner decisions
 

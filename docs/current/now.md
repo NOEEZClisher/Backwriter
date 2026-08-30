@@ -4,9 +4,10 @@
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current Rust,
 Cargo, tests, and CLI use the unpublished `0.2.0` hard-cutover Anddress v4 API
-and wire. Phases 3–5 implement SHA-256 source identity, exact byte length,
-target kind, `[start,end)` range, target-specific Search observation, and direct
-View/Check consumption without a v3 compatibility seam. No `0.2.0`
+and wire. Phases 3–6 implement SHA-256 source identity, exact byte length,
+target kind, `[start,end)` range, target-specific Search observation, direct
+View/Check consumption, and direct Apply/Anchor consumers without a v3
+compatibility seam. No `0.2.0`
 artifact or publication exists. The tracking plan is
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 
@@ -114,7 +115,7 @@ acceptance remains transition compatibility only.
 
 ## Unpublished 0.2.0 authority
 
-Current-only does not require historical identity. Phase 5 keeps each
+Current-only does not require historical identity. Runtime keeps each
 `CurrentObservation` call-local to one selected source. It contains only the
 current source hash and exact byte length; Search projections separately retain
 only their target-required matcher, boundary, and provisional range state.
@@ -129,15 +130,16 @@ byte range. Phase 3 implements this value/wire and all current production
 callers. Search computes the hash during the same source read that discovers
 exact ranges. Ordinary View validates hash and length while capturing the
 caller-provided range from that same one-read observation. Check compares only
-hash and length; kind and range are not currentness evidence. Apply first
-enforces the complete source-state
-precondition, then temporarily resolves the verified range into its existing
-private call-local parser representation. It does not relocate across source
-drift. A changed source invalidates an ordinary Anddress.
+hash and length; kind and range are not currentness evidence. Apply enforces the
+complete source-state precondition, then patches the public v4 range directly
+from fixed-chunk staging. It neither finds nor relocates a target. A changed
+source invalidates an ordinary Anddress.
 
-Anchor remains the sole continuity boundary. Only a live Anchor may undergo an
-arithmetic range transform caused by a Backwriter-owned Apply. External changes
-invalidate rather than relocate ordinary Anddresses or Anchors. The source-hash
+Anchor remains the sole continuity boundary. Anchor creation confirms exact
+File/Paragraph/Line structure by direct target projection. A Backwriter-owned
+Apply reflects a live Anchor only through exact before-range provenance and a
+unique same-kind prospective-after candidate; external changes invalidate
+rather than relocate ordinary Anddresses or Anchors. The source-hash
 algorithm is SHA-256 and the compatibility policy is a hard cutover: production
 has no v3 decoder, encoder, alias, or migration layer.
 

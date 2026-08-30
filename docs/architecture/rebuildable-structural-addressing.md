@@ -42,14 +42,14 @@ hashing current source once. Ordinary View validates hash and length while
 copying the caller range; Check currentness compares only hash and length.
 Neither relocates or structurally revalidates an old target, and a valid
 caller-built nonstructural Paragraph or Line range remains consumable. Apply
-first enforces the exact v4
-source-state/range precondition, then Phase 3 temporarily resolves that verified
-range into its existing private call-local parser representation. This private
-ordinal/text value is neither public identity nor wire or retained state.
+enforces the exact v4 source-state/range precondition and patches that public
+range directly from fixed-chunk staging. It creates no private ordinal/text
+locator or relocation mapping.
 `CurrentObservation` is Runtime-private, call-local hash/length producer state
 for one selected source and is not part of wire or equality.
-Anchor is not an ordinary Anddress; only its live Runtime-local continuity may
-arithmetically transform a range across a Backwriter-owned Apply.
+Anchor is not an ordinary Anddress; creation directly confirms exact current
+structure, and only its live Runtime-local continuity may follow one unique
+same-kind range/provenance candidate across a Backwriter-owned Apply.
 
 The source hash is SHA-256 using the existing incremental implementation. The
 v4 wire version is `artext.backwriter-anddress.v4`. The encoder emits exactly

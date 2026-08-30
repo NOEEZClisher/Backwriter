@@ -3,8 +3,8 @@
 Status: normative current-only Core/Runtime contract. The closed public `0.1.0`
 release remains immutable v3 evidence. Current unpublished `0.2.0` source uses
 the hard-cutover v4 value/wire and all production callers. The call-local
-target-specific Search observation and direct ordinary View/Check consumers are
-complete; Apply/Anchor consumer cutover remains Phase 6 work.
+target-specific Search observation and direct View, Check, Apply, and Anchor
+consumers are complete through Phase 6.
 
 ## Unpublished 0.2.0 current-observation authority
 
@@ -45,12 +45,10 @@ View consumes one ordinary Anddress. It validates the current source hash and
 length while capturing the caller-provided range during one direct observation;
 it never relocates or structurally revalidates a target. Check compares only
 source hash and exact length without searching or parsing target structure.
-Apply accepts the hash as its source-state
-precondition, validates the recorded range, and only then maps the verified
-target to its existing private call-local parser representation. That temporary
-ordinal/text representation is not identity, wire, or retained state. Removing
-that Apply/Anchor execution indirection remains Phase 6 work. A mismatch fails
-closed before publication.
+Apply accepts the hash and length as its source-state precondition, validates
+the recorded public range, and patches that range directly from fixed-chunk
+staging. It creates no private ordinal/text locator, target finder, or
+relocation mapping. A mismatch fails closed before publication.
 
 `CurrentObservation` is Runtime-private call-local producer state for one
 selected source. It contains only the current source hash and exact byte length.
@@ -152,20 +150,17 @@ source-sized, so its permitted working space is a streaming buffer plus its
 returned target. Search may retain its public result and call-local range
 projection state; deterministic byte-order directory-name materialization
 remains in scope for now. The shared chunk observer reads retained source
-through its fixed input scratch array; target-specific Search projections and
-direct ordinary View/Check consumers receive those validated chunks. The
-retained Anchor/Apply framer receives them only on those paths. Apply separately
-owns an equally sized fixed output batch. It writes the
-accepted before observation to one same-parent staging entry, then writes each
-flushed source batch and replacement or required semantic slice to one
-prospective-after temporary through the same incremental framing contract. Its
-auxiliary source state is that output batch plus only the necessary current
-physical-Line/Line disposition and caller/live state; it retains neither a
-separate complete before source nor a complete after source in RAM. Only the
+through its fixed input scratch array; target-specific Search, View, Check, and
+Anchor projections receive those validated chunks. Apply writes the accepted
+before observation to one same-parent staging entry, then reads only fixed
+chunks from staging while splicing the public range into one prospective-after
+temporary. Its auxiliary state is fixed scratch plus prospective-after
+Line/Paragraph candidate ranges and minimal provenance markers; it retains
+neither a separate complete before source nor a complete after source in RAM. Only the
 closed staging entry may be reread; the source handle and prospective-after
 temporary are not reread, sought, or reopened. Runtime-private temporary writing is
 prepublication preparation, and only source-visible replacement is publication.
-Current resolve, resulting UTF-8/NUL validation, after-parse, every Anchor
+Currentness, resulting UTF-8/NUL validation, after projection, every Anchor
 disposition and collision, and every fallible preparation complete before
 publication; successful reflection remains allocation-free and non-failing.
 
@@ -177,12 +172,9 @@ directly through target-specific projections and does not use the generic
 `SourceEvent` path. Search shares one immutable source identity across results
 from the same source and copies no Line text into Anddress. Ordinary View
 captures only its returned range and minimal optional Line relation state;
-Check consumes only the completed hash and length. Neither uses `SourceEvent`.
-The retained event framer remains an actual Anchor creation, anchored View, and
-Apply consumer pending Phase 6: Anchor shares exact-target evidence with its
-selected binding observation, and Apply reuses the framer for
-source-state/range proof, its private call-local parser, and prospective-after
-parsing. This direction adds no public stream
+Check consumes only the completed hash and length. Anchor creation uses direct
+target projection, anchored View reuses the direct View projection, and Apply
+uses no generic `SourceEvent` or framer. This direction adds no public stream
 API, spill, mmap, cache, async work,
 worker, directory traversal change, dependency, or Runtime/Anddress split.
 
@@ -709,8 +701,9 @@ remain deferred.
 Execution validates in this order: `Edit::validate`; equality of the
 `workspace_coordinate` and `logical_path` in every target and position
 Anddress; Runtime coordinate and admission; one retained, complete UTF-8,
-NUL-free source observation; current resolution of every Edit locator and every
-same-path live Anchor; prospective-after construction, after-parse, Anchor
+NUL-free source observation copied to staging; exact source-state equality for
+every Edit operand and same-path live Anchor; direct range geometry;
+prospective-after construction and direct structural/provenance projection; Anchor
 disposition, and every other fallible preparation; then one source-visible
 publication. Cross-source operands, including distinct logical paths to one
 hard-linked object, return `ApplyError::InvalidInput` at this seam without
@@ -748,15 +741,17 @@ interior or boundary destination, including the same target. No operation adds,
 preserves, or normalizes terminators, separators, format, or resulting target
 kind.
 
-After the required source-validity and currentness checks, Empty Insert and a
-classified Move at its start or end boundary remove staging and return `Ok(())`
-without comparison, publication, or Anchor change. Every other potential no-op
+After the required source-validity and currentness checks, Empty Insert,
+zero-range Delete/Copy/Move, empty zero-range Replace, and Move at its start or
+end boundary remove staging and return `Ok(())` without comparison,
+publication, or Anchor change. A nonempty zero-range Replace is insertion.
+Every other potential no-op
 compares its prospective after bytes to the accepted before bytes and returns
 `Ok(())` when they are equal. To prepare reverse Move or Copy within bounded
 RAM and one source read, only `apply` may write accepted before bytes to a
 same-parent, call-local staging entry. After closing it, Apply may reopen,
 reread, or seek staging while assembling a prospective-after temporary and
-preparing its after-parse and Anchor plan. It never rereads, seeks, or reopens
+preparing its direct projection and Anchor plan. It never rereads, seeks, or reopens
 the retained source handle or prospective-after temporary, and no temporary
 other than staging has readback authority. It closes and removes staging before
 publication. The prospective-after temporary remains armed until rename
@@ -775,33 +770,33 @@ for ordinary cleanup. This preserves neither special mode bits, ownership,
 ACLs, xattrs, timestamps, hard-link relationships, nor external-writer
 atomicity.
 
-Every same-path live Anchor must be current before publication. A File binding
-is preserved. Only an Edit source target supplies mutation-before provenance;
-Position supplies splice geometry only. Before prospective-after emission,
-when an Edit has a source target and live Paragraph or Line binding
-source-target relation or Copy membership requires classification, `apply` makes
-one bounded private staging pass. It never derives a relation from Position
-during replay. A fully contained live Paragraph or Line
-binding follows moved source provenance only when after parsing yields exactly
-one same-kind target. A Position-neighbor binding can rebind only from its own
+Every same-path live Anchor must match the accepted source state before
+publication. A File binding is preserved. Only an Edit source target supplies
+mutation-before provenance; Position supplies splice geometry only. Apply
+classifies source-target containment and overlap directly from public v4
+ranges before prospective-after emission; it performs no target-extraction or
+relation scan. A fully contained live Paragraph or Line binding follows moved
+source provenance only when direct after projection yields exactly one
+same-kind target. A Position-neighbor binding can rebind only from its own
 original bytes in the after target. Insert and replacement bytes are mutation
 evidence; Move gives source provenance only to a source-member candidate and
 treats every other candidate as mutation; Copy leaves the source-member
 occurrence neutral and treats every other candidate as mutation. Copy keeps its
 original occurrence and never automatically anchors the copied occurrence.
-Containing or crossing bindings use the exact after-parse candidate rule. Zero
+Containing or crossing bindings use the exact after-projection candidate rule. Zero
 or multiple candidates, split/join, absorption, ambiguity, and collisions remove
 the binding. A known-invalid source or stale same-path binding fail-closes every
 live binding for that path. Read, resource, or definite prepublication failures
 preserve continuity. `PublicationUncertain` fail-closes every same-path live
 binding. Successful reflection is allocation-free and non-failing.
 
-The Rust executor stages the accepted before source once, classifies Move
-geometry from that private entry, directly completes Empty Insert and Move
-start/end no-ops after staging removal, replays every other potential no-op in
-fixed chunks against staged bytes, and publishes only after every fallible
-preparation has completed. Cross- or multi-source execution, Data storage,
-wire, and Adapter forms remain deferred.
+The Rust executor stages the accepted before source once, computes geometry
+from public v4 ranges, completes all direct no-ops after staging removal, and
+assembles every other result in fixed chunks from staging. Generated bytes are
+validated and hashed incrementally while the direct after projector prepares
+Anchor candidates. Publication occurs only after every fallible preparation
+has completed. Cross- or multi-source execution, Data storage, wire, and
+Adapter forms remain deferred.
 
 ## Implemented 0.1.0 Anchor live-continuity authority
 
@@ -822,14 +817,16 @@ continuity; there is no explicit release. It makes no `Send` or `Sync`
 guarantee. Using a handle with another Runtime, or using an invalidated handle,
 returns the consuming capability's `Unavailable` error.
 
-`anchor` first performs source-less validation, then one-read current resolve,
-then live equality. At most one live handle exists for one Runtime and one
-current raw Anddress. An equal live target returns `AlreadyLive` without a
+`anchor` first performs source-less validation, then one retained observation
+with direct exact File/Paragraph/Line target projection, then live equality. A
+raw-valid nonstructural Paragraph or Line is not anchorable. At most one live
+handle exists for one Runtime and one current raw Anddress. An equal live target returns `AlreadyLive` without a
 handle, alias, or reference count. An invalidated or dropped handle does not
 prevent a fresh anchor, and an equal tuple never revives an old handle. Anchor
 has no fixed live-handle cap; a resource failure returns `Unavailable`.
 
-`view_anchored` compares only its selected live binding with current resolution;
+`view_anchored` reuses the direct ordinary View target projection and compares
+only its selected live binding with current resolution;
 a stale sibling does not prevent that selected current binding from returning a
 View result. A selected-binding mismatch is Runtime-known opaque mutation:
 Runtime invalidates every live anchor for that logical source and returns
@@ -841,7 +838,7 @@ Anchor continuity. Anchor, its consuming View seam, and invalidation use only
 `&mut WorkspaceRuntime` call order; they add no counter, lock, worker,
 concurrency, or `Send`/`Sync` guarantee.
 
-Apply reuses the exact splice dispositions above. All geometry, after-parse,
+Apply reuses the exact splice dispositions above. All geometry, after projection,
 and disposition preparation completes before publication; after successful
 publication Runtime performs only allocation-free, no-failure RAM binding.
 There is no filesystem-and-RAM transaction or rollback. If multiple live

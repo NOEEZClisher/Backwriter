@@ -466,7 +466,10 @@ mod tests {
             .next()
             .unwrap();
         assert!(!source_scan.contains("fn is_current"));
-        assert!(include_str!("apply.rs").contains("scan_source("));
+        let apply = include_str!("apply.rs");
+        assert_eq!(apply.matches("observe_source(source").count(), 1);
+        assert_eq!(apply.matches("stage_source(&mut source").count(), 1);
+        assert!(!apply.contains("scan_source("));
         assert!(include_str!("anchor.rs").contains("observe_anchored"));
     }
 }

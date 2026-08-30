@@ -169,18 +169,30 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
     assert!(!runtime.contains("apply_edit"));
     assert!(!runtime.contains("apply_anchored"));
     assert_eq!(apply.matches(".open_admitted_source(").count(), 1);
-    assert_eq!(apply.matches("scan_staged(&mut source").count(), 1);
+    assert_eq!(apply.matches("observe_source(source").count(), 1);
+    assert_eq!(apply.matches("stage_source(&mut source").count(), 1);
+    assert!(apply.contains("staging.write(bytes)"));
     assert!(apply.contains("staging.open_read()?"));
-    assert!(!apply.contains("ApplyStream"));
-    assert!(!apply.contains("move_identity"));
+    for forbidden in [
+        "ApplyStream",
+        "move_identity",
+        "LegacyResolver",
+        "DecimalOrdinal",
+        "ExactTargetTracker",
+        "SourceEvent",
+        "SourceFramer",
+        "scan_source(",
+    ] {
+        assert!(!apply.contains(forbidden), "retired {forbidden}");
+    }
     let execute = apply
         .split_once("pub(super) fn execute")
         .map(|(_, execute)| execute)
         .expect("Apply execution");
     let staging_close = execute.find("staging.close()?;").expect("staging close");
     let empty_insert = execute
-        .find("if matches!(&edit, Edit::Insert { content, .. } if content.is_empty())")
-        .expect("empty Insert branch");
+        .find("if geometry.direct_noop(edit)")
+        .expect("direct no-op branch");
     let comparison = execute.find("let comparison =").expect("comparison");
     let after = execute
         .find("let temporary = Temporary::create(")
@@ -302,6 +314,37 @@ fn v4_duplicate_line_drift_fails_without_wrong_publication() {
     };
     let selected = anddresses[1].clone();
     let changed = b"needle\nheader\nneedle\nneedle\nfooter\n";
+    fs::write(root.join("note.txt"), changed).unwrap();
+
+    assert_eq!(
+        workspace.apply(&Edit::Replace {
+            target: selected,
+            content: "TARGET\n".to_owned(),
+        }),
+        Err(ApplyError::Unavailable)
+    );
+    assert_eq!(fs::read(root.join("note.txt")).unwrap(), changed);
+    assert_no_apply_temp(&root);
+}
+
+#[test]
+fn v4_duplicate_paragraph_drift_fails_without_wrong_publication() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let original = b"header\n\nneedle\n\nneedle\n\nfooter\n";
+    fs::write(root.join("note.txt"), original).unwrap();
+    let mut workspace = runtime(&root);
+    let request = SearchRequest::new(
+        SearchQuery::new("needle").unwrap(),
+        SearchScope::all_admitted(),
+        SearchTarget::Paragraph,
+    );
+    let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
+        panic!("duplicate paragraphs")
+    };
+    let selected = anddresses[1].clone();
+    let changed = b"needle\n\nheader\n\nneedle\n\nneedle\n\nfooter\n";
     fs::write(root.join("note.txt"), changed).unwrap();
 
     assert_eq!(
@@ -995,7 +1038,7 @@ fn apply_scans_the_complete_source_once_before_any_publication() {
 }
 
 #[test]
-fn apply_replays_large_single_lines_with_fixed_source_scratch() {
+fn apply_splices_large_single_lines_with_fixed_staging_scratch() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
@@ -1202,4 +1245,151 @@ fn v3_apply_operand_is_rejected_before_runtime_access() {
         ),
         Err(backwriter::backwriter::anddress::AnddressError::UnsupportedVersion)
     );
+}
+
+#[test]
+fn apply_uses_raw_v4_ranges_without_structural_relocation() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("coordinate.txt"), "coordinate").unwrap();
+    let source = "αβ\n".as_bytes();
+    fs::write(root.join("note.txt"), source).unwrap();
+    let mut workspace = runtime(&root);
+    let coordinate = coordinate(&workspace);
+    let raw = support::address(
+        &coordinate.value,
+        "note.txt",
+        source,
+        PublicAnddressTarget::Line,
+        2,
+        4,
+    );
+
+    workspace
+        .apply(&Edit::Replace {
+            target: raw,
+            content: "γ".to_owned(),
+        })
+        .unwrap();
+
+    assert_eq!(fs::read(root.join("note.txt")).unwrap(), "αγ\n".as_bytes());
+    assert_no_apply_temp(&root);
+}
+
+#[test]
+fn apply_zero_ranges_are_noops_except_nonempty_replace_insertion() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("coordinate.txt"), "coordinate").unwrap();
+    let source = b"abc";
+    fs::write(root.join("note.txt"), source).unwrap();
+    let mut workspace = runtime(&root);
+    let coordinate = coordinate(&workspace);
+    let raw = || {
+        support::address(
+            &coordinate.value,
+            "note.txt",
+            source,
+            PublicAnddressTarget::Line,
+            1,
+            1,
+        )
+    };
+    let position = || Position::Before(raw());
+
+    for edit in [
+        Edit::Delete { target: raw() },
+        Edit::Copy {
+            target: raw(),
+            position: position(),
+        },
+        Edit::Move {
+            target: raw(),
+            position: position(),
+        },
+        Edit::Replace {
+            target: raw(),
+            content: String::new(),
+        },
+    ] {
+        workspace.apply(&edit).unwrap();
+        assert_eq!(fs::read(root.join("note.txt")).unwrap(), source);
+    }
+
+    workspace
+        .apply(&Edit::Replace {
+            target: raw(),
+            content: "X".to_owned(),
+        })
+        .unwrap();
+    assert_eq!(fs::read(root.join("note.txt")).unwrap(), b"aXbc");
+    assert_no_apply_temp(&root);
+}
+
+#[test]
+fn apply_same_path_state_mismatch_is_unavailable_without_publication() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("coordinate.txt"), "coordinate").unwrap();
+    let source = b"abc\n";
+    fs::write(root.join("note.txt"), source).unwrap();
+    let mut workspace = runtime(&root);
+    let coordinate = coordinate(&workspace);
+    let current = support::address(
+        &coordinate.value,
+        "note.txt",
+        source,
+        PublicAnddressTarget::Line,
+        0,
+        1,
+    );
+    let stale_bytes = b"axc\n";
+    let stale = support::address(
+        &coordinate.value,
+        "note.txt",
+        stale_bytes,
+        PublicAnddressTarget::Line,
+        2,
+        3,
+    );
+
+    assert_eq!(
+        workspace.apply(&Edit::Copy {
+            target: current,
+            position: Position::Before(stale),
+        }),
+        Err(ApplyError::Unavailable)
+    );
+    assert_eq!(fs::read(root.join("note.txt")).unwrap(), source);
+    assert_no_apply_temp(&root);
+}
+
+#[test]
+fn apply_rejects_a_raw_range_that_would_split_utf8() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("coordinate.txt"), "coordinate").unwrap();
+    let source = "é\n".as_bytes();
+    fs::write(root.join("note.txt"), source).unwrap();
+    let mut workspace = runtime(&root);
+    let coordinate = coordinate(&workspace);
+    let raw = support::address(
+        &coordinate.value,
+        "note.txt",
+        source,
+        PublicAnddressTarget::Line,
+        1,
+        2,
+    );
+
+    assert_eq!(
+        workspace.apply(&Edit::Delete { target: raw }),
+        Err(ApplyError::Unavailable)
+    );
+    assert_eq!(fs::read(root.join("note.txt")).unwrap(), source);
+    assert_no_apply_temp(&root);
 }
