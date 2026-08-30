@@ -1,8 +1,8 @@
 # Backwriter Roadmap
 
-## Planned: 0.2.1 current-observation reuse
+## Not source-ready: 0.2.1 current-observation reuse
 
-`0.2.1` is a partially implemented and unpublished performance target governed by the
+`0.2.1` is an unpublished performance target governed by the
 [seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md).
 Phase 1 closes authority and records the current execution flow. Phase 2 adds
 the explicit Host Runtime, source invalidation, private current proof state, and
@@ -30,7 +30,29 @@ coordinate/path group from copied hash/length proof with no filesystem open,
 read, or hash while preserving its existing report/filter path. Completed
 Phase 5 integrates Apply and Anchor proof transitions. Completed Phase 6 closes
 the full invalidation, authority-isolation, and guarded drift semantics. Phase
-7 alone retains fixed A/B gates and the `0.2.1` version decision.
+7 completes fixed A/B measurement with a source-readiness NO-GO. Cargo and
+source version remain `0.2.0`; no production optimization, artifact, or
+publication work is part of that decision.
+
+## Completed: 0.2.1 Phase 7 fixed A/B NO-GO
+
+Immutable A=`2fad6e4` and B=`a24ff5e` builds use the same fixed fixture paths,
+task-local harness, CPU 2 P-core, `powersave` governor, and seven order-rotated
+samples. B Untrusted and Host 256 MiB Search medians are `268.333` and
+`268.379` ms, below `313.929` ms. Host Check hit records zero `rchar`, zero
+`wchar`, and retains the existing zero-read/hash/target-search structural
+evidence. One-million-result peak HWM is `58.5078` bytes/hit Untrusted and
+`58.5156` Host, below `61.4383`; 128-to-256 MiB low-hit HWM is flat. V4 result
+checksums, order, multiplicity, source bytes, and the Correct `1` / Safe Reject
+`6` / Wrong `0` matrix remain exact.
+
+The mandatory Host Search-to-late-Line View median is `1,079.943` ms with p95
+`1,096.362` ms, exceeding the 400 ms ceiling. The no-separator related
+Paragraph requires the trusted Line path to read the complete boundary extent,
+so its composite `rchar` is `536,870,913`. It retains no whole-source bytes but
+does not meet the latency gate. Phase 7 therefore records NO-GO and leaves
+production Rust and version unchanged. Any follow-up optimization and a new
+GO/NO-GO decision require separate authority; publication remains separate.
 
 ## Completed: 0.2.1 Phase 6 invalidation and race closure
 
@@ -53,7 +75,8 @@ Runtime, and authority mode, and Runtime drop retains nothing. The seven-cell
 duplicate-Line drift matrix produces one Correct Apply, six Safe Rejects, and
 zero Wrong Applies in both Untrusted and correctly guarded Host modes;
 duplicate Paragraph drift also rejects in both. Phase 7 retains all
-measurement, version, and release-readiness decisions.
+measurement, version, and release-readiness authority at this milestone; its
+subsequent completed result is the NO-GO recorded above.
 
 ## Completed: 0.2.1 Phase 5 Apply and Anchor proof integration
 
@@ -71,7 +94,7 @@ prepared Anchor plan and a preallocated proof replacement. Confirmed
 publication installs proof and reflects Anchors through the existing
 allocation-free finish path; publication uncertainty invalidates both for only
 that logical path. Phase 6 closes broader mutation/race semantics, and Phase 7
-retains measurement, version, and release-readiness decisions.
+records the fixed A/B NO-GO above.
 
 ## Completed: 0.2.1 Phase 4 Check current-proof reuse
 
@@ -88,8 +111,8 @@ Untrusted execution, a proof miss, poisoned state, or unusable private evidence
 uses the unchanged admitted one-observation-per-source path. Check installs,
 replaces, invalidates, and removes no proof. Apply and Anchor integration is
 complete in Phase 5; broader invalidation/race closure is complete in Phase 6.
-Measurement, version change, and release-readiness remain Phase 7 work, while
-publication remains separate authority.
+Measurement and release-readiness close as Phase 7 NO-GO; no version change is
+made, and publication remains separate authority.
 
 ## Completed: 0.2.0 release closure
 

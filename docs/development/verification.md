@@ -2,7 +2,8 @@
 
 ## 0.2.1 observation-reuse development gates
 
-`0.2.1` is partially implemented and unpublished. Phase 2 adds the Host Runtime
+The `0.2.1` development target is implemented through Phase 6 but remains
+source version `0.2.0`, is not source-ready, and is unpublished. Phase 2 adds the Host Runtime
 constructor, source invalidation kernel, private proof state, and
 successful-Search proof installation. Phase 3 adds bounded ordinary View proof
 consumption. Phase 4 adds Check current-proof group classification;
@@ -11,12 +12,13 @@ prospective-after proof installation, and coupled Anchor reflection;
 Phase 6 closes path-exact invalidation, guarded mutation sequencing,
 authority isolation, matching anchored View reuse, failure transitions, and the
 both-mode drift matrix;
+Phase 7 completes fixed A/B measurement and records a source-readiness NO-GO;
 Cargo/version, v4 wire, default Untrusted behavior, and the closed public
 `0.2.0` release remain unchanged. The
 Protocol owns default Untrusted Mode and explicit Host-authoritative Mode; the
 [phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
-owns the execution audit, fixed not-yet-remeasured `0.2.0` comparison inputs,
-and phase evidence.
+owns the execution audit, fixed `0.2.0` comparison inputs, complete raw Phase 7
+samples, checksums, and gate evidence.
 
 Phase 2 regressions prove that Untrusted Search installs no proof; Host exact
 File and content Search install exact hash/length; re-search replaces one path;
@@ -98,11 +100,31 @@ publication, plus whole-source retention, prior-proof chains, history, public
 hooks, or persistent cache. The Phase 6 development suite passes 234 GNU-host
 Rust tests. No Phase 6 result is a benchmark or release-readiness claim.
 
-The fixed later gates are Search median at most 105% of `0.2.0`, trusted
-Search-to-View at most 400 ms with at most 350 ms recommended, zero
-source-size-proportional I/O/hash for a trusted Check hit, memory slope at most
-110%, zero whole-source retention, and zero Wrong Apply. These are future A/B
-gates, not measurements or release-readiness claims in Phase 1.
+Phase 7 uses immutable A=`2fad6e4` and B=`a24ff5e`, independent offline/locked
+release targets, fixed historical fixture SHA-256 values, the same task-local
+harness, CPU 2 P-core, `powersave`, and one warm-up plus seven order-rotated
+samples per A/BU/BH cell. Search passes at `268.333` ms BU and `268.379` ms BH
+against `313.929`. Host Check hit passes with exact zero `rchar`/`wchar` and the
+unchanged zero-read/hash/target-search structural evidence. One-million-result
+peak HWM passes at `58.5078` and `58.5156` bytes/hit against `61.4383`; low-hit
+128-to-256 MiB HWM is flat, whole-source retention remains absent, and Wrong
+Apply remains zero.
+
+Host Search-to-late-Line View fails: median `1,079.943` ms and p95 `1,096.362`
+ms exceed the formal 400 ms ceiling and 350 ms recommendation. Its exact
+`536,870,913` `rchar` consists of Search's complete source read plus the
+trusted Line relation's complete no-separator Paragraph boundary read. Result
+SHA-256, source SHA-256, count, v4 wire, order, multiplicity, Untrusted
+fallback, and all Phase 6 transitions remain exact. The decision is therefore
+NO-GO; production Rust and Cargo version remain unchanged. The Phase 7 suite
+uses no new benchmark framework or repository instrumentation, and its
+complete raw evidence and reproduction hashes are in the tracker.
+
+Post-decision source verification passes offline/locked metadata and dependency
+tree, format, all-target check, 234 GNU-host tests, clippy with warnings denied,
+and release build. Release `bw --help`, `bw version`, one-shot human and JSON
+Search, and Session Search probes pass; version output remains exactly
+`Backwriter 0.2.0`.
 
 ## 0.2.0 Phase 7 and Search recommendation closure
 
