@@ -461,6 +461,22 @@ fn host_check_invalidation_restores_changed_missing_and_invalid_source_boundarie
 }
 
 #[test]
+fn untrusted_search_followed_by_check_keeps_the_live_observation_path() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("note.txt"), b"current\n").unwrap();
+    let untrusted = runtime(&root, ".");
+    let current = exact_file(&untrusted, "note.txt");
+
+    fs::write(root.join("note.txt"), b"invalid\xff").unwrap();
+    let checked = untrusted.check(current.clone()).unwrap();
+    assert_eq!(checked.filtered, Some(current.clone()));
+    assert_eq!(checked.report.current_count(), 0);
+    assert_eq!(checked.report.unavailable(), &[current]);
+}
+
+#[test]
 fn host_check_keeps_workspace_private_admission_and_empty_boundaries() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
