@@ -3,7 +3,7 @@
 ## 0.2.0 Phase 7 and Search recommendation closure
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current
-unpublished `0.2.0` Rust, Cargo, CLI, and tests use only Anddress v4. Phase 3
+published `0.2.0` Rust, Cargo, CLI, and tests use only Anddress v4. Phase 3
 implements the SHA-256 source-state/value/wire kernel and hard-cutover decoding.
 Phase 4 implements one-read target-specific Search observation. Phase 5 makes
 ordinary View and Check direct consumers of the same hash/length observer.
@@ -148,8 +148,8 @@ Search recommendation is closed by a Line-only maximal content-slice fast path.
 Against the paired v3 673.898 ms median, its 272.111 ms median is a 2.476×
 speedup and below the 336.949 ms target. Fixed current/candidate 128 MiB,
 256 MiB, 2,048-file, and million-hit measurements preserve exact output and
-all p95/peak-HWM gates. Source release-readiness is GO; this does not authorize
-an artifact or publication.
+all p95/peak-HWM gates. These gates supplied the source-readiness evidence for
+the separately executed and now closed `0.2.0` publication.
 
 Edit V1 semantic/public API/type/error authority and inert Rust value
 implementation are complete; the single-source Apply Runtime execution
@@ -250,16 +250,38 @@ YAML, DNS, credential metadata, and actual user HOME/PATH/shell files remained
 unchanged. macOS and Windows verification remains static and makes no native
 execution claim.
 
+Backwriter `0.2.0` release closure regenerated the four artifacts and sidecars
+from source revision `2fad6e46d3a9d1da01f79f34b9ffc187447c76a8` and
+reproduced the canonical 876-byte manifest with SHA-256
+`b63589acd1c06606e62f08ea83dd1c2c36fbc5987665287218481f74b06a5cd4`.
+The existing publisher added the eight `releases/0.2.0` files, atomically
+replaced the POSIX and PowerShell installers, and replaced the manifest last.
+It preserved metadata and bytes for all 16 beta.3/stable versioned files and
+`install.cmd`; a complete rerun preserved metadata for all 28 files. All 28
+files passed both loopback and public HTTPS GET and HEAD checks, for 56 GET and
+56 HEAD responses with exact bodies, lengths, content types, and cache policy.
+Root and unknown-path GET/HEAD checks remained 404/no-store. A task-local
+canonical `curl | sh` fresh install and an actual public `0.1.0` binary's
+explicit update installed byte-identical `0.2.0` Linux binaries. The installed
+binary passed help, exact version, Search, View, Check, Session, empty-File
+Apply, and duplicate-drift safe-rejection checks. Origin and cloudflared PID,
+InvocationID, restart count, loopback listener, units, ingress YAML, credential
+metadata, actual user HOME, and process PATH remained unchanged. macOS and
+Windows artifacts received static cross-build verification only; no native
+macOS, Windows, PowerShell, or CMD execution is claimed. No tag, GitHub Release,
+crates.io publication, cache purge, service, tunnel, DNS, route, or credential
+change occurred.
+
 Before staging, verify the diff and empty index, confirm repository-root
 `.artext` is absent and untracked, and preserve unrelated task/history files.
 Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
-The repository source package is unpublished `0.2.0`, and its release build
-must print exactly `Backwriter 0.2.0` plus LF. Source verification remains
+The repository source package and closed public release are `0.2.0`, and its
+release build must print exactly `Backwriter 0.2.0` plus LF. Source verification remains
 distinct from the separately executed operations publication: the current official
-distribution is the closed stable `0.1.0` release, while prior beta files remain
-immutable. The current `0.2.0` source suite passes 203 GNU-host Rust tests; the
+distribution is the closed `0.2.0` release, while `0.1.0` and prior beta files
+remain immutable. The current `0.2.0` source suite passes 203 GNU-host Rust tests; the
 historical `0.1.0` source suite passed 193.
 
 CLI process regressions cover the canonical `bw` binary without a `backwriter`

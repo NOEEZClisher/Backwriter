@@ -3,7 +3,8 @@
 ## Version boundary
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current Rust,
-Cargo, tests, and CLI use the unpublished `0.2.0` hard-cutover Anddress v4 API
+Cargo, tests, CLI, and the closed public `0.2.0` release use the hard-cutover
+Anddress v4 API
 and wire. Phases 3–7 implement and verify SHA-256 source identity, exact byte length,
 target kind, `[start,end)` range, target-specific Search observation, direct
 View/Check consumption, and direct Apply/Anchor consumers without a v3
@@ -13,7 +14,9 @@ result-memory HWM, not JSON payload: 346.539 to 58.551 HWM bytes/hit is an
 83.10% reduction and passes. The Line-only content-slice fast path then lowers
 the fixed 256 MiB median from the paired v3 673.898 ms to 272.111 ms, a 2.476×
 speedup that closes the remaining recommendation. Source release-readiness is
-GO, but no `0.2.0` artifact, publication, or release exists. The evidence
+GO, and the exact four-target `0.2.0` artifact set, canonical manifest,
+installers, live publication, endpoint verification, fresh installation, and
+explicit update are closed. The evidence
 tracker is
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 
@@ -73,8 +76,8 @@ DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
 batch Check, Edit, and Apply await collection or Edit transport schema
 authority. Raw output other than completed one-shot View and further Session
 behavior remain deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
-The published `0.1.0` Core/Runtime and CLI surface remains frozen. Current
-unpublished `0.2.0` source has completed the v4 value/wire hard cutover. Further
+The published `0.2.0` Core/Runtime and CLI surface is frozen. The current source
+has completed the v4 value/wire hard cutover. Further
 Adapter work still requires owner authority for
 collection/Edit transport or Session machine output.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`; the
@@ -82,15 +85,14 @@ GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.1.0` stable release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.0` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses
 `aarch64-apple-darwin` at minimum 11.0 and `x86_64-apple-darwin` at minimum
 10.12. Windows uses `x86_64-pc-windows-gnu` and canonical `bw.exe`. Their
 artifacts, manual-verification checksum sidecars, expanded canonical manifest,
 POSIX and PowerShell installers, and publication are complete from Source
-Authority revision
-`25a0dbc38dc78cc7592b219e9070af3c0e201c17`. The installer verifies the
+Authority revision `2fad6e46d3a9d1da01f79f34b9ffc187447c76a8`. The installer verifies the
 manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/bw`
 with a same-directory rename, without changing `PATH` or shell startup files.
 Fresh installation prints the installed version and replacement prints the
@@ -104,22 +106,24 @@ Concurrent same-user HOME mutation is caller-owned.
 macOS and Windows support are based on static cross-build verification without
 native runtime-test or native CMD claims. Linux arm64 remains unsupported, and
 no universal host compatibility is claimed. The public beta.1, beta.2, and
-beta.3 files remain unchanged and immutable. The complete stable `0.1.0`
-version directory is immutable, the full planned matrix is complete, and the
-stable release is closed; any later platform or version requires separate Owner
-authority. Tags, GitHub Releases,
+beta.3 files remain unchanged and immutable. The complete stable `0.1.0` and
+current `0.2.0` version directories are immutable, the full planned matrix is
+complete, and the `0.2.0` release is closed; any later platform or version
+requires separate Owner authority. Tags, GitHub Releases,
 crates.io publication, and GitHub distribution
 remain outside the completed publication.
-The current Cargo package and library crate are `backwriter` at unpublished
+The current Cargo package and library crate are `backwriter` at published
 `0.2.0`; the sole canonical executable and external Adapter command are `bw`.
 There is no current `backwriter` binary, alias, or wrapper. Product prose
 continues to use Backwriter, and persisted Core wire/private-path and
-distribution artifact/domain contracts keep their existing names. Stable
-publication is closed: the current installers and manifest select `0.1.0`, and
-`bw update` delegates to that official stable installer. Exact beta.3 manifest
-acceptance remains transition compatibility only.
+distribution artifact/domain contracts keep their existing names. `0.2.0`
+publication is closed: the exact 28-file public tree retains all prior
+versioned files and `install.cmd`, while the current installers and manifest
+select `0.2.0` and `bw update` delegates to that official installer. The
+installers accept only the exact stable `0.1.0` and current `0.2.0` manifests;
+beta.3 acceptance is retired.
 
-## Unpublished 0.2.0 authority
+## Published 0.2.0 authority
 
 Phase 7 reproduces the Phase 2 fixtures and v3 timing binary from immutable Git
 objects, proves one Correct Apply plus six Safe Rejects and zero Wrong Applies
@@ -129,8 +133,10 @@ p95, peak HWM, and bounded low-hit source-memory gates pass. The corrected
 million-hit result-memory recommendation and the subsequent 2× Line Search
 closure also pass. The Line fast path removes per-byte checked-offset and
 state-zero KMP work while reusing the one-read observer, existing failure table,
-terminator carry, and result buckets. Source release-readiness is GO. This
-creates no release, artifact, tag, installer, or publication authority.
+terminator carry, and result buckets. Source release-readiness is GO. Release
+closure used the existing external operations authority to publish the exact
+artifacts and pointers; it creates no tag, GitHub Release, crates.io
+publication, or new Core authority.
 
 Current-only does not require historical identity. Runtime keeps each
 `CurrentObservation` call-local to one selected source. It contains only the
@@ -160,7 +166,7 @@ rather than relocate ordinary Anddresses or Anchors. The source-hash
 algorithm is SHA-256 and the compatibility policy is a hard cutover: production
 has no v3 decoder, encoder, alias, or migration layer.
 
-## Implemented unpublished 0.2.0 current-only Runtime contract
+## Implemented published 0.2.0 current-only Runtime contract
 
 The v4 Search and View implementation is current-only and stateless;
 Pick is pure and stateless over caller input. `WorkspaceRuntime::search`, `WorkspaceRuntime::view`,
