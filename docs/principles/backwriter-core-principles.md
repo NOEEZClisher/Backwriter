@@ -1,8 +1,9 @@
 # Backwriter Principles
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current
-unpublished `0.2.0` Rust implements the hard-cutover v4 value/wire with SHA-256;
-these principles claim no `0.2.0` artifact or publication.
+`0.2.0` Rust, including the closed public release build, implements the
+hard-cutover v4 value/wire with SHA-256; these principles describe the active
+v4 Core contract.
 
 1. **Current-only permits bounded call-local state.** Current is source-visible.
    One source observation may retain only its hash and length while its

@@ -22,12 +22,13 @@ semantic/public API/error authority and its single-source Edit Runtime
 implementation uses direct v4 ranges and provenance and is complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
-The closed public `0.1.0` release is the immutable v3 baseline. Current source
-and Cargo are the unpublished `0.2.0` development line and use the hard-cutover
+The closed public `0.1.0` release is the immutable v3 baseline. Current source,
+Cargo, and the closed public `0.2.0` release use the hard-cutover
 `artext.backwriter-anddress.v4` Rust API and wire. SHA-256, exact source byte
 length, target kind, and `[start, end)` byte range are implemented identity;
-v3 remains only in Git history and immutable `0.1.0` release evidence. No
-`0.2.0` artifact or publication is complete.
+v3 remains only in Git history and immutable `0.1.0` release evidence. The
+canonical four-target `0.2.0` artifacts, manifest, installers, live publication,
+fresh installation, and explicit update are complete.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,
@@ -103,7 +104,7 @@ are preserved evidence, never current authority.
 - Current production source uses only `artext.backwriter-anddress.v4`. Do not
   add v2/v3 compatibility shims, decoders, aliases, migrations, or parallel
   schemas. Well-formed v3 input is rejected as `UnsupportedVersion`.
-- The unpublished `0.2.0` value is `artext.backwriter-anddress.v4`: workspace,
+- The `0.2.0` value is `artext.backwriter-anddress.v4`: workspace,
   logical path, source-state hash, exact byte length, target kind, and one
   inclusive-start/exclusive-end byte range are ordinary Anddress identity.
   Target text and ordinal are not v4 identity. The hash algorithm is SHA-256

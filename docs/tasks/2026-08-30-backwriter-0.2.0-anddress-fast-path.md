@@ -3,7 +3,9 @@
 Status: Phases 1–7 and the Line Search recommendation closure are complete.
 Source correctness, formal gates, the corrected result-memory recommendation,
 and the 2× 256 MiB Line Search recommendation pass. Source release-readiness is
-GO; no `0.2.0` artifact, publication, or release exists.
+GO. The canonical four-target artifacts, manifest, installers, 28-file live
+publication, fresh installation, explicit `0.1.0` update, and release closure
+are complete.
 
 This is the sole progress tracker for the redesign. It records gates and
 evidence but does not own semantics; the active Protocol, address model, and
@@ -11,8 +13,9 @@ principles do. Historical task evidence never overrides active authority.
 
 ## Goal and Owner intent
 
-Keep the closed public `0.1.0` v3 release immutable while developing an
-unpublished `0.2.0` v4 exact-source-state fast path. Search alone finds targets.
+The task began by keeping the closed public `0.1.0` v3 release immutable while
+developing the then-unpublished `0.2.0` v4 exact-source-state fast path. Search
+alone finds targets.
 View, Check, and Apply consume an ordinary Anddress without searching,
 reparsing to relocate, or context-matching an old target. Runtime may hold only
 bounded call-local current observation state, never cross-call state or history.
@@ -664,8 +667,8 @@ authority.
 Evidence:
 
 - Phase 1: active authority contains every exact guard and separates the closed
-  v3 implementation from the unpublished v4 target. The task is tracking-only;
-  active architecture remains semantic authority.
+  v3 implementation from the then-unpublished v4 target. The task is
+  tracking-only; active architecture remains semantic authority.
 - Phase 1: Rust, Cargo, tests, source version, and server repository are
   byte-identical to their stated baselines. Offline/locked metadata, Markdown
   fences/links, diff, index, and `.artext` audits passed. The unchanged
@@ -728,5 +731,6 @@ Evidence:
   offset and state-zero matcher work from the Line-only hot path. The fixed
   candidate reaches a 272.111 ms 256 MiB median, 2.476× faster than v3, with
   exact output and retained p95/HWM gates. All 203 current GNU-host tests pass.
-  Source release-readiness is GO. No `0.2.0` artifact, publication, or release
-  exists.
+  At that checkpoint, source release-readiness was GO and no `0.2.0` artifact,
+  publication, or release existed. The subsequent four-target publication and
+  release closure are recorded in the tracker status and active documents.

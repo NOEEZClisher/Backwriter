@@ -1,6 +1,6 @@
 # Backwriter Anddress and Exact Line Model
 
-Status: normative raw-address authority. Current unpublished `0.2.0` source
+Status: normative raw-address authority. Current `0.2.0` production
 implements the v4 algebra and hard cutover below. The closed public `0.1.0` v3
 algebra is preserved later in this document only as immutable release evidence;
 it is not accepted by current production code.
@@ -9,7 +9,7 @@ An Anddress describes one target in current structure and carries no past-target
 lineage or inherited identity. Backwriter establishes only the resulting current
 structure.
 
-## Implemented unpublished 0.2.0 v4 algebra
+## Implemented 0.2.0 v4 algebra
 
 An ordinary v4 Anddress has exactly this semantic identity:
 

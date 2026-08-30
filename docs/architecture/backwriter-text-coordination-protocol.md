@@ -1,12 +1,12 @@
 # Backwriter Protocol
 
 Status: normative current-only Core/Runtime contract. The closed public `0.1.0`
-release remains immutable v3 evidence. Current unpublished `0.2.0` source uses
-the hard-cutover v4 value/wire and all production callers. The call-local
-target-specific Search observation and direct View, Check, Apply, and Anchor
-consumers are complete through Phase 6.
+release remains immutable v3 evidence. Current `0.2.0` source and the closed
+public release use the hard-cutover v4 value/wire in all production callers.
+The call-local target-specific Search observation and direct View, Check,
+Apply, and Anchor consumers are complete through Phase 6.
 
-## Unpublished 0.2.0 current-observation authority
+## 0.2.0 current-observation authority
 
 The following guard sentences are normative:
 

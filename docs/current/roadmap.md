@@ -254,8 +254,10 @@ repository-local authority.
 ## Completed: 0.1.0 stable distribution
 
 The Linux/WSL x86_64, macOS arm64/x86_64, Windows PowerShell x86_64, and
-Windows CMD stable `0.1.0` publication is complete. Current installers and the
-manifest select `0.1.0`; the complete stable version directory is immutable.
+Windows CMD stable `0.1.0` publication is complete. At that milestone, the
+installers and manifest selected `0.1.0`; its complete version directory remains
+immutable. Current installers and the manifest select the closed `0.2.0`
+distribution recorded below.
 Existing public `0.1.0-beta.1`, `0.1.0-beta.2`, and `0.1.0-beta.3` files remain
 unchanged and immutable. Explicit `bw update` is complete, while background or
 automatic update remains deferred. Linux arm64, later versions, tags, GitHub
