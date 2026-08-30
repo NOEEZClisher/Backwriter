@@ -255,32 +255,77 @@ fn scan_paragraph_start(
     reader: &mut (impl Read + Seek),
     target_start: usize,
 ) -> Result<usize, TrustedViewError> {
-    let mut cursor = ReverseBytes::new(reader, target_start);
-    let mut paragraph_start = target_start;
-    while cursor.position() != 0 {
-        match cursor.next()? {
-            Some(b'\n') => {
-                if cursor.peek()? == Some(b'\r') {
-                    cursor.next()?;
-                }
-            }
-            Some(b'\r') => {}
-            Some(_) | None => return Err(TrustedViewError::Source),
-        }
-        let mut has_text = false;
-        while let Some(byte) = cursor.peek()? {
-            if matches!(byte, b'\r' | b'\n') {
-                break;
-            }
-            cursor.next()?;
-            has_text |= !matches!(byte, b' ' | b'\t');
-        }
-        if !has_text {
-            break;
-        }
-        paragraph_start = cursor.position();
+    if target_start == 0 {
+        return Ok(0);
     }
-    Ok(paragraph_start)
+    let mut scratch = [0_u8; READ_BUFFER_SIZE];
+    let mut chunk_end = target_start;
+    let mut paragraph_start = target_start;
+    let mut expect_terminator = true;
+    let mut maybe_cr = false;
+    let mut has_text = false;
+
+    while chunk_end != 0 {
+        let chunk_start = chunk_end.saturating_sub(READ_BUFFER_SIZE);
+        let chunk_length = chunk_end - chunk_start;
+        seek_to(reader, chunk_start)?;
+        read_fully(reader, &mut scratch[..chunk_length])?;
+        let mut cursor = chunk_length;
+
+        while cursor != 0 {
+            if maybe_cr {
+                if scratch[cursor - 1] == b'\r' {
+                    cursor -= 1;
+                }
+                maybe_cr = false;
+                expect_terminator = false;
+                continue;
+            }
+            if expect_terminator {
+                match scratch[cursor - 1] {
+                    b'\n' => {
+                        cursor -= 1;
+                        maybe_cr = true;
+                    }
+                    b'\r' => {
+                        cursor -= 1;
+                        expect_terminator = false;
+                    }
+                    _ => return Err(TrustedViewError::Source),
+                }
+                continue;
+            }
+
+            let body = &scratch[..cursor];
+            let Some(delimiter) = last_line_break(body) else {
+                has_text |= body.iter().any(|byte| !matches!(byte, b' ' | b'\t'));
+                cursor = 0;
+                continue;
+            };
+            has_text |= body[delimiter + 1..]
+                .iter()
+                .any(|byte| !matches!(byte, b' ' | b'\t'));
+            if !has_text {
+                return Ok(paragraph_start);
+            }
+            paragraph_start = chunk_start
+                .checked_add(delimiter + 1)
+                .ok_or(TrustedViewError::Resource)?;
+            cursor = delimiter + 1;
+            expect_terminator = true;
+            has_text = false;
+        }
+
+        chunk_end = chunk_start;
+    }
+
+    if maybe_cr {
+        expect_terminator = false;
+    }
+    if expect_terminator {
+        return Err(TrustedViewError::Source);
+    }
+    Ok(if has_text { 0 } else { paragraph_start })
 }
 
 fn scan_paragraph_end(
@@ -288,129 +333,124 @@ fn scan_paragraph_end(
     target_end: usize,
     source_end: usize,
 ) -> Result<usize, TrustedViewError> {
-    let mut cursor = ForwardBytes::new(reader, target_end, source_end)?;
+    let mut scratch = [0_u8; READ_BUFFER_SIZE];
+    let mut position = target_end;
     let mut paragraph_end = target_end;
-    while cursor.position() < source_end {
-        let mut has_text = false;
-        loop {
-            match cursor.next()? {
-                Some(b'\r') => {
-                    if cursor.peek()? == Some(b'\n') {
-                        cursor.next()?;
-                    }
-                    break;
+    let mut has_text = false;
+    let mut pending_cr = false;
+    seek_to(reader, target_end)?;
+
+    while position < source_end {
+        let chunk_length = (source_end - position).min(READ_BUFFER_SIZE);
+        read_fully(reader, &mut scratch[..chunk_length])?;
+        let chunk_start = position;
+        let mut cursor = 0;
+
+        while cursor < chunk_length {
+            if pending_cr {
+                if scratch[cursor] == b'\n' {
+                    cursor += 1;
                 }
-                Some(b'\n') | None => break,
-                Some(byte) => has_text |= !matches!(byte, b' ' | b'\t'),
+                pending_cr = false;
+                if !has_text {
+                    return Ok(paragraph_end);
+                }
+                paragraph_end = chunk_start
+                    .checked_add(cursor)
+                    .ok_or(TrustedViewError::Resource)?;
+                has_text = false;
+                continue;
+            }
+
+            let remaining = &scratch[cursor..chunk_length];
+            let Some(relative) = first_line_break(remaining) else {
+                has_text |= remaining.iter().any(|byte| !matches!(byte, b' ' | b'\t'));
+                cursor = chunk_length;
+                continue;
+            };
+            let delimiter = cursor + relative;
+            has_text |= scratch[cursor..delimiter]
+                .iter()
+                .any(|byte| !matches!(byte, b' ' | b'\t'));
+            let terminator = scratch[delimiter];
+            cursor = delimiter + 1;
+            if terminator == b'\r' {
+                pending_cr = true;
+            } else {
+                if !has_text {
+                    return Ok(paragraph_end);
+                }
+                paragraph_end = chunk_start
+                    .checked_add(cursor)
+                    .ok_or(TrustedViewError::Resource)?;
+                has_text = false;
             }
         }
+
+        position = chunk_start
+            .checked_add(chunk_length)
+            .ok_or(TrustedViewError::Resource)?;
+    }
+
+    if pending_cr || has_text {
         if !has_text {
-            break;
+            return Ok(paragraph_end);
         }
-        paragraph_end = cursor.position();
+        paragraph_end = source_end;
     }
     Ok(paragraph_end)
 }
 
-struct ReverseBytes<'a, R> {
-    reader: &'a mut R,
-    scratch: [u8; READ_BUFFER_SIZE],
-    buffer_start: usize,
-    buffer_end: usize,
-    position: usize,
+fn first_line_break(bytes: &[u8]) -> Option<usize> {
+    let mut words = bytes.chunks_exact(8);
+    for (index, chunk) in words.by_ref().enumerate() {
+        if word_has_line_break(u64::from_ne_bytes(
+            chunk.try_into().expect("eight-byte chunk"),
+        )) {
+            return chunk
+                .iter()
+                .position(|byte| matches!(byte, b'\r' | b'\n'))
+                .map(|offset| index * 8 + offset);
+        }
+    }
+    let remainder_start = bytes.len() - words.remainder().len();
+    words
+        .remainder()
+        .iter()
+        .position(|byte| matches!(byte, b'\r' | b'\n'))
+        .map(|offset| remainder_start + offset)
 }
 
-impl<'a, R: Read + Seek> ReverseBytes<'a, R> {
-    fn new(reader: &'a mut R, position: usize) -> Self {
-        Self {
-            reader,
-            scratch: [0; READ_BUFFER_SIZE],
-            buffer_start: position,
-            buffer_end: position,
-            position,
+fn last_line_break(bytes: &[u8]) -> Option<usize> {
+    let full_length = bytes.len() - bytes.len() % 8;
+    if let Some(offset) = bytes[full_length..]
+        .iter()
+        .rposition(|byte| matches!(byte, b'\r' | b'\n'))
+    {
+        return Some(full_length + offset);
+    }
+    for (index, chunk) in bytes[..full_length].chunks_exact(8).enumerate().rev() {
+        if word_has_line_break(u64::from_ne_bytes(
+            chunk.try_into().expect("eight-byte chunk"),
+        )) {
+            return chunk
+                .iter()
+                .rposition(|byte| matches!(byte, b'\r' | b'\n'))
+                .map(|offset| index * 8 + offset);
         }
     }
-
-    fn position(&self) -> usize {
-        self.position
-    }
-
-    fn peek(&mut self) -> Result<Option<u8>, TrustedViewError> {
-        if self.position == 0 {
-            return Ok(None);
-        }
-        let byte_offset = self.position - 1;
-        if byte_offset < self.buffer_start || byte_offset >= self.buffer_end {
-            self.buffer_end = self.position;
-            self.buffer_start = self.buffer_end.saturating_sub(READ_BUFFER_SIZE);
-            seek_to(self.reader, self.buffer_start)?;
-            read_fully(
-                self.reader,
-                &mut self.scratch[..self.buffer_end - self.buffer_start],
-            )?;
-        }
-        Ok(Some(self.scratch[byte_offset - self.buffer_start]))
-    }
-
-    fn next(&mut self) -> Result<Option<u8>, TrustedViewError> {
-        let byte = self.peek()?;
-        if byte.is_some() {
-            self.position -= 1;
-        }
-        Ok(byte)
-    }
+    None
 }
 
-struct ForwardBytes<'a, R> {
-    reader: &'a mut R,
-    scratch: [u8; READ_BUFFER_SIZE],
-    source_end: usize,
-    position: usize,
-    buffer_length: usize,
-    buffer_cursor: usize,
-}
+fn word_has_line_break(word: u64) -> bool {
+    const LOW_BITS: u64 = 0x0101_0101_0101_0101;
+    const HIGH_BITS: u64 = 0x8080_8080_8080_8080;
+    const CR: u64 = u64::from_ne_bytes([b'\r'; 8]);
+    const LF: u64 = u64::from_ne_bytes([b'\n'; 8]);
 
-impl<'a, R: Read + Seek> ForwardBytes<'a, R> {
-    fn new(
-        reader: &'a mut R,
-        position: usize,
-        source_end: usize,
-    ) -> Result<Self, TrustedViewError> {
-        seek_to(reader, position)?;
-        Ok(Self {
-            reader,
-            scratch: [0; READ_BUFFER_SIZE],
-            source_end,
-            position,
-            buffer_length: 0,
-            buffer_cursor: 0,
-        })
-    }
-
-    fn position(&self) -> usize {
-        self.position
-    }
-
-    fn peek(&mut self) -> Result<Option<u8>, TrustedViewError> {
-        if self.position == self.source_end {
-            return Ok(None);
-        }
-        if self.buffer_cursor == self.buffer_length {
-            self.buffer_length = (self.source_end - self.position).min(READ_BUFFER_SIZE);
-            self.buffer_cursor = 0;
-            read_fully(self.reader, &mut self.scratch[..self.buffer_length])?;
-        }
-        Ok(Some(self.scratch[self.buffer_cursor]))
-    }
-
-    fn next(&mut self) -> Result<Option<u8>, TrustedViewError> {
-        let byte = self.peek()?;
-        if byte.is_some() {
-            self.buffer_cursor += 1;
-            self.position += 1;
-        }
-        Ok(byte)
-    }
+    [word ^ CR, word ^ LF]
+        .into_iter()
+        .any(|candidate| candidate.wrapping_sub(LOW_BITS) & !candidate & HIGH_BITS != 0)
 }
 
 fn read_byte_at(reader: &mut (impl Read + Seek), offset: usize) -> Result<u8, TrustedViewError> {
@@ -886,6 +926,42 @@ mod tests {
             .unwrap();
         assert!(!trusted.contains("observe_source("));
         assert!(!trusted.contains("Sha256"));
+        assert!(!production.contains("ReverseBytes"));
+        assert!(!production.contains("ForwardBytes"));
+        let relation = production
+            .split("fn scan_paragraph_start")
+            .nth(1)
+            .unwrap()
+            .split("fn read_byte_at")
+            .next()
+            .unwrap();
+        assert_eq!(relation.matches("[0_u8; READ_BUFFER_SIZE]").count(), 2);
+        assert!(relation.contains(".rposition("));
+        assert!(relation.contains(".position("));
+    }
+
+    #[test]
+    fn line_break_word_filter_matches_byte_order_at_every_alignment() {
+        for length in (0..=33).chain([READ_BUFFER_SIZE - 1, READ_BUFFER_SIZE, READ_BUFFER_SIZE + 1])
+        {
+            let mut bytes = vec![b'x'; length];
+            assert_eq!(first_line_break(&bytes), None);
+            assert_eq!(last_line_break(&bytes), None);
+            let mut positions: Vec<_> = (0..length.min(17)).collect();
+            positions.extend(length.saturating_sub(17)..length);
+            positions.sort_unstable();
+            positions.dedup();
+            for position in positions {
+                for delimiter in [b'\r', b'\n'] {
+                    bytes[position] = delimiter;
+                    assert_eq!(first_line_break(&bytes), Some(position));
+                    assert_eq!(last_line_break(&bytes), Some(position));
+                    bytes[position] = b'x';
+                }
+            }
+        }
+        assert_eq!(first_line_break(b"x\rxxx\nx"), Some(1));
+        assert_eq!(last_line_break(b"x\rxxx\nx"), Some(5));
     }
 
     #[test]
@@ -998,6 +1074,66 @@ mod tests {
     }
 
     #[test]
+    fn trusted_chunk_relation_preserves_complete_and_separator_bounded_paragraphs() {
+        let mut complete = "α\r\n".as_bytes().to_vec();
+        complete.extend(std::iter::repeat_n(b'b', READ_BUFFER_SIZE - 2));
+        complete.push(b'\r');
+        let target_start = complete.len();
+        complete.extend_from_slice(b"needle\n");
+        let target_end = complete.len();
+        complete.extend(std::iter::repeat_n(b'c', READ_BUFFER_SIZE - 1));
+        complete.extend_from_slice(b"\r\n");
+        complete.extend_from_slice("끝".as_bytes());
+        let input = address(&complete, AnddressTarget::Line, target_start, target_end);
+        let expected = observe_direct(&mut Cursor::new(&complete), &input)
+            .unwrap()
+            .unwrap();
+        let actual = observe_trusted(&mut Cursor::new(&complete), &input).unwrap();
+        assert_eq!(actual, expected);
+        assert!(matches!(
+            actual,
+            ViewOutcome::Line {
+                paragraph: Some(paragraph),
+                ..
+            } if paragraph.byte_start() == 0 && paragraph.byte_end() == complete.len()
+        ));
+
+        let bounded = "left\n \t\r\nneedle\r\nβ\r\t \nright";
+        let target_start = bounded.find("needle").unwrap();
+        let target_end = target_start + "needle\r\n".len();
+        let paragraph_end = target_end + "β\r".len();
+        let input = address(
+            bounded.as_bytes(),
+            AnddressTarget::Line,
+            target_start,
+            target_end,
+        );
+        let expected = observe_direct(&mut Cursor::new(bounded.as_bytes()), &input)
+            .unwrap()
+            .unwrap();
+        let actual = observe_trusted(&mut Cursor::new(bounded.as_bytes()), &input).unwrap();
+        assert_eq!(actual, expected);
+        assert!(matches!(
+            actual,
+            ViewOutcome::Line {
+                paragraph: Some(paragraph),
+                ..
+            } if paragraph.byte_start() == "left\n \t\r\n".len()
+                && paragraph.byte_end() == paragraph_end
+        ));
+
+        for (source, start, end) in [("\t\n끝\r", 2, 6), ("끝", 0, 3)] {
+            let input = address(source.as_bytes(), AnddressTarget::Line, start, end);
+            assert_eq!(
+                observe_trusted(&mut Cursor::new(source.as_bytes()), &input).unwrap(),
+                observe_direct(&mut Cursor::new(source.as_bytes()), &input)
+                    .unwrap()
+                    .unwrap()
+            );
+        }
+    }
+
+    #[test]
     fn trusted_and_fallback_projection_match_for_every_scalar_aligned_range() {
         let source = "α\r\n \t\nb\rc\n\n끝";
         let mut boundaries: Vec<_> = source.char_indices().map(|(index, _)| index).collect();
@@ -1009,8 +1145,8 @@ mod tests {
                     let expected = observe_direct(&mut Cursor::new(source.as_bytes()), &input)
                         .unwrap()
                         .unwrap();
-                    let actual =
-                        observe_trusted(&mut Cursor::new(source.as_bytes()), &input).unwrap();
+                    let actual = observe_trusted(&mut Cursor::new(source.as_bytes()), &input)
+                        .unwrap_or_else(|error| panic!("{target:?} {start}..{end}: {error:?}"));
                     assert_eq!(actual, expected, "{target:?} {start}..{end}");
                 }
             }

@@ -2,8 +2,8 @@
 
 ## 0.2.1 observation-reuse development gates
 
-The `0.2.1` development target is implemented through Phase 6 but remains
-source version `0.2.0`, is not source-ready, and is unpublished. Phase 2 adds the Host Runtime
+The `0.2.1` development target is implemented through Phase 7A but remains
+source version `0.2.0`, has no Owner version decision, and is unpublished. Phase 2 adds the Host Runtime
 constructor, source invalidation kernel, private proof state, and
 successful-Search proof installation. Phase 3 adds bounded ordinary View proof
 consumption. Phase 4 adds Check current-proof group classification;
@@ -13,12 +13,13 @@ Phase 6 closes path-exact invalidation, guarded mutation sequencing,
 authority isolation, matching anchored View reuse, failure transitions, and the
 both-mode drift matrix;
 Phase 7 completes fixed A/B measurement and records a source-readiness NO-GO;
+Phase 7A closes that run's sole failed related-Paragraph performance gate;
 Cargo/version, v4 wire, default Untrusted behavior, and the closed public
 `0.2.0` release remain unchanged. The
 Protocol owns default Untrusted Mode and explicit Host-authoritative Mode; the
 [phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
 owns the execution audit, fixed `0.2.0` comparison inputs, complete raw Phase 7
-samples, checksums, and gate evidence.
+and 7A samples, checksums, and gate evidence.
 
 Phase 2 regressions prove that Untrusted Search installs no proof; Host exact
 File and content Search install exact hash/length; re-search replaces one path;
@@ -119,6 +120,32 @@ fallback, and all Phase 6 transitions remain exact. The decision is therefore
 NO-GO; production Rust and Cargo version remain unchanged. The Phase 7 suite
 uses no new benchmark framework or repository instrumentation, and its
 complete raw evidence and reproduction hashes are in the tracker.
+
+Phase 7A removes the related-Paragraph path's private byte-at-a-time reverse and
+forward cursors and reuses the same two fixed 8,192-byte scratch arrays. Direct
+chunk scans preserve CR, LF, CRLF split across scratch boundaries, EOF bare CR,
+no-EOL, Unicode scalar ranges, long Lines, surrounding space/tab separators,
+BOF/EOF Paragraphs, source/error boundaries, and exact related addresses. A
+word candidate filter is exhaustively checked across every byte alignment and
+scratch-edge lengths; trusted and direct projection remain equal for every
+scalar-aligned target range. The GNU-host suite passes 236 tests.
+
+The exact Phase 7 256 MiB fixture
+`d4edd123621cf230590d7812e64bec69460789eba3e0c7136b88a3f26c88f5e5`
+is measured against baseline `0f1cc6b` and the candidate on CPU 2 P-core with
+`powersave`, one warm-up, and seven order-crossed samples. Host
+Search-to-late-Line View moves from `1,035.274` / `1,041.995` ms median/p95 to
+`331.527` / `332.547` ms and therefore passes both 400 ms and recommended 350
+ms gates. Baseline and candidate stdout SHA-256 are both
+`1813f9bf4a219f21de1c4a539a5057676ed37835cc405b78501ea894566212b3`;
+both record HWM below 2.7 MiB, exact `536,870,913` `rchar`, and zero residual
+`wchar`. Search-only stays `270.734` versus `270.534` ms; Host Check remains
+zero-I/O; the one-million-result candidate peaks at 60,080 KiB, 58.672
+bytes/hit and below the 61.4383 bound. Separator, forward, File/Paragraph,
+ordinary/anchored, and Untrusted controls have byte-identical outputs and no
+unexplained material regression. Apply code is untouched and the full suite
+retains the existing one-Correct/six-Safe-Reject/zero-Wrong matrix. This closes
+the performance gate only; it changes no version or publication authority.
 
 Post-decision source verification passes offline/locked metadata and dependency
 tree, format, all-target check, 234 GNU-host tests, clippy with warnings denied,

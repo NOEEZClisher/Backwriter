@@ -1,6 +1,6 @@
 # Backwriter Roadmap
 
-## Not source-ready: 0.2.1 current-observation reuse
+## Unpublished: 0.2.1 current-observation reuse
 
 `0.2.1` is an unpublished performance target governed by the
 [seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md).
@@ -30,9 +30,30 @@ coordinate/path group from copied hash/length proof with no filesystem open,
 read, or hash while preserving its existing report/filter path. Completed
 Phase 5 integrates Apply and Anchor proof transitions. Completed Phase 6 closes
 the full invalidation, authority-isolation, and guarded drift semantics. Phase
-7 completes fixed A/B measurement with a source-readiness NO-GO. Cargo and
-source version remain `0.2.0`; no production optimization, artifact, or
-publication work is part of that decision.
+7 completes fixed A/B measurement with a source-readiness NO-GO. Phase 7A
+closes its sole failed related-Paragraph performance gate without changing
+public meaning. Cargo and source version remain `0.2.0`; the version decision,
+artifact, and publication remain separate work.
+
+## Completed: 0.2.1 Phase 7A related Paragraph scan closure
+
+The trusted Line relation path removes its single-consumer `ReverseBytes` and
+`ForwardBytes` cursor layer. It reuses the existing 8,192-byte scratch and
+direct range reads, locates CR/LF candidates by fixed words inside each chunk,
+and retains the exact CR/LF/CRLF, bare-CR, no-EOL, Unicode, separator, BOF/EOF,
+error, allocation, and I/O contracts. Search projection, proof shape, public
+API/wire/error behavior, and every non-Line consumer are unchanged.
+
+On the exact Phase 7 256 MiB no-separator fixture, baseline `0f1cc6b` and the
+candidate use CPU 2 P-core, `powersave`, one warm-up, and seven order-crossed
+samples. Host Search-to-late-Line View improves from `1,035.274` / `1,041.995`
+ms median/p95 to `331.527` / `332.547` ms. Both the 400 ms gate and 350 ms
+recommendation pass. Output SHA-256 is identical and `rchar` remains exactly
+`536,870,913`; this is a CPU closure, not reduced I/O or retained source state.
+Search-only, Host Check zero-I/O, one-million-result memory, separator/forward,
+File/Paragraph, ordinary/anchored, and Untrusted controls retain exact outputs
+without unexplained material regression. Cargo/version stays `0.2.0`; no
+artifact or publication is authorized by this closure.
 
 ## Completed: 0.2.1 Phase 7 fixed A/B NO-GO
 
@@ -50,9 +71,9 @@ The mandatory Host Search-to-late-Line View median is `1,079.943` ms with p95
 `1,096.362` ms, exceeding the 400 ms ceiling. The no-separator related
 Paragraph requires the trusted Line path to read the complete boundary extent,
 so its composite `rchar` is `536,870,913`. It retains no whole-source bytes but
-does not meet the latency gate. Phase 7 therefore records NO-GO and leaves
-production Rust and version unchanged. Any follow-up optimization and a new
-GO/NO-GO decision require separate authority; publication remains separate.
+does not meet the latency gate. Phase 7 therefore records its historical NO-GO
+and leaves production Rust and version unchanged. Phase 7A above is the
+separately authorized correction; publication remains separate.
 
 ## Completed: 0.2.1 Phase 6 invalidation and race closure
 
@@ -74,9 +95,9 @@ boundaries. Proofs stay isolated by logical path, workspace, admission,
 Runtime, and authority mode, and Runtime drop retains nothing. The seven-cell
 duplicate-Line drift matrix produces one Correct Apply, six Safe Rejects, and
 zero Wrong Applies in both Untrusted and correctly guarded Host modes;
-duplicate Paragraph drift also rejects in both. Phase 7 retains all
-measurement, version, and release-readiness authority at this milestone; its
-subsequent completed result is the NO-GO recorded above.
+duplicate Paragraph drift also rejects in both. Phase 7 retains the original
+measurement and NO-GO evidence; Phase 7A closes only its failed performance
+gate and leaves the version decision separate.
 
 ## Completed: 0.2.1 Phase 5 Apply and Anchor proof integration
 
@@ -93,8 +114,8 @@ reuses the already computed prospective-after SHA-256/length for both the
 prepared Anchor plan and a preallocated proof replacement. Confirmed
 publication installs proof and reflects Anchors through the existing
 allocation-free finish path; publication uncertainty invalidates both for only
-that logical path. Phase 6 closes broader mutation/race semantics, and Phase 7
-records the fixed A/B NO-GO above.
+that logical path. Phase 6 closes broader mutation/race semantics, Phase 7
+records the fixed A/B NO-GO, and Phase 7A closes its related-Paragraph gate.
 
 ## Completed: 0.2.1 Phase 4 Check current-proof reuse
 
@@ -111,8 +132,8 @@ Untrusted execution, a proof miss, poisoned state, or unusable private evidence
 uses the unchanged admitted one-observation-per-source path. Check installs,
 replaces, invalidates, and removes no proof. Apply and Anchor integration is
 complete in Phase 5; broader invalidation/race closure is complete in Phase 6.
-Measurement and release-readiness close as Phase 7 NO-GO; no version change is
-made, and publication remains separate authority.
+Phase 7 records the fixed NO-GO and Phase 7A closes its sole failed performance
+gate. No version change is made, and publication remains separate authority.
 
 ## Completed: 0.2.0 release closure
 
@@ -276,7 +297,8 @@ closes Check proof reuse without changing report semantics. Phase 5 closes
 Apply precondition reuse, exact no-op preservation, prospective-after proof
 installation, and coupled Anchor reflection/fail-closure. Invalidation/race
 closure, authority isolation, and both-mode guarded drift are complete in Phase
-6. Measurement and the version decision remain Phase 7 work.
+6. Phase 7 measurement and the Phase 7A performance correction are complete;
+the version decision remains separate work.
 
 ## Completed: 0.1.0 exact File lookup
 

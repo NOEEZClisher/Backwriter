@@ -23,8 +23,9 @@ tracker is
 ## Backwriter 0.2.1 observation-reuse development target
 
 The `0.2.1` observation-reuse development target is implemented through Phase
-6 but is not source-ready or published. Phase 7 is complete with a NO-GO, so
-Cargo, source, CLI, and version output remain `0.2.0`. The work preserves the
+7A but has no Owner version decision and is not published. Phase 7A closes the
+sole failed Phase 7 performance gate; Cargo, source, CLI, and version output
+remain `0.2.0`. The work preserves the
 complete v4 Anddress API/wire and the closed `0.2.0` release. The Protocol closes two
 execution modes: the default `WorkspaceRuntime`, one-shot CLI, and ordinary CLI
 Session remain Untrusted Mode with the existing per-call one-read/hash path;
@@ -90,6 +91,15 @@ late Line's related Paragraph has no separator before it, so matching trusted
 View performs source-size-proportional reverse/forward boundary reads; the
 composite records `536,870,913` `rchar` without retaining the whole source.
 Phase 7 starts no optimization and changes no production Rust or version.
+Phase 7A then removes the related-Paragraph path's private per-byte cursor
+layer and scans the same fixed 8,192-byte scratch chunks directly. Against
+baseline `0f1cc6b`, the exact 256 MiB no-separator Host Search-to-late-Line View
+median is `331.527` ms with p95 `332.547` ms, passing both the 400 ms gate and
+350 ms recommendation. Its output and `536,870,913` `rchar` remain byte-exact;
+Search, zero-I/O Host Check, one-million-result memory, ordinary/anchored and
+Untrusted View, and Wrong-Apply evidence remain intact. This performance
+closure does not decide the `0.2.1` version or authorize artifacts or
+publication.
 
 Trusted Search followed by ordinary View no longer performs View's complete
 source read or hash; File still returns the complete file range, while
@@ -103,9 +113,9 @@ emission. Confirmed changed Host publication retains only that after proof; the
 next trusted View, Check, or Apply may reuse it without an intervening Search.
 The
 [0.2.1 phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
-owns the audited flow, Phase 2–7 choices, complete raw samples, checksums, gate
-decision, and NO-GO evidence. Any optimization or renewed version decision is
-a separate Owner-authorized scope.
+owns the audited flow, Phase 2–7A choices, complete raw samples, checksums, and
+gate evidence. The version decision and any artifact or publication remain
+separate Owner-authorized scopes.
 
 ## Core capability inventory
 

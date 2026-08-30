@@ -1,7 +1,8 @@
 # Backwriter 0.2.1 Current-Observation Reuse
 
-Status: Phases 1–7 complete; source readiness is NO-GO, the source version
-remains `0.2.0`, and publication has not started.
+Status: Phases 1–7A complete; Phase 7A closes the sole failed performance gate,
+the source version remains `0.2.0`, no version decision has been made, and
+publication has not started.
 
 This tracker records execution evidence and phase progress only. Normative
 semantics belong to the active
@@ -71,7 +72,7 @@ are Adapter/caller values rather than observation authority.
 - Check retains no result/history state. The narrow trusted current proof is its
   sole cross-call exception.
 
-## Seven phases
+## Seven phases and Phase 7A correction
 
 1. **Authority and current-flow audit — complete.** Record actual observer,
    hash, Apply, Anchor, Check, and CLI Runtime paths; close the two-mode
@@ -94,6 +95,10 @@ are Adapter/caller values rather than observation authority.
    fixtures and A/B environment reproduce semantic, memory, I/O, and safety
    evidence, but Host Search-to-late-Line View exceeds the formal 400 ms gate.
    Source version remains `0.2.0`; publication remains separate authority.
+8. **Related Paragraph scan correction — complete, gate PASS.** Phase 7A
+   removes the trusted Line relation's single-consumer byte cursor layer,
+   preserves exact semantics and I/O, and closes the 400/350 ms gate without a
+   version, artifact, or publication decision.
 
 ## Fixed 0.2.0 comparison inputs
 
@@ -497,3 +502,139 @@ harnesses, runner, summaries, raw files, and the task root are removed after
 their necessary evidence is recorded. No separate profiler binary or trace was
 created; the formal memory/I/O gates use runner HWM/I/O plus the retained
 production structural audits.
+
+## Phase 7A related Paragraph scan closure
+
+Phase 7A is **gate PASS**. It removes the trusted Line relation's private
+`ReverseBytes` and `ForwardBytes` per-byte cursors, then reuses the same two
+8,192-byte scratch arrays and direct range reads. Each chunk locates CR/LF
+candidates by safe fixed-word filtering and performs exact byte inspection only
+inside a candidate word. This adds no dependency, unsafe code, public state,
+proof metadata, Search projection, cache, whole-source allocation, or changed
+I/O/error boundary.
+
+Production and regression evidence preserves CR, LF, CRLF split across reverse
+and forward scratch boundaries, EOF bare CR, no-EOL, Unicode scalar ranges,
+long Lines, adjacent space/tab-only separators, BOF/EOF, and a complete-source
+Paragraph. The trusted projector remains byte-equal to the direct observation
+projector for every scalar-aligned target range. The word filter is checked at
+all eight alignments and around 8,192-byte boundaries. The full GNU-host suite
+passes 236 tests, including the unchanged ordinary and anchored Host,
+Untrusted, Apply drift, and public v4 KAT suites.
+
+### Phase 7A measurement method
+
+Baseline is immutable `0f1cc6ba9e1e9730b13109926e88655c571276ff`;
+candidate is its Phase 7A worktree. The exact no-separator 256 MiB fixture is
+unchanged at
+`d4edd123621cf230590d7812e64bec69460789eba3e0c7136b88a3f26c88f5e5`.
+The previous Phase 7 task-local harness had been removed under its cleanup
+contract, so the Phase 7A task-local harness reconstructs the same Host
+Search-to-late-Line View operation and is built from one byte-identical source
+against baseline and candidate. It also adds only the listed control cells.
+Both variants run on CPU 2 P-core with `powersave`, one warm-up each, and seven
+order-crossed fresh processes. The external runner pins the child, measures
+`CLOCK_MONOTONIC_RAW`, and snapshots `/proc` HWM and I/O around only the
+operation. Protocol/output bytes are subtracted from `rchar`/`wchar`.
+
+Nearest-rank p95 is the maximum of seven samples. HWM is the maximum process
+peak; I/O is the median and is constant for all seven samples in every cell.
+
+| Cell | Variant | Median / p95 inner ms | Median / p95 outer ms | Peak HWM KiB | Median `rchar` / `wchar` |
+| --- | --- | ---: | ---: | ---: | ---: |
+| check256 | baseline | 0.002525 / 0.003140 | 0.075195 / 0.103946 | 2696 | 0 / 0 |
+| check256 | candidate | 0.002138 / 0.002580 | 0.103968 / 0.123610 | 2680 | 0 / 0 |
+| file-view | baseline | 0.003218 / 0.006383 | 0.013993 / 0.026321 | 2696 | 19 / 0 |
+| file-view | candidate | 0.003013 / 0.004166 | 0.014170 / 0.018308 | 2696 | 19 / 0 |
+| forward | baseline | 55.949467 / 56.340846 | 55.984829 / 56.411184 | 2688 | 67108878 / 0 |
+| forward | candidate | 43.809610 / 44.183240 | 43.840240 / 44.220670 | 2700 | 67108878 / 0 |
+| paragraph-view | baseline | 0.003128 / 0.004556 | 0.017412 / 0.022405 | 2696 | 19 / 0 |
+| paragraph-view | candidate | 0.003132 / 0.006274 | 0.016009 / 0.027276 | 2684 | 19 / 0 |
+| resident-anchored | baseline | 0.004460 / 0.006639 | 0.019490 / 0.031838 | 2700 | 20 / 0 |
+| resident-anchored | candidate | 0.004484 / 0.005228 | 0.020270 / 0.021162 | 2688 | 20 / 0 |
+| resident-view | baseline | 0.004272 / 0.004868 | 0.018906 / 0.020419 | 2676 | 20 / 0 |
+| resident-view | candidate | 0.004370 / 0.006335 | 0.018508 / 0.019788 | 2668 | 20 / 0 |
+| search-view256 | baseline | 1035.273990 / 1041.995225 | 1035.357078 / 1042.036761 | 2704 | 536870913 / 0 |
+| search-view256 | candidate | 331.526865 / 332.547399 | 331.559203 / 332.621168 | 2664 | 536870913 / 0 |
+| search1m | baseline | 25.627184 / 26.080837 | 30.284444 / 31.262109 | 60016 | 2097152 / 0 |
+| search1m | candidate | 25.230955 / 25.902985 | 29.893976 / 30.709465 | 60080 | 2097152 / 0 |
+| search256 | baseline | 270.733643 / 271.357116 | 270.800039 / 271.424656 | 2696 | 268435456 / 0 |
+| search256 | candidate | 270.534371 / 272.186998 | 270.614174 / 272.269527 | 2688 | 268435456 / 0 |
+| separator | baseline | 0.030135 / 0.042092 | 0.045828 / 0.063010 | 2696 | 32793 / 0 |
+| separator | candidate | 0.030011 / 0.031912 | 0.045207 / 0.046469 | 2680 | 32793 / 0 |
+| untrusted-view | baseline | 0.005238 / 0.005689 | 0.022834 / 0.026157 | 2676 | 19 / 0 |
+| untrusted-view | candidate | 0.004894 / 0.008003 | 0.023037 / 0.033537 | 2684 | 19 / 0 |
+
+The formal Host Search-to-late-Line View median is `331.527` ms and p95 is
+`332.547` ms, so the 400 ms ceiling and 350 ms recommendation both pass. Its
+baseline/candidate bytes, related File/Paragraph Anddresses and ranges, stdout
+SHA-256, HWM, and exact `536,870,913` `rchar` agree.
+the Line remains `[268431360,268435456)` with 4,095 content bytes and LF, and
+the related File and Paragraph both remain `[0,268435456)`. This is a CPU
+improvement;
+the required complete no-separator boundary extent is still read with fixed
+scratch and no retained source bytes. Search-only remains flat. Host Check
+retains exact zero I/O. The one-million-result candidate HWM is 58.672
+bytes/hit, below the 61.4383 bound and 0.063 bytes/hit above this baseline.
+Apply production is untouched, and the complete test suite retains one Correct
+Apply, six Safe Rejects, and zero Wrong Applies.
+
+### Phase 7A raw samples
+
+Rows keep execution-round order within each variant.
+
+| Cell | Variant | Raw inner wall ms | Raw HWM KiB | `rchar` / `wchar` |
+| --- | --- | --- | --- | --- |
+| check256 | baseline | 0.003012, 0.001805, 0.002898, 0.001705, 0.003140, 0.002525, 0.002329 | 2668, 2696, 2672, 2644, 2676, 2668, 2684 | 0 / 0 |
+| check256 | candidate | 0.002142, 0.002512, 0.002580, 0.002100, 0.002032, 0.002071, 0.002138 | 2632, 2680, 2664, 2668, 2636, 2676, 2664 | 0 / 0 |
+| file-view | baseline | 0.003577, 0.002967, 0.002978, 0.003218, 0.006383, 0.005515, 0.002839 | 2656, 2676, 2680, 2680, 2660, 2660, 2696 | 19 / 0 |
+| file-view | candidate | 0.003174, 0.002938, 0.003206, 0.002934, 0.003013, 0.004166, 0.002998 | 2668, 2628, 2672, 2696, 2628, 2664, 2656 | 19 / 0 |
+| forward | baseline | 55.202782, 55.505424, 55.949467, 55.270606, 56.168238, 56.340846, 56.061695 | 2632, 2644, 2688, 2656, 2688, 2684, 2636 | 67108878 / 0 |
+| forward | candidate | 43.756187, 43.258780, 43.851723, 43.855160, 43.187197, 43.809610, 44.183240 | 2684, 2644, 2688, 2660, 2672, 2668, 2700 | 67108878 / 0 |
+| paragraph-view | baseline | 0.003368, 0.003081, 0.002935, 0.002966, 0.003128, 0.004556, 0.004506 | 2676, 2636, 2656, 2644, 2632, 2696, 2660 | 19 / 0 |
+| paragraph-view | candidate | 0.003132, 0.003043, 0.003507, 0.003090, 0.002924, 0.006274, 0.005886 | 2668, 2644, 2648, 2676, 2632, 2668, 2684 | 19 / 0 |
+| resident-anchored | baseline | 0.004289, 0.003803, 0.004122, 0.004915, 0.004460, 0.004542, 0.006639 | 2700, 2612, 2628, 2632, 2644, 2616, 2672 | 20 / 0 |
+| resident-anchored | candidate | 0.004455, 0.004484, 0.004155, 0.004133, 0.005228, 0.004650, 0.004741 | 2688, 2664, 2628, 2620, 2672, 2636, 2660 | 20 / 0 |
+| resident-view | baseline | 0.004209, 0.004320, 0.004272, 0.004228, 0.004190, 0.004868, 0.004474 | 2628, 2668, 2656, 2672, 2664, 2676, 2672 | 20 / 0 |
+| resident-view | candidate | 0.005067, 0.004370, 0.004325, 0.004321, 0.006335, 0.004856, 0.004366 | 2652, 2628, 2652, 2640, 2668, 2648, 2628 | 20 / 0 |
+| search-view256 | baseline | 1036.218237, 1034.170209, 1041.995225, 1037.660894, 1035.273990, 1033.521628, 1035.088930 | 2660, 2676, 2676, 2676, 2704, 2608, 2676 | 536870913 / 0 |
+| search-view256 | candidate | 331.487751, 332.547399, 331.918548, 331.526865, 332.170021, 330.119091, 331.024618 | 2656, 2656, 2664, 2652, 2652, 2656, 2664 | 536870913 / 0 |
+| search1m | baseline | 25.836950, 25.627184, 25.023117, 26.080837, 24.766970, 25.399367, 25.980533 | 59908, 59840, 59908, 60016, 59992, 59848, 60016 | 2097152 / 0 |
+| search1m | candidate | 25.443806, 25.902985, 25.008226, 25.230955, 24.864247, 24.893367, 25.776969 | 60012, 59772, 59884, 60080, 59884, 60064, 60048 | 2097152 / 0 |
+| search256 | baseline | 270.733643, 270.411392, 271.034156, 270.502451, 270.349761, 271.357116, 270.752813 | 2632, 2668, 2648, 2664, 2628, 2648, 2696 | 268435456 / 0 |
+| search256 | candidate | 270.516352, 272.186998, 270.534371, 270.093503, 269.987035, 270.821293, 270.822016 | 2688, 2640, 2684, 2680, 2644, 2676, 2684 | 268435456 / 0 |
+| separator | baseline | 0.030135, 0.031423, 0.029446, 0.032269, 0.029266, 0.029299, 0.042092 | 2648, 2696, 2664, 2648, 2688, 2664, 2608 | 32793 / 0 |
+| separator | candidate | 0.030215, 0.029471, 0.031912, 0.029967, 0.028911, 0.031831, 0.030011 | 2660, 2664, 2624, 2672, 2628, 2680, 2636 | 32793 / 0 |
+| untrusted-view | baseline | 0.004143, 0.004701, 0.005238, 0.005332, 0.005249, 0.005689, 0.004690 | 2656, 2648, 2668, 2620, 2612, 2676, 2656 | 19 / 0 |
+| untrusted-view | candidate | 0.004395, 0.004480, 0.004894, 0.005103, 0.005932, 0.008003, 0.004889 | 2684, 2680, 2624, 2644, 2640, 2676, 2632 | 19 / 0 |
+
+### Phase 7A reproduction identities and outputs
+
+| Item | SHA-256 |
+| --- | --- |
+| Harness source | `f4b1b38ad7f048e8eceb3357c75175f00d3f7a69062ad7a3040a234a46cc87fa` |
+| Runner source | `12733097a6ada253786f31fedb94010a33aae87fabf7cdb4b5ad402dd405e8e0` |
+| Control fixture generator | `4d8ff60d719d6a9d0ffc9c69adbabf7e161d569ffb0ac4d1a31e7b3c535a109b` |
+| Baseline harness binary | `e4afae221da7ed3d7113ff8d5a27dd345bea01c39b270efc3367d0cf19f437c6` |
+| Candidate harness binary | `2e3ae2678d9e430d6532be0f35d63ec6d9e0a37bb72ec643ad86302b8274e32e` |
+| Runner binary | `584487301ee497f866bf97cd3c6e7aac058770f32ab99d6d585197242eca1472` |
+| Raw 154-row TSV | `930e6433457e0b031e9227e7fadfbe4d8fbf5305b62ab4656c78aa3d72c63480` |
+
+Every output below is byte-identical across baseline and candidate.
+
+| Cell | Output SHA-256 |
+| --- | --- |
+| search-view256 | `1813f9bf4a219f21de1c4a539a5057676ed37835cc405b78501ea894566212b3` |
+| search256 | `7fb9b6c46e9c2fad5d3d76e95c8a8b92bbbb92099b752252acf488e822cbe2ef` |
+| check256 | `3ccec72e4266256fdac0cc00aa181a6b5cea5c97731638f4ec1b17ddd144b0ac` |
+| separator | `6ffa993b34fe492b98c4f858d446a7c54ec3a230f41adfb11b735c2db6ac3618` |
+| forward | `d0c7ded90efc7e3026001160ccf5bba5bb55a888039cc5e7bb2c9f4d2b6c4c22` |
+| file-view | `0f88b03c7b685f5b1c33cf9ec9fa0104362b05d3656d85fe2e5c5d286e0744d9` |
+| paragraph-view | `69544cb9440e83776b9e26cabaeb6cdefb4f755c24920887133e1205a4acc956` |
+| resident-view / resident-anchored / untrusted-view | `a293c3e3ed3ae4b4da3720d552f5815e7a5e8113ae133fd7993fa0fd7299bc67` |
+| search1m | `8152d816ffde0de8cde9a3f08a93717b5a39f16ca826d445d05e29d7ac2b413e` |
+
+The task-local baseline export, targets, fixtures, harnesses, runner, raw TSV,
+and outputs are removed after this evidence is recorded. Phase 7A closes only
+the failed performance gate. Cargo and `bw version` remain `0.2.0`; the Owner
+version decision, artifacts, and publication remain separate.
