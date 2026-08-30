@@ -4,9 +4,7 @@ use super::{
     DirectoryAccessError, WorkspaceRuntime, is_backwriter_spill,
     source_scan::{ExactTargetTracker, SourceScanError, scan_source},
 };
-use crate::backwriter::anddress::{
-    Anddress, AnddressError, AnddressTarget, fallible_copy_anddress,
-};
+use crate::backwriter::anddress::{Anddress, AnddressError, AnddressTarget};
 use crate::backwriter::check::{CheckError, CheckOutcome, CheckReport};
 use crate::backwriter::pick::PickOutcome;
 use crate::backwriter::search::SearchOutcome;
@@ -118,19 +116,19 @@ fn indices(length: usize) -> Result<Vec<usize>, CheckError> {
 }
 
 fn compare_groups(left: &Anddress, right: &Anddress) -> std::cmp::Ordering {
-    left.workspace_coordinate
+    left.workspace_coordinate()
         .as_bytes()
-        .cmp(right.workspace_coordinate.as_bytes())
+        .cmp(right.workspace_coordinate().as_bytes())
         .then_with(|| {
-            left.logical_path
+            left.logical_path()
                 .as_bytes()
-                .cmp(right.logical_path.as_bytes())
+                .cmp(right.logical_path().as_bytes())
         })
 }
 
 fn same_group(left: &Anddress, right: &Anddress) -> bool {
-    left.workspace_coordinate == right.workspace_coordinate
-        && left.logical_path == right.logical_path
+    left.workspace_coordinate() == right.workspace_coordinate()
+        && left.logical_path() == right.logical_path()
 }
 
 fn group_end(inputs: &[Anddress], order: &[usize], start: usize) -> usize {
@@ -149,13 +147,13 @@ fn classify_group(
     statuses: &mut [Currentness],
 ) -> Result<(), CheckError> {
     let exemplar = &inputs[group[0]];
-    if exemplar.workspace_coordinate != runtime.workspace_coordinate
-        || is_backwriter_spill(&exemplar.logical_path)
+    if exemplar.workspace_coordinate() != runtime.workspace_coordinate
+        || is_backwriter_spill(exemplar.logical_path())
     {
         set_group(statuses, group, Currentness::NotCurrent);
         return Ok(());
     }
-    let mut file = match runtime.open_admitted_source(&exemplar.logical_path) {
+    let mut file = match runtime.open_admitted_source(exemplar.logical_path()) {
         Ok(file) => file,
         Err(DirectoryAccessError::Unadmitted | DirectoryAccessError::NotCurrent) => {
             set_group(statuses, group, Currentness::NotCurrent);
@@ -177,7 +175,7 @@ fn classify_observed_source(
 ) -> Result<(), CheckError> {
     let needs_structure = group
         .iter()
-        .any(|&index| !matches!(inputs[index].target, AnddressTarget::File));
+        .any(|&index| inputs[index].target() != AnddressTarget::File);
     let mut tracker = needs_structure
         .then(|| ExactTargetTracker::new(inputs, group))
         .transpose()
@@ -187,10 +185,10 @@ fn classify_observed_source(
         None => Ok(()),
     });
     match scanned {
-        Ok(()) => {
+        Ok(state) => {
             match tracker {
                 Some(mut tracker) => {
-                    tracker.finish();
+                    tracker.finish(&state);
                     for &index in group {
                         if tracker.is_current(index) {
                             statuses[index] = Currentness::Current;
@@ -198,7 +196,14 @@ fn classify_observed_source(
                     }
                 }
                 None => {
-                    set_group(statuses, group, Currentness::Current);
+                    for &index in group {
+                        let input = &inputs[index];
+                        if input.source_byte_length() == state.byte_length
+                            && input.source_state_hash() == state.hash
+                        {
+                            statuses[index] = Currentness::Current;
+                        }
+                    }
                 }
             }
             Ok(())
@@ -248,7 +253,7 @@ fn finish(
             }
             Currentness::NotCurrent => removed.push(input),
             Currentness::Unavailable => {
-                unavailable.push(fallible_copy_anddress(&input).map_err(|_| CheckError::Resource)?);
+                unavailable.push(input.clone());
                 filtered.push(input);
             }
         }
@@ -279,7 +284,8 @@ fn pick_outcome(anddresses: Vec<Anddress>) -> PickOutcome {
 mod tests {
     use std::io::{self, Read};
 
-    use crate::backwriter::anddress::{ANDDRESS_VERSION, AnddressTarget, Natural};
+    use crate::backwriter::anddress::AnddressTarget;
+    use crate::hash::Sha256;
     use crate::runtime::source_scan::READ_BUFFER_SIZE;
 
     use super::*;
@@ -331,55 +337,44 @@ mod tests {
         }
     }
 
-    fn address(target: AnddressTarget) -> Anddress {
-        Anddress {
-            version: ANDDRESS_VERSION.to_owned(),
-            workspace_coordinate: "0".repeat(64),
-            logical_path: "source.txt".to_owned(),
+    fn address(bytes: &[u8], target: AnddressTarget, start: usize, end: usize) -> Anddress {
+        let mut hash = Sha256::new();
+        hash.update(bytes);
+        Anddress::new(
+            &"0".repeat(64),
+            "source.txt",
+            &hash.finish().to_hex(),
+            bytes.len(),
             target,
-        }
+            start,
+            end,
+        )
+        .unwrap()
     }
 
     fn all_target_kinds() -> Vec<Anddress> {
+        let bytes = b"one\nstale\n";
         vec![
-            address(AnddressTarget::File),
-            address(AnddressTarget::Paragraph {
-                ordinal: Natural::zero(),
-            }),
-            address(AnddressTarget::Line {
-                ordinal: Natural::zero(),
-                exact_extent: "one\n".to_owned(),
-            }),
-            address(AnddressTarget::Line {
-                ordinal: Natural::one(),
-                exact_extent: "stale\n".to_owned(),
-            }),
+            address(bytes, AnddressTarget::File, 0, bytes.len()),
+            address(bytes, AnddressTarget::Paragraph, 0, bytes.len()),
+            address(bytes, AnddressTarget::Line, 0, 4),
+            address(bytes, AnddressTarget::Line, 4, bytes.len()),
         ]
     }
 
     #[test]
     fn one_byte_reads_preserve_utf8_terminators_and_forward_only_access() {
+        let bytes = "é€🦀\r\nnext\rthird".as_bytes();
         let inputs = vec![
-            address(AnddressTarget::File),
-            address(AnddressTarget::Paragraph {
-                ordinal: Natural::zero(),
-            }),
-            address(AnddressTarget::Line {
-                ordinal: Natural::zero(),
-                exact_extent: "é€🦀\r\n".to_owned(),
-            }),
-            address(AnddressTarget::Line {
-                ordinal: Natural::one(),
-                exact_extent: "next\r".to_owned(),
-            }),
-            address(AnddressTarget::Line {
-                ordinal: Natural::parse("2").unwrap(),
-                exact_extent: "third".to_owned(),
-            }),
+            address(bytes, AnddressTarget::File, 0, bytes.len()),
+            address(bytes, AnddressTarget::Paragraph, 0, bytes.len()),
+            address(bytes, AnddressTarget::Line, 0, 11),
+            address(bytes, AnddressTarget::Line, 11, 16),
+            address(bytes, AnddressTarget::Line, 16, 21),
         ];
         let group = [0, 1, 2, 3, 4];
         let mut statuses = vec![Currentness::NotCurrent; inputs.len()];
-        let mut source = reader("é€🦀\r\nnext\rthird".as_bytes(), None);
+        let mut source = reader(bytes, None);
 
         classify_observed_source(&mut source, &inputs, &group, &mut statuses).unwrap();
 
@@ -407,7 +402,12 @@ mod tests {
 
     #[test]
     fn file_only_reads_through_a_late_failure() {
-        let inputs = vec![address(AnddressTarget::File)];
+        let inputs = vec![address(
+            b"valid prefix then failure",
+            AnddressTarget::File,
+            0,
+            25,
+        )];
         let group = [0];
         let mut statuses = vec![Currentness::NotCurrent];
         let mut source = reader(b"valid prefix then failure", Some(12));
@@ -418,20 +418,19 @@ mod tests {
     }
 
     #[test]
-    fn large_exact_extent_requires_the_complete_final_byte_and_length() {
+    fn large_line_range_requires_the_complete_final_byte_and_length() {
         let source = format!("{}\n", "x".repeat(READ_BUFFER_SIZE * 3));
         let mut mismatched = source.clone();
         mismatched.pop();
         mismatched.push('!');
         let inputs = vec![
-            address(AnddressTarget::Line {
-                ordinal: Natural::zero(),
-                exact_extent: source.clone(),
-            }),
-            address(AnddressTarget::Line {
-                ordinal: Natural::zero(),
-                exact_extent: mismatched,
-            }),
+            address(source.as_bytes(), AnddressTarget::Line, 0, source.len()),
+            address(
+                mismatched.as_bytes(),
+                AnddressTarget::Line,
+                0,
+                mismatched.len(),
+            ),
         ];
         let group = [0, 1];
         let mut statuses = vec![Currentness::NotCurrent; inputs.len()];

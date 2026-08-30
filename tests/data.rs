@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fs;
 
-use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget};
+use backwriter::backwriter::anddress::{Anddress, AnddressTarget};
 use backwriter::backwriter::check::CheckOutcome;
 use backwriter::backwriter::data::{
     DataError, DataKind, DataName, DataNameError, DataStore, StoreError,
@@ -19,12 +19,16 @@ fn name(value: &str) -> DataName {
 }
 
 fn address(path: &str) -> Anddress {
-    Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: "a".repeat(64),
-        logical_path: path.to_owned(),
-        target: AnddressTarget::File,
-    }
+    Anddress::new(
+        &"a".repeat(64),
+        path,
+        &"b".repeat(64),
+        0,
+        AnddressTarget::File,
+        0,
+        0,
+    )
+    .unwrap()
 }
 
 fn check_outcomes() -> (

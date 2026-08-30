@@ -1,14 +1,15 @@
 # Backwriter Anddress and Exact Line Model
 
-Status: normative raw-address authority. The closed `0.1.0` implementation uses
-the v3 algebra recorded below. The v4 algebra is the active unpublished `0.2.0`
-target and is not yet implemented.
+Status: normative raw-address authority. Current unpublished `0.2.0` source
+implements the v4 algebra and hard cutover below. The closed public `0.1.0` v3
+algebra is preserved later in this document only as immutable release evidence;
+it is not accepted by current production code.
 
 An Anddress describes one target in current structure and carries no past-target
 lineage or inherited identity. Backwriter establishes only the resulting current
 structure.
 
-## Unpublished 0.2.0 v4 algebra
+## Implemented unpublished 0.2.0 v4 algebra
 
 An ordinary v4 Anddress has exactly this semantic identity:
 
@@ -37,20 +38,50 @@ state. If the exact complete source state later reappears, raw equality may
 reappear without establishing history, survival, or continuity.
 
 Search is the only target finder and constructs v4 values while reading and
-hashing current source once. View, Check, and Apply consume the hash, length,
-kind, and range directly and never search, reparse to relocate, or context-match
-an old target. `CurrentObservation` is Runtime-private and is not part of the
-wire or equality. Anchor is not an ordinary Anddress; only its live,
-Runtime-local continuity may arithmetically transform a range across a
-Backwriter-owned Apply.
+hashing current source once. View and Check consume the hash, length, kind, and
+range without relocating an old target. Apply first enforces the exact v4
+source-state/range precondition, then Phase 3 temporarily resolves that verified
+range into its existing private call-local parser representation. This private
+ordinal/text value is neither public identity nor wire or retained state.
+`CurrentObservation` is Runtime-private and is not part of wire or equality.
+Anchor is not an ordinary Anddress; only its live Runtime-local continuity may
+arithmetically transform a range across a Backwriter-owned Apply.
 
-The v4 wire version is `artext.backwriter-anddress.v4`. This phase fixes its
-semantic field set and range convention only. The source-hash algorithm, exact
-wire field encoding/order, and v3/v4 compatibility or migration policy remain
-unresolved Owner decisions. No algorithm, dependency, compatibility decoder,
-alias, or parallel production schema is authorized here.
+The source hash is SHA-256 using the existing incremental implementation. The
+v4 wire version is `artext.backwriter-anddress.v4`. The encoder emits exactly
+this compact field order for every kind:
 
-## Implemented 0.1.0 v3 baseline
+```json
+{"version":"artext.backwriter-anddress.v4","workspaceCoordinate":"<64 lower-case hex>","logicalPath":"<logical path>","sourceStateHash":"<64 lower-case hex SHA-256>","sourceByteLength":"4","kind":"file|paragraph|line","byteStart":"0","byteEnd":"4"}
+```
+
+`sourceByteLength`, `byteStart`, and `byteEnd` are canonical unsigned decimal
+JSON strings. They are `"0"`, or begin with an ASCII digit `1`–`9` followed only
+by ASCII digits, and must fit the implementation's checked filesystem-range
+integer. Empty, signed, leading-zero, and overflowing decimals are `Encoding`.
+Ranges must satisfy `start <= end <= sourceByteLength`; File must be exactly
+`[0,sourceByteLength)`, including `[0,0)` for an empty File. Invalid workspace
+coordinate, logical path, source hash, or range is `Invalid`.
+
+The public constructor accepts all eight semantic inputs and returns only a
+valid v4 value. Its inspectors expose borrowed source fields, machine-integer
+length/ranges, and the unit target kind. Values from one Search source share one
+private immutable source-identity allocation while remaining independently
+cloneable, comparable, and encodable; no public `Arc` detail is exposed.
+
+The decoder accepts JSON whitespace and object-key order variation, but rejects
+unknown, duplicate, missing, and wrong-typed fields as `Encoding`. Malformed
+JSON and duplicate `version` are `Encoding`; a unique readable non-v4 version,
+including well-formed v3, is `UnsupportedVersion` before body semantics. A v4
+body with invalid semantic values is `Invalid`. Recoverable reserve/copy/encode
+allocation failure is `Resource`; allocation failure inside infallible standard
+library ownership primitives remains the process allocator boundary and is not
+misreported as a typed error.
+
+`0.2.0` is a hard cutover. Current production contains no v3 decoder, encoder,
+constructor, alias, shim, migration layer, or dual-schema API.
+
+## Historical immutable 0.1.0 v3 release evidence
 
 ### v3 raw locator algebra
 
@@ -90,8 +121,9 @@ wire value.
 
 ### v3 wire
 
-The sole Anddress wire is `artext.backwriter-anddress.v3`. Its compact JSON
-objects have these fixed encoder orders:
+The historical `0.1.0` Anddress wire was
+`artext.backwriter-anddress.v3`. Its compact JSON objects had these fixed
+encoder orders:
 
 ```json
 {"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"<64 lower-case hex>","logicalPath":"<logical path>","kind":"file"}
@@ -130,7 +162,8 @@ code units, each serialized little-endian as one `u16`. Neither platform forces
 UTF-8, performs lossy conversion, case-folding, or normalization. The algorithm
 is SHA-256 only: there is no setting, negotiation, SHA-3, or fallback.
 
-An encoder emits exactly the compact field order above. A decoder may accept
+The historical encoder emitted exactly the compact field order above. Its
+decoder accepted
 JSON whitespace and object-key order variation only. A unique readable non-v3
 version returns `UnsupportedVersion` before a malformed body is considered. It
 rejects unknown, duplicate, missing, or wrong-typed fields, and a noncanonical
@@ -140,10 +173,9 @@ Violations in decoded workspace coordinate, logical path, or exact extent are
 
 ### v3 replacement cutover history
 
-v3 one-time replaced v2. There is no compatibility decoder, migration, alias,
-or parallel schema. Search, View, and Pick producers, consumers, and regressions
-use v3 together. This document does not authorize future API or capability
-behavior changes.
+v3 one-time replaced v2 in `0.1.0`. Current `0.2.0` then hard-cut over every
+producer, consumer, and regression to v4. No current compatibility decoder,
+migration, alias, or parallel schema survives.
 
 Whole-source bytes and fingerprints may remain private call-local observation
 evidence, but are not target identity. The bytes returned by one retained

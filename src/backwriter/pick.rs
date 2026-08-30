@@ -253,8 +253,8 @@ fn matches_atom(atom: &Atom, candidate: &Anddress) -> bool {
         Atom::TargetKind(kind) => target_kind(candidate) == *kind,
         Atom::OneOf(members) => members.iter().any(|member| member == candidate),
         Atom::SameFile(reference) => {
-            candidate.workspace_coordinate == reference.workspace_coordinate
-                && candidate.logical_path == reference.logical_path
+            candidate.workspace_coordinate() == reference.workspace_coordinate()
+                && candidate.logical_path() == reference.logical_path()
         }
     }
 }
@@ -271,9 +271,9 @@ fn reduce(stack: &mut Vec<bool>, arity: usize, all: bool) {
 }
 
 fn target_kind(anddress: &Anddress) -> PickTargetKind {
-    match anddress.target {
+    match anddress.target() {
         AnddressTarget::File => PickTargetKind::File,
-        AnddressTarget::Paragraph { .. } => PickTargetKind::Paragraph,
-        AnddressTarget::Line { .. } => PickTargetKind::Line,
+        AnddressTarget::Paragraph => PickTargetKind::Paragraph,
+        AnddressTarget::Line => PickTargetKind::Line,
     }
 }

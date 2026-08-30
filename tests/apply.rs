@@ -1,8 +1,10 @@
+mod support;
+
 use std::fs;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural};
+use backwriter::backwriter::anddress::{Anddress, AnddressTarget as PublicAnddressTarget};
 use backwriter::backwriter::apply::ApplyError;
 use backwriter::backwriter::edit::{Edit, Position};
 use backwriter::backwriter::search::{
@@ -23,25 +25,128 @@ fn runtime_with_admission(root: &std::path::Path, admission: &str) -> WorkspaceR
     .unwrap()
 }
 
-fn coordinate(workspace: &WorkspaceRuntime) -> String {
+#[derive(Clone)]
+struct TestCoordinate {
+    value: String,
+    root: std::path::PathBuf,
+}
+
+#[derive(Clone)]
+struct Natural(usize);
+
+impl Natural {
+    fn zero() -> Self {
+        Self(0)
+    }
+
+    fn one() -> Self {
+        Self(1)
+    }
+
+    fn parse(value: &str) -> Result<Self, std::num::ParseIntError> {
+        value.parse().map(Self)
+    }
+}
+
+enum AnddressTarget {
+    File,
+    Paragraph {
+        ordinal: Natural,
+    },
+    Line {
+        ordinal: Natural,
+        exact_extent: String,
+    },
+}
+
+fn coordinate(workspace: &WorkspaceRuntime) -> TestCoordinate {
     let request = SearchRequest::new(
         SearchQuery::new("coordinate").unwrap(),
         SearchScope::all_admitted(),
         SearchTarget::File,
     );
     match workspace.search(&request).unwrap() {
-        SearchOutcome::Found { anddresses } => anddresses[0].workspace_coordinate.clone(),
+        SearchOutcome::Found { anddresses } => TestCoordinate {
+            value: anddresses[0].workspace_coordinate().to_owned(),
+            root: workspace.workspace_root().to_owned(),
+        },
         SearchOutcome::Empty => panic!("coordinate source"),
     }
 }
 
-fn address(coordinate: String, path: &str, target: AnddressTarget) -> Anddress {
-    Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: coordinate,
-        logical_path: path.to_owned(),
-        target,
+fn address(coordinate: TestCoordinate, path: &str, target: AnddressTarget) -> Anddress {
+    let source = fs::read(coordinate.root.join(path)).unwrap_or_default();
+    match target {
+        AnddressTarget::File => support::file(&coordinate.value, path, &source),
+        AnddressTarget::Paragraph { ordinal } => {
+            let paragraphs = paragraph_ranges(&source);
+            let (start, end) = paragraphs.get(ordinal.0).copied().unwrap_or((0, 0));
+            support::address(
+                &coordinate.value,
+                path,
+                &source,
+                PublicAnddressTarget::Paragraph,
+                start,
+                end,
+            )
+        }
+        AnddressTarget::Line {
+            ordinal,
+            exact_extent,
+        } => {
+            let spans = support::line_spans(&source);
+            if let Some((start, end)) = spans.get(ordinal.0).copied()
+                && source[start..end] == *exact_extent.as_bytes()
+            {
+                support::address(
+                    &coordinate.value,
+                    path,
+                    &source,
+                    PublicAnddressTarget::Line,
+                    start,
+                    end,
+                )
+            } else {
+                let mut stale_source = exact_extent.into_bytes();
+                stale_source.push(b'!');
+                support::address(
+                    &coordinate.value,
+                    path,
+                    &stale_source,
+                    PublicAnddressTarget::Line,
+                    0,
+                    stale_source.len() - 1,
+                )
+            }
+        }
     }
+}
+
+fn paragraph_ranges(source: &[u8]) -> Vec<(usize, usize)> {
+    let mut paragraphs = Vec::new();
+    let mut paragraph_start = None;
+    let mut paragraph_end = 0;
+    for (start, end) in support::line_spans(source) {
+        let mut body_end = end;
+        if source[..body_end].ends_with(b"\r\n") {
+            body_end -= 2;
+        } else if source[..body_end].ends_with(b"\r") || source[..body_end].ends_with(b"\n") {
+            body_end -= 1;
+        }
+        let text = source[start..body_end]
+            .iter()
+            .any(|byte| !matches!(byte, b' ' | b'\t'));
+        if text {
+            paragraph_start.get_or_insert(start);
+            paragraph_end = end;
+        } else if let Some(paragraph_start) = paragraph_start.take() {
+            paragraphs.push((paragraph_start, paragraph_end));
+        }
+    }
+    if let Some(paragraph_start) = paragraph_start {
+        paragraphs.push((paragraph_start, paragraph_end));
+    }
+    paragraphs
 }
 
 fn assert_no_apply_temp(directory: &std::path::Path) {
@@ -74,7 +179,7 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
         .expect("Apply execution");
     let staging_close = execute.find("staging.close()?;").expect("staging close");
     let empty_insert = execute
-        .find("if matches!(edit, Edit::Insert { content, .. } if content.is_empty())")
+        .find("if matches!(&edit, Edit::Insert { content, .. } if content.is_empty())")
         .expect("empty Insert branch");
     let comparison = execute.find("let comparison =").expect("comparison");
     let after = execute
@@ -93,6 +198,7 @@ fn apply_inserts_at_each_exact_position_without_normalization() {
     fs::write(root.join("coordinate.txt"), "coordinate").unwrap();
     let mut workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
+    fs::write(root.join("note.txt"), "one\r\ntwo\n\nthree").unwrap();
     let line = |ordinal: &str, extent: &str| {
         address(
             coordinate.clone(),
@@ -178,6 +284,37 @@ fn exact_file_lookup_enables_start_and_end_insert_into_empty_files() {
     }
 }
 
+#[test]
+fn v4_duplicate_line_drift_fails_without_wrong_publication() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let original = b"header\nneedle\nneedle\nfooter\n";
+    fs::write(root.join("note.txt"), original).unwrap();
+    let mut workspace = runtime(&root);
+    let request = SearchRequest::new(
+        SearchQuery::new("needle").unwrap(),
+        SearchScope::all_admitted(),
+        SearchTarget::Line,
+    );
+    let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
+        panic!("duplicate lines")
+    };
+    let selected = anddresses[1].clone();
+    let changed = b"needle\nheader\nneedle\nneedle\nfooter\n";
+    fs::write(root.join("note.txt"), changed).unwrap();
+
+    assert_eq!(
+        workspace.apply(&Edit::Replace {
+            target: selected,
+            content: "TARGET\n".to_owned(),
+        }),
+        Err(ApplyError::Unavailable)
+    );
+    assert_eq!(fs::read(root.join("note.txt")).unwrap(), changed);
+    assert_no_apply_temp(&root);
+}
+
 #[cfg(unix)]
 #[test]
 fn changed_apply_preserves_the_source_basic_mode() {
@@ -186,11 +323,11 @@ fn changed_apply_preserves_the_source_basic_mode() {
     fs::create_dir(&root).unwrap();
     fs::write(root.join("coordinate.txt"), "coordinate").unwrap();
     let mut workspace = runtime(&root);
-    let file = address(coordinate(&workspace), "note.txt", AnddressTarget::File);
 
     for (mode, content) in [(0o600, "private"), (0o755, "executable")] {
         let source = root.join("note.txt");
         fs::write(&source, "before").unwrap();
+        let file = address(coordinate(&workspace), "note.txt", AnddressTarget::File);
         fs::set_permissions(&source, fs::Permissions::from_mode(mode)).unwrap();
         assert_eq!(
             fs::metadata(&source).unwrap().permissions().mode() & 0o777,
@@ -803,9 +940,9 @@ fn apply_batches_long_whitespace_outside_paragraph_candidates() {
         format!("a\n{separator}a\nb\n")
     );
 
+    fs::write(root.join("note.txt"), &source).unwrap();
     let separator_line = line("1", separator.clone());
     let first_line = line("0", "a\n".to_owned());
-    fs::write(root.join("note.txt"), &source).unwrap();
     workspace
         .apply(&Edit::Move {
             target: separator_line.clone(),
@@ -1053,23 +1190,16 @@ fn apply_rejects_hard_linked_logical_paths_and_invalid_late_utf8() {
 }
 
 #[test]
-fn apply_keeps_validation_before_runtime_access_and_one_source_observation() {
+fn v3_apply_operand_is_rejected_before_runtime_access() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
     fs::write(root.join("coordinate.txt"), "coordinate").unwrap();
-    let mut workspace = runtime(&root);
-    let invalid = Anddress {
-        version: "unsupported".to_owned(),
-        workspace_coordinate: coordinate(&workspace),
-        logical_path: "missing.txt".to_owned(),
-        target: AnddressTarget::Line {
-            ordinal: Natural::zero(),
-            exact_extent: "missing\n".to_owned(),
-        },
-    };
+    let _workspace = runtime(&root);
     assert_eq!(
-        workspace.apply(&Edit::Delete { target: invalid }),
-        Err(ApplyError::UnsupportedVersion)
+        Anddress::decode(
+            br#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"0","logicalPath":"missing.txt","kind":"line","ordinal":"0","exactExtent":"missing\\n"}"#,
+        ),
+        Err(backwriter::backwriter::anddress::AnddressError::UnsupportedVersion)
     );
 }

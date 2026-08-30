@@ -1,10 +1,11 @@
 # Backwriter Principles
 
-The closed `0.1.0` Rust and public release remain the implemented v3 baseline.
-These principles also govern the active, unpublished `0.2.0` v4 target; they do
-not claim that v4 code, a hash algorithm, compatibility, or release exists.
+The closed public `0.1.0` release remains immutable v3 evidence. Current
+unpublished `0.2.0` Rust implements the hard-cutover v4 value/wire with SHA-256;
+these principles claim no `0.2.0` artifact or publication.
 
-1. **Current-only is not stateless.** Current is source-visible, and Runtime may
+1. **Current-only permits bounded state.** Current is source-visible, and a
+   later fast path may
    retain only the Protocol-bounded current hash, length, and minimum required
    ranges. No history does not mean forgetting the current observation. A
    changed or unprovable state discards it.
@@ -21,16 +22,18 @@ not claim that v4 code, a hash algorithm, compatibility, or release exists.
    and ordinal are not identity.
 5. **Ordinary addresses do not relocate.** A changed source invalidates an
    ordinary Anddress. View, Check, and Apply never search, reparse, or
-   context-match to move an old target after external change. Re-search is an
+   context-match to move an old target after external change. Phase 3 may parse
+   only to prove that an already verified range has the requested kind. Re-search is an
    explicit caller choice and returns a new current address.
 6. **Safety remains selective.** Admission, private/unsafe policy, and symlink
    rejection remain capability-relative. `.artext/bw` alone is ignored;
    `.artext/other` is ordinary source. Unsaved editor buffers remain outside
    Core, and source-visible does not promise durability, retry, or a second
    read.
-7. **Capability responsibility stays narrow.** View validates hash and range
-   and returns exact bytes. Check compares the source hash. Apply requires the
-   exact source state before patching the range. None is a target finder.
+7. **Capability responsibility stays narrow.** View validates hash, kind, and
+   range and returns exact bytes. Check compares source state and structural
+   range. Apply requires the exact source state before its private call-local
+   execution mapping and publication. None is a target finder.
 8. **Pick is pure input selection.** Pick preserves an input-order subsequence
    of valid caller-provided Anddress values without Runtime or Workspace access,
    currentness, relation discovery, or retained result state.
@@ -38,7 +41,8 @@ not claim that v4 code, a hash algorithm, compatibility, or release exists.
    state may arithmetically transform a range across a Backwriter-owned Apply.
    External changes invalidate rather than relocate it; Anchor adds no history,
    persistence, watcher, or generic transition engine.
-10. **Current observation is bounded.** It may retain current hash, byte length,
+10. **Future current observation is bounded.** Phase 3 retains none across
+    calls. A later fast path may retain current hash, byte length,
     and minimum required ranges only. It is not a whole-source buffer, parse
     tree, complete Line collection, Search result, history, persistent index,
     relocation context, or full workspace cache.

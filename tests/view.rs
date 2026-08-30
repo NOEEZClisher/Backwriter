@@ -1,7 +1,10 @@
+mod support;
+
 use std::fs;
 
-use backwriter::backwriter::anddress::{
-    ANDDRESS_VERSION, Anddress, AnddressTarget, LineTerminator, Natural,
+use backwriter::backwriter::anddress::{Anddress, AnddressTarget, LineTerminator};
+use backwriter::backwriter::search::{
+    SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
 };
 use backwriter::backwriter::view::{ViewError, ViewOutcome};
 use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
@@ -10,6 +13,7 @@ use tempfile::tempdir;
 fn runtime(root: &std::path::Path) -> WorkspaceRuntime {
     runtime_with_admission(root, ".")
 }
+
 fn runtime_with_admission(root: &std::path::Path, admission: &str) -> WorkspaceRuntime {
     WorkspaceRuntime::open(
         root,
@@ -17,43 +21,47 @@ fn runtime_with_admission(root: &std::path::Path, admission: &str) -> WorkspaceR
     )
     .unwrap()
 }
+
 fn coordinate(workspace: &WorkspaceRuntime) -> String {
-    let request = backwriter::backwriter::search::SearchRequest::new(
-        backwriter::backwriter::search::SearchQuery::new("one").unwrap(),
-        backwriter::backwriter::search::SearchScope::all_admitted(),
-        backwriter::backwriter::search::SearchTarget::File,
+    let request = SearchRequest::new(
+        SearchQuery::new("one").unwrap(),
+        SearchScope::all_admitted(),
+        SearchTarget::File,
     );
     match workspace.search(&request).unwrap() {
-        backwriter::backwriter::search::SearchOutcome::Found { anddresses } => {
-            anddresses[0].workspace_coordinate.clone()
-        }
-        _ => panic!("coordinate source"),
-    }
-}
-fn address(coordinate: String, path: &str, target: AnddressTarget) -> Anddress {
-    Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: coordinate,
-        logical_path: path.to_owned(),
-        target,
+        SearchOutcome::Found { anddresses } => anddresses[0].workspace_coordinate().to_owned(),
+        SearchOutcome::Empty => panic!("coordinate source"),
     }
 }
 
+fn address(
+    coordinate: String,
+    path: &str,
+    source: &[u8],
+    target: AnddressTarget,
+    byte_start: usize,
+    byte_end: usize,
+) -> Anddress {
+    support::address(&coordinate, path, source, target, byte_start, byte_end)
+}
+
 #[test]
-fn view_checks_current_target_locator_and_returns_related_addresses() {
+fn view_checks_exact_source_and_range_and_returns_related_addresses() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
-    fs::write(root.join("note.txt"), "one\n\ntwo\r\n").unwrap();
+    let source = b"one\n\ntwo\r\n";
+    fs::write(root.join("note.txt"), source).unwrap();
     let workspace = runtime(&root);
     let input = address(
         coordinate(&workspace),
         "note.txt",
-        AnddressTarget::Line {
-            ordinal: Natural::parse("2").unwrap(),
-            exact_extent: "two\r\n".to_owned(),
-        },
+        source,
+        AnddressTarget::Line,
+        5,
+        10,
     );
+
     let ViewOutcome::Line {
         content,
         terminator,
@@ -68,74 +76,96 @@ fn view_checks_current_target_locator_and_returns_related_addresses() {
     assert_eq!(
         file,
         address(
-            input.workspace_coordinate.clone(),
+            input.workspace_coordinate().to_owned(),
             "note.txt",
-            AnddressTarget::File
+            source,
+            AnddressTarget::File,
+            0,
+            source.len(),
         )
     );
     assert_eq!(
         paragraph.unwrap(),
         address(
-            input.workspace_coordinate.clone(),
+            input.workspace_coordinate().to_owned(),
             "note.txt",
-            AnddressTarget::Paragraph {
-                ordinal: Natural::one()
-            }
+            source,
+            AnddressTarget::Paragraph,
+            5,
+            10,
         )
     );
-    fs::write(root.join("note.txt"), "one\n\ntwo\n").unwrap();
+
+    fs::write(root.join("note.txt"), b"one\n\ntwo\n").unwrap();
     assert_eq!(workspace.view(&input), Err(ViewError::Unavailable));
 }
 
 #[test]
-fn view_rejects_invalid_or_private_inputs_before_access() {
+fn view_rejects_private_path_before_access_and_allows_other_artext_children() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir_all(root.join(".artext/bw")).unwrap();
+    fs::create_dir_all(root.join(".artext/other")).unwrap();
+    fs::write(root.join("coordinate.txt"), b"one").unwrap();
+    fs::write(root.join(".artext/bw/file"), b"x").unwrap();
+    fs::write(root.join(".artext/other/file"), b"x").unwrap();
+    let workspace = runtime(&root);
+    let coordinate = coordinate(&workspace);
+
+    assert_eq!(
+        workspace.view(&address(
+            coordinate.clone(),
+            ".artext/bw/file",
+            b"x",
+            AnddressTarget::File,
+            0,
+            1,
+        )),
+        Err(ViewError::Unavailable)
+    );
+    assert!(matches!(
+        workspace.view(&address(
+            coordinate,
+            ".artext/other/file",
+            b"x",
+            AnddressTarget::File,
+            0,
+            1,
+        )),
+        Ok(ViewOutcome::File { text }) if text == "x"
+    ));
+}
+
+#[test]
+fn view_reads_unicode_and_all_line_terminators() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
-    fs::write(root.join("coordinate.txt"), "one").unwrap();
-    fs::create_dir_all(root.join(".artext/bw")).unwrap();
-    fs::write(root.join(".artext/bw/file"), "x").unwrap();
-    let workspace = runtime(&root);
-    let input = address(
-        coordinate(&workspace),
-        ".artext/bw/file",
-        AnddressTarget::File,
-    );
-    assert_eq!(workspace.view(&input), Err(ViewError::Unavailable));
-    let invalid = Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: "x".to_owned(),
-        logical_path: "missing".to_owned(),
-        target: AnddressTarget::File,
-    };
-    assert_eq!(workspace.view(&invalid), Err(ViewError::InvalidInput));
-}
-
-#[test]
-fn view_reads_unicode_and_each_exact_line_terminator_from_ordinary_artext_source() {
-    let fixture = tempdir().unwrap();
-    let root = fixture.path().join("workspace");
-    fs::create_dir_all(root.join(".artext/other")).unwrap();
-    fs::write(root.join("coordinate.txt"), "one").unwrap();
-    fs::write(root.join(".artext/other/note.txt"), "한글\nβ\rγ").unwrap();
+    fs::write(root.join("coordinate.txt"), b"one").unwrap();
+    let source = "한글\nβ\rγ".as_bytes();
+    fs::write(root.join("note.txt"), source).unwrap();
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
-    for (ordinal, extent, content, terminator) in [
-        ("0", "한글\n", "한글", LineTerminator::Lf),
-        ("1", "β\r", "β", LineTerminator::Cr),
-        ("2", "γ", "γ", LineTerminator::None),
+
+    for (start, end, content, terminator) in [
+        (0, 7, "한글", LineTerminator::Lf),
+        (7, 10, "β", LineTerminator::Cr),
+        (10, 12, "γ", LineTerminator::None),
     ] {
         assert!(matches!(
             workspace.view(&address(
                 coordinate.clone(),
-                ".artext/other/note.txt",
-                AnddressTarget::Line {
-                    ordinal: Natural::parse(ordinal).unwrap(),
-                    exact_extent: extent.to_owned(),
-                },
+                "note.txt",
+                source,
+                AnddressTarget::Line,
+                start,
+                end,
             )),
-            Ok(ViewOutcome::Line { content: actual, terminator: actual_terminator, .. })
-                if actual == content && actual_terminator == terminator
+            Ok(ViewOutcome::Line {
+                content: actual,
+                terminator: actual_terminator,
+                ..
+            }) if actual == content && actual_terminator == terminator
         ));
     }
 }
@@ -148,176 +178,161 @@ fn view_maps_replaced_source_symlink_to_unavailable() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
-    let source = root.join("note.txt");
-    fs::write(&source, "one").unwrap();
+    let source_path = root.join("note.txt");
+    fs::write(&source_path, b"one").unwrap();
     let workspace = runtime(&root);
-    let input = address(coordinate(&workspace), "note.txt", AnddressTarget::File);
+    let input = address(
+        coordinate(&workspace),
+        "note.txt",
+        b"one",
+        AnddressTarget::File,
+        0,
+        3,
+    );
     let outside = fixture.path().join("outside.txt");
-    fs::write(&outside, "one").unwrap();
-    fs::remove_file(&source).unwrap();
-    symlink(&outside, source).unwrap();
+    fs::write(&outside, b"one").unwrap();
+    fs::remove_file(&source_path).unwrap();
+    symlink(&outside, source_path).unwrap();
     assert_eq!(workspace.view(&input), Err(ViewError::Unavailable));
 }
 
 #[test]
-fn view_file_and_paragraph_currentness_are_target_specific() {
+fn every_target_is_bound_to_the_complete_source_state() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
-    fs::write(root.join("note.txt"), "one\ntwo\n\nthree").unwrap();
+    let source = b"one\ntwo\n\nthree";
+    fs::write(root.join("note.txt"), source).unwrap();
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
-    let file = address(coordinate.clone(), "note.txt", AnddressTarget::File);
-    let paragraph = address(
+    let file = address(
         coordinate.clone(),
         "note.txt",
-        AnddressTarget::Paragraph {
-            ordinal: Natural::zero(),
-        },
+        source,
+        AnddressTarget::File,
+        0,
+        source.len(),
+    );
+    let paragraph = address(
+        coordinate,
+        "note.txt",
+        source,
+        AnddressTarget::Paragraph,
+        0,
+        8,
     );
     assert!(matches!(
         workspace.view(&file),
         Ok(ViewOutcome::File { .. })
     ));
-    let ViewOutcome::Paragraph {
-        text,
-        file: related_file,
-    } = workspace.view(&paragraph).unwrap()
-    else {
-        panic!("paragraph")
-    };
-    assert_eq!(text, "one\ntwo\n");
-    assert_eq!(related_file, file);
-    fs::write(root.join("note.txt"), "changed\n\nthree").unwrap();
-    assert!(
-        matches!(workspace.view(&file), Ok(ViewOutcome::File { text }) if text.starts_with("changed"))
-    );
-    assert!(
-        matches!(workspace.view(&paragraph), Ok(ViewOutcome::Paragraph { text, .. }) if text == "changed\n")
-    );
+    assert!(matches!(
+        workspace.view(&paragraph),
+        Ok(ViewOutcome::Paragraph { ref text, .. }) if text == "one\ntwo\n"
+    ));
+
+    fs::write(root.join("note.txt"), b"one\ntwo\n\nother").unwrap();
+    assert_eq!(workspace.view(&file), Err(ViewError::Unavailable));
+    assert_eq!(workspace.view(&paragraph), Err(ViewError::Unavailable));
 }
 
 #[test]
-fn view_maps_huge_missing_ordinal_and_invalid_text_to_unavailable() {
+fn view_rejects_missing_ranges_invalid_text_wrong_coordinate_and_nonregular_sources() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
-    fs::write(root.join("note.txt"), "one").unwrap();
+    fs::write(root.join("note.txt"), b"one").unwrap();
+    fs::create_dir(root.join("directory")).unwrap();
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
-    let huge = address(
-        coordinate.clone(),
-        "note.txt",
-        AnddressTarget::Line {
-            ordinal: Natural::parse(&format!("1{}", "0".repeat(4097))).unwrap(),
-            exact_extent: "one".to_owned(),
-        },
-    );
-    assert_eq!(workspace.view(&huge), Err(ViewError::Unavailable));
-    fs::write(root.join("note.txt"), b"one\xff").unwrap();
     assert_eq!(
         workspace.view(&address(
             coordinate.clone(),
             "note.txt",
-            AnddressTarget::File
+            b"one",
+            AnddressTarget::Line,
+            1,
+            1,
         )),
         Err(ViewError::Unavailable)
     );
-    fs::write(root.join("note.txt"), b"one\0").unwrap();
     assert_eq!(
-        workspace.view(&address(coordinate, "note.txt", AnddressTarget::File)),
-        Err(ViewError::Unavailable)
-    );
-}
-
-#[test]
-fn view_accepts_same_coordinate_under_a_different_admission() {
-    let fixture = tempdir().unwrap();
-    let root = fixture.path().join("workspace");
-    fs::create_dir_all(root.join("docs")).unwrap();
-    fs::write(root.join("docs/note.txt"), "one").unwrap();
-    let all = runtime(&root);
-    let input = address(coordinate(&all), "docs/note.txt", AnddressTarget::File);
-    assert!(matches!(
-        runtime_with_admission(&root, "docs").view(&input),
-        Ok(ViewOutcome::File { text }) if text == "one"
-    ));
-}
-
-#[test]
-fn view_closes_unsupported_coordinate_missing_and_nonregular_inputs() {
-    let fixture = tempdir().unwrap();
-    let root = fixture.path().join("workspace");
-    fs::create_dir(&root).unwrap();
-    fs::write(root.join("note.txt"), "one").unwrap();
-    fs::create_dir(root.join("directory")).unwrap();
-    let workspace = runtime(&root);
-    let coordinate = coordinate(&workspace);
-    let unsupported = Anddress {
-        version: "other".to_owned(),
-        workspace_coordinate: "not-a-coordinate".to_owned(),
-        logical_path: "\0".to_owned(),
-        target: AnddressTarget::File,
-    };
-    assert_eq!(
-        workspace.view(&unsupported),
-        Err(ViewError::UnsupportedVersion)
-    );
-    assert_eq!(
-        workspace.view(&address("b".repeat(64), "note.txt", AnddressTarget::File)),
+        workspace.view(&address(
+            "b".repeat(64),
+            "note.txt",
+            b"one",
+            AnddressTarget::File,
+            0,
+            3,
+        )),
         Err(ViewError::Unavailable)
     );
     assert_eq!(
         workspace.view(&address(
             coordinate.clone(),
             "missing.txt",
-            AnddressTarget::File
+            b"one",
+            AnddressTarget::File,
+            0,
+            3,
         )),
         Err(ViewError::Unavailable)
     );
     assert_eq!(
-        workspace.view(&address(coordinate, "directory", AnddressTarget::File)),
+        workspace.view(&address(
+            coordinate.clone(),
+            "directory",
+            b"one",
+            AnddressTarget::File,
+            0,
+            3,
+        )),
+        Err(ViewError::Unavailable)
+    );
+
+    fs::write(root.join("note.txt"), b"one\xff").unwrap();
+    assert_eq!(
+        workspace.view(&address(
+            coordinate.clone(),
+            "note.txt",
+            b"one\xff",
+            AnddressTarget::File,
+            0,
+            4,
+        )),
+        Err(ViewError::Unavailable)
+    );
+    fs::write(root.join("note.txt"), b"one\0").unwrap();
+    assert_eq!(
+        workspace.view(&address(
+            coordinate,
+            "note.txt",
+            b"one\0",
+            AnddressTarget::File,
+            0,
+            4,
+        )),
         Err(ViewError::Unavailable)
     );
 }
 
 #[test]
-fn view_distinguishes_missing_paragraph_line_mismatch_and_separator_parent() {
+fn separator_line_has_no_paragraph_and_range_mismatch_is_unavailable() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
-    fs::write(root.join("note.txt"), "one\n \t\ntwo").unwrap();
+    let source = b"one\n \t\ntwo";
+    fs::write(root.join("note.txt"), source).unwrap();
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
+
     assert_eq!(
         workspace.view(&address(
             coordinate.clone(),
             "note.txt",
-            AnddressTarget::Paragraph {
-                ordinal: Natural::parse("2").unwrap(),
-            },
-        )),
-        Err(ViewError::Unavailable)
-    );
-    assert_eq!(
-        workspace.view(&address(
-            coordinate.clone(),
-            "note.txt",
-            AnddressTarget::Line {
-                ordinal: Natural::parse("9").unwrap(),
-                exact_extent: "one\n".to_owned(),
-            },
-        )),
-        Err(ViewError::Unavailable)
-    );
-    assert_eq!(
-        workspace.view(&address(
-            coordinate.clone(),
-            "note.txt",
-            AnddressTarget::Line {
-                ordinal: Natural::zero(),
-                exact_extent: "changed\n".to_owned(),
-            },
+            source,
+            AnddressTarget::Paragraph,
+            1,
+            1,
         )),
         Err(ViewError::Unavailable)
     );
@@ -325,10 +340,10 @@ fn view_distinguishes_missing_paragraph_line_mismatch_and_separator_parent() {
         .view(&address(
             coordinate,
             "note.txt",
-            AnddressTarget::Line {
-                ordinal: Natural::one(),
-                exact_extent: " \t\n".to_owned(),
-            },
+            source,
+            AnddressTarget::Line,
+            4,
+            7,
         ))
         .unwrap()
     else {
@@ -338,28 +353,28 @@ fn view_distinguishes_missing_paragraph_line_mismatch_and_separator_parent() {
 }
 
 #[test]
-fn view_finds_a_real_4097th_line_and_tuple_reestablishment_is_only_current_lookup() {
+fn view_finds_a_real_line_after_4096_lines_and_raw_state_can_reestablish() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
-    fs::write(root.join("note.txt"), "one\n".repeat(4097)).unwrap();
+    let source = "one\n".repeat(4097);
+    fs::write(root.join("note.txt"), &source).unwrap();
     let workspace = runtime(&root);
-    let coordinate = coordinate(&workspace);
     let input = address(
-        coordinate,
+        coordinate(&workspace),
         "note.txt",
-        AnddressTarget::Line {
-            ordinal: Natural::parse("4096").unwrap(),
-            exact_extent: "one\n".to_owned(),
-        },
+        source.as_bytes(),
+        AnddressTarget::Line,
+        4096 * 4,
+        4097 * 4,
     );
     assert!(matches!(
         workspace.view(&input),
         Ok(ViewOutcome::Line { .. })
     ));
-    fs::write(root.join("note.txt"), "two\n").unwrap();
+    fs::write(root.join("note.txt"), b"two\n").unwrap();
     assert_eq!(workspace.view(&input), Err(ViewError::Unavailable));
-    fs::write(root.join("note.txt"), "one\n".repeat(4097)).unwrap();
+    fs::write(root.join("note.txt"), &source).unwrap();
     assert!(matches!(
         workspace.view(&input),
         Ok(ViewOutcome::Line { .. })
@@ -376,73 +391,46 @@ fn view_returns_complete_large_file_paragraph_and_line_outputs() {
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
 
-    let ViewOutcome::File { text } = workspace
-        .view(&address(
-            coordinate.clone(),
-            "note.txt",
-            AnddressTarget::File,
-        ))
-        .unwrap()
-    else {
-        panic!("file")
-    };
-    assert_eq!(text.len(), source.len());
-    assert!(text.starts_with("one-first") && text.ends_with("last"));
-
-    let ViewOutcome::Paragraph { text, .. } = workspace
-        .view(&address(
-            coordinate.clone(),
-            "note.txt",
-            AnddressTarget::Paragraph {
-                ordinal: Natural::zero(),
-            },
-        ))
-        .unwrap()
-    else {
-        panic!("paragraph")
-    };
-    assert_eq!(text.len(), source.len());
-    assert!(text.starts_with("one-first") && text.ends_with("last"));
-
-    let ViewOutcome::Line { content, .. } = workspace
-        .view(&address(
-            coordinate,
-            "note.txt",
-            AnddressTarget::Line {
-                ordinal: Natural::zero(),
-                exact_extent: source.clone(),
-            },
-        ))
-        .unwrap()
-    else {
-        panic!("line")
-    };
-    assert_eq!(content.len(), source.len());
-    assert!(content.starts_with("one-first") && content.ends_with("last"));
+    for target in [
+        AnddressTarget::File,
+        AnddressTarget::Paragraph,
+        AnddressTarget::Line,
+    ] {
+        let outcome = workspace
+            .view(&address(
+                coordinate.clone(),
+                "note.txt",
+                source.as_bytes(),
+                target,
+                0,
+                source.len(),
+            ))
+            .unwrap();
+        let text = match outcome {
+            ViewOutcome::File { text } | ViewOutcome::Paragraph { text, .. } => text,
+            ViewOutcome::Line { content, .. } => content,
+        };
+        assert_eq!(text, source);
+    }
 }
 
 #[test]
-fn view_paragraph_ignores_unrelated_chunk_spanning_lines() {
+fn view_accepts_same_coordinate_under_a_different_admission() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
-    fs::create_dir(&root).unwrap();
-    let source = format!(
-        "{}\n\none-target\n\n{}\n",
-        "before".repeat(2_000),
-        "after".repeat(2_000)
-    );
-    fs::write(root.join("note.txt"), source).unwrap();
-    let workspace = runtime(&root);
+    fs::create_dir_all(root.join("docs")).unwrap();
+    fs::write(root.join("docs/note.txt"), b"one").unwrap();
+    let all = runtime(&root);
     let input = address(
-        coordinate(&workspace),
-        "note.txt",
-        AnddressTarget::Paragraph {
-            ordinal: Natural::one(),
-        },
+        coordinate(&all),
+        "docs/note.txt",
+        b"one",
+        AnddressTarget::File,
+        0,
+        3,
     );
-
     assert!(matches!(
-        workspace.view(&input),
-        Ok(ViewOutcome::Paragraph { text, .. }) if text == "one-target\n"
+        runtime_with_admission(&root, "docs").view(&input),
+        Ok(ViewOutcome::File { text }) if text == "one"
     ));
 }

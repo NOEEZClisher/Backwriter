@@ -1,13 +1,16 @@
 # Backwriter Roadmap
 
-## Next: 0.2.0 Anddress fast path
+## Next: Phase 4 retained-observation producer fast path
 
-The closed public `0.1.0` release remains the immutable implemented v3
-baseline. `0.2.0` is an unpublished local source-development target governed by
+The closed public `0.1.0` release remains immutable v3 evidence. `0.2.0` is an
+unpublished local source-development line governed by
 the [seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
-Phase 1 records the semantic authority and is complete; Phase 2 profiling and
-reproducible baseline measurement are next. No v4 Rust, Cargo, benchmark,
-version, CLI, or release implementation is complete.
+Phases 1 and 2 recorded semantic authority and reproducible v3 evidence. Phase
+3 is complete: Cargo is `0.2.0`, the public Rust API and sole production wire
+are v4, Search computes SHA-256 and ranges in its one read, every current caller
+accepts v4, and v3 is rejected without a compatibility seam. Phase 4 is next;
+no retained-observation fast path, Phase 7 benchmark result, artifact, or
+release is complete.
 
 The target replaces ordinal/exact-text identity with an ordinary Anddress that
 authorizes one exact source state and byte range: workspace coordinate, logical
@@ -21,15 +24,16 @@ change. Only Anchor may arithmetically transform live ranges across a
 Backwriter-owned Apply.
 
 History, a persistent index, context matching, external-change relocation, and
-a full workspace cache remain excluded. The source-hash algorithm and v3/v4
-compatibility policy are unresolved Owner decisions and are gates for a later
-implementation phase, not Phase 1 decisions.
+a full workspace cache remain excluded. SHA-256 and the v4 hard cutover are
+closed Owner decisions implemented in Phase 3.
 
-## Completed: v3 target-local Anddress
+## Completed: Phase 3 Anddress v4 value/wire kernel
 
-Production uses `artext.backwriter-anddress.v3`: independent target-local
-File/Paragraph/Line values with workspace coordinate, logical path, ordinals,
-and Line exact extent. Source-wide observation material is not target equality.
+Production source uses only `artext.backwriter-anddress.v4`: workspace
+coordinate, logical path, complete-source SHA-256, exact source byte length,
+target kind, and exact `[start,end)` range. Target text, terminator, ordinal,
+and context are not identity. The public constructor is valid-only; encoding
+uses eight ordered fields and canonical unsigned-decimal strings.
 
 Past-structure mechanics excluded by the Protocol are not product or roadmap
 work. Past-state recovery belongs to external history systems such as Git.
@@ -40,9 +44,12 @@ They are not a freeze of v2 target semantics. Reuse their admission, no-follow,
 UTF-8/NUL, exact Line, current-only, stateless, and no-limit mechanics where
 they do not impose v2 source-wide identity.
 
-The address model owns the target-local raw locator algebra and the sole v3
-wire. The Rust producers, consumers, and regressions cut over together without
-a compatibility decoder, migration, alias, or parallel schema.
+The address model owns the exact-source/range algebra and sole v4 wire. Rust
+producers, consumers, CLI round trips, and regressions cut over together
+without a v3 decoder, encoder, migration, alias, or parallel schema. The
+existing Apply parser retains ordinal/text only as a private call-local
+representation after v4 source-state and range verification; Phase 6 removes
+that remaining execution-path indirection.
 
 ## Remaining owner decisions
 
@@ -75,9 +82,10 @@ human/JSON and Session forms while reusing existing outcomes and writers.
 Check accepts the resulting ordinary Search outcome, and its File Anddress can
 drive existing Apply `StartOf` and `EndOf` positions for an empty source.
 
-The Cargo package and source executable version are `0.1.0`, and `bw version`
-prints `Backwriter 0.1.0`. This source milestone did not itself publish a
-distribution; the separate stable-publication phase is completed below, while
+The historical milestone used Cargo `0.1.0`; current unpublished source is
+Cargo `0.2.0`, and `bw version` prints `Backwriter 0.2.0`. This source line has
+not published a distribution; the separate `0.1.0` stable-publication phase is
+completed below, while
 the complete public `0.1.0-beta.3` bundle remains closed and immutable.
 
 ## Completed: CLI V1 capabilities and standalone Version/Update utilities
@@ -86,7 +94,7 @@ The canonical `bw` executable implements exact `bw version`, explicit
 `bw update`, one-shot human and JSON Search,
 View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result
 binding, and Data. JSON Search, View, and Check stream compact Adapter envelopes
-with exact v3 Anddress objects where applicable and create no Core wire. The
+with exact v4 Anddress objects where applicable and create no Core wire. The
 Raw View is an exact-text Adapter projection that reuses ordinary View output
 without a Core wire or new View meaning. The Session owns one Runtime and one
 explicit caller-owned `DataStore`
@@ -107,8 +115,8 @@ behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
 or wire authority. Version and Update are Adapter-owned standalone utilities
 outside Core. Explicit Update invokes the canonical installer; background and
 automatic update remain deferred.
-The `0.1.0` Core/Runtime and CLI source surface is frozen after exact File
-lookup. The separate `0.2.0` source target proceeds only through its recorded
+The published `0.1.0` Core/Runtime and CLI surface remains frozen. The
+unpublished `0.2.0` source target proceeds only through its recorded
 phase gates; Adapter collection/Edit transport and Session machine output remain
 separate Owner decisions.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
@@ -135,9 +143,9 @@ cross-build validation without a native-runtime test claim. Windows PowerShell
 installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
 Windows build and installer verification make no native-runtime or native-CMD
 claim.
-The current Cargo package and library crate are `backwriter` at
-`0.1.0`; the sole canonical executable and external Adapter command are
-`bw`. The public beta.1, beta.2, and beta.3 files remain unchanged immutable
+The current Cargo package and library crate are `backwriter` at unpublished
+`0.2.0`; the sole canonical executable and external Adapter command are `bw`.
+The public beta.1, beta.2, and beta.3 files remain unchanged immutable
 prior artifacts. The complete stable `0.1.0` Linux/macOS/Windows version
 directory is immutable, the planned matrix is complete, and the stable release
 is closed.

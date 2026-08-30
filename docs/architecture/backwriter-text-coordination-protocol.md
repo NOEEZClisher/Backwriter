@@ -1,9 +1,9 @@
 # Backwriter Protocol
 
-Status: normative current-only Core/Runtime contract. The closed `0.1.0`
-implementation is the v3 and single-source Edit-to-Apply V1 baseline. The
-Anddress v4 fast path below is the active, unpublished `0.2.0` target and is not
-yet implemented.
+Status: normative current-only Core/Runtime contract. The closed public `0.1.0`
+release remains immutable v3 evidence. Current unpublished `0.2.0` source uses
+the hard-cutover v4 value/wire and all production callers; the retained-
+observation and direct consumer fast paths remain Phase 4–6 work.
 
 ## Unpublished 0.2.0 current-observation authority
 
@@ -28,12 +28,11 @@ ranges are their exact current source extents. Target text and ordinal are not
 v4 identity. Raw equality compares those v4 fields exactly. Admission remains
 Runtime availability policy rather than raw equality.
 
-The source-state hash is final currentness authority. The hash algorithm and
-the v3/v4 compatibility or migration policy are unresolved Owner decisions;
-this authority neither chooses a dependency nor authorizes a decoder, alias, or
-parallel public schema. The implemented `0.1.0` v3 wire remains the stable
-baseline until a later phase cuts every authorized producer and consumer over
-together.
+The source-state hash is final currentness authority. It is SHA-256 through the
+existing incremental hash implementation. `0.2.0` is a hard cutover: current
+production has no v3 decoder, encoder, constructor, alias, migration layer, or
+parallel public schema. A unique readable v3 version is
+`UnsupportedVersion`; malformed or duplicate version input remains `Encoding`.
 
 Search alone discovers File, Paragraph, or Line targets. During its one retained
 source read it validates source text, parses current structure, matches or
@@ -41,16 +40,18 @@ selects the target, records exact byte ranges, and computes the source hash in
 the same pass. A separate hash pass is forbidden. Every returned ordinary v4
 Anddress carries the resulting hash, byte length, kind, and exact range.
 
-View consumes one ordinary Anddress. It validates the current source hash and
-uses the recorded length to prove the range is in bounds for that exact state;
-it does not search or parse structure to rediscover the target. Check compares
-the current source hash with the Anddress and does not search. Apply accepts the
-hash as its source-state precondition, validates the recorded range against the
-recorded length, and patches that exact range; it neither searches nor uses
-text, ordinal, context, or nearby structure to relocate a stale target. A
-mismatch fails closed before a patch.
+View consumes one ordinary Anddress. Phase 3 validates the current source hash,
+length, kind, and range during its existing one-read structural scan; it never
+relocates a stale target. Check compares the source state and exact structural
+range without searching. Apply accepts the hash as its source-state
+precondition, validates the recorded range, and only then maps the verified
+target to its existing private call-local parser representation. That temporary
+ordinal/text representation is not identity, wire, or retained state. Direct
+bounded-range consumer paths remain Phase 5–6 work. A mismatch fails closed
+before publication.
 
-`CurrentObservation` is permitted Runtime-private current state. It may retain
+`CurrentObservation` is permitted Runtime-private current state for later fast
+paths; Phase 3 retains no such state across calls. It may retain
 only the current source hash, exact byte length, and byte ranges minimally
 required by the current capability or fast path. It may not retain a prior
 observation, whole source, parse tree, complete Line collection, Search result,
@@ -99,22 +100,18 @@ notification, queue, automatic scan, address re-evaluation, or reissuance. A
 source-visible mutation changes only what an observation can construct or
 validate from the bytes it reads.
 
-In the shipped `0.1.0` v3 baseline, raw Anddress values remain caller-owned
-values; Runtime neither mutates nor reissues them. A new observation
-independently reconstructs v3 locators: File
-content changes may reconstruct
-the same File value; a currently existing Paragraph ordinal may reconstruct the
-same Paragraph value despite content or boundary changes; and, for the same
-File, a Line value changes when its ordinal or ExactExtent changes. An unchanged
-Line extent can therefore still produce a different value after an earlier
-insertion or deletion moves its ordinal. A source mutation neither globally
-invalidates nor reissues Anddresses.
+Raw v4 Anddress values remain caller-owned values; Runtime neither mutates nor
+reissues them. A new observation independently constructs values for its exact
+source SHA-256, byte length, kind, and ranges. Any source-byte change therefore
+invalidates every ordinary Anddress for the prior source state. Reappearance of
+the exact same source bytes may reconstruct the same raw value without proving
+continuity, survival, or history.
 
-The implemented `0.1.0` Runtime execution seams are
+The implemented `0.2.0` Runtime execution seams are
 `WorkspaceRuntime::search(&SearchRequest)`, `WorkspaceRuntime::view(&Anddress)`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`,
 `WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
-`check_pick(PickOutcome)`. In that v3 baseline, Search, View, Pick, Check, and Apply retain no
+`check_pick(PickOutcome)`. In current Phase 3, Search, View, Pick, Check, and Apply retain no
 observation object, source cache, result store, index, snapshot, lease,
 registry, or authenticity state. Search enumerates admitted Workspace Source
 deterministically through retained capability-relative no-follow handles. For
@@ -145,9 +142,9 @@ observation has completed.
 
 View V1 keeps its public API. A File, Paragraph, or Line result can itself be
 source-sized, so its permitted working space is a streaming buffer plus its
-returned target. Search may retain its public result and a Line `ExactExtent`;
-deterministic byte-order directory-name materialization remains in scope for
-now. The shared scanner reads retained source through its fixed input scratch
+returned target. Search may retain its public result and call-local range
+projection state; deterministic byte-order directory-name materialization
+remains in scope for now. The shared scanner reads retained source through its fixed input scratch
 array. Apply separately owns an equally sized fixed output batch. It writes the
 accepted before observation to one same-parent staging entry, then writes each
 flushed source batch and replacement or required semantic slice to one
@@ -162,46 +159,45 @@ Current resolve, resulting UTF-8/NUL validation, after-parse, every Anchor
 disposition and collision, and every fallible preparation complete before
 publication; successful reflection remains allocation-free and non-failing.
 
-The v3 Check, Search, View, Anchor, and Apply streaming slices are complete. They share one private
+The v4 Check, Search, View, Anchor, and Apply streaming slices share one private
 incremental forward scanner in `runtime/source_scan.rs`, which reads one
-retained no-follow handle with a fixed scratch buffer and retains no complete
-source. Check keeps currentness classification, while Search keeps KMP matching
-and target projection. Only Search Line projection retains the current complete
-exact extent as call-local reusable scratch; a matched extent is fallibly copied
-into its returned target, while unmatched scratch capacity is never transferred
-to a result. View accumulates only its returned File or Paragraph
-result and a candidate physical Line for the requested Paragraph; after clean
-exact-Line proof, a Line result is constructed from caller-owned `ExactExtent`.
-Anchor shares exact-target evidence with its selected binding observation. Apply
-reuses the framer for its incremental prospective-after parse and prepares its
-Anchor dispositions before the sole rename. This direction adds no public stream
+retained no-follow handle with a fixed scratch buffer, incrementally hashes the
+same bytes, and retains no complete source. Check keeps currentness
+classification, while Search keeps KMP matching and range projection. Search
+shares one immutable source identity across results from the same source and
+copies no Line text into Anddress. View accumulates only its returned text and
+the minimum candidate bytes needed by its transitional structural scan. Anchor
+shares exact-target evidence with its selected binding observation. Apply
+reuses the framer for source-state/range proof, its private call-local parser,
+and prospective-after parsing, then prepares Anchor dispositions before the
+sole rename. This direction adds no public stream
 API, spill, mmap, cache, async work,
 worker, directory traversal change, dependency, or Runtime/Anddress split.
 
-## Implemented 0.1.0 v3 target-local Anddress baseline
+## Implemented 0.2.0 v4 exact-source Anddress kernel
 
 File, Paragraph, and Line are independent target addresses with structural
 relationships. They are not a durable parent/child identity tree. Their raw
-locator algebra is defined only by the address model. Admission is not raw
-equality. A separator-boundary change establishes current Paragraphs and ordinal
-movement makes a new raw address, neither mapping a past target to a current
-target. `Block` is historical wording for the existing blank-line-bounded
-Paragraph and introduces no type, alias, variant, or wire value.
+equality is defined only by the v4 address model. Admission is not raw equality.
+Source change creates a different exact source state rather than mapping a past
+target to a current target. `Block` is historical wording for the existing
+blank-line-bounded Paragraph and introduces no type, alias, variant, or wire
+value.
 
-v3 keeps whole-source bytes, length, provenance, and fingerprints out of every
-target equality and wire. They may be private call-local construction context,
-but are not target identity. A digest from one retained-handle read neither
-proves a stable source nor requires a second read. The sole wire is
-`artext.backwriter-anddress.v3`, whose exact encoding and errors belong only to
-the address model. Backwriter must not add a compatibility decoder, migration,
-alias, or parallel schema.
+v4 includes complete-source SHA-256 and byte length in every target equality
+and wire, while complete source bytes and provenance remain private call-local
+construction context. A digest from one retained-handle read neither proves a
+stable source nor requires a second read. The sole production wire is
+`artext.backwriter-anddress.v4`, whose exact encoding and errors belong only to
+the address model. Backwriter must not add a v3 compatibility decoder,
+migration, alias, or parallel schema.
 
 Backwriter Core constructs and provides target Anddress values from an accepted
 current observation. Search delivers those values as results; it is not an
 issuer. This creates no separate registry, issuance lifecycle, lookup/reuse
 state, durable identity, or global identity.
 
-Raw locator equality and v3 wire representation are closed only in the address
+Raw exact-source/range equality and v4 wire representation are closed only in the address
 model. Target-specific View currentness, Search projection, Pick predicates,
 and Anchor live continuity are closed below. None authorize a separate registry,
 issuance lifecycle, snapshot,
@@ -287,8 +283,8 @@ automatic Store, has no latest slot, and performs no automatic update.
 The completed one-shot Search, View, and Check JSON projections are Adapter-only.
 Their compact envelopes identify `bw.cli.search.v1`, `bw.cli.view.v1`, and
 `bw.cli.check.v1`; Search embeds each
-existing encoded v3 Anddress JSON object directly, View embeds its related v3
-File and optional Paragraph objects directly, and Check embeds its filtered v3
+existing encoded v4 Anddress JSON object directly, View embeds its related v4
+File and optional Paragraph objects directly, and Check embeds its filtered v4
 Anddress object directly when present. They create no Core wire, value model,
 Search/View/Check state, result collection, or capability workflow.
 
@@ -296,7 +292,7 @@ One-shot raw View is likewise Adapter-only: it is an explicit exact-text output
 selection that reuses the existing View projection without a Core wire, state,
 or View semantic change.
 
-## Implemented 0.1.0 Search and Pick baseline
+## Implemented 0.2.0 Search and Pick behavior
 
 Search is all-or-nothing. Invalid input, unsafe or unavailable source, invalid
 UTF-8/NUL, or actual allocation/I/O failure discards every provisional result. A
@@ -315,7 +311,7 @@ tier, ranking, or projection. Runtime resolves admission and opens only that
 path capability-relatively without following links. A currently admitted
 regular source is consumed once by the existing streaming UTF-8/NUL validator;
 both empty and nonempty valid sources return `Found` with exactly one ordinary
-v3 File Anddress. A missing path or directory returns `Empty`. Invalid paths
+v4 File Anddress. A missing path or directory returns `Empty`. Invalid paths
 fail source-less validation, while unadmitted and unavailable observations fail
 closed under the existing Search error boundary. The request creates no fake
 Line or Paragraph, empty literal, separate result type, wire, registry, index,
@@ -330,18 +326,17 @@ SearchInputError>`; source-less path rejection is
 private instead of exposing a second request enum or a stringly query mode.
 
 For a Line target, every matching current Line is returned exactly once as its
-v3 Line locator. For a Paragraph target, every current Paragraph containing one
-or more matching text Lines is returned exactly once as its v3 Paragraph
-locator; a matching separator Line does not create a Paragraph. For a File
-target, any matching Line, including a separator, returns the current v3 File
-locator exactly once. A parent has `FullLine` tier when any included match is
+v4 source identity and exact range. For a Paragraph target, every current
+Paragraph containing one or more matching text Lines is returned exactly once
+as its v4 range; a matching separator Line does not create a Paragraph. For a
+File target, any matching Line, including a separator, returns the current v4
+complete-source range exactly once. A parent has `FullLine` tier when any included match is
 `FullLine`, otherwise `Substring`.
 
 Results order `FullLine` before `Substring`. Within each tier they order by
-logical-path UTF-8 bytes and then by Line ordinal for Line targets or Paragraph
-ordinal for Paragraph targets. File targets have no additional ordinal key.
-There is no best-matching-Line-ordinal concept. Runtime retains only call-local
-tier buckets and transfers the result vector to the caller.
+logical-path UTF-8 bytes and then byte start/end. File targets have no
+additional target key. There is no best-matching-Line concept. Runtime retains
+only call-local tier buckets and transfers the result vector to the caller.
 
 Pick is a separate pure Core function, not a Runtime seam. It returns a stable
 subsequence of ordered caller input without validation, Workspace access,
@@ -349,46 +344,43 @@ currentness claim, or retained state. All, target kind, full-value OneOf, and
 iterative AllOf/AnyOf/Not composition remain valid with their existing Resource
 behavior. `PickPredicate::same_file(reference: Anddress)` is the only direct
 file relation: it compares candidate and reference `WorkspaceCoordinate` plus
-`LogicalPath` only. It does not compare target kind, ordinal, ExactExtent,
-currentness, observation, continuity, or any other field. v3 has no
+`LogicalPath` only. It does not compare source state, target kind, or range,
+currentness, observation, continuity, or any other field. v4 has no
 `SameObservation`, `SameParagraph`, `AncestorOf`, `DescendantOf`,
 `PickRelation`, `related_to`, compatibility alias, or generic single-variant
 relation enum. Pick does not read text or call Runtime to replace them.
 
-## Implemented 0.1.0 View baseline
+## Implemented 0.2.0 View behavior
 
 View V1 has one `&Anddress` input and the implemented
 `WorkspaceRuntime::view(&Anddress)` seam. Its admitted capability-relative
 no-follow one-read access and File/Paragraph/Line text projection shape remain
 reusable. Its former v2 evidence-based construction is rejected; successful
-related results use v3 locators. View stays current-only, stateless,
+related results use v4 source identity and ranges. View stays current-only, stateless,
 non-mutating, and without range, plural, descendant, or partial behavior.
 
-View first performs source-less v3 validation before any I/O. It preserves the
+View first performs source-less v4 validation before any I/O. It preserves the
 existing `UnsupportedVersion`, `InvalidInput`, and `Unavailable` errors and the
-existing `ViewOutcome` shape. Unsupported version or invalid source-less v3
+existing `ViewOutcome` shape. Unsupported version or invalid source-less v4
 input returns the corresponding first two errors. After that validation, every
-coordinate, admission, open, read, UTF-8/NUL, ordinal, exact-extent, or resource
-failure returns `Unavailable`; a valid but currently absent arbitrarily large
-ordinal is therefore `Unavailable`, not `InvalidInput`. View adds no evidence,
-fingerprint, range, registry, cache, retry, second read, error, or type.
+coordinate, admission, open, read, UTF-8/NUL, source-state, structural-range,
+or resource failure returns `Unavailable`. View adds no public evidence,
+registry, cache, retry, second read, error, or type.
 
-A File is current exactly when the input `WorkspaceCoordinate` equals the
-Runtime coordinate and its `LogicalPath` is currently an admitted regular,
-UTF-8, NUL-free source for that Runtime. Changes to that File's internal text do
-not change File currentness. Admission is not raw equality: another Runtime
-with the same workspace coordinate may use the same File whenever it currently
-admits that path.
+A File is current exactly when the input coordinate/path resolves to an
+admitted regular UTF-8, NUL-free source whose complete SHA-256 and byte length
+match and whose range is `[0,length)`. Admission is not raw equality: another
+Runtime with the same workspace coordinate may use the same value whenever it
+currently admits that path and observes the exact same source state.
 
-A Paragraph is current exactly when that File's current exact-Line parse has a
-maximal text-Line run at the input `ParagraphOrdinal`. It compares no Paragraph
-content, range, fingerprint, Line count, or past separator boundary. A Line is
-current exactly when the input `LineOrdinal` exists and its current content plus
-its exact terminator byte-for-byte equals the input `ExactExtent`.
+A Paragraph or Line is current only when the complete source identity matches
+and the recorded range is exactly a current Paragraph or Line range. Phase 3
+uses the shared structural scanner for that proof; it never searches for equal
+text at another range.
 
-For a successful Paragraph, the returned File is constructed with the v3
-locator from the same one-read observation. For a successful Line, its returned
-File and optional Paragraph are constructed from that same observation; a
+For a successful Paragraph, the returned File is constructed with the same v4
+source identity from the one-read observation. For a successful Line, its
+returned File and optional Paragraph share that same identity; a
 separator Line has no Paragraph. Re-establishing an identical tuple makes only
 a current lookup succeed. It makes no continuity, authenticity, survivor, or
 historical-identity claim.
@@ -471,8 +463,9 @@ Check preserves `Current` and `Unavailable` occurrences, excluding only
 `NotCurrent`. Report counts, removed occurrences, and unavailable occurrences
 are occurrence-based and preserve their original order and multiplicity.
 `NotCurrent` means a coordinate mismatch; a confirmed unadmitted, missing,
-nonregular, or symlink source; or a Paragraph or Line locator mismatch in an
-otherwise normal source. Transient I/O or resource failure, or UTF-8/NUL
+nonregular, or symlink source; a complete-source hash/length mismatch; or a
+Paragraph or Line range/kind mismatch in an otherwise normal source. Transient
+I/O or resource failure, or UTF-8/NUL
 classification failure, is `Unavailable` and is never automatically excluded.
 Every occurrence completes source-less validation in input order before I/O.
 Any failure returns `UnsupportedVersion` or `InvalidInput` without a partial
@@ -675,15 +668,14 @@ Validation is strictly field ordered: Insert validates position then content;
 Replace target then content; Move and Copy target then position; Delete its
 target. No validation reads Workspace Source or Runtime state.
 
-Every target or position Anddress is a raw locator, not a content snapshot or
-currentness proof. A Line ExactExtent adds no Edit snapshot authority. `Move`
-and `Copy` carry no source bytes. There is no cross-source, same-file,
+Every target or position Anddress is exact source-state/range authority, but it
+carries no source bytes. `Move` and `Copy` carry no source bytes. There is no cross-source, same-file,
 adjacency, overlap, self-reference, destination-currentness, or structural
 validation. Resolution, splice geometry, and every execution decision belong to
 the Edit-to-Apply executor contract below. V1 does not define the ordering, batch behavior,
 transaction, or atomicity of multiple Edits.
 
-## Implemented 0.1.0 Edit-to-Apply V1 executor authority
+## Implemented 0.2.0 Edit-to-Apply V1 executor authority
 
 The single-source Apply authority, Rust implementation, and regressions
 are complete. Its public Runtime seam is exactly:

@@ -318,7 +318,7 @@ impl WorkspaceRuntime {
 
     pub(crate) fn invalidate_anchors_for_path(&mut self, path: &str) {
         self.anchors
-            .retain(|binding| binding.anddress.logical_path != path);
+            .retain(|binding| binding.anddress.logical_path() != path);
     }
 
     pub(crate) fn prune_dead_anchors(&mut self) {
@@ -443,14 +443,32 @@ mod tests {
         mark_anchor_collisions, workspace_coordinate,
     };
 
+    fn address(
+        path: &str,
+        target: crate::backwriter::anddress::AnddressTarget,
+        byte_start: usize,
+        byte_end: usize,
+    ) -> crate::backwriter::anddress::Anddress {
+        crate::backwriter::anddress::Anddress::new(
+            &"a".repeat(64),
+            path,
+            &"b".repeat(64),
+            10,
+            target,
+            byte_start,
+            byte_end,
+        )
+        .unwrap()
+    }
+
     #[test]
     fn collision_marking_invalidates_every_member_of_two_and_three_way_collisions() {
-        let address = crate::backwriter::anddress::Anddress {
-            version: crate::backwriter::anddress::ANDDRESS_VERSION.to_owned(),
-            workspace_coordinate: "a".repeat(64),
-            logical_path: "note.txt".to_owned(),
-            target: crate::backwriter::anddress::AnddressTarget::File,
-        };
+        let address = address(
+            "note.txt",
+            crate::backwriter::anddress::AnddressTarget::File,
+            0,
+            10,
+        );
         let mut two_way = vec![
             AnchorPlanEntry::Rebind {
                 anddress: address.clone(),
@@ -492,11 +510,13 @@ mod tests {
 
     #[test]
     fn collision_marking_starts_only_from_prospective_rebinds() {
-        let address = |path: &str| crate::backwriter::anddress::Anddress {
-            version: crate::backwriter::anddress::ANDDRESS_VERSION.to_owned(),
-            workspace_coordinate: "a".repeat(64),
-            logical_path: path.to_owned(),
-            target: crate::backwriter::anddress::AnddressTarget::File,
+        let address = |path: &str| {
+            address(
+                path,
+                crate::backwriter::anddress::AnddressTarget::File,
+                0,
+                10,
+            )
         };
         let mut no_rebinds = vec![AnchorPlanEntry::Preserve, AnchorPlanEntry::Remove];
         mark_anchor_collisions(&mut no_rebinds);
@@ -567,11 +587,13 @@ mod tests {
         .unwrap();
         let first = crate::backwriter::anchor::Anchedress::new();
         let second = crate::backwriter::anchor::Anchedress::new();
-        let address = |path: &str| crate::backwriter::anddress::Anddress {
-            version: crate::backwriter::anddress::ANDDRESS_VERSION.to_owned(),
-            workspace_coordinate: "a".repeat(64),
-            logical_path: path.to_owned(),
-            target: crate::backwriter::anddress::AnddressTarget::File,
+        let address = |path: &str| {
+            address(
+                path,
+                crate::backwriter::anddress::AnddressTarget::File,
+                0,
+                10,
+            )
         };
         runtime.anchors.push(AnchorBinding {
             token: first.weak(),
@@ -591,7 +613,7 @@ mod tests {
             Err(crate::backwriter::apply::ApplyError::PublicationUncertain)
         );
         assert_eq!(runtime.anchors.len(), 1);
-        assert_eq!(runtime.anchors[0].anddress.logical_path, "second.txt");
+        assert_eq!(runtime.anchors[0].anddress.logical_path(), "second.txt");
     }
 
     #[test]
@@ -607,18 +629,18 @@ mod tests {
             crate::backwriter::anchor::Anchedress::new(),
             crate::backwriter::anchor::Anchedress::new(),
         ];
-        let address = |ordinal: usize| crate::backwriter::anddress::Anddress {
-            version: crate::backwriter::anddress::ANDDRESS_VERSION.to_owned(),
-            workspace_coordinate: "a".repeat(64),
-            logical_path: "note.txt".to_owned(),
-            target: crate::backwriter::anddress::AnddressTarget::Paragraph {
-                ordinal: crate::backwriter::anddress::Natural::parse(&ordinal.to_string()).unwrap(),
-            },
+        let address = |index: usize| {
+            address(
+                "note.txt",
+                crate::backwriter::anddress::AnddressTarget::Paragraph,
+                index,
+                index + 1,
+            )
         };
-        for (ordinal, handle) in handles.iter().enumerate() {
+        for (index, handle) in handles.iter().enumerate() {
             runtime.anchors.push(AnchorBinding {
                 token: handle.weak(),
-                anddress: address(ordinal),
+                anddress: address(index),
             });
         }
         let collision = address(9);

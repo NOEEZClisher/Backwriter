@@ -13,7 +13,7 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-Search, View, Pick, Anchor, and Check have Rust implementations. Their v3 View
+Search, View, Pick, Anchor, and Check have Rust implementations. Their v4 View
 currentness, Search literal projection and exact logical File lookup, Pick
 predicate semantics, Anchor live continuity, and Check batch currentness
 reporting are implemented. Apply V1
@@ -21,11 +21,12 @@ semantic/public API/error authority and its single-source Edit Runtime
 implementation are complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
-The closed public `0.1.0` release is the implemented v3 baseline. `0.2.0` is
-an unpublished local source-development target: its Anddress v4 and bounded
-current-observation semantics are active architecture authority, but no v4
-Rust, Cargo, CLI, compatibility, hash-algorithm, or release implementation is
-complete yet.
+The closed public `0.1.0` release is the immutable v3 baseline. Current source
+and Cargo are the unpublished `0.2.0` development line and use the hard-cutover
+`artext.backwriter-anddress.v4` Rust API and wire. SHA-256, exact source byte
+length, target kind, and `[start, end)` byte range are implemented identity;
+v3 remains only in Git history and immutable `0.1.0` release evidence. No
+`0.2.0` artifact or publication is complete.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,
@@ -97,21 +98,20 @@ are preserved evidence, never current authority.
   capability-relatively without following links, and does not scan unselected
   roots.
 - File, Paragraph, and Line are independent target addresses with structural
-  relationships. A Line change does not automatically change its File, a
-  boundary-preserved Paragraph, or unrelated Lines.
-- The implemented `0.1.0` baseline uses
-  `artext.backwriter-anddress.v3` target-local values. Do not add v2
-  compatibility shims, decoders, aliases, or parallel schemas.
-- The unpublished `0.2.0` target is `artext.backwriter-anddress.v4`: workspace,
+  relationships. In v4 they share exact source-state identity, so any source
+  byte change invalidates every ordinary Anddress from the prior source state.
+- Current production source uses only `artext.backwriter-anddress.v4`. Do not
+  add v2/v3 compatibility shims, decoders, aliases, migrations, or parallel
+  schemas. Well-formed v3 input is rejected as `UnsupportedVersion`.
+- The unpublished `0.2.0` value is `artext.backwriter-anddress.v4`: workspace,
   logical path, source-state hash, exact byte length, target kind, and one
   inclusive-start/exclusive-end byte range are ordinary Anddress identity.
-  Target text and ordinal are not v4 identity. The hash algorithm and v3/v4
-  compatibility policy remain explicit Owner decisions.
-- In implemented v3, whole-source bytes, length, provenance, and fingerprints
-  are private call-local construction context rather than target identity. In
-  the v4 target, the source-state hash is final currentness authority and an
-  Anddress is authority for its exact source state and byte range. Neither
-  version adds a before/after stable-read or second-read guarantee.
+  Target text and ordinal are not v4 identity. The hash algorithm is SHA-256
+  and the compatibility policy is a hard cutover with no v3 production seam.
+- Whole-source bytes and provenance remain private call-local construction
+  context. The v4 SHA-256 and byte length are ordinary source identity, and an
+  Anddress is authority for that exact source state and byte range. This adds
+  no before/after stable-read or second-read guarantee.
 - The Protocol owns the bounded source-memory direction. It removes only
   unnecessary auxiliary materialization proportional to complete Workspace
   Source; it creates no fixed-memory or arbitrary-input-success promise. Its
@@ -121,18 +121,16 @@ are preserved evidence, never current authority.
   issuer. This creates no separate registry, issuance lifecycle, lookup/reuse
   state, durable identity, or global identity.
 - The [address model](docs/architecture/rebuildable-structural-addressing.md)
-  is the sole detailed raw-locator contract. It records the shipped v3
-  coordinate/path/ordinal/extent baseline separately from the unpublished v4
-  source-state/range target. Admission decides construct/use availability, not
-  raw equality.
-- The shipped v3 Search and View implementation is current-only and stateless.
-  The v4 target remains current-only while permitting only Protocol-bounded
+  is the sole detailed raw-locator contract. Its active production algebra is
+  v4 source-state/range identity; the shipped v3 baseline is historical release
+  evidence only. Admission decides construct/use availability, not raw equality.
+- Search and View remain current-only. The v4 target permits only Protocol-bounded
   `CurrentObservation` state. Pick remains pure and stateless over
   caller-provided Anddress values without asserting currentness.
   `WorkspaceRuntime` exposes Search, View, Apply, Check, and anchored Runtime
-  execution seams. The v3 implementation retains no ordinary observation,
-  source, result, snapshot, lease, or authenticity state outside Anchor. The
-  v4 target may retain only the current hash, byte length, and minimum required
+  execution seams. Current Phase 3 code retains no ordinary observation,
+  source, result, snapshot, lease, or authenticity state outside Anchor. A
+  later fast path may retain only the current hash, byte length, and minimum required
   ranges in a `CurrentObservation`, and discards it whenever source state
   changes or currentness cannot be established. Anchor may retain only
   target-local session continuity.
@@ -153,8 +151,8 @@ are preserved evidence, never current authority.
   Missing paths and directories are Empty; the operation creates no empty
   query, synthetic Line or Paragraph, scope traversal, index, or cache.
 - Search's live scan, matching, ordering, all-or-nothing behavior, and
-  no-fixed-limit contract remain valid. It constructs v3 target-local values
-  directly from current coordinate, logical path, and target locators.
+  no-fixed-limit contract remain valid. It constructs v4 values directly from
+  the current coordinate, logical path, one-read SHA-256/length, kind, and range.
   Search owns no registry, persistent identity, mutation lifecycle, or result
   store.
 - In the v4 target, Search remains the only target finder. It computes the
@@ -194,9 +192,9 @@ are preserved evidence, never current authority.
   creates no target or Anddress, reads no text, Workspace, file, or Runtime
   state, validates no input, calls no capability, and retains no state or
   result. All, target kind, full-value OneOf, iterative boolean composition,
-  and v3 `same_file` remain valid. `same_file` compares only WorkspaceCoordinate
+  and v4 `same_file` remain valid. `same_file` compares only WorkspaceCoordinate
   and LogicalPath; no relation enum or observation/paragraph/hierarchy relation
-  exists in v3. It makes no activity, staleness, availability,
+  exists in v4. It makes no activity, staleness, availability,
   authenticity, identity, issuance, reuse, registry, lifecycle, ranking,
   display, mutation, proposal, Apply, or retry claim. Search Found values may
   be caller input, but Pick does not interpret SearchOutcome, text, preview, or
@@ -208,8 +206,9 @@ are preserved evidence, never current authority.
   retained source/result/relation state, registry, cache, history, snapshot, or
   lease. Pick may supply the input, but View neither calls Pick nor proves Pick
   provenance; explicit selection is the caller's responsibility.
-- View's admitted no-follow one-read access checks v3 coordinate/path and
-  target-specific locators, constructing related results from the same read.
+- View's admitted no-follow one-read access checks v4 coordinate/path,
+  source-state hash/length, and exact range, constructing related results from
+  the same read.
 - Plural input, ranges, descendants, and partial behavior are post-V1 owner
   decisions. View does not classify input state; Check does not change View.
 - **Check V1** has closed semantic/API/type/report authority and a stateless
@@ -222,11 +221,9 @@ are preserved evidence, never current authority.
   transfers to no capability. Block is historical wording for the existing
   blank-line-bounded Paragraph and introduces no type, alias, variant, or wire
   value.
-- Implemented v3 raw File, Paragraph, and Line equality follows the address
-  model's target-local coordinate/path/ordinal/extent algebra. Target v4 raw
-  equality follows its exact source-state hash, byte length, kind, and byte
-  range algebra. Neither makes a continuity, survivor, relocation, or
-  historical-identity claim.
+- Implemented v4 raw File, Paragraph, and Line equality follows exact workspace,
+  path, source SHA-256, byte length, target kind, and byte-range algebra. It
+  makes no continuity, survivor, relocation, or historical-identity claim.
 
 ## Search execution contract
 

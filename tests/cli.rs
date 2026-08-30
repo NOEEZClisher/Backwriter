@@ -1,3 +1,5 @@
+mod support;
+
 use std::{
     fs,
     io::{BufRead, BufReader, Read, Write},
@@ -10,7 +12,7 @@ use std::{env, os::unix::fs::PermissionsExt};
 
 use backwriter::{
     backwriter::{
-        anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, LineTerminator, Natural},
+        anddress::{Anddress, AnddressTarget as PublicAnddressTarget, LineTerminator},
         check::CheckOutcome,
         search::{SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget},
         view::ViewOutcome,
@@ -108,6 +110,34 @@ fn write_executable(root: &Path, path: &str, content: &str) {
     fs::set_permissions(root.join(path), fs::Permissions::from_mode(0o755)).unwrap();
 }
 
+#[derive(Clone)]
+struct Natural(usize);
+
+impl Natural {
+    fn zero() -> Self {
+        Self(0)
+    }
+
+    fn one() -> Self {
+        Self(1)
+    }
+
+    fn parse(value: &str) -> Result<Self, std::num::ParseIntError> {
+        value.parse().map(Self)
+    }
+}
+
+enum AnddressTarget {
+    File,
+    Paragraph {
+        ordinal: Natural,
+    },
+    Line {
+        ordinal: Natural,
+        exact_extent: String,
+    },
+}
+
 fn view_operand(root: &Path, path: &str, target: AnddressTarget) -> String {
     let workspace = WorkspaceRuntime::open(
         root,
@@ -122,17 +152,80 @@ fn view_operand(root: &Path, path: &str, target: AnddressTarget) -> String {
     let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
         panic!("coordinate source");
     };
-    String::from_utf8(
-        Anddress {
-            version: ANDDRESS_VERSION.to_owned(),
-            workspace_coordinate: anddresses[0].workspace_coordinate.clone(),
-            logical_path: path.to_owned(),
-            target,
+    let coordinate = anddresses[0].workspace_coordinate();
+    let source = fs::read(root.join(path)).unwrap_or_default();
+    let address = match target {
+        AnddressTarget::File => support::file(coordinate, path, &source),
+        AnddressTarget::Paragraph { ordinal } => {
+            let paragraphs = paragraph_ranges(&source);
+            let (start, end) = paragraphs.get(ordinal.0).copied().unwrap_or((0, 0));
+            support::address(
+                coordinate,
+                path,
+                &source,
+                PublicAnddressTarget::Paragraph,
+                start,
+                end,
+            )
         }
-        .encode()
-        .unwrap(),
-    )
-    .unwrap()
+        AnddressTarget::Line {
+            ordinal,
+            exact_extent,
+        } => {
+            let spans = support::line_spans(&source);
+            if let Some((start, end)) = spans.get(ordinal.0).copied()
+                && source[start..end] == *exact_extent.as_bytes()
+            {
+                support::address(
+                    coordinate,
+                    path,
+                    &source,
+                    PublicAnddressTarget::Line,
+                    start,
+                    end,
+                )
+            } else {
+                let mut stale_source = exact_extent.into_bytes();
+                stale_source.push(b'!');
+                support::address(
+                    coordinate,
+                    path,
+                    &stale_source,
+                    PublicAnddressTarget::Line,
+                    0,
+                    stale_source.len() - 1,
+                )
+            }
+        }
+    };
+    String::from_utf8(address.encode().unwrap()).unwrap()
+}
+
+fn paragraph_ranges(source: &[u8]) -> Vec<(usize, usize)> {
+    let mut paragraphs = Vec::new();
+    let mut paragraph_start = None;
+    let mut paragraph_end = 0;
+    for (start, end) in support::line_spans(source) {
+        let mut body_end = end;
+        if source[..body_end].ends_with(b"\r\n") {
+            body_end -= 2;
+        } else if source[..body_end].ends_with(b"\r") || source[..body_end].ends_with(b"\n") {
+            body_end -= 1;
+        }
+        let text = source[start..body_end]
+            .iter()
+            .any(|byte| !matches!(byte, b' ' | b'\t'));
+        if text {
+            paragraph_start.get_or_insert(start);
+            paragraph_end = end;
+        } else if let Some(paragraph_start) = paragraph_start.take() {
+            paragraphs.push((paragraph_start, paragraph_end));
+        }
+    }
+    if let Some(paragraph_start) = paragraph_start {
+        paragraphs.push((paragraph_start, paragraph_end));
+    }
+    paragraphs
 }
 
 fn assert_usage(output: Output) {
@@ -361,7 +454,7 @@ fn canonical_binary_help_and_default_workspace_search() {
 
     let output = run(root.path(), &["search", "line", "needle"]);
     assert!(output.status.success());
-    assert_eq!(text(output.stdout), "Found 1\n0\tLine\tnote.txt:0\n");
+    assert_eq!(text(output.stdout), "Found 1\n0\tLine\tnote.txt:0-7\n");
     assert!(output.stderr.is_empty());
     assert_eq!(binary().file_name().unwrap(), "bw");
     assert!(
@@ -383,7 +476,7 @@ fn canonical_binary_help_and_default_workspace_search() {
 
     let version = run(root.path(), &["version"]);
     assert!(version.status.success());
-    assert_eq!(version.stdout, b"Backwriter 0.1.0\n");
+    assert_eq!(version.stdout, b"Backwriter 0.2.0\n");
     assert!(version.stderr.is_empty());
 }
 
@@ -542,13 +635,13 @@ fn line_paragraph_file_and_scope_output_keep_core_order() {
     assert!(line.status.success());
     assert_eq!(
         text(line.stdout),
-        "Found 5\n0\tLine\ta.txt:0\n1\tLine\tb.txt:0\n2\tLine\tdir/c.txt:0\n3\tLine\ttop.txt:0\n4\tLine\ta.txt:1\n"
+        "Found 5\n0\tLine\ta.txt:0-7\n1\tLine\tb.txt:0-7\n2\tLine\tdir/c.txt:0-7\n3\tLine\ttop.txt:0-7\n4\tLine\ta.txt:7-15\n"
     );
     let paragraph = run(root.path(), &["search", "paragraph", "needle"]);
     assert!(paragraph.status.success());
     assert_eq!(
         text(paragraph.stdout),
-        "Found 4\n0\tParagraph\ta.txt:0\n1\tParagraph\tb.txt:0\n2\tParagraph\tdir/c.txt:0\n3\tParagraph\ttop.txt:0\n"
+        "Found 4\n0\tParagraph\ta.txt:0-15\n1\tParagraph\tb.txt:0-7\n2\tParagraph\tdir/c.txt:0-7\n3\tParagraph\ttop.txt:0-7\n"
     );
     let file = run(root.path(), &["search", "file", "needle"]);
     assert!(file.status.success());
@@ -572,7 +665,7 @@ fn line_paragraph_file_and_scope_output_keep_core_order() {
     assert!(scoped.status.success());
     assert_eq!(
         text(scoped.stdout),
-        "Found 2\n0\tLine\tdir/c.txt:0\n1\tLine\ttop.txt:0\n"
+        "Found 2\n0\tLine\tdir/c.txt:0-7\n1\tLine\ttop.txt:0-7\n"
     );
     assert_usage(run(
         root.path(),
@@ -596,7 +689,7 @@ fn human_output_hides_raw_anddress_and_preserves_space_query() {
     let found = run(root.path(), &["search", "line", "a space"]);
     assert!(found.status.success());
     let found_stdout = text(found.stdout);
-    assert_eq!(found_stdout, "Found 1\n0\tLine\tspaced file.txt:0\n");
+    assert_eq!(found_stdout, "Found 1\n0\tLine\tspaced file.txt:0-17\n");
     assert!(!found_stdout.contains("artext.backwriter-anddress"));
     assert!(!found_stdout.contains(&root.path().display().to_string()));
     assert!(found.stderr.is_empty());
@@ -608,7 +701,7 @@ fn human_output_hides_raw_anddress_and_preserves_space_query() {
 }
 
 #[test]
-fn one_shot_search_json_streams_exact_v3_objects_for_every_target() {
+fn one_shot_search_json_streams_exact_v4_objects_for_every_target() {
     let root = tempfile::tempdir().unwrap();
     write(
         root.path(),
@@ -660,21 +753,16 @@ fn one_shot_search_json_streams_exact_v3_objects_for_every_target() {
             "terms.txt",
         ],
     );
-    assert!(
-        line.stdout
-            .windows(b"\\u0001".len())
-            .any(|window| window == b"\\u0001")
-    );
-    assert!(
-        line.stdout
-            .windows(b"\\\"quote\\\"".len())
-            .any(|window| window == b"\\\"quote\\\"")
-    );
-    assert!(
-        line.stdout
-            .windows(b"\\\\".len())
-            .any(|window| window == b"\\\\")
-    );
+    let document: Value = serde_json::from_slice(&line.stdout).unwrap();
+    for value in document["anddresses"].as_array().unwrap() {
+        assert_eq!(value["version"], "artext.backwriter-anddress.v4");
+        assert!(value.get("sourceStateHash").is_some());
+        assert!(value.get("sourceByteLength").is_some());
+        assert!(value.get("byteStart").is_some());
+        assert!(value.get("byteEnd").is_some());
+        assert!(value.get("ordinal").is_none());
+        assert!(value.get("exactExtent").is_none());
+    }
 }
 
 #[test]
@@ -913,7 +1001,7 @@ fn view_file_paragraph_and_line_preserve_exact_human_bytes() {
 }
 
 #[test]
-fn one_shot_view_json_streams_exact_v3_objects_and_preserves_human_output() {
+fn one_shot_view_json_streams_exact_v4_objects_and_preserves_human_output() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "coordinate.txt", "coordinate\n");
     write(
@@ -1232,7 +1320,7 @@ fn view_rejects_anchored_and_extra_operands() {
 }
 
 #[test]
-fn one_shot_check_json_preserves_raw_status_and_filtered_v3_values() {
+fn one_shot_check_json_preserves_raw_status_and_filtered_v4_values() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "coordinate.txt", "coordinate\n");
     write(root.path(), "note.txt", "file\n\nparagraph\nline\n");
@@ -1443,7 +1531,7 @@ fn session_reuses_search_projection_view_and_check_with_exact_bindings() {
     assert!(output.status.success());
     assert_eq!(
         output.stdout,
-        b"Found 2\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:1\nneedle\nCurrent\n"
+        b"Found 2\n0\tLine\tnote.txt:0-7\n1\tLine\tnote.txt:7-14\nneedle\nCurrent\n"
     );
     assert!(output.stderr.is_empty());
 }
@@ -1460,7 +1548,7 @@ fn session_pick_all_and_target_kind_project_the_existing_core_order() {
     assert!(output.status.success());
     assert_eq!(
         output.stdout,
-        b"Found 1\n0\tFile\tnote.txt\nSelected 1\n0\tFile\tnote.txt\nFound 1\n0\tParagraph\tnote.txt:0\nSelected 1\n0\tParagraph\tnote.txt:0\nFound 1\n0\tLine\tnote.txt:0\nSelected 1\n0\tLine\tnote.txt:0\n"
+        b"Found 1\n0\tFile\tnote.txt\nSelected 1\n0\tFile\tnote.txt\nFound 1\n0\tParagraph\tnote.txt:0-6\nSelected 1\n0\tParagraph\tnote.txt:0-6\nFound 1\n0\tLine\tnote.txt:0-6\nSelected 1\n0\tLine\tnote.txt:0-6\n"
     );
     assert!(output.stderr.is_empty());
 }
@@ -1478,7 +1566,7 @@ fn session_pick_same_file_and_one_of_preserve_candidate_order() {
     assert!(output.status.success());
     assert_eq!(
         output.stdout,
-        b"Found 3\n0\tLine\ta.txt:0\n1\tLine\ta.txt:1\n2\tLine\tb.txt:0\nSelected 2\n0\tLine\ta.txt:0\n1\tLine\ta.txt:1\nSelected 2\n0\tLine\ta.txt:0\n1\tLine\tb.txt:0\nSelected 2\n0\tLine\ta.txt:0\n1\tLine\ta.txt:1\n"
+        b"Found 3\n0\tLine\ta.txt:0-7\n1\tLine\ta.txt:7-14\n2\tLine\tb.txt:0-7\nSelected 2\n0\tLine\ta.txt:0-7\n1\tLine\ta.txt:7-14\nSelected 2\n0\tLine\ta.txt:0-7\n1\tLine\tb.txt:0-7\nSelected 2\n0\tLine\ta.txt:0-7\n1\tLine\ta.txt:7-14\n"
     );
     assert!(output.stderr.is_empty());
 }
@@ -1495,7 +1583,7 @@ fn session_pick_composition_is_iterative_and_pick_bindings_feed_view_and_check()
     assert!(output.status.success());
     assert_eq!(
         output.stdout,
-        b"Found 3\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:1\n2\tLine\tnote.txt:2\nSelected 2\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:2\nSelected 2\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:2\nneedle\nCurrent\n"
+        b"Found 3\n0\tLine\tnote.txt:0-7\n1\tLine\tnote.txt:7-14\n2\tLine\tnote.txt:14-21\nSelected 2\n0\tLine\tnote.txt:0-7\n1\tLine\tnote.txt:14-21\nSelected 2\n0\tLine\tnote.txt:0-7\n1\tLine\tnote.txt:14-21\nneedle\nCurrent\n"
     );
     assert!(output.stderr.is_empty());
 
@@ -1509,7 +1597,7 @@ fn session_pick_composition_is_iterative_and_pick_bindings_feed_view_and_check()
     assert!(deep.status.success());
     assert_eq!(
         deep.stdout,
-        b"Found 3\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:1\n2\tLine\tnote.txt:2\nSelected 3\n0\tLine\tnote.txt:0\n1\tLine\tnote.txt:1\n2\tLine\tnote.txt:2\n"
+        b"Found 3\n0\tLine\tnote.txt:0-7\n1\tLine\tnote.txt:7-14\n2\tLine\tnote.txt:14-21\nSelected 3\n0\tLine\tnote.txt:0-7\n1\tLine\tnote.txt:7-14\n2\tLine\tnote.txt:14-21\n"
     );
     assert!(deep.stderr.is_empty());
 }
@@ -1526,7 +1614,7 @@ fn session_pick_rejects_malformed_references_and_preserves_existing_bindings() {
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(
         output.stdout,
-        b"Found 1\n0\tLine\tnote.txt:0\nFound 0\nSelected 0\nSelected 1\n0\tLine\tnote.txt:0\nFound 1\n0\tLine\tnote.txt:0\n"
+        b"Found 1\n0\tLine\tnote.txt:0-7\nFound 0\nSelected 0\nSelected 1\n0\tLine\tnote.txt:0-7\nFound 1\n0\tLine\tnote.txt:0-7\n"
     );
     let stderr = text(output.stderr);
     assert!(stderr.contains("Pick predicate has trailing input"));
@@ -1563,7 +1651,7 @@ fn session_batch_check_reports_search_and_pick_counts_without_changing_bindings(
     assert!(output.status.success());
     assert_eq!(
         output.stdout,
-        b"Found 3\n0\tLine\tcurrent.txt:0\n1\tLine\tremoved.txt:0\n2\tLine\tunavailable.txt:0\nChecked 3\nCurrent 1\nNotCurrent 1\nUnavailable 1\nSelected 3\n0\tLine\tcurrent.txt:0\n1\tLine\tremoved.txt:0\n2\tLine\tunavailable.txt:0\nChecked 3\nCurrent 1\nNotCurrent 1\nUnavailable 1\nSelected 3\n0\tLine\tcurrent.txt:0\n1\tLine\tremoved.txt:0\n2\tLine\tunavailable.txt:0\n"
+        b"Found 3\n0\tLine\tcurrent.txt:0-7\n1\tLine\tremoved.txt:0-7\n2\tLine\tunavailable.txt:0-7\nChecked 3\nCurrent 1\nNotCurrent 1\nUnavailable 1\nSelected 3\n0\tLine\tcurrent.txt:0-7\n1\tLine\tremoved.txt:0-7\n2\tLine\tunavailable.txt:0-7\nChecked 3\nCurrent 1\nNotCurrent 1\nUnavailable 1\nSelected 3\n0\tLine\tcurrent.txt:0-7\n1\tLine\tremoved.txt:0-7\n2\tLine\tunavailable.txt:0-7\n"
     );
     assert!(output.stderr.is_empty());
 }
@@ -1591,7 +1679,7 @@ fn session_batch_check_accepts_empty_outcomes_and_rejects_invalid_binding_forms(
     assert_eq!(invalid.status.code(), Some(2));
     assert_eq!(
         invalid.stdout,
-        b"Found 1\n0\tLine\tnote.txt:0\nSelected 1\n0\tLine\tnote.txt:0\nCurrent\n"
+        b"Found 1\n0\tLine\tnote.txt:0-7\nSelected 1\n0\tLine\tnote.txt:0-7\nCurrent\n"
     );
     let stderr = text(invalid.stderr);
     assert!(stderr.contains("check search requires a Search binding"));
@@ -1615,7 +1703,7 @@ fn session_anchor_creates_views_and_invalidates_only_the_selected_source() {
     assert!(output.status.success());
     assert_eq!(
         output.stdout,
-        b"Found 2\n0\tLine\tleft.txt:0\n1\tLine\tright.txt:0\nAnchored\nAlreadyLive\nAnchored\nneedle\nOK\nneedle\n"
+        b"Found 2\n0\tLine\tleft.txt:0-7\n1\tLine\tright.txt:0-7\nAnchored\nAlreadyLive\nAnchored\nneedle\nOK\nneedle\n"
     );
     assert!(output.stderr.is_empty());
 
@@ -1626,7 +1714,7 @@ fn session_anchor_creates_views_and_invalidates_only_the_selected_source() {
     assert_eq!(invalidated.status.code(), Some(1));
     assert_eq!(
         invalidated.stdout,
-        b"Found 2\n0\tLine\tleft.txt:0\n1\tLine\tright.txt:0\nAnchored\nOK\nFound 2\n0\tLine\tleft.txt:0\n1\tLine\tright.txt:0\n"
+        b"Found 2\n0\tLine\tleft.txt:0-7\n1\tLine\tright.txt:0-7\nAnchored\nOK\nFound 2\n0\tLine\tleft.txt:0-7\n1\tLine\tright.txt:0-7\n"
     );
     assert!(text(invalidated.stderr).contains("unavailable"));
 
@@ -1714,7 +1802,10 @@ fn session_exact_file_lookup_inserts_into_an_empty_file_end_to_end() {
         "let files = search /file empty.txt\nlet edit = edit insert end-of @files[0] hello\napply @edit\ncheck anddress @files[0]\nexit\n",
     );
     assert!(output.status.success(), "{}", text(output.stderr));
-    assert_eq!(output.stdout, b"Found 1\n0\tFile\tempty.txt\nOK\nCurrent\n");
+    assert_eq!(
+        output.stdout,
+        b"Found 1\n0\tFile\tempty.txt\nOK\nNotCurrent\n"
+    );
     assert!(output.stderr.is_empty());
     assert_eq!(fs::read(root.path().join("empty.txt")).unwrap(), b"hello");
 }
@@ -1751,7 +1842,7 @@ fn session_view_and_check_result_bindings_keep_direct_output_and_clone_only_resu
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(
         output.stdout,
-        b"Found 1\n0\tLine\tnote.txt:0\nneedle\nCurrent\nChecked 1\nCurrent 1\nNotCurrent 0\nUnavailable 0\nSelected 1\n0\tLine\tnote.txt:0\nChecked 1\nCurrent 1\nNotCurrent 0\nUnavailable 0\nAnchored\nneedle\nneedle\n"
+        b"Found 1\n0\tLine\tnote.txt:0-7\nneedle\nCurrent\nChecked 1\nCurrent 1\nNotCurrent 0\nUnavailable 0\nSelected 1\n0\tLine\tnote.txt:0-7\nChecked 1\nCurrent 1\nNotCurrent 0\nUnavailable 0\nAnchored\nneedle\nneedle\n"
     );
     let stderr = text(output.stderr);
     assert!(stderr.contains("check search requires a Search binding"));
@@ -1774,9 +1865,14 @@ fn session_data_stores_gets_and_binds_all_native_value_kinds() {
     assert!(stdout.contains(
         "anddress\t\"quoted\\\"slash\\\\\"\nsearch\t\"shared\"\npick\t\"shared\"\nview\t\"shared\"\ncheck-anddress\t\"shared\"\ncheck-search\t\"shared\"\ncheck-pick\t\"shared\"\n"
     ));
-    assert_eq!(stdout.matches("Anddress\tLine\tnote.txt:0\n").count(), 2);
-    assert!(stdout.matches("Found 1\n0\tLine\tnote.txt:0\n").count() >= 3);
-    assert!(stdout.matches("Selected 1\n0\tLine\tnote.txt:0\n").count() >= 3);
+    assert_eq!(stdout.matches("Anddress\tLine\tnote.txt:0-7\n").count(), 2);
+    assert!(stdout.matches("Found 1\n0\tLine\tnote.txt:0-7\n").count() >= 3);
+    assert!(
+        stdout
+            .matches("Selected 1\n0\tLine\tnote.txt:0-7\n")
+            .count()
+            >= 3
+    );
     assert!(stdout.matches("needle\n").count() >= 3);
     assert!(stdout.matches("Current\n").count() >= 3);
     assert!(
@@ -1800,7 +1896,7 @@ fn session_data_rejects_wrong_values_preserves_entries_and_drops_at_eof() {
     assert_eq!(invalid.status.code(), Some(2));
     assert_eq!(
         invalid.stdout,
-        b"Found 1\n0\tLine\tnote.txt:0\nAnchored\nOK\nOK\nOK\nFound 1\n0\tLine\tnote.txt:0\nOK\nAnddress\tLine\tnote.txt:0\n"
+        b"Found 1\n0\tLine\tnote.txt:0-7\nAnchored\nOK\nOK\nOK\nFound 1\n0\tLine\tnote.txt:0-7\nOK\nAnddress\tLine\tnote.txt:0-7\n"
     );
     let stderr = text(invalid.stderr);
     assert!(stderr.contains("Data entry already exists"));
@@ -1831,7 +1927,7 @@ fn session_bindings_reject_unknown_duplicate_empty_out_of_range_and_type_mismatc
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(
         output.stdout,
-        b"Found 1\n0\tLine\tnote.txt:0\nFound 0\nFound 1\n0\tLine\tnote.txt:0\n"
+        b"Found 1\n0\tLine\tnote.txt:0-7\nFound 0\nFound 1\n0\tLine\tnote.txt:0-7\n"
     );
     let stderr = text(output.stderr);
     assert!(stderr.contains("let requires a standalone = token"));
@@ -1854,7 +1950,7 @@ fn session_lexer_exit_and_eof_follow_the_initial_grammar() {
     assert_eq!(lexical.status.code(), Some(2));
     assert_eq!(
         lexical.stdout,
-        b"Found 1\n0\tLine\tnote.txt:0\nFound 1\n0\tLine\tnote.txt:1\nquote: \" and slash \\\nFound 1\n0\tLine\tnote.txt:0\nFound 1\n0\tLine\tnote.txt:0\n"
+        b"Found 1\n0\tLine\tnote.txt:0-8\nFound 1\n0\tLine\tnote.txt:8-29\nquote: \" and slash \\\nFound 1\n0\tLine\tnote.txt:0-8\nFound 1\n0\tLine\tnote.txt:0-8\n"
     );
     let stderr = text(lexical.stderr);
     assert!(stderr.contains("search query is invalid"));
@@ -1866,7 +1962,7 @@ fn session_lexer_exit_and_eof_follow_the_initial_grammar() {
 
     let eof = run_shell(root.path(), "\nsearch line \"a space\"\n");
     assert!(eof.status.success());
-    assert_eq!(eof.stdout, b"Found 1\n0\tLine\tnote.txt:0\n");
+    assert_eq!(eof.stdout, b"Found 1\n0\tLine\tnote.txt:0-8\n");
     assert!(eof.stderr.is_empty());
 }
 
@@ -1882,7 +1978,7 @@ fn session_lexer_decodes_all_quoted_escapes_outside_edit() {
     assert!(output.status.success(), "{}", text(output.stderr));
     assert_eq!(
         output.stdout,
-        b"Found 1\n0\tLine\tnote.txt:0\nOK\nanddress\t\"slash\\\\ quote\\\" line\\ncarriage\\rtab\\t\"\n"
+        b"Found 1\n0\tLine\tnote.txt:0-7\nOK\nanddress\t\"slash\\\\ quote\\\" line\\ncarriage\\rtab\\t\"\n"
     );
 }
 
@@ -1896,7 +1992,7 @@ fn session_apply_reuses_edit_binding_and_keeps_explicit_edit_clone() {
         "let lines = search line one\nlet edit = edit replace @lines[0] \"one\\n\"\nlet copy = @edit\napply @edit\napply @copy\nexit\n",
     );
     assert!(output.status.success(), "{}", text(output.stderr));
-    assert_eq!(output.stdout, b"Found 1\n0\tLine\tnote.txt:0\nOK\nOK\n");
+    assert_eq!(output.stdout, b"Found 1\n0\tLine\tnote.txt:0-4\nOK\nOK\n");
     assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"one\n");
 
     let source = include_str!("../src/bin/bw.rs");
@@ -1921,12 +2017,12 @@ fn session_preserves_execution_then_usage_exit_precedence_without_latest_state()
         "search line needle --source missing.txt\nsearch line needle\n",
     );
     assert_eq!(execution_only.status.code(), Some(1));
-    assert_eq!(execution_only.stdout, b"Found 1\n0\tLine\tnote.txt:0\n");
+    assert_eq!(execution_only.stdout, b"Found 1\n0\tLine\tnote.txt:0-7\n");
     assert!(text(execution_only.stderr).contains("workspace source is unavailable"));
 
     let no_latest = run_shell(root.path(), "search line needle\nview anddress @latest\n");
     assert_eq!(no_latest.status.code(), Some(2));
-    assert_eq!(no_latest.stdout, b"Found 1\n0\tLine\tnote.txt:0\n");
+    assert_eq!(no_latest.stdout, b"Found 1\n0\tLine\tnote.txt:0-7\n");
     assert!(text(no_latest.stderr).contains("unknown binding: latest"));
 
     let execution_then_usage = run_shell(
@@ -1936,7 +2032,7 @@ fn session_preserves_execution_then_usage_exit_precedence_without_latest_state()
     assert_eq!(execution_then_usage.status.code(), Some(2));
     assert_eq!(
         execution_then_usage.stdout,
-        b"Found 1\n0\tLine\tnote.txt:0\n"
+        b"Found 1\n0\tLine\tnote.txt:0-7\n"
     );
     assert!(text(execution_then_usage.stderr).contains("unsupported Session command: unknown"));
 }

@@ -1,6 +1,6 @@
 # Backwriter 0.2.0 Anddress Fast Path
 
-Status: Phases 1–2 completed; Phase 3 next; Phases 3–7 pending.
+Status: Phases 1–3 completed; Phase 4 next; Phases 4–7 pending.
 
 This is the sole progress tracker for the redesign. It records gates and
 evidence but does not own semantics; the active Protocol, address model, and
@@ -45,9 +45,9 @@ An ordinary `artext.backwriter-anddress.v4` contains exactly:
 
 File covers the complete source; Paragraph and Line cover exact current bytes.
 Target text, terminator text, ordinal, and neighboring context are not identity.
-The source-state hash is final currentness authority. Its algorithm, exact wire
-encoding/order, and v3/v4 compatibility or migration policy remain unresolved
-Owner decisions.
+The source-state hash is final currentness authority. Phase 3 fixed SHA-256,
+the exact eight-field compact JSON wire order, and an incompatible hard cutover
+with no v3 production decoder or compatibility surface.
 
 An ordinary Anddress is immutable caller-owned authority for one exact source
 state and range. A changed state invalidates it. Explicit Search may return a
@@ -79,7 +79,7 @@ before patching. View, Check, and Apply do not search.
 | 1. Authority | Closed clean `0.1.0` baselines, Owner docs-only authority, active-doc review. | This tracker and active semantics cover every guard, field, responsibility, exclusion, test, and benchmark gate; protected code/runtime state is unchanged; hash and compatibility remain open. |
 | 2. Reproduce/profile/baseline | Phase 1 committed, pushed, and clean. | Drift-Wrong-Apply is executable; release-build profiles locate actual parse/hash/allocation/I/O cost; fixed fixtures, commands, host/toolchain facts, repeated raw results, and variance are recorded without improvement claims. |
 | 3. V4 value/wire kernel | Phase 2 evidence plus Owner decisions for hash algorithm, compatibility/cutover, and any dependency. | One canonical v4 value implements validation, equality, encoding/decoding, checked arbitrary-size length/range arithmetic, error priority, KATs, and decided cutover without hidden ordinal/text identity. |
-| 4. Search/observation | V4 kernel complete and all producers mapped. | Content and exact-File Search produce v4 state/ranges; hash is computed in the existing one read; bounded observation state and discard rules hold; ordering, multiplicity, fail-all, Unicode/terminators, admission, and no-limit behavior remain correct. |
+| 4. Search/observation | Phase 3 v4 Search production is complete and all retained-state consumers are mapped. | The bounded observation producer and discard rules hold without changing Phase 3 one-read hash/range results, ordering, multiplicity, fail-all, Unicode/terminators, admission, or no-limit behavior. |
 | 5. View/Check | Search produces accepted v4 values. | View uses hash+range without target search/reparse; Check compares the source hash without search/refresh; duplicate, rewrite, bounds, unavailable, text-policy, and resource regressions pass; retired v3 currentness remains only if explicitly authorized. |
 | 6. Apply/Anchor | Ordinary View and Check consume v4 authority. | Apply enforces the hash precondition and range bounds before patching, and Wrong Apply fails without publication; publication/safety/resource boundaries remain; only Anchor transforms a live range under Backwriter-owned Apply; external change invalidates continuity. |
 | 7. Integrate/release decision | Phases 3–6 individually green. | Full matrix and fixed benchmarks pass; structural audits exclude consumer search, second Search hash pass, history/index/relocation/context/cache; docs report actual evidence; version, compatibility, artifacts, and publication receive separate Owner decisions. |
@@ -365,7 +365,7 @@ versioning, release construction, and publication.
 
 - [x] Phase 1 — authority record (completed 2026-08-30)
 - [x] Phase 2 — reproduction, profile, and baseline (completed 2026-08-30)
-- [ ] Phase 3 — v4 value and wire kernel
+- [x] Phase 3 — v4 value and wire kernel (completed 2026-08-30)
 - [ ] Phase 4 — Search producer and `CurrentObservation`
 - [ ] Phase 5 — View and Check consumers
 - [ ] Phase 6 — Apply and Anchor cutover
@@ -390,5 +390,12 @@ Evidence:
   unchanged 193-test suite and every offline/locked gate passed. Task-local
   harnesses, fixtures, profiler data, and build output were removed after the
   evidence was transcribed.
-- Phases 3–7: pending. Phase 3 is next and still requires the unresolved Owner
-  decisions for the v4 hash algorithm, compatibility/cutover, and dependency.
+- Phase 3: SHA-256, exact v4 value/wire validation and KATs, incompatible v3
+  rejection, one-read Search hash/range projection, and compilation of every
+  current capability consumer are complete. Apply retains only a private
+  call-local structural mapper after v4 source-state/range proof; removing that
+  transitional execution path remains Phase 6 work. All 186 GNU-host tests and
+  every offline/locked Phase 3 gate pass. No benchmark or release claim is
+  made.
+- Phases 4–7: pending. Phase 4 next introduces only the bounded retained
+  observation producer fast path defined by active authority.

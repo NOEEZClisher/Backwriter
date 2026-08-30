@@ -1,6 +1,6 @@
 use std::fs;
 
-use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural};
+use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget};
 use backwriter::backwriter::search::{
     SearchError, SearchInputError, SearchOutcome, SearchQuery, SearchRequest, SearchScope,
     SearchScopeEntry, SearchTarget,
@@ -40,7 +40,7 @@ fn exact_file(runtime: &WorkspaceRuntime, logical_path: &str) -> SearchOutcome {
 }
 
 #[test]
-fn search_projects_exact_line_extent_and_paragraph_ordinal() {
+fn search_projects_exact_source_state_and_byte_ranges() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
@@ -48,38 +48,26 @@ fn search_projects_exact_line_extent_and_paragraph_ordinal() {
     let workspace = runtime(&root);
     let lines = found(&workspace, "needle", SearchTarget::Line);
     assert_eq!(lines.len(), 3);
-    assert_eq!(lines[0].logical_path, "note.txt");
-    assert_eq!(
-        lines[0].target,
-        AnddressTarget::Line {
-            ordinal: Natural::zero(),
-            exact_extent: "needle\r\n".to_owned()
-        }
-    );
-    assert_eq!(
-        lines[1].target,
-        AnddressTarget::Line {
-            ordinal: Natural::parse("3").unwrap(),
-            exact_extent: "needle".to_owned()
-        }
-    );
-    assert_eq!(
-        lines[2].target,
-        AnddressTarget::Line {
-            ordinal: Natural::one(),
-            exact_extent: "needle x\n".to_owned()
-        }
+    assert_eq!(lines[0].logical_path(), "note.txt");
+    assert_eq!(lines[0].target(), AnddressTarget::Line);
+    assert_eq!((lines[0].byte_start(), lines[0].byte_end()), (0, 8));
+    assert_eq!((lines[1].byte_start(), lines[1].byte_end()), (18, 24));
+    assert_eq!((lines[2].byte_start(), lines[2].byte_end()), (8, 17));
+    assert!(lines.iter().all(|value| value.source_byte_length() == 24));
+    assert!(
+        lines
+            .windows(2)
+            .all(|pair| { pair[0].source_state_hash() == pair[1].source_state_hash() })
     );
     let paragraphs = found(&workspace, "needle", SearchTarget::Paragraph);
     assert_eq!(
-        paragraphs.into_iter().map(|a| a.target).collect::<Vec<_>>(),
+        paragraphs
+            .iter()
+            .map(|value| (value.target(), value.byte_start(), value.byte_end()))
+            .collect::<Vec<_>>(),
         vec![
-            AnddressTarget::Paragraph {
-                ordinal: Natural::zero()
-            },
-            AnddressTarget::Paragraph {
-                ordinal: Natural::one()
-            }
+            (AnddressTarget::Paragraph, 0, 17),
+            (AnddressTarget::Paragraph, 18, 24),
         ]
     );
     assert_eq!(found(&workspace, "needle", SearchTarget::File).len(), 1);
@@ -102,16 +90,20 @@ fn exact_file_lookup_is_content_independent_and_integrates_with_check() {
         panic!("empty File lookup")
     };
     assert_eq!(anddresses.len(), 1);
-    assert_eq!(anddresses[0].logical_path, "empty.txt");
-    assert_eq!(anddresses[0].target, AnddressTarget::File);
+    assert_eq!(anddresses[0].logical_path(), "empty.txt");
+    assert_eq!(anddresses[0].target(), AnddressTarget::File);
+    assert_eq!(
+        (anddresses[0].byte_start(), anddresses[0].byte_end()),
+        (0, 0)
+    );
 
     let nonempty = exact_file(&workspace, "nonempty.txt");
     let SearchOutcome::Found { anddresses } = &nonempty else {
         panic!("nonempty File lookup")
     };
     assert_eq!(anddresses.len(), 1);
-    assert_eq!(anddresses[0].logical_path, "nonempty.txt");
-    assert_eq!(anddresses[0].target, AnddressTarget::File);
+    assert_eq!(anddresses[0].logical_path(), "nonempty.txt");
+    assert_eq!(anddresses[0].target(), AnddressTarget::File);
 
     assert_eq!(exact_file(&workspace, "missing.txt"), SearchOutcome::Empty);
     assert_eq!(exact_file(&workspace, "directory"), SearchOutcome::Empty);
@@ -126,7 +118,7 @@ fn exact_file_lookup_is_content_independent_and_integrates_with_check() {
     assert!(matches!(
         checked.filtered,
         SearchOutcome::Found { ref anddresses }
-            if anddresses.len() == 1 && anddresses[0].logical_path == "empty.txt"
+            if anddresses.len() == 1 && anddresses[0].logical_path() == "empty.txt"
     ));
 }
 
@@ -182,11 +174,11 @@ fn exact_file_lookup_reuses_path_admission_and_source_safety() {
     };
     assert_eq!(left_addresses.len(), 1);
     assert_eq!(right_addresses.len(), 1);
-    assert_eq!(left_addresses[0].logical_path, "a/same.txt");
-    assert_eq!(right_addresses[0].logical_path, "b/same.txt");
+    assert_eq!(left_addresses[0].logical_path(), "a/same.txt");
+    assert_eq!(right_addresses[0].logical_path(), "b/same.txt");
     assert_eq!(
-        left_addresses[0].workspace_coordinate,
-        right_addresses[0].workspace_coordinate
+        left_addresses[0].workspace_coordinate(),
+        right_addresses[0].workspace_coordinate()
     );
     assert_eq!(
         workspace.search(&SearchRequest::exact_file("outside.txt").unwrap()),
@@ -204,130 +196,104 @@ fn exact_file_lookup_reuses_path_admission_and_source_safety() {
 
 #[test]
 fn wire_is_flat_strict_and_version_priority_is_explicit() {
-    let address = Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: "a".repeat(64),
-        logical_path: "note.txt".to_owned(),
-        target: AnddressTarget::Line {
-            ordinal: Natural::zero(),
-            exact_extent: "x\n".to_owned(),
-        },
-    };
+    let coordinate = "a".repeat(64);
+    let hash = "b".repeat(64);
+    let address = Anddress::new(
+        &coordinate,
+        "note.txt",
+        &hash,
+        2,
+        AnddressTarget::Line,
+        0,
+        2,
+    )
+    .unwrap();
     assert_eq!(
         String::from_utf8(address.encode().unwrap()).unwrap(),
         format!(
-            "{{\"version\":\"{}\",\"workspaceCoordinate\":\"{}\",\"logicalPath\":\"note.txt\",\"kind\":\"line\",\"ordinal\":\"0\",\"exactExtent\":\"x\\n\"}}",
-            ANDDRESS_VERSION,
-            "a".repeat(64)
+            "{{\"version\":\"{}\",\"workspaceCoordinate\":\"{}\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"{}\",\"sourceByteLength\":\"2\",\"kind\":\"line\",\"byteStart\":\"0\",\"byteEnd\":\"2\"}}",
+            ANDDRESS_VERSION, coordinate, hash,
         )
     );
-    for (address, expected) in [
-        (
-            Anddress {
-                version: ANDDRESS_VERSION.to_owned(),
-                workspace_coordinate: "a".repeat(64),
-                logical_path: "note.txt".to_owned(),
-                target: AnddressTarget::File,
-            },
-            format!(
-                "{{\"version\":\"{}\",\"workspaceCoordinate\":\"{}\",\"logicalPath\":\"note.txt\",\"kind\":\"file\"}}",
-                ANDDRESS_VERSION,
-                "a".repeat(64)
-            ),
-        ),
-        (
-            Anddress {
-                version: ANDDRESS_VERSION.to_owned(),
-                workspace_coordinate: "a".repeat(64),
-                logical_path: "note.txt".to_owned(),
-                target: AnddressTarget::Paragraph {
-                    ordinal: Natural::zero(),
-                },
-            },
-            format!(
-                "{{\"version\":\"{}\",\"workspaceCoordinate\":\"{}\",\"logicalPath\":\"note.txt\",\"kind\":\"paragraph\",\"ordinal\":\"0\"}}",
-                ANDDRESS_VERSION,
-                "a".repeat(64)
-            ),
-        ),
-    ] {
-        assert_eq!(
-            String::from_utf8(address.encode().unwrap()).unwrap(),
-            expected
-        );
-    }
+    let file = Anddress::new(
+        &coordinate,
+        "note.txt",
+        &hash,
+        2,
+        AnddressTarget::File,
+        0,
+        2,
+    )
+    .unwrap();
     assert_eq!(
         Anddress::decode(
-            br#"{ "kind" : "file", "logicalPath" : "note.txt", "workspaceCoordinate" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "version" : "artext.backwriter-anddress.v3" }"#,
+            format!(
+                r#"{{ "byteEnd" : "2", "kind" : "file", "logicalPath" : "note.txt", "workspaceCoordinate" : "{coordinate}", "version" : "{ANDDRESS_VERSION}", "sourceStateHash" : "{hash}", "sourceByteLength" : "2", "byteStart" : "0" }}"#
+            )
+            .as_bytes(),
         )
         .unwrap(),
-        Anddress {
-            version: ANDDRESS_VERSION.to_owned(),
-            workspace_coordinate: "a".repeat(64),
-            logical_path: "note.txt".to_owned(),
-            target: AnddressTarget::File,
-        }
+        file
     );
     assert_eq!(
         Anddress::decode(br#"{"version":"old","kind":null}"#),
         Err(backwriter::backwriter::anddress::AnddressError::UnsupportedVersion)
     );
     assert_eq!(Anddress::decode(br#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","logicalPath":"note.txt","kind":"file","version":"artext.backwriter-anddress.v3"}"#), Err(backwriter::backwriter::anddress::AnddressError::Encoding));
-    assert_eq!(Anddress::decode(br#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","logicalPath":"note.txt","kind":"line","ordinal":"01","exactExtent":"x"}"#), Err(backwriter::backwriter::anddress::AnddressError::Encoding));
+    assert_eq!(Anddress::decode(br#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","logicalPath":"note.txt","kind":"line","ordinal":"0","exactExtent":"x"}"#), Err(backwriter::backwriter::anddress::AnddressError::UnsupportedVersion));
 }
 
 #[test]
-fn wire_rejects_null_unknown_and_invalid_extents_without_natural_narrowing() {
+fn wire_rejects_missing_unknown_wrong_type_and_noncanonical_ranges() {
     use backwriter::backwriter::anddress::AnddressError;
-    let base = "{\"version\":\"artext.backwriter-anddress.v3\",\"workspaceCoordinate\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"logicalPath\":\"note.txt\",";
+    let base = format!(
+        "{{\"version\":\"{ANDDRESS_VERSION}\",\"workspaceCoordinate\":\"{}\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"{}\",\"sourceByteLength\":\"2\",",
+        "a".repeat(64),
+        "b".repeat(64)
+    );
     assert_eq!(
-        Anddress::decode(format!("{base}\"kind\":null}}").as_bytes()),
+        Anddress::decode(
+            format!("{base}\"kind\":null,\"byteStart\":\"0\",\"byteEnd\":\"2\"}}").as_bytes()
+        ),
         Err(AnddressError::Encoding)
     );
     assert_eq!(
-        Anddress::decode(format!("{base}\"kind\":\"file\",\"unknown\":\"x\"}}").as_bytes()),
+        Anddress::decode(
+            format!(
+                "{base}\"kind\":\"file\",\"byteStart\":\"0\",\"byteEnd\":\"2\",\"unknown\":\"x\"}}"
+            )
+            .as_bytes()
+        ),
         Err(AnddressError::Encoding)
     );
     for encoded in [
-        "{\"version\":\"artext.backwriter-anddress.v3\",\"workspaceCoordinate\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"kind\":\"file\"}",
-        "{\"version\":\"artext.backwriter-anddress.v3\",\"workspaceCoordinate\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"logicalPath\":\"note.txt\",\"kind\":0}",
-        "{\"version\":\"artext.backwriter-anddress.v3\",\"workspaceCoordinate\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"logicalPath\":\"note.txt\",\"kind\":\"file\",\"kind\":\"file\"}",
+        format!("{base}\"kind\":\"file\",\"byteStart\":\"0\"}}"),
+        format!("{base}\"kind\":0,\"byteStart\":\"0\",\"byteEnd\":\"2\"}}"),
+        format!(
+            "{base}\"kind\":\"file\",\"kind\":\"file\",\"byteStart\":\"0\",\"byteEnd\":\"2\"}}"
+        ),
     ] {
         assert_eq!(
             Anddress::decode(encoded.as_bytes()),
             Err(AnddressError::Encoding)
         );
     }
-    let huge = format!("1{}", "0".repeat(4097));
-    assert_eq!(
-        Anddress::decode(
-            format!("{base}\"kind\":\"line\",\"ordinal\":\"{huge}\",\"exactExtent\":\"x\\n\"}}")
+    for (start, end, expected) in [
+        ("01", "2", AnddressError::Encoding),
+        ("-1", "2", AnddressError::Encoding),
+        ("2", "1", AnddressError::Invalid),
+        ("0", "3", AnddressError::Invalid),
+    ] {
+        assert_eq!(
+            Anddress::decode(
+                format!(
+                    "{base}\"kind\":\"line\",\"byteStart\":\"{start}\",\"byteEnd\":\"{end}\"}}"
+                )
                 .as_bytes()
-        )
-        .unwrap()
-        .target,
-        AnddressTarget::Line {
-            ordinal: Natural::parse(&huge).unwrap(),
-            exact_extent: "x\n".to_owned()
-        }
-    );
-    assert_eq!(
-        Anddress::decode(
-            format!("{base}\"kind\":\"line\",\"ordinal\":\"0\",\"exactExtent\":\"x\\ny\"}}")
-                .as_bytes()
-        ),
-        Err(AnddressError::Invalid)
-    );
-    let unsupported = Anddress {
-        version: "old".to_owned(),
-        workspace_coordinate: "a".repeat(64),
-        logical_path: "note.txt".to_owned(),
-        target: AnddressTarget::File,
-    };
-    assert_eq!(
-        unsupported.validate(),
-        Err(AnddressError::UnsupportedVersion)
-    );
+            ),
+            Err(expected)
+        );
+    }
 }
 
 #[test]
@@ -336,9 +302,10 @@ fn wire_ignores_large_invalid_values_without_materializing_them() {
 
     let large = "x".repeat(65_536);
     let valid = format!(
-        r#"{{"version":"{}","workspaceCoordinate":"{}","logicalPath":"note.txt","kind":"file""#,
+        r#"{{"version":"{}","workspaceCoordinate":"{}","logicalPath":"note.txt","sourceStateHash":"{}","sourceByteLength":"0","kind":"file","byteStart":"0","byteEnd":"0""#,
         ANDDRESS_VERSION,
         "a".repeat(64),
+        "b".repeat(64),
     );
 
     for encoded in [
@@ -383,17 +350,12 @@ fn search_handles_separators_repeated_occurrences_ordering_and_fail_all() {
     assert_eq!(
         lines
             .iter()
-            .map(|value| value.logical_path.as_str())
+            .map(|value| value.logical_path())
             .collect::<Vec<_>>(),
         vec!["docs/a.txt", "z.txt", "z.txt", "z.txt"]
     );
-    assert_eq!(
-        lines[3].target,
-        AnddressTarget::Line {
-            ordinal: Natural::zero(),
-            exact_extent: "needle needle\n".to_owned()
-        }
-    );
+    assert_eq!(lines[3].target(), AnddressTarget::Line);
+    assert_eq!((lines[3].byte_start(), lines[3].byte_end()), (0, 14));
     assert_eq!(
         found(&workspace, "needle", SearchTarget::Paragraph).len(),
         3
@@ -411,7 +373,7 @@ fn search_handles_separators_repeated_occurrences_ordering_and_fail_all() {
 }
 
 #[test]
-fn search_projects_unbounded_line_ordinals_and_ignores_only_backwriter_spill() {
+fn search_projects_ranges_after_many_lines_and_ignores_only_backwriter_spill() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
@@ -431,17 +393,15 @@ fn search_projects_unbounded_line_ordinals_and_ignores_only_backwriter_spill() {
     fs::write(root.join("nested/.artext/bw/visible.txt"), "needle").unwrap();
     let values = found(&runtime(&root), "needle", SearchTarget::Line);
     assert_eq!(values.len(), 4);
-    assert_eq!(values[0].logical_path, ".artext/bw2/visible.txt");
-    assert_eq!(values[1].logical_path, ".artext/other/visible.txt");
-    assert_eq!(values[2].logical_path, "many.txt");
+    assert_eq!(values[0].logical_path(), ".artext/bw2/visible.txt");
+    assert_eq!(values[1].logical_path(), ".artext/other/visible.txt");
+    assert_eq!(values[2].logical_path(), "many.txt");
+    assert_eq!(values[2].target(), AnddressTarget::Line);
     assert_eq!(
-        values[2].target,
-        AnddressTarget::Line {
-            ordinal: Natural::parse("4097").unwrap(),
-            exact_extent: "needle".to_owned()
-        }
+        (values[2].byte_start(), values[2].byte_end()),
+        (4097 * 5, 4097 * 5 + 6)
     );
-    assert_eq!(values[3].logical_path, "nested/.artext/bw/visible.txt");
+    assert_eq!(values[3].logical_path(), "nested/.artext/bw/visible.txt");
 }
 
 #[test]
@@ -453,13 +413,8 @@ fn search_matches_separator_as_line_and_file_but_not_paragraph() {
     let workspace = runtime(&root);
     let lines = found(&workspace, " \t", SearchTarget::Line);
     assert_eq!(lines.len(), 1);
-    assert_eq!(
-        lines[0].target,
-        AnddressTarget::Line {
-            ordinal: Natural::one(),
-            exact_extent: " \t\r".to_owned(),
-        }
-    );
+    assert_eq!(lines[0].target(), AnddressTarget::Line);
+    assert_eq!((lines[0].byte_start(), lines[0].byte_end()), (5, 8));
     assert!(found(&workspace, " \t", SearchTarget::Paragraph).is_empty());
     assert_eq!(found(&workspace, " \t", SearchTarget::File).len(), 1);
 }
@@ -477,7 +432,7 @@ fn search_promotes_parents_to_full_line_tier() {
         assert_eq!(
             values
                 .iter()
-                .map(|value| value.logical_path.as_str())
+                .map(|value| value.logical_path())
                 .collect::<Vec<_>>(),
             vec!["z.txt", "a.txt"]
         );
@@ -485,27 +440,16 @@ fn search_promotes_parents_to_full_line_tier() {
 }
 
 #[test]
-fn search_keeps_identical_extents_distinct_by_line_ordinal_and_bare_cr() {
+fn search_keeps_identical_extents_distinct_by_range_and_bare_cr() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
     fs::write(root.join("note.txt"), "needle\rneedle\r").unwrap();
     let values = found(&runtime(&root), "needle", SearchTarget::Line);
     assert_eq!(values.len(), 2);
-    assert_eq!(
-        values[0].target,
-        AnddressTarget::Line {
-            ordinal: Natural::zero(),
-            exact_extent: "needle\r".to_owned(),
-        }
-    );
-    assert_eq!(
-        values[1].target,
-        AnddressTarget::Line {
-            ordinal: Natural::one(),
-            exact_extent: "needle\r".to_owned(),
-        }
-    );
+    assert_eq!(values[0].target(), AnddressTarget::Line);
+    assert_eq!((values[0].byte_start(), values[0].byte_end()), (0, 7));
+    assert_eq!((values[1].byte_start(), values[1].byte_end()), (7, 14));
 }
 
 #[test]
@@ -591,7 +535,7 @@ fn search_rejects_invalid_query_and_scope_before_access_and_keeps_canonical_scop
     assert_eq!(
         anddresses
             .iter()
-            .map(|value| value.logical_path.as_str())
+            .map(|value| value.logical_path())
             .collect::<Vec<_>>(),
         vec!["a.txt", "z.txt"]
     );
@@ -698,7 +642,7 @@ fn search_has_no_fixed_query_path_scope_depth_or_result_limit() {
     assert_eq!(
         found(&runtime(&root), "needle", SearchTarget::Line)
             .iter()
-            .filter(|value| value.logical_path == logical_path)
+            .filter(|value| value.logical_path() == logical_path)
             .count(),
         1
     );
@@ -730,7 +674,7 @@ fn search_rejects_symlinks_and_keeps_hard_links_as_distinct_logical_paths() {
     assert_eq!(
         values
             .iter()
-            .map(|value| value.logical_path.as_str())
+            .map(|value| value.logical_path())
             .collect::<Vec<_>>(),
         vec!["hard.txt", "source.txt"]
     );
@@ -751,7 +695,7 @@ fn search_rejects_symlinks_and_keeps_hard_links_as_distinct_logical_paths() {
             panic!("hard-link logical File lookup")
         };
         assert_eq!(anddresses.len(), 1);
-        assert_eq!(anddresses[0].logical_path, path);
-        assert_eq!(anddresses[0].target, AnddressTarget::File);
+        assert_eq!(anddresses[0].logical_path(), path);
+        assert_eq!(anddresses[0].target(), AnddressTarget::File);
     }
 }

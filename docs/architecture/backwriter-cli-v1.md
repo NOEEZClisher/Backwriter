@@ -69,14 +69,15 @@ capability workflow.
 `bw version` writes exactly:
 
 ```text
-Backwriter 0.1.0
+Backwriter 0.2.0
 ```
 
 including the final LF and no other successful output.
 
 `bw update` downloads the current platform's official installer over HTTPS and
-delegates installation to it. Stable `0.1.0` distribution has not started, so
-the current official installer remains the closed `0.1.0-beta.3` publication.
+delegates installation to it. The current official installer selects the
+closed public `0.1.0` distribution; it does not publish or install the
+unpublished `0.2.0` source build.
 Update performs no local version comparison, retry,
 daemon or background update, and adds no compatibility alias. On Unix it uses a
 private temporary directory, runs the downloaded `install.sh` synchronously
@@ -103,11 +104,11 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     search /file <logical-path>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
-    view anddress <encoded-v3-Anddress>
+    view anddress <encoded-v4-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
-    check anddress <encoded-v3-Anddress>
+    check anddress <encoded-v4-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw
-    view anddress <encoded-v3-Anddress>
+    view anddress <encoded-v4-Anddress>
 ```
 
 The default workspace is the process current working directory. An explicit
@@ -167,13 +168,15 @@ The sole implemented result projection is exactly:
 
 ```text
 Found <count>
-<index>\t<File|Paragraph|Line>\t<logical-path>[:<zero-based-ordinal>]
+<index>\t<File|Paragraph|Line>\t<logical-path>[:<byte-start>-<byte-end>]
 ```
 
 `Empty` is one line, `Found 0`. `Found` preserves the Core result vector's
-existing deterministic order. The human projection never modifies an internal
-`SearchOutcome` or `Anddress`; it only omits raw Anddress, workspace coordinate,
-and complete Line `ExactExtent` from display. Preview is not implemented.
+existing deterministic order. File rows omit the full-source range; Paragraph
+and Line rows include their exact byte range. The human projection never
+modifies an internal `SearchOutcome` or `Anddress`; it omits raw Anddress,
+workspace coordinate, source hash, and source length. Preview is not
+implemented.
 
 ### JSON Search projection
 
@@ -187,12 +190,12 @@ followed by one LF. Its keys are ordered `schema`, `outcome`, and `anddresses`:
 or:
 
 ```json
-{"schema":"bw.cli.search.v1","outcome":"found","anddresses":[<exact-v3-Anddress-object>]}
+{"schema":"bw.cli.search.v1","outcome":"found","anddresses":[<exact-v4-Anddress-object>]}
 ```
 
 The writer maps `SearchOutcome::Empty` and `Found` directly. It streams the
 existing outcome in its existing order, retaining duplicate occurrences and
-every ordinal and exact extent. Each array member is the exact existing v3
+every source-state identity and exact range. Each array member is the exact v4
 `Anddress::encode()` object, not a JSON string, preview, normalized value, or
 new CLI/Core wire. It allocates neither a JSON `Value` nor a second result
 collection. Encoding resource and stdout failure are execution errors; a
@@ -204,7 +207,7 @@ The complete syntax for this slice is:
 
 ```text
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
-    view anddress <encoded-v3-Anddress>
+    view anddress <encoded-v4-Anddress>
 ```
 
 View reuses the same global workspace and admission parsing as Search. Its
@@ -221,18 +224,18 @@ preview, truncation, raw Anddress, or related File/Paragraph address.
 
 ### JSON View projection
 
-With the global `--json` flag, View decodes one v3 Anddress, calls the existing
+With the global `--json` flag, View decodes one v4 Anddress, calls the existing
 Runtime View seam once, and writes exactly one compact UTF-8 JSON value followed
 by one LF. Its schema is Adapter-only, not a Core wire. Its fixed key orders are:
 
 ```json
 {"schema":"bw.cli.view.v1","kind":"file","text":"..."}
-{"schema":"bw.cli.view.v1","kind":"paragraph","text":"...","file":<exact-v3-Anddress-object>}
-{"schema":"bw.cli.view.v1","kind":"line","content":"...","terminator":"none|lf|cr|crlf","file":<exact-v3-Anddress-object>,"paragraph":<exact-v3-Anddress-object-or-null>}
+{"schema":"bw.cli.view.v1","kind":"paragraph","text":"...","file":<exact-v4-Anddress-object>}
+{"schema":"bw.cli.view.v1","kind":"line","content":"...","terminator":"none|lf|cr|crlf","file":<exact-v4-Anddress-object>,"paragraph":<exact-v4-Anddress-object-or-null>}
 ```
 
 `text` and `content` use the existing JSON string writer directly. Related
-File/Paragraph values are their exact existing v3 `Anddress::encode()` objects,
+File/Paragraph values are their exact existing v4 `Anddress::encode()` objects,
 not strings or new CLI values. Line terminators project only to `none`, `lf`,
 `cr`, or `crlf`; a separator Line has `paragraph:null`. The writer retains no
 JSON `Value`, cloned `ViewOutcome`, complete JSON string, or result collection.
@@ -242,7 +245,7 @@ unchanged.
 
 ### Raw View projection
 
-With the global `--raw` flag, View performs the same one-v3-Anddress decode and
+With the global `--raw` flag, View performs the same one-v4-Anddress decode and
 one Runtime View call as ordinary View, then uses the existing human View writer
 unchanged. File, Paragraph, and Line stdout is therefore byte-for-byte identical
 to default View, including Unicode and exact None/LF/CR/CRLF/no-EOL terminators.
@@ -255,10 +258,10 @@ The complete syntax for this slice is:
 
 ```text
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
-    check anddress <encoded-v3-Anddress>
+    check anddress <encoded-v4-Anddress>
 ```
 
-Check shares View's one-value v3 Anddress decoding and global workspace and
+Check shares View's one-value v4 Anddress decoding and global workspace and
 admission parsing. It passes the decoded value directly to
 `WorkspaceRuntime::check`; it introduces no CLI input schema, request, wrapper,
 alias, or retained result. The only successful human outputs are one of
@@ -270,19 +273,19 @@ Check resource, and stdout errors are execution errors. One-shot `check search`,
 
 ### JSON Check projection
 
-With the global `--json` flag, Check decodes one v3 Anddress, calls the existing
+With the global `--json` flag, Check decodes one v4 Anddress, calls the existing
 Runtime Check seam once, and writes exactly one compact UTF-8 JSON value followed
 by one LF. Its schema is Adapter-only, not a Core wire. Its fixed key orders are:
 
 ```json
-{"schema":"bw.cli.check.v1","status":"current","filtered":<exact-v3-Anddress-object>}
+{"schema":"bw.cli.check.v1","status":"current","filtered":<exact-v4-Anddress-object>}
 {"schema":"bw.cli.check.v1","status":"not-current","filtered":null}
-{"schema":"bw.cli.check.v1","status":"unavailable","filtered":<exact-v3-Anddress-object>}
+{"schema":"bw.cli.check.v1","status":"unavailable","filtered":<exact-v4-Anddress-object>}
 ```
 
 The JSON and human writers share the existing raw one-input Check-report
 classification. `current` and `unavailable` contain the exact existing filtered
-v3 `Anddress::encode()` object; `not-current` contains only `filtered:null`.
+v4 `Anddress::encode()` object; `not-current` contains only `filtered:null`.
 An inconsistent report/filtered combination is an execution error before either
 writer emits output. The writer keeps no JSON `Value`, cloned `CheckOutcome`, or
 result collection. The human Check projection is unchanged.
@@ -333,7 +336,7 @@ projection is exactly:
 
 ```text
 Selected <count>
-<index>\t<File|Paragraph|Line>\t<logical-path>[:<zero-based-ordinal>]
+<index>\t<File|Paragraph|Line>\t<logical-path>[:<byte-start>-<byte-end>]
 ```
 
 `Empty` writes `Selected 0`. Pick address references use an Anddress binding or
@@ -391,7 +394,7 @@ seven exact native kinds are `anddress`, `search`, `pick`, `view`,
 direct Anddress binding or indexed Search/Pick result; every other kind accepts
 only an unindexed matching value binding. Anchedress and Edit are rejected. Get
 uses the existing human writer; an Anddress Get writes exactly
-`Anddress\t<File|Paragraph|Line>\t<logical-path>[:<zero-based-ordinal>]` and
+`Anddress\t<File|Paragraph|Line>\t<logical-path>[:<byte-start>-<byte-end>]` and
 never raw wire. `let ... = data get ...` gets once, writes once, then retains
 the exact cloned value under the requested binding name.
 

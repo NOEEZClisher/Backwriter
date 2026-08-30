@@ -1,9 +1,9 @@
 //! Private forward framing shared by Runtime source observers.
 
 use std::io::Read;
-use std::ops::Range;
 
-use crate::backwriter::anddress::{Anddress, AnddressTarget, LineBodyClass, Natural};
+use crate::backwriter::anddress::{Anddress, AnddressTarget, LineBodyClass};
+use crate::hash::Sha256;
 
 pub(crate) const READ_BUFFER_SIZE: usize = 8_192;
 
@@ -14,55 +14,25 @@ pub(crate) enum SourceScanError {
     Resource,
 }
 
-pub(crate) struct DecimalOrdinal {
-    digits: Vec<u8>,
-}
-
-impl DecimalOrdinal {
-    pub(crate) fn zero() -> Result<Self, SourceScanError> {
-        let mut digits = Vec::new();
-        digits
-            .try_reserve_exact(1)
-            .map_err(|_| SourceScanError::Resource)?;
-        digits.push(b'0');
-        Ok(Self { digits })
-    }
-
-    pub(crate) fn as_natural(&self) -> Result<Natural, SourceScanError> {
-        let digits = std::str::from_utf8(&self.digits).expect("decimal digits are UTF-8");
-        Natural::parse(digits).map_err(|_| SourceScanError::Resource)
-    }
-
-    pub(crate) fn increment(&mut self) -> Result<(), SourceScanError> {
-        for digit in self.digits.iter_mut().rev() {
-            if *digit != b'9' {
-                *digit += 1;
-                return Ok(());
-            }
-            *digit = b'0';
-        }
-        let length = self.digits.len();
-        self.digits
-            .try_reserve_exact(1)
-            .map_err(|_| SourceScanError::Resource)?;
-        self.digits.push(b'0');
-        self.digits.copy_within(0..length, 1);
-        self.digits[0] = b'1';
-        Ok(())
-    }
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) struct SourceState {
+    pub(crate) hash: String,
+    pub(crate) byte_length: usize,
 }
 
 #[derive(Clone, Copy)]
-pub(crate) enum SourceEvent<'a> {
+pub(crate) enum SourceEvent {
     StartLine {
-        ordinal: &'a DecimalOrdinal,
+        byte_start: usize,
+        line_index: usize,
     },
     Byte {
         byte: u8,
         content: bool,
     },
     EndLine {
-        ordinal: &'a DecimalOrdinal,
+        byte_start: usize,
+        byte_end: usize,
         body_class: LineBodyClass,
     },
 }
@@ -72,14 +42,9 @@ pub(crate) struct ExactTargetTracker<'a> {
     inputs: &'a [Anddress],
     indexes: &'a [usize],
     current: Vec<bool>,
-    structural_indexes: Vec<usize>,
-    line_end: usize,
-    line_cursor: usize,
-    paragraph_cursor: usize,
-    line_match: Range<usize>,
-    paragraph_ordinal: DecimalOrdinal,
+    paragraph_start: usize,
+    paragraph_end: usize,
     in_paragraph: bool,
-    extent_position: usize,
 }
 
 impl<'a> ExactTargetTracker<'a> {
@@ -92,60 +57,40 @@ impl<'a> ExactTargetTracker<'a> {
             .try_reserve_exact(inputs.len())
             .map_err(|_| SourceScanError::Resource)?;
         current.resize(inputs.len(), false);
-        let structural_count = indexes
-            .iter()
-            .filter(|&&index| !matches!(inputs[index].target, AnddressTarget::File))
-            .count();
-        let mut structural_indexes = Vec::new();
-        structural_indexes
-            .try_reserve_exact(structural_count)
-            .map_err(|_| SourceScanError::Resource)?;
-        for &index in indexes {
-            if matches!(inputs[index].target, AnddressTarget::Line { .. }) {
-                structural_indexes.push(index);
-            }
-        }
-        let line_end = structural_indexes.len();
-        for &index in indexes {
-            if matches!(inputs[index].target, AnddressTarget::Paragraph { .. }) {
-                structural_indexes.push(index);
-            }
-        }
-        structural_indexes[..line_end].sort_unstable_by(|left, right| {
-            target_ordinal(&inputs[*left].target).cmp(target_ordinal(&inputs[*right].target))
-        });
-        structural_indexes[line_end..].sort_unstable_by(|left, right| {
-            target_ordinal(&inputs[*left].target).cmp(target_ordinal(&inputs[*right].target))
-        });
         Ok(Self {
             inputs,
             indexes,
             current,
-            structural_indexes,
-            line_end,
-            line_cursor: 0,
-            paragraph_cursor: line_end,
-            line_match: 0..0,
-            paragraph_ordinal: DecimalOrdinal::zero()?,
+            paragraph_start: 0,
+            paragraph_end: 0,
             in_paragraph: false,
-            extent_position: 0,
         })
     }
 
-    pub(crate) fn consume(&mut self, event: SourceEvent<'_>) -> Result<(), SourceScanError> {
+    pub(crate) fn consume(&mut self, event: SourceEvent) -> Result<(), SourceScanError> {
         match event {
-            SourceEvent::StartLine { ordinal } => {
-                self.start_line(ordinal);
+            SourceEvent::StartLine { .. } | SourceEvent::Byte { .. } => Ok(()),
+            SourceEvent::EndLine {
+                byte_start,
+                byte_end,
+                body_class,
+                ..
+            } => {
+                self.finish_line(byte_start, byte_end, body_class);
                 Ok(())
             }
-            SourceEvent::Byte { byte, .. } => self.push_extent_byte(byte),
-            SourceEvent::EndLine { body_class, .. } => self.finish_line(body_class),
         }
     }
 
-    pub(crate) fn finish(&mut self) {
+    pub(crate) fn finish(&mut self, state: &SourceState) {
+        self.finish_paragraph();
         for &index in self.indexes {
-            if matches!(self.inputs[index].target, AnddressTarget::File) {
+            let input = &self.inputs[index];
+            let source_matches = input.source_byte_length() == state.byte_length
+                && input.source_state_hash() == state.hash;
+            if !source_matches {
+                self.current[index] = false;
+            } else if input.target() == AnddressTarget::File {
                 self.current[index] = true;
             }
         }
@@ -159,97 +104,42 @@ impl<'a> ExactTargetTracker<'a> {
         self.current
     }
 
-    fn start_line(&mut self, ordinal: &DecimalOrdinal) {
-        self.extent_position = 0;
-        while self.line_cursor < self.line_end
-            && target_ordinal(&self.inputs[self.structural_indexes[self.line_cursor]].target)
-                .cmp_canonical_decimal_bytes(&ordinal.digits)
-                .is_lt()
-        {
-            self.line_cursor += 1;
-        }
-        let start = self.line_cursor;
-        while self.line_cursor < self.line_end
-            && target_ordinal(&self.inputs[self.structural_indexes[self.line_cursor]].target)
-                .cmp_canonical_decimal_bytes(&ordinal.digits)
-                .is_eq()
-        {
-            self.current[self.structural_indexes[self.line_cursor]] = true;
-            self.line_cursor += 1;
-        }
-        self.line_match = start..self.line_cursor;
-    }
-
-    fn push_extent_byte(&mut self, byte: u8) -> Result<(), SourceScanError> {
-        let offset = self.extent_position;
-        let mut still_matching = false;
-        for &index in &self.structural_indexes[self.line_match.clone()] {
-            if !self.current[index] {
-                continue;
-            }
-            let AnddressTarget::Line { exact_extent, .. } = &self.inputs[index].target else {
-                unreachable!("matching Line index keeps its target kind");
-            };
-            if exact_extent.as_bytes().get(offset) == Some(&byte) {
-                still_matching = true;
-            } else {
-                self.current[index] = false;
-            }
-        }
-        if still_matching {
-            self.extent_position = self
-                .extent_position
-                .checked_add(1)
-                .ok_or(SourceScanError::Resource)?;
-        }
-        Ok(())
-    }
-
-    fn finish_line(&mut self, body_class: LineBodyClass) -> Result<(), SourceScanError> {
-        for &index in &self.structural_indexes[self.line_match.clone()] {
-            let AnddressTarget::Line { exact_extent, .. } = &self.inputs[index].target else {
-                unreachable!("line match keeps its target kind");
-            };
-            if exact_extent.len() != self.extent_position {
-                self.current[index] = false;
+    fn finish_line(&mut self, byte_start: usize, byte_end: usize, body_class: LineBodyClass) {
+        for &index in self.indexes {
+            let input = &self.inputs[index];
+            if input.target() == AnddressTarget::Line
+                && input.byte_start() == byte_start
+                && input.byte_end() == byte_end
+            {
+                self.current[index] = true;
             }
         }
 
         if body_class == LineBodyClass::Text {
             if !self.in_paragraph {
                 self.in_paragraph = true;
-                while self.paragraph_cursor < self.structural_indexes.len()
-                    && target_ordinal(
-                        &self.inputs[self.structural_indexes[self.paragraph_cursor]].target,
-                    )
-                    .cmp_canonical_decimal_bytes(&self.paragraph_ordinal.digits)
-                    .is_lt()
-                {
-                    self.paragraph_cursor += 1;
-                }
-                while self.paragraph_cursor < self.structural_indexes.len()
-                    && target_ordinal(
-                        &self.inputs[self.structural_indexes[self.paragraph_cursor]].target,
-                    )
-                    .cmp_canonical_decimal_bytes(&self.paragraph_ordinal.digits)
-                    .is_eq()
-                {
-                    self.current[self.structural_indexes[self.paragraph_cursor]] = true;
-                    self.paragraph_cursor += 1;
-                }
+                self.paragraph_start = byte_start;
             }
+            self.paragraph_end = byte_end;
         } else if self.in_paragraph {
-            self.paragraph_ordinal.increment()?;
-            self.in_paragraph = false;
+            self.finish_paragraph();
         }
-        Ok(())
     }
-}
 
-fn target_ordinal(target: &AnddressTarget) -> &Natural {
-    match target {
-        AnddressTarget::Line { ordinal, .. } | AnddressTarget::Paragraph { ordinal } => ordinal,
-        AnddressTarget::File => unreachable!("structural index excludes File targets"),
+    fn finish_paragraph(&mut self) {
+        if !self.in_paragraph {
+            return;
+        }
+        for &index in self.indexes {
+            let input = &self.inputs[index];
+            if input.target() == AnddressTarget::Paragraph
+                && input.byte_start() == self.paragraph_start
+                && input.byte_end() == self.paragraph_end
+            {
+                self.current[index] = true;
+            }
+        }
+        self.in_paragraph = false;
     }
 }
 
@@ -308,7 +198,9 @@ impl Utf8Validator {
 /// One incremental UTF-8/NUL validator and exact-Line framer.  Consumers may
 /// feed generated bytes through the same framing contract as retained source.
 pub(crate) struct SourceFramer {
-    line_ordinal: DecimalOrdinal,
+    byte_offset: usize,
+    line_start: usize,
+    line_index: usize,
     line_started: bool,
     pending_cr: bool,
     body_class: LineBodyClass,
@@ -318,7 +210,9 @@ pub(crate) struct SourceFramer {
 impl SourceFramer {
     pub(crate) fn new() -> Result<Self, SourceScanError> {
         Ok(Self {
-            line_ordinal: DecimalOrdinal::zero()?,
+            byte_offset: 0,
+            line_start: 0,
+            line_index: 0,
             line_started: false,
             pending_cr: false,
             body_class: LineBodyClass::Empty,
@@ -329,7 +223,7 @@ impl SourceFramer {
     pub(crate) fn push(
         &mut self,
         bytes: &[u8],
-        on_event: &mut impl FnMut(SourceEvent<'_>) -> Result<(), SourceScanError>,
+        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
     ) -> Result<(), SourceScanError> {
         if !self.utf8.push(bytes) {
             return Err(SourceScanError::InvalidSource);
@@ -341,6 +235,7 @@ impl SourceFramer {
                         byte,
                         content: false,
                     })?;
+                    self.advance()?;
                     self.finish_line(on_event)?;
                     continue;
                 }
@@ -353,6 +248,7 @@ impl SourceFramer {
                         byte,
                         content: false,
                     })?;
+                    self.advance()?;
                     self.pending_cr = true;
                 }
                 b'\n' => {
@@ -360,6 +256,7 @@ impl SourceFramer {
                         byte,
                         content: false,
                     })?;
+                    self.advance()?;
                     self.finish_line(on_event)?;
                 }
                 _ => {
@@ -367,6 +264,7 @@ impl SourceFramer {
                         byte,
                         content: true,
                     })?;
+                    self.advance()?;
                     if !matches!(byte, b' ' | b'\t') {
                         self.body_class = LineBodyClass::Text;
                     } else if self.body_class == LineBodyClass::Empty {
@@ -380,7 +278,7 @@ impl SourceFramer {
 
     pub(crate) fn finish(
         &mut self,
-        on_event: &mut impl FnMut(SourceEvent<'_>) -> Result<(), SourceScanError>,
+        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
     ) -> Result<(), SourceScanError> {
         if !self.utf8.finish() {
             return Err(SourceScanError::InvalidSource);
@@ -393,12 +291,14 @@ impl SourceFramer {
 
     fn begin_line(
         &mut self,
-        on_event: &mut impl FnMut(SourceEvent<'_>) -> Result<(), SourceScanError>,
+        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
     ) -> Result<(), SourceScanError> {
         if !self.line_started {
             self.line_started = true;
+            self.line_start = self.byte_offset;
             on_event(SourceEvent::StartLine {
-                ordinal: &self.line_ordinal,
+                byte_start: self.line_start,
+                line_index: self.line_index,
             })?;
         }
         Ok(())
@@ -406,34 +306,52 @@ impl SourceFramer {
 
     fn finish_line(
         &mut self,
-        on_event: &mut impl FnMut(SourceEvent<'_>) -> Result<(), SourceScanError>,
+        on_event: &mut impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
     ) -> Result<(), SourceScanError> {
         on_event(SourceEvent::EndLine {
-            ordinal: &self.line_ordinal,
+            byte_start: self.line_start,
+            byte_end: self.byte_offset,
             body_class: self.body_class,
         })?;
-        self.line_ordinal.increment()?;
+        self.line_index = self
+            .line_index
+            .checked_add(1)
+            .ok_or(SourceScanError::Resource)?;
         self.line_started = false;
         self.pending_cr = false;
         self.body_class = LineBodyClass::Empty;
+        Ok(())
+    }
+
+    fn advance(&mut self) -> Result<(), SourceScanError> {
+        self.byte_offset = self
+            .byte_offset
+            .checked_add(1)
+            .ok_or(SourceScanError::Resource)?;
         Ok(())
     }
 }
 
 pub(crate) fn scan_source(
     reader: &mut impl Read,
-    mut on_event: impl FnMut(SourceEvent<'_>) -> Result<(), SourceScanError>,
-) -> Result<(), SourceScanError> {
+    mut on_event: impl FnMut(SourceEvent) -> Result<(), SourceScanError>,
+) -> Result<SourceState, SourceScanError> {
     let mut scanner = SourceFramer::new()?;
+    let mut hash = Sha256::new();
     let mut scratch = [0_u8; READ_BUFFER_SIZE];
     loop {
         let count = reader
             .read(&mut scratch)
             .map_err(|_| SourceScanError::Read)?;
         if count == 0 {
-            return scanner.finish(&mut on_event);
+            scanner.finish(&mut on_event)?;
+            return Ok(SourceState {
+                hash: hash.finish().to_hex(),
+                byte_length: scanner.byte_offset,
+            });
         }
         let bytes = &scratch[..count];
+        hash.update(bytes);
         scanner.push(bytes, &mut on_event)?;
     }
 }

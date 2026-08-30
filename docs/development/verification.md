@@ -1,40 +1,35 @@
 # Verification
 
-## 0.2.0 authority and future verification boundary
+## 0.2.0 Phase 3 verification boundary
 
-The closed `0.1.0` v3 suite below remains the implementation baseline. The
-unpublished `0.2.0` v4 target remains documentation-only through Phase 2; no v4
-Rust, Cargo, or test implementation exists. Phase 2 adds only an executable v3
-drift reproduction and fixed v3 benchmark/profiler evidence. Its phase gates,
-required test matrix, byte-exact Wrong Apply, fixtures, raw samples, and profile
-results are tracked in
+The closed public `0.1.0` release remains immutable v3 evidence. Current
+unpublished `0.2.0` Rust, Cargo, CLI, and tests use only Anddress v4. Phase 3
+implements the SHA-256 source-state/value/wire kernel, one-read Search hash and
+range projection, hard-cutover decoding, and compilation of every existing
+capability consumer. Its phase gates, the historical v3 drift reproduction,
+fixtures, raw samples, and profile results are tracked in
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 That task tracks progress only; the Protocol, address model, and principles own
 semantics.
 
-Future v4 verification must prove that Search computes the source hash while
-discovering exact `[start, end)` ranges in one source read; View uses hash and
-range without target search; Check compares the source hash without target search;
-and Apply rejects a mismatched source hash before patching a range. It must also
-prove that a changed source invalidates ordinary Anddresses, that no consumer
-relocates duplicate text by ordinal or context, that bounded
-`CurrentObservation` state retains only current hash, length, and minimum
-ranges, and that only Anchor transforms live ranges across Backwriter-owned
-Apply.
-
-Phase 2 is also docs-only in Git. It runs the full offline/locked gate and all
-193 unchanged `0.1.0` tests, verifies Rust/Cargo/test byte identity, removes all
-task-local harness, fixture, profiler, and target output, and confirms `.artext`,
-public `0.1.0`, service, tunnel, and DNS invariants before closure.
+Phase 3 verification proves exact eight-field KATs for every kind; valid-only
+public construction; canonical decimal and checked machine-range boundaries;
+hash, length, kind, and range equality; strict malformed/duplicate/missing/
+unknown/wrong-type handling; well-formed v3 `UnsupportedVersion`; shared private
+source identity across same-source results; one-read hash/range Search; v4
+human/JSON/Session round trips; and full existing capability regressions. The
+canonical duplicate-Line drift fixture must return `Unavailable` without
+publication. Phase 4–6 must later prove the retained-observation and direct
+consumer fast paths without changing those results.
 
 Current regressions cover SHA-256 transcript and platform-coordinate KATs,
-canonical arbitrary Naturals, strict v3 flat-wire decoding and version priority,
-exact extents, Search no-limit traversal, query and scope preflight, canonical
-selected ordering, selected-source fail-all, NUL/invalid UTF-8 source handling,
-spill boundaries, no-follow symlinks and hard links, View target-specific
-currentness and full related v3 addresses, terminator and Unicode reconstruction,
-and Pick stable order, multiplicity, target kinds, complete-value OneOf, and
-deep iterative boolean composition. Apply regressions cover Edit validation
+strict v4 flat-wire encoding/decoding and error priority, zero/nonzero/maximum
+machine ranges, exact source identity sharing, Search no-limit traversal, query
+and scope preflight, canonical range ordering, selected-source fail-all,
+NUL/invalid UTF-8 source handling, spill boundaries, no-follow symlinks and hard
+links, View exact-source/range currentness and related v4 addresses, terminator
+and Unicode reconstruction, and Pick stable order, multiplicity, target kinds,
+complete-v4-value OneOf, and deep iterative boolean composition. Apply regressions cover Edit validation
 priority, exact File/Paragraph/Line splice geometry, all line terminators,
 Unicode and scratch boundaries, cross-source rejection, no-op publication
 avoidance, and late invalid/incomplete/NUL source closure. They also cover
@@ -56,7 +51,7 @@ and that terminal self-Copy rebinds a source-member Line to its joined exact
 extent without an unavailable result or temporary leak. Check regressions cover source-less validation priority, raw and
 native-result filtering, duplicate occurrence order and report counts, canonical
 empty results, File/Paragraph/Line currentness, exact terminators, huge
-ordinals, UTF-8/NUL observations, spill and admission safety, hard-link path
+source-state/range mismatches, UTF-8/NUL observations, spill and admission safety, hard-link path
 independence, stateless recovery, and Anchor non-mutation. Data regressions
 cover native UTF-8 names, all seven typed Store/Get pairs, duplicate input
 return including the exact owned View allocation, borrowed kind/name listing,
@@ -66,23 +61,22 @@ CheckOutcome payloads, and no fixed entry or name-length cap.
 Exact File Search regressions cover source-less logical-path validation,
 empty/nonempty regular sources without content matching, missing and directory
 Empty outcomes, named admission and unadmitted paths, private spill, symlink and
-hard-link boundaries, invalid UTF-8/NUL closure, one ordinary v3 File result,
+hard-link boundaries, invalid UTF-8/NUL closure, one ordinary v4 File result,
 Check integration, and empty-File Apply at both `StartOf` and `EndOf`.
 
 Check streaming regressions cover chunk-boundary UTF-8, NUL, CRLF, standalone
 CR, and no-EOL handling; late invalid, incomplete, NUL, and read failure;
 forward-only access; exact final-byte/length equality; batch order and
 multiplicity; unsorted mixed File/Paragraph/Line inputs; duplicate Line and
-Paragraph occurrences; same-ordinal differing Line extents; leading and
-consecutive separators; huge missing ordinals; and Anchor non-mutation.
+Paragraph occurrences; same-text differing Line ranges; leading and
+consecutive separators; missing ranges; and Anchor non-mutation.
 Search streaming regressions cover the
-same forward scanner boundaries, Line-scoped KMP, complete matching extents,
-unmatched Line-buffer capacity reuse, fallible owned copies for matched extents,
-and large-unmatched-to-short-match capacity-transfer closure, plus late source
-failure discard. Check tracker regressions cover allocation-free canonical
-decimal cursor comparison across digit boundaries while preserving unsorted
-duplicates and wrong extents. View/Anchor streaming regressions cover the same
-forward scanner boundaries, Line construction from caller ExactExtent,
+same forward scanner boundaries, Line-scoped KMP, complete matching ranges,
+one-read incremental SHA-256, shared same-source identity, and late source
+failure discard. Check tracker regressions cover exact hash/length/range
+comparison across decimal digit boundaries while preserving unsorted
+duplicates. View/Anchor streaming regressions cover the same
+forward scanner boundaries, exact Line-range construction,
 target-only Paragraph candidate buffering, late invalid/read closure,
 tracker-only File/Paragraph observations without a View outcome, selected
 anchored-binding success beside a stale sibling, and exact-path fail-close on
@@ -99,7 +93,7 @@ whitespace, terminal removal after three prospective targets, late invalid
 source after a partial batch without publication or a temporary leak, and a
 late injected read failure that drops a partial batch's temporary. They
 also cover after-framer feed and physical-Line marker boundaries, including
-Line Copy from the tracker-verified caller exact extent and copied terminal-Line
+Line Copy from the tracker-verified caller byte range and copied terminal-Line
 rebinding across retained-source batch boundaries. They distinguish absence of
 source-sized complete-Line capture without an eligible live Line candidate from
 selected-Paragraph semantic pending, and preserve a
@@ -108,7 +102,8 @@ pass, and remove same-path Paragraph/Line Anchors while preserving that File
 Anchor without a File-target relation scan. Structural audits
 exclude source reopen/retry and source-sized complete before/after materialization;
 the private staging entry is the only permitted replay input. Same-kind
-Line/Paragraph source-target Anchor relations use tracker-confirmed ordinals
+Line/Paragraph source-target Anchor relations currently use a private
+call-local parser mapping after tracker-confirmed v4 ranges
 without a staging relation scan; cross-kind relations retain that scan. Collision
 marking starts only from prospective Rebind left entries while retaining every
 Rebind-to-Rebind pair and multiway disposition.
@@ -126,8 +121,8 @@ removal-failure closure, Empty Insert direct success after File/Line Anchor
 currentness, Line/Paragraph Move self and adjacent-boundary direct success,
 short-read comparison for Replace and nonidentity Move (File Replace retains its
 initial accepted-source scan and required comparison, but skips probe/final source
-replay; probe-only Line Move
-uses tracker-verified `ExactExtent` without a target-extraction staging pass;
+replay; probe-only Line Move uses the tracker-verified caller byte range without
+a target-extraction staging pass;
 final and Paragraph Move retain Extractor provenance), and direct final replay
 for length-changing Insert/Delete/Copy,
 horizontal-whitespace Paragraph separation,
@@ -219,15 +214,17 @@ YAML, DNS, credential metadata, and actual user HOME/PATH/shell files remained
 unchanged. macOS and Windows verification remains static and makes no native
 execution claim.
 
-Before handoff, verify the diff and index, confirm repository-root `.artext` is
-absent and untracked, preserve historical task/history files, and leave the
-index empty.
+Before staging, verify the diff and empty index, confirm repository-root
+`.artext` is absent and untracked, and preserve unrelated task/history files.
+Owner-authorized work then stages only the reviewed paths and repeats the
+cached diff audit before commit.
 
-The repository source package is `0.1.0`, and its release build must print
-exactly `Backwriter 0.1.0` plus LF. Source verification remains distinct from
-the separately executed operations publication: the current official
+The repository source package is unpublished `0.2.0`, and its release build
+must print exactly `Backwriter 0.2.0` plus LF. Source verification remains
+distinct from the separately executed operations publication: the current official
 distribution is the closed stable `0.1.0` release, while prior beta files remain
-immutable. The `0.1.0` source suite passes 193 GNU-host Rust tests.
+immutable. The current `0.2.0` source suite passes 186 GNU-host Rust tests; the
+historical `0.1.0` source suite passed 193.
 
 CLI process regressions cover the canonical `bw` binary without a `backwriter`
 binary, `--help`, exact `bw version`, explicit `bw update` download/exit/output
@@ -239,24 +236,24 @@ usage versus Runtime execution exits, unsupported deferred forms, and strict
 stdout/stderr separation. They also cover one-shot human/JSON and Session
 `search /file`, exact empty-File retrieval, missing/directory Empty, invalid and
 unadmitted paths, existing writer reuse, Check, and end-to-end empty-File Apply.
-View regressions cover v3 decode, File/Paragraph/Line
-exact bytes, None/LF/CR/CRLF terminators, large no-EOL output, stale/wrong-
-extent and unadmitted source closure, plus one-shot anchored/extra-operand
+View regressions cover v4 decode, File/Paragraph/Line exact bytes,
+None/LF/CR/CRLF terminators, large no-EOL output, stale source-state/range and
+unadmitted source closure, plus one-shot anchored/extra-operand
 rejection.
 One-shot Search JSON regressions cover exact compact envelope key order, Empty
-and Found mapping, existing v3 object embedding and re-decoding, File/Paragraph/
-Line targets, CR/LF/CRLF/no-EOL exact extents, Unicode and JSON escaping, result
+and Found mapping, exact v4 object embedding and re-decoding, File/Paragraph/
+Line targets, CR/LF/CRLF/no-EOL byte ranges, Unicode and JSON escaping, result
 order, repeated Line content, global-option placement, rejected duplicate/late
 or non-Search JSON, and a structural audit that excludes a JSON Value or cloned
 result collection in the production writer.
 One-shot View JSON regressions cover exact compact envelope key order for File,
-Paragraph, and Line; related v3 File/Paragraph object re-decoding; every Line
+Paragraph, and Line; related v4 File/Paragraph object re-decoding; every Line
 terminator including a separator Line's `paragraph:null`; Unicode and JSON
 escaping; unchanged human projection; rejected duplicate/late/anchored/extra
 forms; unavailable stdout/stderr closure; and a structural audit that excludes
 a JSON Value, ViewOutcome clone, or result collection in the production writer.
 One-shot Check JSON regressions cover exact compact Current, NotCurrent, and
-Unavailable envelopes; direct v3 filtered-value re-decoding; File/Paragraph/Line
+Unavailable envelopes; direct v4 filtered-value re-decoding; File/Paragraph/Line
 inputs; missing-source NotCurrent versus invalid-source Unavailable; unchanged
 human statuses; rejected duplicate/late/search/pick/extra/invalid forms; and
 structural audits for shared fail-closed status classification, no JSON Value,
@@ -268,7 +265,7 @@ global-option order; stale/invalid closure; rejected duplicate/mixed/late flags
 and non-View raw forms; and structural absence of a raw writer or the retired
 global JSON bool.
 Check regressions cover File/Paragraph/Line Current status, stale and missing
-NotCurrent status, unavailable-source status, strict v3 decoding, and rejected
+NotCurrent status, unavailable-source status, strict v4 decoding, and rejected
 search/pick/extra forms. They create no CLI Session, binding, JSON, raw, or
 other capability authority. Session regressions cover one retained Runtime,
 Search and Pick bindings with exact indexed address projection, direct Search and

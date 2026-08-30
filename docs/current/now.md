@@ -2,20 +2,20 @@
 
 ## Version boundary
 
-The closed public `0.1.0` release and current Rust implementation use Anddress
-v3. `0.2.0` is an unpublished local source-development target. Its Anddress v4
-and bounded `CurrentObservation` semantics are active authority, but v4 Rust,
-Cargo, tests, CLI, compatibility policy, hash algorithm, and release work have
-not started. The tracking plan is
+The closed public `0.1.0` release remains immutable v3 evidence. Current Rust,
+Cargo, tests, and CLI use the unpublished `0.2.0` hard-cutover Anddress v4 API
+and wire. Phase 3 implements SHA-256 source identity, exact byte length, target
+kind, and `[start,end)` range without a v3 compatibility seam. No `0.2.0`
+artifact or publication exists. The tracking plan is
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 
 ## Core capability inventory
 
 | Letter | Word | Current status |
 | --- | --- | --- |
-| S | Search | Rust implementation with v3 literal projection and exact File lookup. |
-| V | View | Rust implementation with v3 currentness. |
-| P | Pick | Rust implementation with v3 predicate semantics. |
+| S | Search | Rust implementation with one-read v4 literal projection and exact File lookup. |
+| V | View | Rust implementation with v4 exact-source currentness. |
+| P | Pick | Rust implementation over complete v4 values. |
 | A | Anchor | Rust implementation with Runtime-local live continuity. |
 | C | Check | Rust implementation with V1 batch currentness reporting. |
 | D | Data | Rust implementation with V1 typed caller-owned storage. |
@@ -46,7 +46,7 @@ exposes only its report counts. Session Anchor creates an opaque Runtime-local
 handle, views it through the existing anchored seam, and invalidates only its
 logical source. One-shot Search, View, and Check JSON stream compact Adapter
 envelopes without creating a Core wire; related or filtered values are exact
-existing v3 Anddress objects. Raw View is an explicit Adapter exact-text
+existing v4 Anddress objects. Raw View is an explicit Adapter exact-text
 projection and creates no Core wire or new View meaning. Data transfers exact
 clones from explicit Session values into the existing typed Core store and reads
 them back without capability execution.
@@ -65,8 +65,9 @@ DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
 batch Check, Edit, and Apply await collection or Edit transport schema
 authority. Raw output other than completed one-shot View and further Session
 behavior remain deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
-The current `0.1.0` Core/Runtime and CLI source surface is frozen after exact
-File lookup. Further Adapter work still requires owner authority for
+The published `0.1.0` Core/Runtime and CLI surface remains frozen. Current
+unpublished `0.2.0` source has completed the v4 value/wire hard cutover. Further
+Adapter work still requires owner authority for
 collection/Edit transport or Session machine output.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`; the
 GNU target is retained for local development and tests. Target selection and
@@ -101,9 +102,9 @@ stable release is closed; any later platform or version requires separate Owner
 authority. Tags, GitHub Releases,
 crates.io publication, and GitHub distribution
 remain outside the completed publication.
-The current Cargo package and library crate are `backwriter` at
-`0.1.0`; the sole canonical executable and external Adapter command are
-`bw`. There is no current `backwriter` binary, alias, or wrapper. Product prose
+The current Cargo package and library crate are `backwriter` at unpublished
+`0.2.0`; the sole canonical executable and external Adapter command are `bw`.
+There is no current `backwriter` binary, alias, or wrapper. Product prose
 continues to use Backwriter, and persisted Core wire/private-path and
 distribution artifact/domain contracts keep their existing names. Stable
 publication is closed: the current installers and manifest select `0.1.0`, and
@@ -112,34 +113,33 @@ acceptance remains transition compatibility only.
 
 ## Unpublished 0.2.0 authority
 
-Current-only is not stateless. No history does not mean forgetting the current
-observation. The `0.2.0` Runtime target may retain a `CurrentObservation` only
-for current source state: source hash, exact byte length, and the minimum byte
-ranges required by the current capability. It discards that observation when
-state changes or currentness cannot be established. It retains no prior
+Current-only does not require historical identity. Phase 3 keeps observations
+call-local; a later fast path may retain a `CurrentObservation` only for current
+source state: source hash, exact byte length, and the minimum byte ranges
+required by the current capability. It must discard that observation when state
+changes or currentness cannot be established, and may retain no prior
 observation, whole source, parse tree, result, persistent index, relocation
 context, or full workspace cache.
 
-An ordinary v4 Anddress is workspace coordinate, logical path, source-state
-hash, exact byte length, target kind, and one inclusive-start/exclusive-end byte
-range. The hash is final currentness authority; target text and ordinal are not
-identity. Search is the only capability that finds a target and computes the
-hash during the same source read that discovers exact ranges. View does not
-search: it validates the hash and reads the bounded range. Check does not search:
-it compares the source hash. Apply does not search: it requires the hash as a
-precondition, validates the range against the recorded length, and patches that
-range. A changed source invalidates an ordinary Anddress, and no capability
-relocates an old target after an external change.
+An ordinary v4 Anddress is workspace coordinate, logical path, complete-source
+SHA-256, exact byte length, target kind, and one inclusive-start/exclusive-end
+byte range. Phase 3 implements this value/wire and all current production
+callers. Search computes the hash during the same source read that discovers
+exact ranges. View and Check enforce the hash, length, kind, and range from
+their one-read observations. Apply first enforces the complete source-state
+precondition, then temporarily resolves the verified range into its existing
+private call-local parser representation. It does not relocate across source
+drift. A changed source invalidates an ordinary Anddress.
 
 Anchor remains the sole continuity boundary. Only a live Anchor may undergo an
 arithmetic range transform caused by a Backwriter-owned Apply. External changes
 invalidate rather than relocate ordinary Anddresses or Anchors. The source-hash
-algorithm and v3/v4 compatibility policy remain Owner decisions for later
-phases.
+algorithm is SHA-256 and the compatibility policy is a hard cutover: production
+has no v3 decoder, encoder, alias, or migration layer.
 
-## Implemented 0.1.0 current-only Runtime contract
+## Implemented unpublished 0.2.0 current-only Runtime contract
 
-The shipped v3 Search and View implementation is current-only and stateless;
+The v4 Search and View implementation is current-only and stateless;
 Pick is pure and stateless over caller input. `WorkspaceRuntime::search`, `WorkspaceRuntime::view`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`, `WorkspaceRuntime::check`,
 `check_search`, `check_pick`, `anchor`, `view_anchored`, and
@@ -175,32 +175,33 @@ cursor, Search live traversal/matching/ordering/no-limit behavior, View's
 one-read text projection, and Pick's stable-subsequence/non-relational
 predicates remain reusable foundation.
 
-## Implemented 0.1.0 v3 target-local address baseline
+## Implemented 0.2.0 v4 exact-source address kernel
 
 File, Paragraph, and Line are independent target addresses with structural
-relationships, not a persistent parent/child identity tree. The address model
-defines their raw coordinate/path/ordinal/extent locator algebra. Admission is
-not raw equality. A separator-boundary change establishes only the resulting
-current Paragraphs, and ordinal movement makes a new raw address; neither has a
-relation to past Paragraphs.
+relationships, not a persistent parent/child identity tree. Their raw equality
+is workspace coordinate, logical path, complete-source SHA-256, exact source
+byte length, target kind, and exact byte range. Admission is not raw equality.
+Any source-byte change invalidates every ordinary Anddress for the prior source
+state; no ordinal, target text, or context is identity.
 `Block` is historical wording for the existing blank-line-bounded Paragraph and
 creates no type, alias, variant, or wire value.
 
-`artext.backwriter-anddress.v3` is the sole accepted wire and production model
-for the closed `0.1.0` baseline.
-It keeps source-wide bytes, length, provenance, and fingerprints out of target
-identity, using only workspace coordinate, logical path, and target locators.
+`artext.backwriter-anddress.v4` is the sole accepted production wire. Its eight
+canonical ordered fields are version, workspace coordinate, logical path,
+source-state hash, source byte length, kind, byte start, and byte end. Length
+and offsets are canonical unsigned-decimal strings. Well-formed v3 input is
+`UnsupportedVersion`; v3 remains only immutable `0.1.0` release evidence.
 
 Backwriter Core constructs and provides target Anddress values from an accepted
 current observation. Search delivers them as results; it is not an issuer. This
 creates no separate registry, issuance lifecycle, lookup/reuse state, durable
 identity, or global identity.
 
-Search projects v3 locators directly; Pick provides `same_file` instead of
-observation, paragraph, or hierarchy relations; and View checks its target
-locator from one current read. There is no compatibility decoder, migration,
-alias, or parallel schema. The locator algebra creates no continuity or
-historical-identity claim.
+Search projects v4 source identity and ranges directly; Pick provides
+`same_file` instead of observation, paragraph, or hierarchy relations; and
+View checks exact source state and range from one current read. There is no
+compatibility decoder, migration, alias, or parallel schema. The algebra
+creates no continuity or historical-identity claim.
 
 ## Anchor
 

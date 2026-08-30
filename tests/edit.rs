@@ -1,17 +1,21 @@
 use std::{error::Error, fmt::Debug};
 
 use backwriter::backwriter::{
-    anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural},
+    anddress::{Anddress, AnddressTarget},
     edit::{Edit, EditError, Position},
 };
 
 fn address(target: AnddressTarget) -> Anddress {
-    Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: "a".repeat(64),
-        logical_path: "note.txt".to_owned(),
+    Anddress::new(
+        &"a".repeat(64),
+        "note.txt",
+        &"b".repeat(64),
+        4,
         target,
-    }
+        0,
+        4,
+    )
+    .unwrap()
 }
 
 fn file() -> Anddress {
@@ -19,26 +23,11 @@ fn file() -> Anddress {
 }
 
 fn paragraph() -> Anddress {
-    address(AnddressTarget::Paragraph {
-        ordinal: Natural::zero(),
-    })
+    address(AnddressTarget::Paragraph)
 }
 
 fn line() -> Anddress {
-    address(AnddressTarget::Line {
-        ordinal: Natural::one(),
-        exact_extent: "text\r\n".to_owned(),
-    })
-}
-
-fn unsupported(mut target: Anddress) -> Anddress {
-    target.version = "unsupported".to_owned();
-    target
-}
-
-fn invalid(mut target: Anddress) -> Anddress {
-    target.workspace_coordinate = "not-a-coordinate".to_owned();
-    target
+    address(AnddressTarget::Line)
 }
 
 #[test]
@@ -162,55 +151,23 @@ fn operations_accept_exactly_their_contractual_targets() {
 }
 
 #[test]
-fn validation_preserves_field_priority_and_anddress_error_mapping() {
-    assert_eq!(
+fn public_construction_keeps_edit_operands_source_less_and_valid() {
+    for edit in [
         Edit::Insert {
-            position: Position::StartOf(unsupported(file())),
-            content: "\0".to_owned(),
-        }
-        .validate(),
-        Err(EditError::UnsupportedVersion)
-    );
-    assert_eq!(
+            position: Position::StartOf(file()),
+            content: String::new(),
+        },
         Edit::Replace {
-            target: unsupported(file()),
-            content: "\0".to_owned(),
-        }
-        .validate(),
-        Err(EditError::UnsupportedVersion)
-    );
-    assert_eq!(
-        Edit::Move {
-            target: invalid(paragraph()),
-            position: Position::StartOf(unsupported(file())),
-        }
-        .validate(),
-        Err(EditError::InvalidInput)
-    );
-    assert_eq!(
-        Edit::Copy {
-            target: invalid(line()),
-            position: Position::StartOf(unsupported(file())),
-        }
-        .validate(),
-        Err(EditError::InvalidInput)
-    );
-    assert_eq!(
-        Edit::Move {
             target: paragraph(),
-            position: Position::StartOf(unsupported(file())),
-        }
-        .validate(),
-        Err(EditError::UnsupportedVersion)
-    );
-    assert_eq!(
-        Edit::Copy {
+            content: String::new(),
+        },
+        Edit::Move {
             target: line(),
-            position: Position::StartOf(unsupported(file())),
-        }
-        .validate(),
-        Err(EditError::UnsupportedVersion)
-    );
+            position: Position::EndOf(file()),
+        },
+    ] {
+        assert_eq!(edit.validate(), Ok(()));
+    }
 }
 
 #[test]
@@ -258,10 +215,16 @@ fn content_is_exact_and_only_rejects_nul() {
 
 #[test]
 fn move_and_copy_do_not_add_relational_or_size_constraints() {
-    let other_source = Anddress {
-        logical_path: "other.txt".to_owned(),
-        ..line()
-    };
+    let other_source = Anddress::new(
+        &"a".repeat(64),
+        "other.txt",
+        &"b".repeat(64),
+        4,
+        AnddressTarget::Line,
+        0,
+        4,
+    )
+    .unwrap();
     for edit in [
         Edit::Move {
             target: paragraph(),

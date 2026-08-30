@@ -2,7 +2,7 @@
 
 use crate::backwriter::{
     anchor::{Anchedress, AnchorError, AnchorOutcome},
-    anddress::{Anddress, AnddressError, fallible_copy_anddress},
+    anddress::{Anddress, AnddressError},
     view::{ViewError, ViewOutcome},
 };
 use crate::source::validate_logical_path;
@@ -18,13 +18,13 @@ pub(super) fn anchor(
 ) -> Result<AnchorOutcome, AnchorError> {
     validate(input)?;
     runtime.prune_dead_anchors();
-    let focus = fallible_copy_anddress(input).map_err(|_| AnchorError::Unavailable)?;
-    let mut inputs = path_inputs(runtime, &input.logical_path, focus)?;
+    let focus = input.clone();
+    let mut inputs = path_inputs(runtime, input.logical_path(), focus)?;
     let focus_index = inputs.len() - 1;
     let observed = match observe_current(runtime, input, &inputs, None) {
         Ok(observed) => observed,
         Err(ObservationError::InvalidSource) => {
-            runtime.invalidate_anchors_for_path(&input.logical_path);
+            runtime.invalidate_anchors_for_path(input.logical_path());
             return Err(AnchorError::Unavailable);
         }
         Err(ObservationError::Read | ObservationError::Resource) => {
@@ -40,7 +40,7 @@ pub(super) fn anchor(
         .enumerate()
         .any(|(index, current)| index != focus_index && !current)
     {
-        runtime.invalidate_anchors_for_path(&input.logical_path);
+        runtime.invalidate_anchors_for_path(input.logical_path());
         return Err(AnchorError::Unavailable);
     }
     if runtime
@@ -76,12 +76,11 @@ pub(super) fn view_anchored(
     else {
         return Err(ViewError::Unavailable);
     };
-    let input = fallible_copy_anddress(&runtime.anchors[index].anddress)
-        .map_err(|_| ViewError::Unavailable)?;
+    let input = runtime.anchors[index].anddress.clone();
     let observed = match observe_current(runtime, &input, std::slice::from_ref(&input), Some(0)) {
         Ok(observed) => observed,
         Err(ObservationError::InvalidSource) => {
-            runtime.invalidate_anchors_for_path(&input.logical_path);
+            runtime.invalidate_anchors_for_path(input.logical_path());
             return Err(ViewError::Unavailable);
         }
         Err(ObservationError::Read | ObservationError::Resource) => {
@@ -89,7 +88,7 @@ pub(super) fn view_anchored(
         }
     };
     if !observed.current[0] {
-        runtime.invalidate_anchors_for_path(&input.logical_path);
+        runtime.invalidate_anchors_for_path(input.logical_path());
         return Err(ViewError::Unavailable);
     }
     observed.outcome.ok_or(ViewError::Unavailable)
@@ -124,13 +123,13 @@ fn observe_current(
     inputs: &[Anddress],
     capture_focus: Option<usize>,
 ) -> Result<Observation, ObservationError> {
-    if input.workspace_coordinate != runtime.workspace_coordinate
-        || is_backwriter_spill(&input.logical_path)
+    if input.workspace_coordinate() != runtime.workspace_coordinate
+        || is_backwriter_spill(input.logical_path())
     {
         return Err(ObservationError::Read);
     }
     let mut file = runtime
-        .open_admitted_source(&input.logical_path)
+        .open_admitted_source(input.logical_path())
         .map_err(|_| ObservationError::Read)?;
     observe(&mut file, inputs, capture_focus)
 }
@@ -143,7 +142,7 @@ fn path_inputs(
     let count = runtime
         .anchors
         .iter()
-        .filter(|binding| binding.anddress.logical_path == path)
+        .filter(|binding| binding.anddress.logical_path() == path)
         .count()
         + 1;
     let mut inputs = Vec::new();
@@ -151,10 +150,8 @@ fn path_inputs(
         .try_reserve_exact(count)
         .map_err(|_| AnchorError::Unavailable)?;
     for binding in &runtime.anchors {
-        if binding.anddress.logical_path == path {
-            inputs.push(
-                fallible_copy_anddress(&binding.anddress).map_err(|_| AnchorError::Unavailable)?,
-            );
+        if binding.anddress.logical_path() == path {
+            inputs.push(binding.anddress.clone());
         }
     }
     inputs.push(focus);

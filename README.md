@@ -50,7 +50,7 @@ bw version
 The current source build prints exactly:
 
 ```text
-Backwriter 0.1.0
+Backwriter 0.2.0
 ```
 
 ### Update
@@ -67,9 +67,11 @@ background updater or compare release versions. The transition installer also
 retains exact acceptance of the immutable beta.3 manifest; that compatibility
 does not change the current stable pointer.
 
-The product is Backwriter. The Cargo package and library crate are `backwriter`
-at `0.1.0`; the sole canonical executable and external Adapter command
-are `bw`. There is no `backwriter` binary, alias, or wrapper.
+The product is Backwriter. The unpublished Cargo package and library crate are
+`backwriter` at `0.2.0`; the sole canonical executable and external Adapter
+command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
+official installer remains separate and continues to select the closed public
+`0.1.0` distribution.
 
 The default workspace is the process current working directory. An explicit
 `--workspace` must be absolute and is checked by Runtime. Search admits `.` by
@@ -98,15 +100,15 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     search /file <logical-path>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
-    view anddress <encoded-v3-Anddress>
+    view anddress <encoded-v4-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
-    check anddress <encoded-v3-Anddress>
+    check anddress <encoded-v4-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw
-    view anddress <encoded-v3-Anddress>
+    view anddress <encoded-v4-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
-    view anddress <encoded-v3-Anddress>
+    view anddress <encoded-v4-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
-    check anddress <encoded-v3-Anddress>
+    check anddress <encoded-v4-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 ```
 
@@ -118,11 +120,11 @@ deterministic result order. The distinct `search /file` form validates one
 logical path and returns the current File Anddress for an admitted regular
 UTF-8, NUL-free source regardless of whether it is empty or contains matching
 text. Missing paths and directories return Empty; the form has no scope
-selectors or synthetic content query. View
-decodes a v3 Anddress and writes only its exact selected text. Check decodes one
-v3 Anddress and writes only `Current`, `NotCurrent`, or `Unavailable`. Search,
-View, and Check `--json` write one compact Adapter object with exact embedded v3
-Anddress objects where applicable; each is an Adapter schema, not a Core wire.
+selectors or synthetic content query. View decodes a v4 Anddress and writes only
+its exact selected text. Check decodes one v4 Anddress and writes only
+`Current`, `NotCurrent`, or `Unavailable`. Search, View, and Check `--json`
+write one compact Adapter object with exact embedded v4 Anddress objects where
+applicable; each is an Adapter schema, not a second Core wire.
 Raw View is an explicit Adapter exact-text mode that reuses the ordinary View
 projection without a Core wire or changed View meaning.
 Human output does not expose address metadata.

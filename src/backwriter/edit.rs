@@ -58,7 +58,7 @@ fn validate_position(position: &Position) -> Result<(), EditError> {
         }
         Position::StartOf(target) | Position::EndOf(target) => {
             validate_anddress(target)?;
-            matches!(&target.target, AnddressTarget::File)
+            (target.target() == AnddressTarget::File)
                 .then_some(())
                 .ok_or(EditError::InvalidInput)
         }
@@ -67,10 +67,7 @@ fn validate_position(position: &Position) -> Result<(), EditError> {
 
 fn validate_non_file_target(target: &Anddress) -> Result<(), EditError> {
     validate_anddress(target)?;
-    matches!(
-        &target.target,
-        AnddressTarget::Paragraph { .. } | AnddressTarget::Line { .. }
-    )
+    matches!(target.target(), AnddressTarget::Paragraph | AnddressTarget::Line)
     .then_some(())
     .ok_or(EditError::InvalidInput)
 }

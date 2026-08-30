@@ -3,13 +3,13 @@
 use std::io::Read;
 
 use crate::backwriter::anddress::{
-    Anddress, AnddressTarget, LineBodyClass, LineTerminator, Natural, construct_anddress,
+    Anddress, AnddressTarget, LineBodyClass, LineTerminator, construct_anddress,
 };
 use crate::backwriter::view::{ViewError, ViewOutcome, validate_input};
 
 use super::{
     WorkspaceRuntime, is_backwriter_spill,
-    source_scan::{DecimalOrdinal, ExactTargetTracker, SourceEvent, SourceScanError, scan_source},
+    source_scan::{ExactTargetTracker, SourceEvent, SourceScanError, scan_source},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -35,14 +35,14 @@ pub(super) fn observe(
         .map(|focus| ViewCapture::new(&inputs[focus]))
         .transpose()
         .map_err(map_scan_error)?;
-    scan_source(reader, |event| {
+    let state = scan_source(reader, |event| {
         if let Some(capture) = capture.as_mut() {
             capture.consume(event)?;
         }
         tracker.consume(event)
     })
     .map_err(map_scan_error)?;
-    tracker.finish();
+    tracker.finish(&state);
     let current = tracker.into_current();
     let outcome = if capture_focus.is_some_and(|focus| current[focus]) {
         Some(
@@ -62,13 +62,13 @@ pub(super) fn execute(
     input: &Anddress,
 ) -> Result<ViewOutcome, ViewError> {
     validate_input(input)?;
-    if is_backwriter_spill(&input.logical_path)
-        || input.workspace_coordinate != runtime.workspace_coordinate
+    if is_backwriter_spill(input.logical_path())
+        || input.workspace_coordinate() != runtime.workspace_coordinate
     {
         return Err(ViewError::Unavailable);
     }
     let mut file = runtime
-        .open_admitted_source(&input.logical_path)
+        .open_admitted_source(input.logical_path())
         .map_err(|_| ViewError::Unavailable)?;
     let observed = observe(&mut file, std::slice::from_ref(input), Some(0))
         .map_err(|_| ViewError::Unavailable)?;
@@ -101,8 +101,10 @@ struct ViewCapture<'a> {
     current_line: Vec<u8>,
     line_selected: bool,
     paragraph_candidate: bool,
-    line_paragraph: Option<Natural>,
-    paragraph_ordinal: DecimalOrdinal,
+    line_paragraph: Option<(usize, usize)>,
+    paragraph_start: usize,
+    paragraph_end: usize,
+    selected_line_in_paragraph: bool,
     in_paragraph: bool,
 }
 
@@ -116,105 +118,136 @@ impl<'a> ViewCapture<'a> {
             line_selected: false,
             paragraph_candidate: false,
             line_paragraph: None,
-            paragraph_ordinal: DecimalOrdinal::zero()?,
+            paragraph_start: 0,
+            paragraph_end: 0,
+            selected_line_in_paragraph: false,
             in_paragraph: false,
         })
     }
 
-    fn consume(&mut self, event: SourceEvent<'_>) -> Result<(), SourceScanError> {
+    fn consume(&mut self, event: SourceEvent) -> Result<(), SourceScanError> {
         match event {
-            SourceEvent::StartLine { ordinal } => self.start_line(ordinal),
+            SourceEvent::StartLine { byte_start, .. } => {
+                self.start_line(byte_start);
+                Ok(())
+            }
             SourceEvent::Byte { byte, content } => self.push_byte(byte, content),
-            SourceEvent::EndLine { body_class, .. } => self.finish_line(body_class),
+            SourceEvent::EndLine {
+                byte_start,
+                byte_end,
+                body_class,
+                ..
+            } => self.finish_line(byte_start, byte_end, body_class),
         }
     }
 
-    fn start_line(&mut self, ordinal: &DecimalOrdinal) -> Result<(), SourceScanError> {
-        self.current_line.clear();
-        self.paragraph_candidate = matches!(
-            &self.input.target,
-            AnddressTarget::Paragraph {
-                ordinal: target_ordinal,
-            } if *target_ordinal == self.paragraph_ordinal.as_natural()?
-        );
-        self.line_selected = matches!(
-            &self.input.target,
-            AnddressTarget::Line {
-                ordinal: target_ordinal,
-                ..
-            } if *target_ordinal == ordinal.as_natural()?
-        );
+    fn start_line(&mut self, byte_start: usize) {
+        if self.input.target() == AnddressTarget::Paragraph
+            || (self.input.target() == AnddressTarget::Line
+                && byte_start == self.input.byte_start())
+        {
+            self.current_line.clear();
+        }
+        self.paragraph_candidate = self.input.target() == AnddressTarget::Paragraph
+            && byte_start >= self.input.byte_start()
+            && byte_start < self.input.byte_end();
+        self.line_selected =
+            self.input.target() == AnddressTarget::Line && byte_start == self.input.byte_start();
         if self.line_selected {
             self.line_paragraph = None;
+            self.selected_line_in_paragraph = false;
         }
-        Ok(())
     }
 
     fn push_byte(&mut self, byte: u8, _content: bool) -> Result<(), SourceScanError> {
-        if matches!(self.input.target, AnddressTarget::File) {
+        if self.input.target() == AnddressTarget::File {
             push_byte(&mut self.file, byte)?;
         }
         if self.paragraph_candidate {
             push_byte(&mut self.current_line, byte)?;
         }
-        Ok(())
-    }
-
-    fn finish_line(&mut self, body_class: LineBodyClass) -> Result<(), SourceScanError> {
-        if body_class == LineBodyClass::Text {
-            if self.paragraph_candidate {
-                append(&mut self.paragraph, &self.current_line)?;
-            }
-            if self.line_selected {
-                self.line_paragraph = Some(self.paragraph_ordinal.as_natural()?);
-            }
-            self.in_paragraph = true;
-        } else if self.in_paragraph {
-            self.paragraph_ordinal.increment()?;
-            self.in_paragraph = false;
+        if self.line_selected {
+            push_byte(&mut self.current_line, byte)?;
         }
         Ok(())
     }
 
-    fn finish(self) -> Result<ViewOutcome, SourceScanError> {
-        match &self.input.target {
+    fn finish_line(
+        &mut self,
+        byte_start: usize,
+        byte_end: usize,
+        body_class: LineBodyClass,
+    ) -> Result<(), SourceScanError> {
+        if body_class == LineBodyClass::Text {
+            if self.paragraph_candidate {
+                append(&mut self.paragraph, &self.current_line)?;
+            }
+            if !self.in_paragraph {
+                self.paragraph_start = byte_start;
+                self.in_paragraph = true;
+            }
+            self.paragraph_end = byte_end;
+            self.selected_line_in_paragraph |= self.line_selected;
+        } else if self.in_paragraph {
+            self.finish_paragraph();
+        }
+        Ok(())
+    }
+
+    fn finish(mut self) -> Result<ViewOutcome, SourceScanError> {
+        self.finish_paragraph();
+        match self.input.target() {
             AnddressTarget::File => Ok(ViewOutcome::File {
                 text: String::from_utf8(self.file).map_err(|_| SourceScanError::InvalidSource)?,
             }),
-            AnddressTarget::Paragraph { .. } => Ok(ViewOutcome::Paragraph {
+            AnddressTarget::Paragraph => Ok(ViewOutcome::Paragraph {
                 text: String::from_utf8(self.paragraph)
                     .map_err(|_| SourceScanError::InvalidSource)?,
                 file: file_address(self.input)?,
             }),
-            AnddressTarget::Line { exact_extent, .. } => {
-                let (content, terminator) = line_parts(exact_extent)?;
+            AnddressTarget::Line => {
+                let (content, terminator) = line_parts(&self.current_line)?;
                 Ok(ViewOutcome::Line {
                     content,
                     terminator,
                     file: file_address(self.input)?,
                     paragraph: self
                         .line_paragraph
-                        .map(|ordinal| paragraph_address(self.input, ordinal))
+                        .map(|(start, end)| paragraph_address(self.input, start, end))
                         .transpose()?,
                 })
             }
         }
     }
+
+    fn finish_paragraph(&mut self) {
+        if !self.in_paragraph {
+            return;
+        }
+        if self.selected_line_in_paragraph {
+            self.line_paragraph = Some((self.paragraph_start, self.paragraph_end));
+        }
+        self.in_paragraph = false;
+        self.selected_line_in_paragraph = false;
+    }
 }
 
-fn line_parts(exact_extent: &str) -> Result<(String, LineTerminator), SourceScanError> {
-    let (length, terminator) = if exact_extent.ends_with("\r\n") {
-        (exact_extent.len() - 2, LineTerminator::Crlf)
-    } else if exact_extent.ends_with('\r') {
-        (exact_extent.len() - 1, LineTerminator::Cr)
-    } else if exact_extent.ends_with('\n') {
-        (exact_extent.len() - 1, LineTerminator::Lf)
+fn line_parts(line_bytes: &[u8]) -> Result<(String, LineTerminator), SourceScanError> {
+    let (length, terminator) = if line_bytes.ends_with(b"\r\n") {
+        (line_bytes.len() - 2, LineTerminator::Crlf)
+    } else if line_bytes.ends_with(b"\r") {
+        (line_bytes.len() - 1, LineTerminator::Cr)
+    } else if line_bytes.ends_with(b"\n") {
+        (line_bytes.len() - 1, LineTerminator::Lf)
     } else {
-        (exact_extent.len(), LineTerminator::None)
+        (line_bytes.len(), LineTerminator::None)
     };
-    let content = exact_extent
-        .get(..length)
-        .ok_or(SourceScanError::InvalidSource)?;
+    let content = std::str::from_utf8(
+        line_bytes
+            .get(..length)
+            .ok_or(SourceScanError::InvalidSource)?,
+    )
+    .map_err(|_| SourceScanError::InvalidSource)?;
     let mut result = String::new();
     result
         .try_reserve_exact(content.len())
@@ -241,18 +274,24 @@ fn append(output: &mut Vec<u8>, bytes: &[u8]) -> Result<(), SourceScanError> {
 
 fn file_address(input: &Anddress) -> Result<Anddress, SourceScanError> {
     construct_anddress(
-        &input.workspace_coordinate,
-        &input.logical_path,
+        input.source_identity(),
         AnddressTarget::File,
+        0,
+        input.source_byte_length(),
     )
     .map_err(|_| SourceScanError::Resource)
 }
 
-fn paragraph_address(input: &Anddress, ordinal: Natural) -> Result<Anddress, SourceScanError> {
+fn paragraph_address(
+    input: &Anddress,
+    byte_start: usize,
+    byte_end: usize,
+) -> Result<Anddress, SourceScanError> {
     construct_anddress(
-        &input.workspace_coordinate,
-        &input.logical_path,
-        AnddressTarget::Paragraph { ordinal },
+        input.source_identity(),
+        AnddressTarget::Paragraph,
+        byte_start,
+        byte_end,
     )
     .map_err(|_| SourceScanError::Resource)
 }
@@ -261,7 +300,7 @@ fn paragraph_address(input: &Anddress, ordinal: Natural) -> Result<Anddress, Sou
 mod tests {
     use std::io::{self, Read};
 
-    use crate::backwriter::anddress::ANDDRESS_VERSION;
+    use crate::hash::Sha256;
 
     use super::*;
 
@@ -289,23 +328,27 @@ mod tests {
         }
     }
 
-    fn address(target: AnddressTarget) -> Anddress {
-        Anddress {
-            version: ANDDRESS_VERSION.to_owned(),
-            workspace_coordinate: "0".repeat(64),
-            logical_path: "source.txt".to_owned(),
+    fn address(bytes: &[u8], target: AnddressTarget, start: usize, end: usize) -> Anddress {
+        let mut hash = Sha256::new();
+        hash.update(bytes);
+        Anddress::new(
+            &"0".repeat(64),
+            "source.txt",
+            &hash.finish().to_hex(),
+            bytes.len(),
             target,
-        }
+            start,
+            end,
+        )
+        .unwrap()
     }
 
     #[test]
     fn one_byte_observation_preserves_utf8_terminators_and_related_addresses() {
-        let inputs = [address(AnddressTarget::Line {
-            ordinal: Natural::one(),
-            exact_extent: "β\r".to_owned(),
-        })];
+        let bytes = "한글🦀\nβ\rγ".as_bytes();
+        let inputs = [address(bytes, AnddressTarget::Line, 11, 14)];
         let mut reader = OneByteReader {
-            bytes: "한글🦀\nβ\rγ".as_bytes(),
+            bytes,
             cursor: 0,
             fail_at: None,
             ended: false,
@@ -319,17 +362,15 @@ mod tests {
             Some(ViewOutcome::Line {
                 content: "β".to_owned(),
                 terminator: LineTerminator::Cr,
-                file: address(AnddressTarget::File),
-                paragraph: Some(address(AnddressTarget::Paragraph {
-                    ordinal: Natural::zero(),
-                })),
+                file: address(bytes, AnddressTarget::File, 0, bytes.len()),
+                paragraph: Some(address(bytes, AnddressTarget::Paragraph, 0, bytes.len())),
             })
         );
     }
 
     #[test]
     fn late_invalid_and_read_failure_discard_provisional_view_output() {
-        let inputs = [address(AnddressTarget::File)];
+        let inputs = [address(b"one\n", AnddressTarget::File, 0, 4)];
         for (bytes, fail_at, expected) in [
             (
                 b"one\n\xff".as_slice(),
@@ -359,10 +400,8 @@ mod tests {
     #[test]
     fn tracker_only_observation_leaves_view_outcome_absent() {
         let inputs = [
-            address(AnddressTarget::File),
-            address(AnddressTarget::Paragraph {
-                ordinal: Natural::zero(),
-            }),
+            address(b"one\n", AnddressTarget::File, 0, 4),
+            address(b"one\n", AnddressTarget::Paragraph, 0, 4),
         ];
         let mut reader = OneByteReader {
             bytes: b"one\n",
@@ -379,7 +418,7 @@ mod tests {
 
     #[test]
     fn tracker_only_observation_keeps_late_source_errors() {
-        let inputs = [address(AnddressTarget::File)];
+        let inputs = [address(b"one\n", AnddressTarget::File, 0, 4)];
         for (bytes, fail_at, expected) in [
             (
                 b"one\n\xff".as_slice(),

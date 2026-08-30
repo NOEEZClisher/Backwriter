@@ -10,21 +10,101 @@ use cap_std::fs::{Dir, File, OpenOptions};
 use cap_std::fs::{Permissions, PermissionsExt};
 
 use crate::backwriter::anddress::{
-    Anddress, AnddressTarget, LineBodyClass, Natural, construct_anddress, fallible_copy_anddress,
+    Anddress as PublicAnddress, AnddressTarget as PublicAnddressTarget, LineBodyClass,
+    construct_anddress as construct_public_anddress, construct_source_identity,
 };
 use crate::backwriter::{
     apply::ApplyError,
-    edit::{Edit, EditError, Position},
+    edit::{Edit as PublicEdit, EditError, Position as PublicPosition},
 };
-use crate::hash::transcript_hex;
+use crate::hash::{Sha256, transcript_hex};
 
 use super::{
     AnchorPlanEntry, WorkspaceRuntime, is_backwriter_spill, mark_anchor_collisions,
     source_scan::{
-        DecimalOrdinal, ExactTargetTracker, READ_BUFFER_SIZE, SourceEvent, SourceFramer,
-        SourceScanError, scan_source,
+        ExactTargetTracker, READ_BUFFER_SIZE, SourceEvent, SourceFramer, SourceScanError,
+        SourceState, scan_source,
     },
 };
+
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+struct Natural(usize);
+
+impl Natural {
+    fn zero() -> Self {
+        Self(0)
+    }
+}
+
+#[derive(Clone, Debug)]
+struct DecimalOrdinal(Natural);
+
+impl DecimalOrdinal {
+    fn zero() -> Result<Self, SourceScanError> {
+        Ok(Self(Natural::zero()))
+    }
+
+    fn increment(&mut self) -> Result<(), SourceScanError> {
+        self.0.0 = self.0.0.checked_add(1).ok_or(SourceScanError::Resource)?;
+        Ok(())
+    }
+
+    fn as_natural(&self) -> Result<Natural, SourceScanError> {
+        Ok(self.0.clone())
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct Anddress {
+    workspace_coordinate: String,
+    logical_path: String,
+    target: AnddressTarget,
+    byte_start: usize,
+    byte_end: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum AnddressTarget {
+    File,
+    Paragraph {
+        ordinal: Natural,
+    },
+    Line {
+        ordinal: Natural,
+        exact_extent: String,
+    },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum Position {
+    Before(Anddress),
+    After(Anddress),
+    StartOf(Anddress),
+    EndOf(Anddress),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum Edit {
+    Insert {
+        position: Position,
+        content: String,
+    },
+    Replace {
+        target: Anddress,
+        content: String,
+    },
+    Delete {
+        target: Anddress,
+    },
+    Move {
+        target: Anddress,
+        position: Position,
+    },
+    Copy {
+        target: Anddress,
+        position: Position,
+    },
+}
 
 pub(super) fn finish_publication(
     runtime: &mut WorkspaceRuntime,
@@ -45,21 +125,22 @@ pub(super) fn finish_publication(
     }
 }
 
-fn same_path_bindings(runtime: &WorkspaceRuntime, path: &str) -> Result<Vec<Anddress>, ApplyError> {
+fn same_path_bindings(
+    runtime: &WorkspaceRuntime,
+    path: &str,
+) -> Result<Vec<PublicAnddress>, ApplyError> {
     let count = runtime
         .anchors
         .iter()
-        .filter(|binding| binding.anddress.logical_path == path)
+        .filter(|binding| binding.anddress.logical_path() == path)
         .count();
     let mut inputs = Vec::new();
     inputs
         .try_reserve_exact(count)
         .map_err(|_| ApplyError::Unavailable)?;
     for binding in &runtime.anchors {
-        if binding.anddress.logical_path == path {
-            inputs.push(
-                fallible_copy_anddress(&binding.anddress).map_err(|_| ApplyError::Unavailable)?,
-            );
+        if binding.anddress.logical_path() == path {
+            inputs.push(binding.anddress.clone());
         }
     }
     Ok(inputs)
@@ -293,8 +374,13 @@ struct AfterPlanner<'a> {
     candidates: Vec<Candidate<'a>>,
     framer: Option<SourceFramer>,
     line_bytes: Option<Vec<u8>>,
+    line_ordinal: DecimalOrdinal,
     paragraph_ordinal: DecimalOrdinal,
+    paragraph_start: usize,
+    paragraph_end: usize,
     in_paragraph: bool,
+    hash: Sha256,
+    byte_length: usize,
 }
 
 impl<'a> AfterPlanner<'a> {
@@ -318,8 +404,13 @@ impl<'a> AfterPlanner<'a> {
             candidates,
             framer: Some(SourceFramer::new().map_err(map_scan_error)?),
             line_bytes: None,
+            line_ordinal: DecimalOrdinal::zero().map_err(map_scan_error)?,
             paragraph_ordinal: DecimalOrdinal::zero().map_err(map_scan_error)?,
+            paragraph_start: 0,
+            paragraph_end: 0,
             in_paragraph: false,
+            hash: Sha256::new(),
+            byte_length: 0,
         })
     }
 
@@ -350,6 +441,11 @@ impl<'a> AfterPlanner<'a> {
     }
 
     fn feed(&mut self, bytes: &[u8], source: Emission<'_>) -> Result<(), SourceScanError> {
+        self.hash.update(bytes);
+        self.byte_length = self
+            .byte_length
+            .checked_add(bytes.len())
+            .ok_or(SourceScanError::Resource)?;
         let mut framer = self.framer.take().expect("after framer is present");
         let mut mark_pending = true;
         let result = framer.push(bytes, &mut |event| {
@@ -359,7 +455,7 @@ impl<'a> AfterPlanner<'a> {
         result
     }
 
-    fn finish(&mut self) -> Result<Vec<Option<Anddress>>, ApplyError> {
+    fn finish(&mut self) -> Result<(SourceState, Vec<Option<Anddress>>), ApplyError> {
         let mut framer = self.framer.take().expect("after framer is present");
         let mut mark_pending = false;
         let result =
@@ -374,12 +470,18 @@ impl<'a> AfterPlanner<'a> {
         for candidate in std::mem::take(&mut self.candidates) {
             results.push(candidate.into_result());
         }
-        Ok(results)
+        let state = SourceState {
+            hash: std::mem::replace(&mut self.hash, Sha256::new())
+                .finish()
+                .to_hex(),
+            byte_length: self.byte_length,
+        };
+        Ok((state, results))
     }
 
     fn consume(
         &mut self,
-        event: SourceEvent<'_>,
+        event: SourceEvent,
         source: Emission<'_>,
         mark_pending: &mut bool,
     ) -> Result<(), SourceScanError> {
@@ -406,9 +508,11 @@ impl<'a> AfterPlanner<'a> {
                 }
             }
             SourceEvent::EndLine {
-                ordinal,
+                byte_start,
+                byte_end,
                 body_class,
-            } => self.finish_line(ordinal, body_class)?,
+                ..
+            } => self.finish_line(byte_start, byte_end, body_class)?,
         }
         Ok(())
     }
@@ -496,7 +600,8 @@ impl<'a> AfterPlanner<'a> {
 
     fn finish_line(
         &mut self,
-        ordinal: &DecimalOrdinal,
+        byte_start: usize,
+        byte_end: usize,
         body_class: LineBodyClass,
     ) -> Result<(), SourceScanError> {
         for candidate in &mut self.candidates {
@@ -505,31 +610,33 @@ impl<'a> AfterPlanner<'a> {
             {
                 continue;
             }
-            let address = construct_anddress(
-                &candidate.binding.workspace_coordinate,
-                &candidate.binding.logical_path,
+            let address = legacy_retarget(
+                candidate.binding,
                 AnddressTarget::Line {
-                    ordinal: ordinal.as_natural()?,
+                    ordinal: self.line_ordinal.as_natural()?,
                     exact_extent: copy_utf8(
                         self.line_bytes
                             .as_deref()
                             .ok_or(SourceScanError::Resource)?,
                     )?,
                 },
-            )
-            .map_err(|_| SourceScanError::Resource)?;
+                byte_start,
+                byte_end,
+            )?;
             candidate.result = Some(address);
         }
         self.line_bytes = None;
         if body_class == LineBodyClass::Text {
             if !self.in_paragraph {
                 self.in_paragraph = true;
+                self.paragraph_start = byte_start;
                 for candidate in &mut self.candidates {
                     if !candidate.multiple {
                         candidate.paragraph = Markers::default();
                     }
                 }
             }
+            self.paragraph_end = byte_end;
             for candidate in &mut self.candidates {
                 if !candidate.multiple {
                     candidate.paragraph.include(candidate.line);
@@ -540,6 +647,7 @@ impl<'a> AfterPlanner<'a> {
             self.paragraph_ordinal.increment()?;
             self.in_paragraph = false;
         }
+        self.line_ordinal.increment()?;
         Ok(())
     }
 
@@ -553,14 +661,14 @@ impl<'a> AfterPlanner<'a> {
             {
                 continue;
             }
-            let address = construct_anddress(
-                &candidate.binding.workspace_coordinate,
-                &candidate.binding.logical_path,
+            let address = legacy_retarget(
+                candidate.binding,
                 AnddressTarget::Paragraph {
                     ordinal: self.paragraph_ordinal.as_natural()?,
                 },
-            )
-            .map_err(|_| SourceScanError::Resource)?;
+                self.paragraph_start,
+                self.paragraph_end,
+            )?;
             candidate.result = Some(address);
         }
         Ok(())
@@ -570,27 +678,57 @@ impl<'a> AfterPlanner<'a> {
 fn reflection_plan(
     runtime: &WorkspaceRuntime,
     path: &str,
+    state: SourceState,
     candidates: Vec<Option<Anddress>>,
 ) -> Result<Vec<AnchorPlanEntry>, ApplyError> {
+    let source = construct_source_identity(
+        &runtime.workspace_coordinate,
+        path,
+        &state.hash,
+        state.byte_length,
+    )
+    .map_err(|_| ApplyError::Unavailable)?;
     let mut plan = Vec::new();
     plan.try_reserve_exact(runtime.anchors.len())
         .map_err(|_| ApplyError::Unavailable)?;
     let mut candidates = candidates.into_iter();
     for binding in &runtime.anchors {
-        if binding.anddress.logical_path != path {
+        if binding.anddress.logical_path() != path {
             plan.push(AnchorPlanEntry::Preserve);
             continue;
         }
-        if matches!(binding.anddress.target, AnddressTarget::File) {
-            plan.push(AnchorPlanEntry::Preserve);
+        if binding.anddress.target() == PublicAnddressTarget::File {
+            plan.push(AnchorPlanEntry::Rebind {
+                anddress: construct_public_anddress(
+                    &source,
+                    PublicAnddressTarget::File,
+                    0,
+                    state.byte_length,
+                )
+                .map_err(|_| ApplyError::Unavailable)?,
+                collides: false,
+            });
             continue;
         }
         let candidate = candidates.next().expect("same-path candidate is prepared");
         match candidate {
-            Some(anddress) => plan.push(AnchorPlanEntry::Rebind {
-                anddress,
-                collides: false,
-            }),
+            Some(anddress) => {
+                let target = match anddress.target {
+                    AnddressTarget::Paragraph { .. } => PublicAnddressTarget::Paragraph,
+                    AnddressTarget::Line { .. } => PublicAnddressTarget::Line,
+                    AnddressTarget::File => unreachable!("same-path File anchors are handled"),
+                };
+                plan.push(AnchorPlanEntry::Rebind {
+                    anddress: construct_public_anddress(
+                        &source,
+                        target,
+                        anddress.byte_start,
+                        anddress.byte_end,
+                    )
+                    .map_err(|_| ApplyError::Unavailable)?,
+                    collides: false,
+                });
+            }
             None => plan.push(AnchorPlanEntry::Remove),
         }
     }
@@ -608,64 +746,82 @@ fn copy_utf8(bytes: &[u8]) -> Result<String, SourceScanError> {
     Ok(copy)
 }
 
+fn legacy_retarget(
+    input: &Anddress,
+    target: AnddressTarget,
+    byte_start: usize,
+    byte_end: usize,
+) -> Result<Anddress, SourceScanError> {
+    Ok(Anddress {
+        workspace_coordinate: copy_utf8(input.workspace_coordinate.as_bytes())?,
+        logical_path: copy_utf8(input.logical_path.as_bytes())?,
+        target,
+        byte_start,
+        byte_end,
+    })
+}
+
 // Private Apply execution body included by `runtime::apply`.
 
-pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(), ApplyError> {
+pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &PublicEdit) -> Result<(), ApplyError> {
     edit.validate().map_err(map_edit_error)?;
-    let (first, second) = operands(edit);
+    let (first, second) = public_operands(edit);
     if second.is_some_and(|second| !same_source(first, second)) {
         return Err(ApplyError::InvalidInput);
     }
-    if first.workspace_coordinate != runtime.workspace_coordinate
-        || is_backwriter_spill(&first.logical_path)
+    if first.workspace_coordinate() != runtime.workspace_coordinate
+        || is_backwriter_spill(first.logical_path())
     {
         return Err(ApplyError::Unavailable);
     }
 
     runtime.prune_dead_anchors();
-    let bindings = same_path_bindings(runtime, &first.logical_path)?;
-    let (inputs, edit_count) = tracker_inputs(first, second, &bindings)?;
+    let public_bindings = same_path_bindings(runtime, first.logical_path())?;
+    let (inputs, edit_count) = tracker_inputs(first, second, &public_bindings)?;
     let indexes = indexes(inputs.len())?;
     let mut tracker = ExactTargetTracker::new(&inputs, &indexes).map_err(map_scan_error)?;
+    let mut resolver = LegacyResolver::new(&inputs)?;
     let mut source = runtime
-        .open_admitted_source(&first.logical_path)
+        .open_admitted_source(first.logical_path())
         .map_err(|_| ApplyError::Unavailable)?;
     let (parent, destination) = runtime
-        .open_admitted_parent(&first.logical_path)
+        .open_admitted_parent(first.logical_path())
         .map_err(|_| ApplyError::Unavailable)?;
     let mut staging = Temporary::create(
         &parent,
-        edit_temporary_name(runtime, &first.logical_path, "staging")?,
+        edit_temporary_name(runtime, first.logical_path(), "staging")?,
     )?;
-    let scan = scan_staged(&mut source, &mut staging, &mut tracker);
-    match scan {
-        Ok(()) => {}
+    let state = match scan_staged(&mut source, &mut staging, &mut tracker, &mut resolver) {
+        Ok(state) => state,
         Err(SourceScanError::InvalidSource) => {
-            runtime.invalidate_anchors_for_path(&first.logical_path);
+            runtime.invalidate_anchors_for_path(first.logical_path());
             return Err(ApplyError::Unavailable);
         }
         Err(SourceScanError::Read | SourceScanError::Resource) => {
             return Err(ApplyError::Unavailable);
         }
-    }
-    tracker.finish();
+    };
+    tracker.finish(&state);
     let current = tracker.into_current();
     if current[edit_count..].iter().any(|current| !current) {
-        runtime.invalidate_anchors_for_path(&first.logical_path);
+        runtime.invalidate_anchors_for_path(first.logical_path());
         return Err(ApplyError::Unavailable);
     }
     if current[..edit_count].iter().any(|current| !current) {
         return Err(ApplyError::Unavailable);
     }
+    let resolved = resolver.finish()?;
+    let edit = resolve_edit(edit, &resolved[..edit_count])?;
+    let bindings = &resolved[edit_count..];
     staging.close()?;
 
-    if matches!(edit, Edit::Insert { content, .. } if content.is_empty()) {
+    if matches!(&edit, Edit::Insert { content, .. } if content.is_empty()) {
         staging.remove()?;
         return Ok(());
     }
 
-    let move_layout = matches!(edit, Edit::Move { .. })
-        .then(|| classify_move(&staging, edit))
+    let move_layout = matches!(&edit, Edit::Move { .. })
+        .then(|| classify_move(&staging, &edit))
         .transpose()?;
     match move_layout {
         Some(MoveLayout::Interior) => return Err(ApplyError::InvalidInput),
@@ -676,10 +832,10 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
         Some(MoveLayout::Before | MoveLayout::After) | None => {}
     }
 
-    if matches!(edit, Edit::Replace { .. } | Edit::Move { .. }) {
+    if matches!(&edit, Edit::Replace { .. } | Edit::Move { .. }) {
         let comparison = staging.open_read()?;
         let mut probe_output = Output::probe(comparison);
-        replay(&staging, edit, &mut probe_output)?;
+        replay(&staging, &edit, &mut probe_output)?;
         let identical = probe_output.is_identical()?;
         drop(probe_output);
         if identical {
@@ -688,15 +844,15 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
         }
     }
 
-    let relations = source_relations(&staging, edit, &bindings)?;
-    let planner = AfterPlanner::for_edit(&bindings, relations)?;
+    let relations = source_relations(&staging, &edit, bindings)?;
+    let planner = AfterPlanner::for_edit(bindings, relations)?;
     let temporary = Temporary::create(
         &parent,
-        edit_temporary_name(runtime, &first.logical_path, "after")?,
+        edit_temporary_name(runtime, first.logical_path(), "after")?,
     )?;
     let mut output = Output::after(temporary, planner);
-    replay(&staging, edit, &mut output)?;
-    let (temporary, candidates) = output.finish()?;
+    replay(&staging, &edit, &mut output)?;
+    let (temporary, after_state, candidates) = output.finish()?;
     #[cfg(unix)]
     let source_mode = source
         .metadata()
@@ -704,11 +860,11 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
         .permissions()
         .mode()
         & 0o777;
-    let plan = reflection_plan(runtime, &first.logical_path, candidates)?;
+    let plan = reflection_plan(runtime, first.logical_path(), after_state, candidates)?;
     staging.remove()?;
     finish_publication(
         runtime,
-        &first.logical_path,
+        first.logical_path(),
         plan,
         publish(
             &parent,
@@ -728,22 +884,22 @@ fn map_edit_error(error: EditError) -> ApplyError {
     }
 }
 
-fn operands(edit: &Edit) -> (&Anddress, Option<&Anddress>) {
+fn public_operands(edit: &PublicEdit) -> (&PublicAnddress, Option<&PublicAnddress>) {
     match edit {
-        Edit::Insert { position, .. } => (position_target(position), None),
-        Edit::Replace { target, .. } | Edit::Delete { target } => (target, None),
-        Edit::Move { target, position } | Edit::Copy { target, position } => {
-            (target, Some(position_target(position)))
+        PublicEdit::Insert { position, .. } => (public_position_target(position), None),
+        PublicEdit::Replace { target, .. } | PublicEdit::Delete { target } => (target, None),
+        PublicEdit::Move { target, position } | PublicEdit::Copy { target, position } => {
+            (target, Some(public_position_target(position)))
         }
     }
 }
 
-fn position_target(position: &Position) -> &Anddress {
+fn public_position_target(position: &PublicPosition) -> &PublicAnddress {
     match position {
-        Position::Before(target)
-        | Position::After(target)
-        | Position::StartOf(target)
-        | Position::EndOf(target) => target,
+        PublicPosition::Before(target)
+        | PublicPosition::After(target)
+        | PublicPosition::StartOf(target)
+        | PublicPosition::EndOf(target) => target,
     }
 }
 
@@ -757,38 +913,233 @@ fn edit_target(edit: &Edit) -> Option<&Anddress> {
     }
 }
 
-fn same_source(left: &Anddress, right: &Anddress) -> bool {
-    left.workspace_coordinate == right.workspace_coordinate
-        && left.logical_path == right.logical_path
+fn same_source(left: &PublicAnddress, right: &PublicAnddress) -> bool {
+    left.workspace_coordinate() == right.workspace_coordinate()
+        && left.logical_path() == right.logical_path()
+        && left.source_state_hash() == right.source_state_hash()
+        && left.source_byte_length() == right.source_byte_length()
 }
 
 fn tracker_inputs(
-    first: &Anddress,
-    second: Option<&Anddress>,
-    bindings: &[Anddress],
-) -> Result<(Vec<Anddress>, usize), ApplyError> {
+    first: &PublicAnddress,
+    second: Option<&PublicAnddress>,
+    bindings: &[PublicAnddress],
+) -> Result<(Vec<PublicAnddress>, usize), ApplyError> {
     let edit_count = 1 + usize::from(second.is_some());
     let mut inputs = Vec::new();
     inputs
         .try_reserve_exact(edit_count + bindings.len())
         .map_err(|_| ApplyError::Unavailable)?;
-    inputs.push(fallible_copy_anddress(first).map_err(|_| ApplyError::Unavailable)?);
+    inputs.push(first.clone());
     if let Some(second) = second {
-        inputs.push(fallible_copy_anddress(second).map_err(|_| ApplyError::Unavailable)?);
+        inputs.push(second.clone());
     }
     for binding in bindings {
-        inputs.push(fallible_copy_anddress(binding).map_err(|_| ApplyError::Unavailable)?);
+        inputs.push(binding.clone());
     }
     Ok((inputs, edit_count))
+}
+
+fn resolve_edit(edit: &PublicEdit, operands: &[Anddress]) -> Result<Edit, ApplyError> {
+    let first = operands.first().ok_or(ApplyError::Unavailable)?.clone();
+    let second = operands.get(1).cloned();
+    Ok(match edit {
+        PublicEdit::Insert { position, content } => Edit::Insert {
+            position: resolve_position(position, first),
+            content: copy_utf8(content.as_bytes()).map_err(map_scan_error)?,
+        },
+        PublicEdit::Replace { content, .. } => Edit::Replace {
+            target: first,
+            content: copy_utf8(content.as_bytes()).map_err(map_scan_error)?,
+        },
+        PublicEdit::Delete { .. } => Edit::Delete { target: first },
+        PublicEdit::Move { position, .. } => Edit::Move {
+            target: first,
+            position: resolve_position(position, second.ok_or(ApplyError::Unavailable)?),
+        },
+        PublicEdit::Copy { position, .. } => Edit::Copy {
+            target: first,
+            position: resolve_position(position, second.ok_or(ApplyError::Unavailable)?),
+        },
+    })
+}
+
+fn resolve_position(position: &PublicPosition, target: Anddress) -> Position {
+    match position {
+        PublicPosition::Before(_) => Position::Before(target),
+        PublicPosition::After(_) => Position::After(target),
+        PublicPosition::StartOf(_) => Position::StartOf(target),
+        PublicPosition::EndOf(_) => Position::EndOf(target),
+    }
+}
+
+struct LegacyResolver<'a> {
+    inputs: &'a [PublicAnddress],
+    results: Vec<Option<Anddress>>,
+    line: Natural,
+    paragraph: Natural,
+    line_start: usize,
+    line_bytes: Vec<u8>,
+    capture_line: bool,
+    paragraph_start: usize,
+    paragraph_end: usize,
+    in_paragraph: bool,
+}
+
+impl<'a> LegacyResolver<'a> {
+    fn new(inputs: &'a [PublicAnddress]) -> Result<Self, ApplyError> {
+        let mut results = Vec::new();
+        results
+            .try_reserve_exact(inputs.len())
+            .map_err(|_| ApplyError::Unavailable)?;
+        results.resize(inputs.len(), None);
+        Ok(Self {
+            inputs,
+            results,
+            line: Natural::zero(),
+            paragraph: Natural::zero(),
+            line_start: 0,
+            line_bytes: Vec::new(),
+            capture_line: false,
+            paragraph_start: 0,
+            paragraph_end: 0,
+            in_paragraph: false,
+        })
+    }
+
+    fn consume(&mut self, event: SourceEvent) -> Result<(), SourceScanError> {
+        match event {
+            SourceEvent::StartLine { byte_start, .. } => {
+                self.line_start = byte_start;
+                self.line_bytes.clear();
+                self.capture_line = self.inputs.iter().any(|input| {
+                    input.target() == PublicAnddressTarget::Line && input.byte_start() == byte_start
+                });
+            }
+            SourceEvent::Byte { byte, .. } if self.capture_line => {
+                self.line_bytes
+                    .try_reserve(1)
+                    .map_err(|_| SourceScanError::Resource)?;
+                self.line_bytes.push(byte);
+            }
+            SourceEvent::Byte { .. } => {}
+            SourceEvent::EndLine {
+                byte_start,
+                byte_end,
+                body_class,
+                ..
+            } => self.finish_line(byte_start, byte_end, body_class)?,
+        }
+        Ok(())
+    }
+
+    fn finish_line(
+        &mut self,
+        byte_start: usize,
+        byte_end: usize,
+        body_class: LineBodyClass,
+    ) -> Result<(), SourceScanError> {
+        debug_assert_eq!(byte_start, self.line_start);
+        for (index, input) in self.inputs.iter().enumerate() {
+            if input.target() == PublicAnddressTarget::Line
+                && input.byte_start() == byte_start
+                && input.byte_end() == byte_end
+            {
+                self.results[index] = Some(legacy_address(
+                    input,
+                    AnddressTarget::Line {
+                        ordinal: self.line.clone(),
+                        exact_extent: copy_utf8(&self.line_bytes)?,
+                    },
+                )?);
+            }
+        }
+        if body_class == LineBodyClass::Text {
+            if !self.in_paragraph {
+                self.in_paragraph = true;
+                self.paragraph_start = byte_start;
+            }
+            self.paragraph_end = byte_end;
+        } else {
+            self.finish_paragraph()?;
+        }
+        self.line.0 = self
+            .line
+            .0
+            .checked_add(1)
+            .ok_or(SourceScanError::Resource)?;
+        Ok(())
+    }
+
+    fn finish_paragraph(&mut self) -> Result<(), SourceScanError> {
+        if !self.in_paragraph {
+            return Ok(());
+        }
+        for (index, input) in self.inputs.iter().enumerate() {
+            if input.target() == PublicAnddressTarget::Paragraph
+                && input.byte_start() == self.paragraph_start
+                && input.byte_end() == self.paragraph_end
+            {
+                self.results[index] = Some(legacy_address(
+                    input,
+                    AnddressTarget::Paragraph {
+                        ordinal: self.paragraph.clone(),
+                    },
+                )?);
+            }
+        }
+        self.paragraph.0 = self
+            .paragraph
+            .0
+            .checked_add(1)
+            .ok_or(SourceScanError::Resource)?;
+        self.in_paragraph = false;
+        Ok(())
+    }
+
+    fn finish(mut self) -> Result<Vec<Anddress>, ApplyError> {
+        self.finish_paragraph().map_err(map_scan_error)?;
+        for (index, input) in self.inputs.iter().enumerate() {
+            if input.target() == PublicAnddressTarget::File {
+                self.results[index] =
+                    Some(legacy_address(input, AnddressTarget::File).map_err(map_scan_error)?);
+            }
+        }
+        let mut resolved = Vec::new();
+        resolved
+            .try_reserve_exact(self.results.len())
+            .map_err(|_| ApplyError::Unavailable)?;
+        for result in self.results {
+            resolved.push(result.ok_or(ApplyError::Unavailable)?);
+        }
+        Ok(resolved)
+    }
+}
+
+fn legacy_address(
+    input: &PublicAnddress,
+    target: AnddressTarget,
+) -> Result<Anddress, SourceScanError> {
+    Ok(Anddress {
+        workspace_coordinate: copy_utf8(input.workspace_coordinate().as_bytes())?,
+        logical_path: copy_utf8(input.logical_path().as_bytes())?,
+        target,
+        byte_start: input.byte_start(),
+        byte_end: input.byte_end(),
+    })
 }
 
 fn scan_staged(
     source: &mut impl Read,
     staging: &mut Temporary<'_>,
     tracker: &mut ExactTargetTracker<'_>,
-) -> Result<(), SourceScanError> {
+    resolver: &mut LegacyResolver<'_>,
+) -> Result<SourceState, SourceScanError> {
     let mut staged = StagedRead { source, staging };
-    scan_source(&mut staged, |event| tracker.consume(event))
+    scan_source(&mut staged, |event| {
+        tracker.consume(event)?;
+        resolver.consume(event)
+    })
 }
 
 struct StagedRead<'read, 'temporary, 'parent, R> {
@@ -810,7 +1161,7 @@ impl<R: Read> Read for StagedRead<'_, '_, '_, R> {
 
 fn scan_events(
     reader: &mut impl Read,
-    mut on_event: impl FnMut(SourceEvent<'_>) -> Result<(), ApplyError>,
+    mut on_event: impl FnMut(SourceEvent) -> Result<(), ApplyError>,
 ) -> Result<(), ApplyError> {
     let mut failure = None;
     let scan = scan_source(reader, |event| match on_event(event) {
@@ -823,7 +1174,7 @@ fn scan_events(
     if let Some(error) = failure {
         return Err(error);
     }
-    scan.map_err(map_scan_error)
+    scan.map(|_| ()).map_err(map_scan_error)
 }
 
 enum OutputProvenance<'a> {
@@ -924,8 +1275,10 @@ impl<'parent, 'bindings> Output<'parent, 'bindings> {
         comparison_exhausted(reader)
     }
 
-    fn finish(mut self) -> Result<(Temporary<'parent>, Vec<Option<Anddress>>), ApplyError> {
-        let candidates = self
+    fn finish(
+        mut self,
+    ) -> Result<(Temporary<'parent>, SourceState, Vec<Option<Anddress>>), ApplyError> {
+        let (state, candidates) = self
             .after
             .as_mut()
             .expect("final output has an after planner")
@@ -934,6 +1287,7 @@ impl<'parent, 'bindings> Output<'parent, 'bindings> {
             self.temporary
                 .take()
                 .expect("final output owns an after temporary"),
+            state,
             candidates,
         ))
     }
@@ -1047,10 +1401,10 @@ impl<'staging, 'edit, 'output, 'parent, 'bindings>
         Ok(())
     }
 
-    fn event(&mut self, event: SourceEvent<'_>) -> Result<(), ApplyError> {
+    fn event(&mut self, event: SourceEvent) -> Result<(), ApplyError> {
         match event {
-            SourceEvent::StartLine { ordinal } => {
-                self.line = Some(ordinal.as_natural().map_err(map_scan_error)?);
+            SourceEvent::StartLine { line_index, .. } => {
+                self.line = Some(Natural(line_index));
                 self.line_paragraph = None;
                 self.line_started = false;
                 self.line_prepared = false;
@@ -1370,10 +1724,10 @@ impl<'target, 'output, 'parent, 'bindings> Extractor<'target, 'output, 'parent, 
         })
     }
 
-    fn event(&mut self, event: SourceEvent<'_>) -> Result<(), ApplyError> {
+    fn event(&mut self, event: SourceEvent) -> Result<(), ApplyError> {
         match event {
-            SourceEvent::StartLine { ordinal } => {
-                self.line = Some(ordinal.as_natural().map_err(map_scan_error)?);
+            SourceEvent::StartLine { line_index, .. } => {
+                self.line = Some(Natural(line_index));
                 self.line_paragraph = None;
                 self.line_started = false;
                 self.leading.clear();
@@ -1590,10 +1944,10 @@ impl<'a> SourceRelations<'a> {
         })
     }
 
-    fn event(&mut self, event: SourceEvent<'_>) -> Result<(), ApplyError> {
+    fn event(&mut self, event: SourceEvent) -> Result<(), ApplyError> {
         match event {
-            SourceEvent::StartLine { ordinal } => {
-                self.line = Some(ordinal.as_natural().map_err(map_scan_error)?);
+            SourceEvent::StartLine { line_index, .. } => {
+                self.line = Some(Natural(line_index));
             }
             SourceEvent::Byte { .. } => {}
             SourceEvent::EndLine { body_class, .. } => {
@@ -1689,10 +2043,10 @@ impl<'a> MoveClassifier<'a> {
         })
     }
 
-    fn event(&mut self, event: SourceEvent<'_>) -> Result<(), ApplyError> {
+    fn event(&mut self, event: SourceEvent) -> Result<(), ApplyError> {
         match event {
-            SourceEvent::StartLine { ordinal } => {
-                self.line = Some(ordinal.as_natural().map_err(map_scan_error)?);
+            SourceEvent::StartLine { line_index, .. } => {
+                self.line = Some(Natural(line_index));
             }
             SourceEvent::Byte { .. } => {}
             SourceEvent::EndLine { body_class, .. } => {
@@ -1852,7 +2206,7 @@ mod edit_tests {
     use crate::{
         backwriter::{
             anchor::{Anchedress, AnchorOutcome},
-            anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural},
+            anddress::{Anddress as PublicAnddress, AnddressTarget as PublicAnddressTarget},
             apply::ApplyError,
             edit::Edit,
         },
@@ -1863,8 +2217,8 @@ mod edit_tests {
     };
 
     use super::{
-        AfterPlanner, Relation, Temporary, compare_exact, comparison_exhausted,
-        edit_temporary_name, execute, publish, scan_staged,
+        AfterPlanner, Anddress, AnddressTarget, LegacyResolver, Natural, Relation, Temporary,
+        compare_exact, comparison_exhausted, edit_temporary_name, execute, publish, scan_staged,
     };
 
     struct FailingReader {
@@ -1905,19 +2259,41 @@ mod edit_tests {
         }
     }
 
-    fn line(runtime: &WorkspaceRuntime, ordinal: &str, extent: &str) -> Anddress {
-        Anddress {
-            version: ANDDRESS_VERSION.to_owned(),
-            workspace_coordinate: runtime.workspace_coordinate.clone(),
-            logical_path: "note.txt".to_owned(),
-            target: AnddressTarget::Line {
-                ordinal: Natural::parse(ordinal).unwrap(),
-                exact_extent: extent.to_owned(),
-            },
+    fn line(runtime: &WorkspaceRuntime, ordinal: &str, extent: &str) -> PublicAnddress {
+        use crate::hash::Sha256;
+
+        let source = fs::read(runtime.workspace_root.join("note.txt")).unwrap();
+        let ordinal: usize = ordinal.parse().unwrap();
+        let mut ranges = Vec::new();
+        let mut start = 0;
+        for (index, byte) in source.iter().enumerate() {
+            if *byte == b'\n' {
+                ranges.push((start, index + 1));
+                start = index + 1;
+            }
         }
+        if start < source.len() {
+            ranges.push((start, source.len()));
+        }
+        let (byte_start, byte_end) = ranges[ordinal];
+        assert_eq!(&source[byte_start..byte_end], extent.as_bytes());
+        PublicAnddress::new(
+            &runtime.workspace_coordinate,
+            "note.txt",
+            &{
+                let mut hash = Sha256::new();
+                hash.update(&source);
+                hash.finish().to_hex()
+            },
+            source.len(),
+            PublicAnddressTarget::Line,
+            byte_start,
+            byte_end,
+        )
+        .unwrap()
     }
 
-    fn anchor(runtime: &mut WorkspaceRuntime, input: &Anddress) -> Anchedress {
+    fn anchor(runtime: &mut WorkspaceRuntime, input: &PublicAnddress) -> Anchedress {
         match runtime.anchor(input) {
             Ok(AnchorOutcome::Anchored(handle)) => handle,
             _ => panic!("anchor"),
@@ -1926,13 +2302,14 @@ mod edit_tests {
 
     fn planned_line(extent: &str) -> Anddress {
         Anddress {
-            version: ANDDRESS_VERSION.to_owned(),
             workspace_coordinate: "0".repeat(64),
             logical_path: "note.txt".to_owned(),
             target: AnddressTarget::Line {
                 ordinal: Natural::zero(),
                 exact_extent: extent.to_owned(),
             },
+            byte_start: 0,
+            byte_end: extent.len(),
         }
     }
 
@@ -1946,7 +2323,7 @@ mod edit_tests {
         )
         .unwrap();
         planner.feed_source(b"a", Some(&line), None).unwrap();
-        assert_eq!(planner.finish().unwrap(), vec![Some(binding)]);
+        assert_eq!(planner.finish().unwrap().1, vec![Some(binding)]);
 
         let binding = planned_line("ab");
         let line = Natural::zero();
@@ -1958,7 +2335,7 @@ mod edit_tests {
         planner.feed_source(b"a", Some(&line), None).unwrap();
         planner.feed_replacement(b"X").unwrap();
         planner.feed_source(b"b", Some(&line), None).unwrap();
-        assert_eq!(planner.finish().unwrap(), vec![None]);
+        assert_eq!(planner.finish().unwrap().1, vec![None]);
 
         let binding = planned_line("a\r");
         let line = Natural::zero();
@@ -1969,7 +2346,7 @@ mod edit_tests {
         .unwrap();
         planner.feed_source(b"a\r", Some(&line), None).unwrap();
         planner.feed_replacement(b"\n").unwrap();
-        assert_eq!(planner.finish().unwrap(), vec![None]);
+        assert_eq!(planner.finish().unwrap().1, vec![None]);
 
         let binding = planned_line("old\n");
         let mut planner = AfterPlanner::for_edit(
@@ -1978,7 +2355,7 @@ mod edit_tests {
         )
         .unwrap();
         planner.feed_replacement(b"x\r\ny\nz").unwrap();
-        assert_eq!(planner.finish().unwrap(), vec![None]);
+        assert_eq!(planner.finish().unwrap().1, vec![None]);
     }
 
     #[test]
@@ -2054,7 +2431,7 @@ mod edit_tests {
     }
 
     #[test]
-    fn stale_edit_operand_keeps_current_bindings_live() {
+    fn stale_source_state_invalidates_same_path_bindings() {
         let fixture = tempfile::tempdir().unwrap();
         fs::write(fixture.path().join("note.txt"), "one\nb\n").unwrap();
         let mut runtime = WorkspaceRuntime::open(
@@ -2071,7 +2448,7 @@ mod edit_tests {
             execute(&mut runtime, &Edit::Delete { target: edit }),
             Err(ApplyError::Unavailable)
         );
-        assert_eq!(runtime.anchors.len(), 1);
+        assert!(runtime.anchors.is_empty());
     }
 
     #[test]
@@ -2108,15 +2485,7 @@ mod edit_tests {
         let after = edit_temporary_name(&runtime, "note.txt", "after").unwrap();
         fs::write(fixture.path().join(&after), "collision").unwrap();
         let edit = Edit::Delete {
-            target: Anddress {
-                version: ANDDRESS_VERSION.to_owned(),
-                workspace_coordinate: runtime.workspace_coordinate.clone(),
-                logical_path: "note.txt".to_owned(),
-                target: AnddressTarget::Line {
-                    ordinal: Natural::zero(),
-                    exact_extent: "one\n".to_owned(),
-                },
-            },
+            target: line(&runtime, "0", "one\n"),
         };
 
         assert_eq!(execute(&mut runtime, &edit), Err(ApplyError::Unavailable));
@@ -2143,15 +2512,7 @@ mod edit_tests {
         let staging = edit_temporary_name(&runtime, "note.txt", "staging").unwrap();
         fs::write(fixture.path().join(&staging), "collision").unwrap();
         let edit = Edit::Delete {
-            target: Anddress {
-                version: ANDDRESS_VERSION.to_owned(),
-                workspace_coordinate: runtime.workspace_coordinate.clone(),
-                logical_path: "note.txt".to_owned(),
-                target: AnddressTarget::Line {
-                    ordinal: Natural::zero(),
-                    exact_extent: "one\n".to_owned(),
-                },
-            },
+            target: line(&runtime, "0", "one\n"),
         };
 
         assert_eq!(execute(&mut runtime, &edit), Err(ApplyError::Unavailable));
@@ -2177,22 +2538,33 @@ mod edit_tests {
         let (parent, _) = runtime.open_admitted_parent("note.txt").unwrap();
         let name = edit_temporary_name(&runtime, "note.txt", "staging").unwrap();
         let mut temporary = Temporary::create(&parent, name.clone()).unwrap();
-        let input = Anddress {
-            version: ANDDRESS_VERSION.to_owned(),
-            workspace_coordinate: runtime.workspace_coordinate.clone(),
-            logical_path: "note.txt".to_owned(),
-            target: AnddressTarget::File,
-        };
+        use crate::hash::Sha256;
+        let expected = b"one\nlate";
+        let input = PublicAnddress::new(
+            &runtime.workspace_coordinate,
+            "note.txt",
+            &{
+                let mut hash = Sha256::new();
+                hash.update(expected);
+                hash.finish().to_hex()
+            },
+            expected.len(),
+            PublicAnddressTarget::File,
+            0,
+            expected.len(),
+        )
+        .unwrap();
         let inputs = [input];
         let indexes = [0];
         let mut tracker = ExactTargetTracker::new(&inputs, &indexes).unwrap();
+        let mut resolver = LegacyResolver::new(&inputs).unwrap();
         let mut reader = FailingReader {
             bytes: b"one\nlate".to_vec(),
             position: 0,
         };
 
         assert_eq!(
-            scan_staged(&mut reader, &mut temporary, &mut tracker),
+            scan_staged(&mut reader, &mut temporary, &mut tracker, &mut resolver),
             Err(SourceScanError::Read)
         );
         drop(temporary);

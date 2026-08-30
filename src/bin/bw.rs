@@ -34,7 +34,7 @@ use backwriter::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v3-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v4-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v4-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 #[cfg(unix)]
 const INSTALL_SH_URL: &str = "https://backwriter.pentagration.com/install.sh";
@@ -713,19 +713,27 @@ fn write_address_rows(header: &str, anddresses: &[Anddress]) -> Result<(), CliEr
     let result = (|| -> io::Result<()> {
         writeln!(stdout, "{header} {}", anddresses.len())?;
         for (index, anddress) in anddresses.iter().enumerate() {
-            match &anddress.target {
+            match anddress.target() {
                 AnddressTarget::File => {
-                    writeln!(stdout, "{index}\tFile\t{}", anddress.logical_path)?;
+                    writeln!(stdout, "{index}\tFile\t{}", anddress.logical_path())?;
                 }
-                AnddressTarget::Paragraph { ordinal } => {
+                AnddressTarget::Paragraph => {
                     writeln!(
                         stdout,
-                        "{index}\tParagraph\t{}:{ordinal}",
-                        anddress.logical_path
+                        "{index}\tParagraph\t{}:{}-{}",
+                        anddress.logical_path(),
+                        anddress.byte_start(),
+                        anddress.byte_end()
                     )?;
                 }
-                AnddressTarget::Line { ordinal, .. } => {
-                    writeln!(stdout, "{index}\tLine\t{}:{ordinal}", anddress.logical_path)?;
+                AnddressTarget::Line => {
+                    writeln!(
+                        stdout,
+                        "{index}\tLine\t{}:{}-{}",
+                        anddress.logical_path(),
+                        anddress.byte_start(),
+                        anddress.byte_end()
+                    )?;
                 }
             }
         }
@@ -1398,18 +1406,22 @@ fn write_data_value(value: &SessionValue) -> Result<(), CliError> {
 
 fn write_data_anddress(anddress: &Anddress) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
-    match &anddress.target {
-        AnddressTarget::File => writeln!(stdout, "Anddress\tFile\t{}", anddress.logical_path),
-        AnddressTarget::Paragraph { ordinal } => writeln!(
+    match anddress.target() {
+        AnddressTarget::File => writeln!(stdout, "Anddress\tFile\t{}", anddress.logical_path()),
+        AnddressTarget::Paragraph => writeln!(
             stdout,
-            "Anddress\tParagraph\t{}:{ordinal}",
-            anddress.logical_path
+            "Anddress\tParagraph\t{}:{}-{}",
+            anddress.logical_path(),
+            anddress.byte_start(),
+            anddress.byte_end()
         ),
-        AnddressTarget::Line { ordinal, .. } => {
+        AnddressTarget::Line => {
             writeln!(
                 stdout,
-                "Anddress\tLine\t{}:{ordinal}",
-                anddress.logical_path
+                "Anddress\tLine\t{}:{}-{}",
+                anddress.logical_path(),
+                anddress.byte_start(),
+                anddress.byte_end()
             )
         }
     }

@@ -1,9 +1,11 @@
+mod support;
+
 use std::fs;
 
 use backwriter::{
     backwriter::{
         anchor::{AnchorError, AnchorOutcome},
-        anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget, Natural},
+        anddress::{Anddress, AnddressTarget as PublicAnddressTarget},
         apply::ApplyError,
         edit::{Edit, Position},
         view::{ViewError, ViewOutcome},
@@ -20,28 +22,119 @@ fn runtime(root: &std::path::Path) -> WorkspaceRuntime {
     .unwrap()
 }
 
-fn address(workspace: &WorkspaceRuntime, target: AnddressTarget) -> Anddress {
-    Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: workspace
-            .workspace_root()
-            .to_string_lossy()
-            .len()
-            .to_string(),
-        logical_path: "note.txt".to_owned(),
-        target,
+#[derive(Clone)]
+struct Natural(usize);
+
+impl Natural {
+    fn zero() -> Self {
+        Self(0)
+    }
+
+    fn one() -> Self {
+        Self(1)
+    }
+
+    fn parse(value: &str) -> Result<Self, std::num::ParseIntError> {
+        value.parse().map(Self)
     }
 }
 
+enum AnddressTarget {
+    File,
+    Paragraph {
+        ordinal: Natural,
+    },
+    Line {
+        ordinal: Natural,
+        exact_extent: String,
+    },
+}
+
+fn build_address(
+    workspace: &WorkspaceRuntime,
+    logical_path: &str,
+    target: AnddressTarget,
+    coordinate: String,
+) -> Anddress {
+    let source = fs::read(workspace.workspace_root().join(logical_path)).unwrap_or_default();
+    match target {
+        AnddressTarget::File => support::file(&coordinate, logical_path, &source),
+        AnddressTarget::Paragraph { ordinal } => {
+            let paragraphs = paragraph_ranges(&source);
+            let (start, end) = paragraphs.get(ordinal.0).copied().unwrap_or((0, 0));
+            support::address(
+                &coordinate,
+                logical_path,
+                &source,
+                PublicAnddressTarget::Paragraph,
+                start,
+                end,
+            )
+        }
+        AnddressTarget::Line {
+            ordinal,
+            exact_extent,
+        } => {
+            let spans = support::line_spans(&source);
+            if let Some((start, end)) = spans.get(ordinal.0).copied()
+                && source[start..end] == *exact_extent.as_bytes()
+            {
+                support::address(
+                    &coordinate,
+                    logical_path,
+                    &source,
+                    PublicAnddressTarget::Line,
+                    start,
+                    end,
+                )
+            } else {
+                let mut stale_source = exact_extent.into_bytes();
+                stale_source.push(b'!');
+                support::address(
+                    &coordinate,
+                    logical_path,
+                    &stale_source,
+                    PublicAnddressTarget::Line,
+                    0,
+                    stale_source.len() - 1,
+                )
+            }
+        }
+    }
+}
+
+fn paragraph_ranges(source: &[u8]) -> Vec<(usize, usize)> {
+    let mut paragraphs = Vec::new();
+    let mut paragraph_start = None;
+    let mut paragraph_end = 0;
+    for (start, end) in support::line_spans(source) {
+        let mut body_end = end;
+        if source[..body_end].ends_with(b"\r\n") {
+            body_end -= 2;
+        } else if source[..body_end].ends_with(b"\r") || source[..body_end].ends_with(b"\n") {
+            body_end -= 1;
+        }
+        let text = source[start..body_end]
+            .iter()
+            .any(|byte| !matches!(byte, b' ' | b'\t'));
+        if text {
+            paragraph_start.get_or_insert(start);
+            paragraph_end = end;
+        } else if let Some(paragraph_start) = paragraph_start.take() {
+            paragraphs.push((paragraph_start, paragraph_end));
+        }
+    }
+    if let Some(paragraph_start) = paragraph_start {
+        paragraphs.push((paragraph_start, paragraph_end));
+    }
+    paragraphs
+}
+
 fn coordinate(workspace: &WorkspaceRuntime) -> String {
-    let request = backwriter::backwriter::search::SearchRequest::new(
-        backwriter::backwriter::search::SearchQuery::new("one").unwrap(),
-        backwriter::backwriter::search::SearchScope::all_admitted(),
-        backwriter::backwriter::search::SearchTarget::File,
-    );
+    let request = backwriter::backwriter::search::SearchRequest::exact_file("note.txt").unwrap();
     match workspace.search(&request).unwrap() {
         backwriter::backwriter::search::SearchOutcome::Found { anddresses } => {
-            anddresses[0].workspace_coordinate.clone()
+            anddresses[0].workspace_coordinate().to_owned()
         }
         _ => panic!("source"),
     }
@@ -56,10 +149,7 @@ fn current_at(
     logical_path: &str,
     target: AnddressTarget,
 ) -> Anddress {
-    let mut value = address(workspace, target);
-    value.workspace_coordinate = coordinate(workspace);
-    value.logical_path = logical_path.to_owned();
-    value
+    build_address(workspace, logical_path, target, coordinate(workspace))
 }
 
 #[test]
@@ -216,15 +306,13 @@ fn current_anchor_input_fail_closes_a_stale_same_path_binding() {
         AnchorOutcome::AlreadyLive => panic!("first handle"),
     };
     fs::write(fixture.path().join("note.txt"), "changed\ntwo\n").unwrap();
-    let current_input = address(
+    let current_input = current(
         &workspace,
         AnddressTarget::Line {
             ordinal: Natural::one(),
             exact_extent: "two\n".to_owned(),
         },
     );
-    let mut current_input = current_input;
-    current_input.workspace_coordinate = stale.workspace_coordinate.clone();
 
     assert!(matches!(
         workspace.anchor(&current_input),
@@ -275,29 +363,25 @@ fn apply_reflects_moved_contained_bindings_without_anchoring_copies() {
     );
     drop(contained);
 
-    let original = Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: one.workspace_coordinate.clone(),
-        logical_path: "note.txt".to_owned(),
-        target: AnddressTarget::Line {
+    fs::write(fixture.path().join("note.txt"), "a\nb\nc\n").unwrap();
+    let original = current(
+        &workspace,
+        AnddressTarget::Line {
             ordinal: Natural::one(),
             exact_extent: "b\n".to_owned(),
         },
-    };
-    fs::write(fixture.path().join("note.txt"), "a\nb\nc\n").unwrap();
+    );
     let original_handle = match workspace.anchor(&original).unwrap() {
         AnchorOutcome::Anchored(handle) => handle,
         AnchorOutcome::AlreadyLive => panic!("original handle"),
     };
-    let destination = Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: one.workspace_coordinate.clone(),
-        logical_path: "note.txt".to_owned(),
-        target: AnddressTarget::Line {
+    let destination = current(
+        &workspace,
+        AnddressTarget::Line {
             ordinal: Natural::parse("2").unwrap(),
             exact_extent: "c\n".to_owned(),
         },
-    };
+    );
     workspace
         .apply(&Edit::Copy {
             target: original,
@@ -307,15 +391,13 @@ fn apply_reflects_moved_contained_bindings_without_anchoring_copies() {
     assert!(
         matches!(workspace.view_anchored(&original_handle), Ok(ViewOutcome::Line { content, .. }) if content == "b")
     );
-    let copied = Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: one.workspace_coordinate.clone(),
-        logical_path: "note.txt".to_owned(),
-        target: AnddressTarget::Line {
+    let copied = current(
+        &workspace,
+        AnddressTarget::Line {
             ordinal: Natural::parse("3").unwrap(),
             exact_extent: "b\n".to_owned(),
         },
-    };
+    );
     assert!(matches!(
         workspace.anchor(&copied),
         Ok(AnchorOutcome::Anchored(_))
@@ -356,15 +438,13 @@ fn apply_replacement_uses_only_the_source_target_for_containing_provenance() {
         Ok(ViewOutcome::Paragraph { text, .. }) if text == "a\nB\n"
     ));
 
-    let split = Anddress {
-        version: ANDDRESS_VERSION.to_owned(),
-        workspace_coordinate: paragraph.workspace_coordinate.clone(),
-        logical_path: "note.txt".to_owned(),
-        target: AnddressTarget::Line {
+    let split = current(
+        &workspace,
+        AnddressTarget::Line {
             ordinal: Natural::one(),
             exact_extent: "B\n".to_owned(),
         },
-    };
+    );
     workspace
         .apply(&Edit::Replace {
             target: split,
@@ -464,7 +544,7 @@ fn paragraph_source_membership_keeps_outside_lines_independent() {
     ));
     assert!(matches!(
         workspace.anchor(&outside),
-        Ok(AnchorOutcome::AlreadyLive)
+        Err(AnchorError::Unavailable)
     ));
 
     let fixture = tempdir().unwrap();
@@ -1330,10 +1410,10 @@ fn empty_insert_keeps_stale_operand_and_binding_fail_closure() {
         }),
         Err(ApplyError::Unavailable)
     );
-    assert!(matches!(
+    assert_eq!(
         operand_workspace.view_anchored(&live_handle),
-        Ok(ViewOutcome::Line { content, .. }) if content == "b"
-    ));
+        Err(ViewError::Unavailable)
+    );
 
     let binding_fixture = tempdir().unwrap();
     fs::write(binding_fixture.path().join("note.txt"), "one\nb\n").unwrap();
@@ -1459,13 +1539,13 @@ fn raw_view_never_changes_live_anchor_continuity() {
         AnchorOutcome::Anchored(handle) => handle,
         AnchorOutcome::AlreadyLive => panic!("first handle"),
     };
-    let stale = Anddress {
-        target: AnddressTarget::Line {
+    let stale = current(
+        &workspace,
+        AnddressTarget::Line {
             ordinal: Natural::one(),
             exact_extent: "missing\n".to_owned(),
         },
-        ..live.clone()
-    };
+    );
 
     assert_eq!(workspace.view(&stale), Err(ViewError::Unavailable));
     assert!(matches!(
@@ -1503,10 +1583,10 @@ fn anchored_view_checks_only_the_selected_binding_before_a_mismatch_fail_closes_
     };
     fs::write(fixture.path().join("note.txt"), "changed\ntwo\n").unwrap();
 
-    assert!(matches!(
+    assert_eq!(
         workspace.view_anchored(&second_handle),
-        Ok(ViewOutcome::Line { content, .. }) if content == "two"
-    ));
+        Err(ViewError::Unavailable)
+    );
     assert_eq!(
         workspace.view_anchored(&first_handle),
         Err(ViewError::Unavailable)

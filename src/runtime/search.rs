@@ -2,7 +2,9 @@
 
 use std::cmp::Ordering;
 
-use crate::backwriter::anddress::{Anddress, AnddressTarget, LineBodyClass, construct_anddress};
+use crate::backwriter::anddress::{
+    Anddress, AnddressTarget, LineBodyClass, construct_anddress, construct_source_identity,
+};
 use crate::backwriter::search::{
     LiteralMatcher, MatchTier, PreparedLiteral, SearchError, SearchOutcome, SearchRequest,
     SearchRequestKind, SearchScope, SearchScopeEntry, SearchTarget,
@@ -14,7 +16,7 @@ use crate::source::validate_logical_path;
 
 use super::{
     DirectoryAccessError, WorkspaceRuntime, is_backwriter_spill, path_is_within_root,
-    source_scan::{DecimalOrdinal, SourceEvent, SourceScanError, scan_source},
+    source_scan::{SourceEvent, SourceScanError, scan_source},
 };
 
 struct SearchDirectory {
@@ -78,13 +80,16 @@ fn execute_exact_file(
         Err(DirectoryAccessError::NotCurrent) => return Ok(SearchOutcome::Empty),
         Err(DirectoryAccessError::Unavailable) => return Err(SearchError::Unavailable),
     };
-    scan_source(&mut file, |_| Ok(())).map_err(|_| SearchError::Unavailable)?;
-    let anddress = construct_anddress(
+    let state = scan_source(&mut file, |_| Ok(())).map_err(|_| SearchError::Unavailable)?;
+    let source = construct_source_identity(
         &runtime.workspace_coordinate,
         logical_path,
-        AnddressTarget::File,
+        &state.hash,
+        state.byte_length,
     )
     .map_err(|_| SearchError::Unavailable)?;
+    let anddress = construct_anddress(&source, AnddressTarget::File, 0, state.byte_length)
+        .map_err(|_| SearchError::Unavailable)?;
     let mut anddresses = Vec::new();
     anddresses
         .try_reserve_exact(1)
@@ -279,19 +284,23 @@ impl SearchExecutor<'_> {
 
 struct ParagraphState {
     best_tier: Option<MatchTier>,
+    byte_start: usize,
+    byte_end: usize,
+}
+
+struct ProvisionalTarget {
+    tier: MatchTier,
+    target: AnddressTarget,
+    byte_start: usize,
+    byte_end: usize,
 }
 
 struct StreamProjection<'a> {
-    workspace_coordinate: &'a str,
-    logical_path: &'a str,
     target: SearchTarget,
     matcher: LiteralMatcher<'a>,
-    line_extent: Vec<u8>,
     paragraph: Option<ParagraphState>,
-    paragraph_ordinal: DecimalOrdinal,
     file_best: Option<MatchTier>,
-    full_line_results: &'a mut Vec<Anddress>,
-    substring_results: &'a mut Vec<Anddress>,
+    provisional: Vec<ProvisionalTarget>,
 }
 
 fn scan_open_source(
@@ -304,52 +313,68 @@ fn scan_open_source(
     substring_results: &mut Vec<Anddress>,
 ) -> Result<(), SearchError> {
     let mut projection = StreamProjection {
-        workspace_coordinate,
-        logical_path,
         target,
         matcher: literal.matcher(),
-        line_extent: Vec::new(),
         paragraph: None,
-        paragraph_ordinal: DecimalOrdinal::zero().map_err(|_| SearchError::Unavailable)?,
         file_best: None,
-        full_line_results,
-        substring_results,
+        provisional: Vec::new(),
     };
-    scan_source(reader, |event| projection.handle(event)).map_err(|_| SearchError::Unavailable)?;
-    projection.finish()
+    let state = scan_source(reader, |event| projection.handle(event))
+        .map_err(|_| SearchError::Unavailable)?;
+    projection.finish(state.byte_length)?;
+    let source = construct_source_identity(
+        workspace_coordinate,
+        logical_path,
+        &state.hash,
+        state.byte_length,
+    )
+    .map_err(|_| SearchError::Unavailable)?;
+    for provisional in projection.provisional {
+        let bucket = match provisional.tier {
+            MatchTier::FullLine => &mut *full_line_results,
+            MatchTier::Substring => &mut *substring_results,
+        };
+        bucket
+            .try_reserve(1)
+            .map_err(|_| SearchError::Unavailable)?;
+        bucket.push(
+            construct_anddress(
+                &source,
+                provisional.target,
+                provisional.byte_start,
+                provisional.byte_end,
+            )
+            .map_err(|_| SearchError::Unavailable)?,
+        );
+    }
+    Ok(())
 }
 
 impl StreamProjection<'_> {
-    fn handle(&mut self, event: SourceEvent<'_>) -> Result<(), SourceScanError> {
+    fn handle(&mut self, event: SourceEvent) -> Result<(), SourceScanError> {
         match event {
             SourceEvent::StartLine { .. } => {
                 self.matcher.reset();
-                if self.target == SearchTarget::Line {
-                    self.line_extent.clear();
-                }
             }
             SourceEvent::Byte { byte, content } => {
-                if self.target == SearchTarget::Line {
-                    self.line_extent
-                        .try_reserve(1)
-                        .map_err(|_| SourceScanError::Resource)?;
-                    self.line_extent.push(byte);
-                }
                 if content {
                     self.matcher.push(byte);
                 }
             }
             SourceEvent::EndLine {
-                ordinal,
+                byte_start,
+                byte_end,
                 body_class,
-            } => self.finish_line(ordinal, body_class)?,
+                ..
+            } => self.finish_line(byte_start, byte_end, body_class)?,
         }
         Ok(())
     }
 
     fn finish_line(
         &mut self,
-        ordinal: &DecimalOrdinal,
+        byte_start: usize,
+        byte_end: usize,
         body_class: LineBodyClass,
     ) -> Result<(), SourceScanError> {
         let tier = self.matcher.finish();
@@ -359,12 +384,17 @@ impl StreamProjection<'_> {
             self.file_best = tier;
         }
         if body_class == LineBodyClass::Text {
-            let paragraph = self
-                .paragraph
-                .get_or_insert(ParagraphState { best_tier: None });
+            let paragraph = self.paragraph.get_or_insert(ParagraphState {
+                best_tier: None,
+                byte_start,
+                byte_end,
+            });
+            paragraph.byte_end = byte_end;
             if let Some(tier) = tier {
                 match self.target {
-                    SearchTarget::Line => self.push_line(tier, ordinal)?,
+                    SearchTarget::Line => {
+                        self.push(tier, AnddressTarget::Line, byte_start, byte_end)?
+                    }
                     SearchTarget::Paragraph
                         if paragraph.best_tier.is_none_or(|best| tier < best) =>
                     {
@@ -378,7 +408,7 @@ impl StreamProjection<'_> {
             if self.target == SearchTarget::Line
                 && let Some(tier) = tier
             {
-                self.push_line(tier, ordinal)?;
+                self.push(tier, AnddressTarget::Line, byte_start, byte_end)?;
             }
         }
         Ok(())
@@ -393,58 +423,40 @@ impl StreamProjection<'_> {
         {
             self.push(
                 tier,
-                AnddressTarget::Paragraph {
-                    ordinal: self.paragraph_ordinal.as_natural()?,
-                },
+                AnddressTarget::Paragraph,
+                paragraph.byte_start,
+                paragraph.byte_end,
             )?;
         }
-        self.paragraph_ordinal.increment()?;
         Ok(())
     }
 
-    fn push_line(
+    fn push(
         &mut self,
         tier: MatchTier,
-        ordinal: &DecimalOrdinal,
+        target: AnddressTarget,
+        byte_start: usize,
+        byte_end: usize,
     ) -> Result<(), SourceScanError> {
-        let bytes =
-            std::str::from_utf8(&self.line_extent).map_err(|_| SourceScanError::InvalidSource)?;
-        let mut extent = String::new();
-        extent
-            .try_reserve_exact(bytes.len())
-            .map_err(|_| SourceScanError::Resource)?;
-        extent.push_str(bytes);
-        self.push(
-            tier,
-            AnddressTarget::Line {
-                ordinal: ordinal.as_natural()?,
-                exact_extent: extent,
-            },
-        )
-    }
-
-    fn push(&mut self, tier: MatchTier, target: AnddressTarget) -> Result<(), SourceScanError> {
-        let bucket = match tier {
-            MatchTier::FullLine => &mut self.full_line_results,
-            MatchTier::Substring => &mut self.substring_results,
-        };
-        bucket
+        self.provisional
             .try_reserve(1)
             .map_err(|_| SourceScanError::Resource)?;
-        bucket.push(
-            construct_anddress(self.workspace_coordinate, self.logical_path, target)
-                .map_err(|_| SourceScanError::Resource)?,
-        );
+        self.provisional.push(ProvisionalTarget {
+            tier,
+            target,
+            byte_start,
+            byte_end,
+        });
         Ok(())
     }
 
-    fn finish(&mut self) -> Result<(), SearchError> {
+    fn finish(&mut self, source_byte_length: usize) -> Result<(), SearchError> {
         self.close_paragraph()
             .map_err(|_| SearchError::Unavailable)?;
         if self.target == SearchTarget::File
             && let Some(tier) = self.file_best
         {
-            self.push(tier, AnddressTarget::File)
+            self.push(tier, AnddressTarget::File, 0, source_byte_length)
                 .map_err(|_| SearchError::Unavailable)?;
         }
         Ok(())
@@ -503,21 +515,11 @@ fn join_result_buckets(
 }
 
 fn compare_bucket(left: &Anddress, right: &Anddress) -> Ordering {
-    left.logical_path
+    left.logical_path()
         .as_bytes()
-        .cmp(right.logical_path.as_bytes())
-        .then_with(|| match (&left.target, &right.target) {
-            (
-                AnddressTarget::Line { ordinal: left, .. },
-                AnddressTarget::Line { ordinal: right, .. },
-            ) => left.cmp(right),
-            (
-                AnddressTarget::Paragraph { ordinal: left },
-                AnddressTarget::Paragraph { ordinal: right },
-            ) => left.cmp(right),
-            (AnddressTarget::File, AnddressTarget::File) => Ordering::Equal,
-            _ => Ordering::Equal,
-        })
+        .cmp(right.logical_path().as_bytes())
+        .then_with(|| left.byte_start().cmp(&right.byte_start()))
+        .then_with(|| left.byte_end().cmp(&right.byte_end()))
 }
 
 #[cfg(test)]
@@ -602,14 +604,10 @@ mod tests {
         .unwrap();
         assert_eq!(substring, Vec::new());
         assert_eq!(full.len(), 2);
-        assert!(matches!(
-            &full[0].target,
-            AnddressTarget::Line { exact_extent, .. } if exact_extent == "needle\r"
-        ));
-        assert!(matches!(
-            &full[1].target,
-            AnddressTarget::Line { exact_extent, .. } if exact_extent == "needle"
-        ));
+        assert_eq!(full[0].target(), AnddressTarget::Line);
+        assert_eq!((full[0].byte_start(), full[0].byte_end()), (11, 18));
+        assert_eq!(full[1].target(), AnddressTarget::Line);
+        assert_eq!((full[1].byte_start(), full[1].byte_end()), (18, 24));
         let (full, substring) = project(b"nee\ndle", "needle", SearchTarget::Line, None).unwrap();
         assert!(full.is_empty() && substring.is_empty());
     }
@@ -646,47 +644,23 @@ mod tests {
             project(line.as_bytes(), "needle", SearchTarget::Line, None).unwrap();
         assert!(full.is_empty());
         assert_eq!(substring.len(), 1);
-        assert!(matches!(
-            &substring[0].target,
-            AnddressTarget::Line { exact_extent, .. } if exact_extent == &line
-        ));
+        assert_eq!(substring[0].target(), AnddressTarget::Line);
+        assert_eq!(
+            (substring[0].byte_start(), substring[0].byte_end()),
+            (0, line.len())
+        );
     }
 
     #[test]
-    fn matched_line_copies_exact_extent_without_taking_reusable_scratch() {
-        let query = SearchQuery::new("needle").unwrap();
-        let literal = PreparedLiteral::new(&query).unwrap();
-        let coordinate = "0".repeat(64);
-        let mut full = Vec::new();
-        let mut substring = Vec::new();
-        let mut scratch = Vec::new();
-        scratch.try_reserve_exact(READ_BUFFER_SIZE).unwrap();
-        scratch.extend_from_slice(b"needle\n");
-        let pointer = scratch.as_ptr();
-        let capacity = scratch.capacity();
-        let mut projection = StreamProjection {
-            workspace_coordinate: &coordinate,
-            logical_path: "source.txt",
-            target: SearchTarget::Line,
-            matcher: literal.matcher(),
-            line_extent: scratch,
-            paragraph: None,
-            paragraph_ordinal: DecimalOrdinal::zero().unwrap(),
-            file_best: None,
-            full_line_results: &mut full,
-            substring_results: &mut substring,
-        };
-
-        projection
-            .push_line(MatchTier::FullLine, &DecimalOrdinal::zero().unwrap())
-            .unwrap();
-
-        assert_eq!(projection.line_extent.as_ptr(), pointer);
-        assert_eq!(projection.line_extent.capacity(), capacity);
-        assert!(matches!(
-            &full[0].target,
-            AnddressTarget::Line { exact_extent, .. }
-                if exact_extent == "needle\n" && exact_extent.as_ptr() != pointer
+    fn same_source_results_share_identity_and_encode_independently() {
+        let (full, substring) =
+            project(b"needle\nneedle\n", "needle", SearchTarget::Line, None).unwrap();
+        assert!(substring.is_empty());
+        assert_eq!(full.len(), 2);
+        assert!(std::sync::Arc::ptr_eq(
+            full[0].source_identity(),
+            full[1].source_identity()
         ));
+        assert_ne!(full[0].encode().unwrap(), full[1].encode().unwrap());
     }
 }
