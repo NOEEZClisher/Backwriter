@@ -22,6 +22,14 @@ fn runtime_with_admission(root: &std::path::Path, admission: &str) -> WorkspaceR
     .unwrap()
 }
 
+fn host_runtime(root: &std::path::Path) -> WorkspaceRuntime {
+    WorkspaceRuntime::open_host_authoritative(
+        root,
+        WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+    )
+    .unwrap()
+}
+
 fn coordinate(workspace: &WorkspaceRuntime) -> String {
     let request = SearchRequest::new(
         SearchQuery::new("one").unwrap(),
@@ -561,5 +569,90 @@ fn view_accepts_same_coordinate_under_a_different_admission() {
     assert!(matches!(
         runtime_with_admission(&root, "docs").view(&input),
         Ok(ViewOutcome::File { text }) if text == "one"
+    ));
+}
+
+#[test]
+fn host_view_reuses_matching_search_proof_and_falls_back_after_a_miss_or_invalidation() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source = b"zero\n\none\r\ntwo\n\nlast";
+    fs::write(root.join("note.txt"), source).unwrap();
+    let coordinate = coordinate(&runtime(&root));
+    let line = address(
+        coordinate.clone(),
+        "note.txt",
+        source,
+        AnddressTarget::Line,
+        6,
+        11,
+    );
+    let mut host = host_runtime(&root);
+
+    assert!(matches!(
+        host.view(&line),
+        Ok(ViewOutcome::Line {
+            ref content,
+            terminator: LineTerminator::Crlf,
+            ..
+        }) if content == "one"
+    ));
+
+    let request = SearchRequest::new(
+        SearchQuery::new("one").unwrap(),
+        SearchScope::all_admitted(),
+        SearchTarget::Line,
+    );
+    let SearchOutcome::Found { anddresses } = host.search(&request).unwrap() else {
+        panic!("matching Line")
+    };
+    assert_eq!(anddresses.as_slice(), std::slice::from_ref(&line));
+    let file = address(
+        coordinate.clone(),
+        "note.txt",
+        source,
+        AnddressTarget::File,
+        0,
+        source.len(),
+    );
+    let paragraph = address(
+        coordinate,
+        "note.txt",
+        source,
+        AnddressTarget::Paragraph,
+        6,
+        15,
+    );
+
+    assert!(matches!(
+        host.view(&file),
+        Ok(ViewOutcome::File { ref text }) if text.as_bytes() == source
+    ));
+    assert!(matches!(
+        host.view(&paragraph),
+        Ok(ViewOutcome::Paragraph { ref text, .. }) if text == "one\r\ntwo\n"
+    ));
+    assert!(matches!(
+        host.view(&line),
+        Ok(ViewOutcome::Line {
+            paragraph: Some(ref related),
+            ..
+        }) if related == &paragraph
+    ));
+
+    host.invalidate_source("note.txt").unwrap();
+    assert!(matches!(
+        host.view(&line),
+        Ok(ViewOutcome::Line { ref content, .. }) if content == "one"
+    ));
+
+    let untrusted = runtime(&root);
+    let SearchOutcome::Found { anddresses } = untrusted.search(&request).unwrap() else {
+        panic!("untrusted Line")
+    };
+    assert!(matches!(
+        untrusted.view(&anddresses[0]),
+        Ok(ViewOutcome::Line { ref content, .. }) if content == "one"
     ));
 }

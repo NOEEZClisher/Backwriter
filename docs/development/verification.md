@@ -2,10 +2,11 @@
 
 ## 0.2.1 observation-reuse development gates
 
-`0.2.1` is partially implemented and unpublished. Phase 2 adds only the Host
-Runtime constructor, source invalidation kernel, private proof state, and
-successful-Search proof installation; Cargo/version, v4 wire, default
-Untrusted behavior, and the closed public `0.2.0` release remain unchanged. The
+`0.2.1` is partially implemented and unpublished. Phase 2 adds the Host Runtime
+constructor, source invalidation kernel, private proof state, and
+successful-Search proof installation. Phase 3 adds bounded ordinary View proof
+consumption; Cargo/version, v4 wire, default Untrusted behavior, and the closed
+public `0.2.0` release remain unchanged. The
 Protocol owns default Untrusted Mode and explicit Host-authoritative Mode; the
 [phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
 owns the execution audit, fixed not-yet-remeasured `0.2.0` comparison inputs,
@@ -18,12 +19,22 @@ fully observed sources while late failure installs none; and invalidation,
 unavailable source, Anchor fail-closure, Apply entry, and uncertain publication
 remove only affected proof. Structural checks exclude retained bytes, results,
 ranges, history, public getters, CLI Host activation, and Debug disclosure.
-Search remains the only target finder. View, Check, and Apply still use the full
+Search remains the only target finder. Check and Apply still use the full
 `0.2.0` observation path and must not relocate or context-match.
-The Phase 2 development suite passes 208 GNU-host Rust tests.
 
-Future verification must prove trusted consumer hits and the remaining
-invalidation/race matrix. Confirmed Apply may install only the prospective-after
+Phase 3 regressions prove ordinary View proof hit, miss, mismatch, explicit
+invalidation fallback, and unchanged Untrusted behavior. They cover
+File/Paragraph/Line output, every terminator, Unicode, whitespace and
+raw-valid nonstructural Lines, UTF-8 range cuts, short reads, matching-proof
+removal, fixed-scratch boundaries, and long adjacent Lines. Structural and
+counting-reader evidence proves the trusted path computes no SHA-256 or
+complete observation, reads no source-size-proportional prefix merely to find a
+Line relation, releases proof state before I/O, and retains only the returned
+target plus fixed scratch. The Phase 3 development suite passes 215 GNU-host
+Rust tests.
+
+Future verification must prove Check and Apply trusted consumer hits and the
+remaining invalidation/race matrix. Confirmed Apply may install only the prospective-after
 hash/length already computed during output emission; no extra source hash pass
 is permitted.
 

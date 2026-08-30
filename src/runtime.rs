@@ -150,6 +150,13 @@ enum ObservationAuthority {
     HostAuthoritative,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum CurrentProofMatch {
+    Missing,
+    Matching,
+    Mismatched,
+}
+
 struct CurrentProof {
     logical_path: String,
     hash: String,
@@ -402,6 +409,34 @@ impl WorkspaceRuntime {
         match self.current_proofs.lock() {
             Ok(mut proofs) => proofs.retain(|proof| proof.logical_path != path),
             Err(poisoned) => poisoned.into_inner().clear(),
+        }
+    }
+
+    fn match_current_proof(&self, input: &Anddress) -> CurrentProofMatch {
+        if self.authority == ObservationAuthority::Untrusted {
+            return CurrentProofMatch::Missing;
+        }
+        let current = match self.current_proofs.lock() {
+            Ok(current) => current,
+            Err(mut poisoned) => {
+                poisoned.get_mut().clear();
+                return CurrentProofMatch::Missing;
+            }
+        };
+        match current.binary_search_by(|proof| {
+            proof
+                .logical_path
+                .as_bytes()
+                .cmp(input.logical_path().as_bytes())
+        }) {
+            Ok(index)
+                if current[index].hash == input.source_state_hash()
+                    && current[index].byte_length == input.source_byte_length() =>
+            {
+                CurrentProofMatch::Matching
+            }
+            Ok(_) => CurrentProofMatch::Mismatched,
+            Err(_) => CurrentProofMatch::Missing,
         }
     }
 

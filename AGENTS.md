@@ -30,13 +30,15 @@ v3 remains only in Git history and immutable `0.1.0` release evidence. The
 canonical four-target `0.2.0` artifacts, manifest, installers, live publication,
 fresh installation, and explicit update are complete.
 
-`0.2.1` is an unpublished development target. Phase 2 implements its minimal
-Host-authoritative observation kernel while preserving v4 identity and the
-existing `0.2.0` execution path as the default Untrusted Mode.
+`0.2.1` is an unpublished development target. Phases 2 and 3 implement its
+minimal Host-authoritative observation kernel and bounded ordinary View reuse
+while preserving v4 identity and the existing `0.2.0` execution path as the
+default Untrusted Mode.
 `WorkspaceRuntime::open_host_authoritative` explicitly selects that mode and
 `WorkspaceRuntime::invalidate_source` is its host mutation boundary. The
-Runtime may retain one private current SHA-256/length proof per logical source;
-View, Check, and Apply do not consume or install proof in this phase.
+Runtime may retain one private current SHA-256/length proof per logical source.
+Ordinary View consumes a complete matching proof for bounded direct-range
+access; Check and Apply do not consume or install proof yet.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,

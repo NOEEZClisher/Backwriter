@@ -158,8 +158,29 @@ logical path, no fixed cardinality, no eviction, and no retained file handle.
 Runtime ownership plus immutable workspace/admission authority bind the vector;
 successful installation replaces a path entry, while synchronous removal is
 the source-generation boundary, so no separate public token or generation
-counter is needed. There is no proof getter. Related-Paragraph lookup remains a
-Phase 3 decision.
+counter is needed. There is no proof getter.
+
+Phase 3 adds proof consumption only to ordinary View. After source-less input,
+coordinate, private-path, and proof matching checks, the Runtime releases the
+proof lock before I/O. An exact same-path hash/length hit opens the admitted
+regular source through the existing capability-relative no-follow path and
+seeks to the public v4 range. File reads its complete range; Paragraph and Line
+read only their target range. The retained proof replaces the complete-source
+hash/read work but does not replace admission or source access. Missing proof,
+Untrusted Mode, or incomplete host authority uses the unchanged complete
+observation fallback. An existing same-path proof with different hash or length
+returns `Unavailable` before source access.
+
+A trusted exact text Line computes its optional related Paragraph with
+fixed-size forward and reverse scratch around that range. It stops at the
+nearest separator Line or source boundary, retains no complete Line collection,
+and does not scan from source start merely to establish the relation. Separator
+and raw-valid nonstructural Lines keep `paragraph: None`. Short range or
+boundary reads, seek/open failure, and recoverable resource failure return
+`Unavailable` and remove the matching proof. A UTF-8 scalar-cut caller range is
+unavailable without asserting that the complete proof is stale. The trusted
+path computes no source hash, searches for no target, retains no handle, and
+changes no `ViewOutcome` or related-Anddress semantics.
 
 ### Current 0.2.0 execution audit
 
@@ -197,11 +218,11 @@ and live Anchor bindings.
 
 Host Search uses the same observer and projection. It moves only the completed
 logical path, SHA-256, and exact length into provisional proof records, then
-installs them after the complete Search result succeeds. View and Check remain
-on the full observation path in Phase 2. Explicit invalidation removes the
-same-path proof and live Anchors; confirmed source unavailability, anchored
-fail-closure, every Apply call, publication uncertainty, and Runtime drop leave
-no reusable matching proof.
+installs them after the complete Search result succeeds. Phase 3 ordinary View
+uses a matching proof as specified above; Check remains on the full observation
+path. Explicit invalidation removes the same-path proof and live Anchors;
+confirmed source unavailability, anchored fail-closure, every Apply call,
+publication uncertainty, and Runtime drop leave no reusable matching proof.
 
 ## Current structure only
 

@@ -5,7 +5,8 @@ The closed public `0.1.0` release remains immutable v3 evidence. Current
 hard-cutover v4 value/wire with SHA-256; these principles describe the active
 v4 Core contract. The partially implemented and unpublished `0.2.1` target adds
 only the explicitly guarded observation-reuse authority below; Phase 2 provides
-the Host kernel and Search proof installation, not proof-consuming capabilities.
+the Host kernel and Search proof installation, and Phase 3 adds bounded ordinary
+View proof consumption without changing public View meaning.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash and length only while its

@@ -22,10 +22,12 @@ prior proof, history, or relocation evidence.
 The completed Phase 2 kernel uses `open_host_authoritative` and
 `invalidate_source`, a synchronized sorted path vector with one independent
 proof per observed source and no eviction or retained handle, and whole-call
-successful installation for every fully observed Search source. Later phases
-add bounded View related-range reuse; Check trusted hits; Apply and Anchor
+successful installation for every fully observed Search source. Completed
+Phase 3 adds ordinary View proof matching, direct target-range reads, and a
+fixed-scratch bidirectional related-Paragraph scan to the nearest separator or
+source boundary. Later phases add Check trusted hits; Apply and Anchor
 integration; full race/drift semantics; then fixed A/B gates and the `0.2.1`
-version decision. Related Paragraph mechanics remain a Phase 3 decision.
+version decision.
 
 ## Completed: 0.2.0 release closure
 
@@ -183,8 +185,10 @@ slices are complete.
 
 For `0.2.1`, Phase 2 closes the minimal public host-authority seam, private
 proof representation, cardinality, no-eviction/no-handle choice, and
-multi-source Search installation policy. Phase 3 must implement bounded View
-reuse and close its related-Paragraph path without whole-source retention.
+multi-source Search installation policy. Phase 3 closes bounded ordinary View
+reuse and its related-Paragraph path without whole-source retention. Check,
+Apply, Anchor, invalidation closure, measurement, and the version decision
+remain later phases.
 
 ## Completed: 0.1.0 exact File lookup
 

@@ -1,7 +1,7 @@
 # Backwriter 0.2.1 Current-Observation Reuse
 
-Status: Phases 1 and 2 complete; trusted consumption, measurement, version
-change, and publication not started.
+Status: Phases 1–3 complete; Check/Apply/Anchor trusted consumption,
+measurement, version change, and publication not started.
 
 This tracker records execution evidence and phase progress only. Normative
 semantics belong to the active
@@ -79,8 +79,9 @@ are Adapter/caller values rather than observation authority.
 2. **Minimal host kernel and Search installation — complete.** The explicit
    Host constructor, path-exact source invalidation, private proof state, and
    whole-call successful Search installation are implemented.
-3. **View bounded reuse — pending.** Add trusted direct-range View and a bounded
-   related-Paragraph path without whole-source or complete-Line retention.
+3. **View bounded reuse — complete.** Trusted ordinary View uses direct-range
+   reads and a fixed-scratch nearest-boundary related-Paragraph path without
+   whole-source or complete-Line retention.
 4. **Check trusted hit — pending.** Reuse matching proof with zero
    source-size-proportional I/O/hash while preserving reports, order, and
    multiplicity.
@@ -136,8 +137,30 @@ does not itself publish a release.
 - A successful content or exact-File Search installs every fully observed source
   only after the whole call succeeds. Entries are independent and do not claim
   workspace completeness. A failed call installs no provisional proof.
-- View and Check do not consume proof. Every Apply call removes matching proof
-  before validation and preserves unrelated paths; Apply installs none.
+- At Phase 2 closure, View and Check did not consume proof. Every Apply call
+  removes matching proof before validation and preserves unrelated paths; Apply
+  installs none.
 - The implementation introduces no watcher, metadata proof, result cache,
   target registry, history, context matching, retry, global snapshot, new wire,
-  or compatibility layer. Bounded related-Paragraph lookup remains Phase 3.
+  or compatibility layer.
+
+## Phase 3 closure
+
+- Ordinary View validates source-less input and Runtime coordinate/private-path
+  boundaries before privately matching exact path/hash/length proof. The proof
+  lock is released before any filesystem access.
+- A trusted hit opens the admitted regular source through the existing
+  capability-relative no-follow path. File reads its complete v4 range;
+  Paragraph and Line read only their target range. No source hash is recomputed.
+- A proof miss and every Untrusted View use the unchanged complete one-read/hash
+  fallback. An existing same-path mismatch returns `Unavailable` before source
+  access.
+- Line relation projection uses fixed reverse/forward scratch from the target to
+  the nearest separator or source boundary. It retains no whole source or Line
+  collection and preserves `None` for separator and nonstructural ranges.
+- Short reads, seek/open failures, and recoverable resource failures fail closed
+  and remove the matching proof. The public API, errors, v4 identity/wire,
+  target text, terminators, related addresses, ordering, and CLI behavior are
+  unchanged.
+- Check, Apply, and Anchor proof consumption remains deferred to Phases 4–5;
+  Phase 6 retains the complete invalidation/race closure.
