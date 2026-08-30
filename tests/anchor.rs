@@ -242,12 +242,25 @@ fn invalidation_is_path_exact_and_does_not_read_the_source() {
     fs::write(fixture.path().join("note.txt"), "one\n").unwrap();
     let mut workspace = runtime(fixture.path());
     assert_eq!(
-        workspace.invalidate_anchored_source("."),
+        workspace.invalidate_source("."),
         Err(AnchorError::InvalidInput)
     );
-    assert_eq!(workspace.invalidate_anchored_source("missing.txt"), Ok(()));
+    assert_eq!(workspace.invalidate_source("missing.txt"), Ok(()));
     assert_eq!(
-        workspace.invalidate_anchored_source(".artext/bw/x"),
+        workspace.invalidate_source(".artext/bw/x"),
+        Err(AnchorError::Unavailable)
+    );
+    assert_eq!(workspace.invalidate_anchored_source("note.txt"), Ok(()));
+
+    fs::create_dir(fixture.path().join("admitted")).unwrap();
+    let mut named = WorkspaceRuntime::open_host_authoritative(
+        fixture.path(),
+        WorkspaceAdmission::new([AdmissionRoot::new("admitted").unwrap()]).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(named.invalidate_source("admitted/missing.txt"), Ok(()));
+    assert_eq!(
+        named.invalidate_source("note.txt"),
         Err(AnchorError::Unavailable)
     );
 }

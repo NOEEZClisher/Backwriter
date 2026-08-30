@@ -1,9 +1,9 @@
-//! Stateless Runtime admission plus Search, View, Apply, and Check execution.
+//! Runtime admission, capability execution, and optional Host source proofs.
 
 use std::{
     fmt,
     path::{Path, PathBuf},
-    sync::Weak,
+    sync::{Mutex, Weak},
 };
 
 #[cfg(any(unix, windows))]
@@ -140,6 +140,35 @@ pub struct WorkspaceRuntime {
     pub(crate) workspace_coordinate: String,
     pub(crate) admission: WorkspaceAdmission,
     pub(crate) anchors: Vec<AnchorBinding>,
+    authority: ObservationAuthority,
+    current_proofs: Mutex<Vec<CurrentProof>>,
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum ObservationAuthority {
+    Untrusted,
+    HostAuthoritative,
+}
+
+struct CurrentProof {
+    logical_path: String,
+    hash: String,
+    byte_length: usize,
+}
+
+impl CurrentProof {
+    fn new(logical_path: &str, hash: String, byte_length: usize) -> Result<Self, SearchError> {
+        let mut owned_path = String::new();
+        owned_path
+            .try_reserve_exact(logical_path.len())
+            .map_err(|_| SearchError::Unavailable)?;
+        owned_path.push_str(logical_path);
+        Ok(Self {
+            logical_path: owned_path,
+            hash,
+            byte_length,
+        })
+    }
 }
 
 pub(crate) struct AnchorBinding {
@@ -171,7 +200,36 @@ impl WorkspaceRuntime {
         workspace_root: impl AsRef<Path>,
         admission: WorkspaceAdmission,
     ) -> Result<Self, RuntimeError> {
-        let workspace_root = workspace_root.as_ref();
+        Self::open_with_authority(
+            workspace_root.as_ref(),
+            admission,
+            ObservationAuthority::Untrusted,
+        )
+    }
+
+    /// Opens a Runtime whose host coordinates every source-visible writer and
+    /// logical-path replacement. The host must call [`Self::invalidate_source`]
+    /// synchronously before mutation and exclude mutation while any Runtime
+    /// capability call is executing; metadata or later notification is not a
+    /// substitute for that contract.
+    #[cfg(any(unix, windows))]
+    pub fn open_host_authoritative(
+        workspace_root: impl AsRef<Path>,
+        admission: WorkspaceAdmission,
+    ) -> Result<Self, RuntimeError> {
+        Self::open_with_authority(
+            workspace_root.as_ref(),
+            admission,
+            ObservationAuthority::HostAuthoritative,
+        )
+    }
+
+    #[cfg(any(unix, windows))]
+    fn open_with_authority(
+        workspace_root: &Path,
+        admission: WorkspaceAdmission,
+        authority: ObservationAuthority,
+    ) -> Result<Self, RuntimeError> {
         if !workspace_root.is_absolute() {
             return Err(RuntimeError::InvalidWorkspace);
         }
@@ -202,6 +260,8 @@ impl WorkspaceRuntime {
             workspace_coordinate,
             admission,
             anchors: Vec::new(),
+            authority,
+            current_proofs: Mutex::new(Vec::new()),
         })
     }
 
@@ -213,8 +273,16 @@ impl WorkspaceRuntime {
         Err(RuntimeError::UnsupportedPlatform)
     }
 
-    /// Searches current admitted Workspace Source without retaining source or
-    /// result state after this call returns.
+    #[cfg(not(any(unix, windows)))]
+    pub fn open_host_authoritative(
+        _workspace_root: impl AsRef<Path>,
+        _admission: WorkspaceAdmission,
+    ) -> Result<Self, RuntimeError> {
+        Err(RuntimeError::UnsupportedPlatform)
+    }
+
+    /// Searches current admitted Workspace Source without retaining source
+    /// bytes or result state after this call returns.
     pub fn search(&self, request: &SearchRequest) -> Result<SearchOutcome, SearchError> {
         search::execute(self, request)
     }
@@ -256,6 +324,12 @@ impl WorkspaceRuntime {
     }
 
     pub fn invalidate_anchored_source(&mut self, path: &str) -> Result<(), AnchorError> {
+        anchor::invalidate_source(self, path)
+    }
+
+    /// Invalidates Host-authoritative proof and live Anchor state for one
+    /// admitted logical source before a host-coordinated mutation.
+    pub fn invalidate_source(&mut self, path: &str) -> Result<(), AnchorError> {
         anchor::invalidate_source(self, path)
     }
 
@@ -319,6 +393,78 @@ impl WorkspaceRuntime {
     pub(crate) fn invalidate_anchors_for_path(&mut self, path: &str) {
         self.anchors
             .retain(|binding| binding.anddress.logical_path() != path);
+    }
+
+    fn invalidate_current_proof(&self, path: &str) {
+        if self.authority == ObservationAuthority::Untrusted {
+            return;
+        }
+        match self.current_proofs.lock() {
+            Ok(mut proofs) => proofs.retain(|proof| proof.logical_path != path),
+            Err(poisoned) => poisoned.into_inner().clear(),
+        }
+    }
+
+    fn invalidate_source_state(&mut self, path: &str) {
+        self.invalidate_current_proof(path);
+        self.invalidate_anchors_for_path(path);
+    }
+
+    fn install_search_proofs(&self, mut observed: Vec<CurrentProof>) -> Result<(), SearchError> {
+        if self.authority == ObservationAuthority::Untrusted {
+            return Ok(());
+        }
+        observed.sort_unstable_by(|left, right| {
+            left.logical_path
+                .as_bytes()
+                .cmp(right.logical_path.as_bytes())
+        });
+        debug_assert!(
+            observed
+                .windows(2)
+                .all(|pair| pair[0].logical_path != pair[1].logical_path)
+        );
+        let mut current = match self.current_proofs.lock() {
+            Ok(current) => current,
+            Err(mut poisoned) => {
+                poisoned.get_mut().clear();
+                return Err(SearchError::Unavailable);
+            }
+        };
+        let additional = observed
+            .iter()
+            .filter(|proof| {
+                current
+                    .binary_search_by(|candidate| {
+                        candidate
+                            .logical_path
+                            .as_bytes()
+                            .cmp(proof.logical_path.as_bytes())
+                    })
+                    .is_err()
+            })
+            .count();
+        current
+            .try_reserve(additional)
+            .map_err(|_| SearchError::Unavailable)?;
+        for proof in observed {
+            match current.binary_search_by(|candidate| {
+                candidate
+                    .logical_path
+                    .as_bytes()
+                    .cmp(proof.logical_path.as_bytes())
+            }) {
+                Ok(index)
+                    if current[index].hash != proof.hash
+                        || current[index].byte_length != proof.byte_length =>
+                {
+                    current[index] = proof;
+                }
+                Ok(_) => {}
+                Err(index) => current.insert(index, proof),
+            }
+        }
+        Ok(())
     }
 
     pub(crate) fn prune_dead_anchors(&mut self) {
@@ -439,8 +585,8 @@ pub(crate) fn is_backwriter_spill(path: &str) -> bool {
 #[cfg(all(test, any(unix, windows)))]
 mod tests {
     use super::{
-        AdmissionRoot, AnchorBinding, AnchorPlanEntry, WorkspaceAdmission, WorkspaceRuntime,
-        mark_anchor_collisions, workspace_coordinate,
+        AdmissionRoot, AnchorBinding, AnchorPlanEntry, CurrentProof, WorkspaceAdmission,
+        WorkspaceRuntime, mark_anchor_collisions, workspace_coordinate,
     };
 
     fn address(
@@ -580,11 +726,17 @@ mod tests {
     #[test]
     fn publication_uncertainty_invalidates_only_the_exact_logical_path() {
         let fixture = tempfile::tempdir().unwrap();
-        let mut runtime = WorkspaceRuntime::open(
+        let mut runtime = WorkspaceRuntime::open_host_authoritative(
             fixture.path(),
             WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
         )
         .unwrap();
+        runtime
+            .install_search_proofs(vec![
+                CurrentProof::new("first.txt", "a".repeat(64), 1).unwrap(),
+                CurrentProof::new("second.txt", "b".repeat(64), 2).unwrap(),
+            ])
+            .unwrap();
         let first = crate::backwriter::anchor::Anchedress::new();
         let second = crate::backwriter::anchor::Anchedress::new();
         let address = |path: &str| {
@@ -614,6 +766,9 @@ mod tests {
         );
         assert_eq!(runtime.anchors.len(), 1);
         assert_eq!(runtime.anchors[0].anddress.logical_path(), "second.txt");
+        let proofs = runtime.current_proofs.lock().unwrap();
+        assert_eq!(proofs.len(), 1);
+        assert_eq!(proofs[0].logical_path, "second.txt");
     }
 
     #[test]

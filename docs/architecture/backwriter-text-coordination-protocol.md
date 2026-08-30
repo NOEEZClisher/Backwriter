@@ -76,7 +76,7 @@ index, or Git semantics.
 
 ## 0.2.1 Host-authoritative observation-reuse authority
 
-`0.2.1` is an unimplemented and unpublished development target. It preserves
+`0.2.1` is a partially implemented and unpublished development target. It preserves
 the v4 Anddress algebra, SHA-256, exact source byte length, target kind, and
 `[start,end)` range without a wire or compatibility change. Search remains the
 only target finder. View, Check, and Apply do not relocate, context-match, or
@@ -110,8 +110,11 @@ Only a complete trusted hit may reuse that proof. A miss, incomplete host
 guard, or binding to a different logical path, workspace, admission, or source
 generation falls back to the complete `0.2.0` observation path. Successful
 Search observation may replace the proof for its observed source, but Search
-retains no result or target projection. The policy for installing proof from a
-multi-source Search remains a Phase 2 decision.
+retains no result or target projection. In Host mode, a successful Search
+installs every source fully observed by that call only after the whole call has
+succeeded. Those per-path entries are independent current proofs, not a
+workspace snapshot or completeness statement. A failed Search installs none of
+its provisional proofs.
 
 View and Check may skip only the source-size-proportional observation/hash work
 when their complete v4 source hash and length match a trusted proof. Their
@@ -131,12 +134,32 @@ and Wrong Apply must remain zero. Anchor's existing logical-source invalidation 
 `PublicationUncertain` fail-closure remain reusable, but the proof creates no
 Anchor and is not Anchor continuity.
 
-This authority fixes no Rust constructor, mode, token, invalidation, or getter
-name; no state container, cardinality, or eviction policy; no retained-handle
-versus reopen choice; no multi-source Search installation policy; and no
-related-Paragraph lookup algorithm. Phase 2 must choose the smallest public
-host seam and private state only after auditing its direct consumers and race
-boundary.
+Phase 2 implements the explicit constructors
+`WorkspaceRuntime::open` for Untrusted Mode and
+`WorkspaceRuntime::open_host_authoritative` for Host-authoritative Mode. The
+host calls `WorkspaceRuntime::invalidate_source` synchronously before mutation;
+the existing anchored-source invalidation uses the same path-exact operation.
+The new public seams are:
+
+```rust
+WorkspaceRuntime::open_host_authoritative(
+    workspace_root: impl AsRef<Path>,
+    admission: WorkspaceAdmission,
+) -> Result<WorkspaceRuntime, RuntimeError>
+
+WorkspaceRuntime::invalidate_source(
+    &mut self,
+    logical_path: &str,
+) -> Result<(), AnchorError>
+```
+
+Private synchronized state is a sorted vector with at most one proof per
+logical path, no fixed cardinality, no eviction, and no retained file handle.
+Runtime ownership plus immutable workspace/admission authority bind the vector;
+successful installation replaces a path entry, while synchronous removal is
+the source-generation boundary, so no separate public token or generation
+counter is needed. There is no proof getter. Related-Paragraph lookup remains a
+Phase 3 decision.
 
 ### Current 0.2.0 execution audit
 
@@ -144,7 +167,7 @@ The common `observe_source` path performs one forward read from one retained
 no-follow source handle. Its `ObservationBuilder` incrementally enforces
 UTF-8/NUL policy and computes SHA-256 and checked byte length with fixed scratch.
 The resulting `CurrentObservation` is call-local and is discarded after its
-consumer; `WorkspaceRuntime` currently stores only admission/workspace state
+consumer. Untrusted `WorkspaceRuntime` stores only admission/workspace state
 and live Anchor bindings.
 
 - Content and exact-File Search each observe a selected source once. Content
@@ -165,11 +188,20 @@ and live Anchor bindings.
   observations of the same source: one in Search and one in the consumer.
   Apply followed by any later consumer also reopens and rehashes because Apply
   retains no before or prospective-after proof. A confirmed no-op likewise
-  retains no proof today.
+  retains no proof after Phase 2 Apply, which removes matching proof before
+  every call and does not consume or install proof yet.
 - Each one-shot Search, View, or Check opens a fresh Runtime. A CLI Session
-  retains one Runtime across commands, but its current Runtime stores no
+  retains one default Runtime across commands, but that Runtime stores no
   ordinary proof; Adapter bindings and `DataStore` values are not observation
   authority.
+
+Host Search uses the same observer and projection. It moves only the completed
+logical path, SHA-256, and exact length into provisional proof records, then
+installs them after the complete Search result succeeds. View and Check remain
+on the full observation path in Phase 2. Explicit invalidation removes the
+same-path proof and live Anchors; confirmed source unavailability, anchored
+fail-closure, every Apply call, publication uncertainty, and Runtime drop leave
+no reusable matching proof.
 
 ## Current structure only
 

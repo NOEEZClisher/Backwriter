@@ -3,8 +3,9 @@
 The closed public `0.1.0` release remains immutable v3 evidence. Current
 `0.2.0` Rust, including the closed public release build, implements the
 hard-cutover v4 value/wire with SHA-256; these principles describe the active
-v4 Core contract. The unimplemented and unpublished `0.2.1` target adds only
-the explicitly guarded observation-reuse authority below.
+v4 Core contract. The partially implemented and unpublished `0.2.1` target adds
+only the explicitly guarded observation-reuse authority below; Phase 2 provides
+the Host kernel and Search proof installation, not proof-consuming capabilities.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash and length only while its

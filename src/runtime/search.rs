@@ -15,8 +15,8 @@ use crate::safe_path::{
 use crate::source::validate_logical_path;
 
 use super::{
-    DirectoryAccessError, WorkspaceRuntime, is_backwriter_spill, path_is_within_root,
-    source_scan::{SourceScanError, observe_source},
+    CurrentProof, DirectoryAccessError, WorkspaceRuntime, is_backwriter_spill, path_is_within_root,
+    source_scan::{CurrentObservation, SourceScanError, observe_source},
 };
 
 struct SearchDirectory {
@@ -54,17 +54,20 @@ fn execute_content(
         literal,
         full_line_results: Vec::new(),
         substring_results: Vec::new(),
+        proofs: Vec::new(),
     };
     executor.preflight()?;
     executor.execute()?;
     executor.full_line_results.sort_unstable_by(compare_bucket);
     executor.substring_results.sort_unstable_by(compare_bucket);
     let anddresses = join_result_buckets(executor.full_line_results, executor.substring_results)?;
-    Ok(if anddresses.is_empty() {
+    let outcome = if anddresses.is_empty() {
         SearchOutcome::Empty
     } else {
         SearchOutcome::Found { anddresses }
-    })
+    };
+    runtime.install_search_proofs(executor.proofs)?;
+    Ok(outcome)
 }
 
 fn execute_exact_file(
@@ -77,10 +80,22 @@ fn execute_exact_file(
     let mut file = match runtime.open_admitted_source(logical_path) {
         Ok(file) => file,
         Err(DirectoryAccessError::Unadmitted) => return Err(SearchError::InvalidScope),
-        Err(DirectoryAccessError::NotCurrent) => return Ok(SearchOutcome::Empty),
-        Err(DirectoryAccessError::Unavailable) => return Err(SearchError::Unavailable),
+        Err(DirectoryAccessError::NotCurrent) => {
+            runtime.invalidate_current_proof(logical_path);
+            return Ok(SearchOutcome::Empty);
+        }
+        Err(DirectoryAccessError::Unavailable) => {
+            runtime.invalidate_current_proof(logical_path);
+            return Err(SearchError::Unavailable);
+        }
     };
-    let state = observe_source(&mut file, |_, _| Ok(())).map_err(|_| SearchError::Unavailable)?;
+    let state = match observe_source(&mut file, |_, _| Ok(())) {
+        Ok(state) => state,
+        Err(_) => {
+            runtime.invalidate_current_proof(logical_path);
+            return Err(SearchError::Unavailable);
+        }
+    };
     let source = construct_source_identity(
         &runtime.workspace_coordinate,
         logical_path,
@@ -95,6 +110,13 @@ fn execute_exact_file(
         .try_reserve_exact(1)
         .map_err(|_| SearchError::Unavailable)?;
     anddresses.push(anddress);
+    let proof = CurrentProof::new(logical_path, state.hash, state.byte_length)?;
+    let mut proofs = Vec::new();
+    proofs
+        .try_reserve_exact(1)
+        .map_err(|_| SearchError::Unavailable)?;
+    proofs.push(proof);
+    runtime.install_search_proofs(proofs)?;
     Ok(SearchOutcome::Found { anddresses })
 }
 
@@ -105,6 +127,7 @@ struct SearchExecutor<'a> {
     literal: PreparedLiteral<'a>,
     full_line_results: Vec<Anddress>,
     substring_results: Vec<Anddress>,
+    proofs: Vec<CurrentProof>,
 }
 
 impl SearchExecutor<'_> {
@@ -151,7 +174,13 @@ impl SearchExecutor<'_> {
         if is_backwriter_spill(path) {
             return Ok(());
         }
-        let directory = self.open_logical_directory(path)?;
+        let directory = match self.open_logical_directory(path) {
+            Ok(directory) => directory,
+            Err(error) => {
+                self.runtime.invalidate_current_proof(path);
+                return Err(error);
+            }
+        };
         self.walk_directory(path.to_owned(), directory)
     }
 
@@ -198,28 +227,44 @@ impl SearchExecutor<'_> {
                             if is_backwriter_spill(&path) {
                                 Next::Ignored
                             } else {
-                                match classify_child(&current.directory, name)
-                                    .map_err(|_| SearchError::Unavailable)?
-                                {
-                                    ClassifiedChild::Directory => Next::Directory {
-                                        path,
-                                        directory: open_directory(
+                                let classified = match classify_child(&current.directory, name) {
+                                    Ok(classified) => classified,
+                                    Err(_) => {
+                                        self.runtime.invalidate_current_proof(&path);
+                                        return Err(SearchError::Unavailable);
+                                    }
+                                };
+                                match classified {
+                                    ClassifiedChild::Directory => {
+                                        self.runtime.invalidate_current_proof(&path);
+                                        let directory = match open_directory(
                                             &current.directory,
                                             name,
                                             ClassifiedChild::Directory,
-                                        )
-                                        .map_err(|_| SearchError::Unavailable)?,
-                                    },
-                                    ClassifiedChild::Regular => Next::Source {
-                                        path,
-                                        file: open_regular(
+                                        ) {
+                                            Ok(directory) => directory,
+                                            Err(_) => return Err(SearchError::Unavailable),
+                                        };
+                                        Next::Directory { path, directory }
+                                    }
+                                    ClassifiedChild::Regular => {
+                                        let file = match open_regular(
                                             &current.directory,
                                             name,
                                             ClassifiedChild::Regular,
-                                        )
-                                        .map_err(|_| SearchError::Unavailable)?,
-                                    },
-                                    ClassifiedChild::Excluded => Next::Ignored,
+                                        ) {
+                                            Ok(file) => file,
+                                            Err(_) => {
+                                                self.runtime.invalidate_current_proof(&path);
+                                                return Err(SearchError::Unavailable);
+                                            }
+                                        };
+                                        Next::Source { path, file }
+                                    }
+                                    ClassifiedChild::Excluded => {
+                                        self.runtime.invalidate_current_proof(&path);
+                                        Next::Ignored
+                                    }
                                 }
                             }
                         }
@@ -252,15 +297,14 @@ impl SearchExecutor<'_> {
         if is_backwriter_spill(path) {
             return Ok(());
         }
-        let file = self
-            .runtime
-            .open_admitted_source(path)
-            .map_err(|error| match error {
-                DirectoryAccessError::Unadmitted => SearchError::InvalidScope,
-                DirectoryAccessError::NotCurrent | DirectoryAccessError::Unavailable => {
-                    SearchError::Unavailable
-                }
-            })?;
+        let file = match self.runtime.open_admitted_source(path) {
+            Ok(file) => file,
+            Err(DirectoryAccessError::Unadmitted) => return Err(SearchError::InvalidScope),
+            Err(DirectoryAccessError::NotCurrent | DirectoryAccessError::Unavailable) => {
+                self.runtime.invalidate_current_proof(path);
+                return Err(SearchError::Unavailable);
+            }
+        };
         self.search_open_source(path, file)
     }
 
@@ -269,7 +313,7 @@ impl SearchExecutor<'_> {
         path: &str,
         mut file: cap_std::fs::File,
     ) -> Result<(), SearchError> {
-        scan_open_source(
+        let state = match scan_open_source(
             &mut file,
             &self.runtime.workspace_coordinate,
             path,
@@ -277,7 +321,18 @@ impl SearchExecutor<'_> {
             self.target,
             &mut self.full_line_results,
             &mut self.substring_results,
-        )?;
+        ) {
+            Ok(state) => state,
+            Err(error) => {
+                self.runtime.invalidate_current_proof(path);
+                return Err(error);
+            }
+        };
+        let proof = CurrentProof::new(path, state.hash, state.byte_length)?;
+        self.proofs
+            .try_reserve(1)
+            .map_err(|_| SearchError::Unavailable)?;
+        self.proofs.push(proof);
         Ok(())
     }
 }
@@ -334,7 +389,7 @@ fn scan_open_source(
     target: SearchTarget,
     full_line_results: &mut Vec<Anddress>,
     substring_results: &mut Vec<Anddress>,
-) -> Result<(), SearchError> {
+) -> Result<CurrentObservation, SearchError> {
     let (state, outcome) = match target {
         SearchTarget::File => {
             let mut projection = FileProjection::new(literal);
@@ -398,7 +453,7 @@ fn scan_open_source(
             }
         }
     }
-    Ok(())
+    Ok(state)
 }
 
 impl<'a> FileProjection<'a> {
@@ -775,13 +830,65 @@ fn compare_bucket(left: &Anddress, right: &Anddress) -> Ordering {
 
 #[cfg(test)]
 mod tests {
-    use std::io::{self, Read};
+    use std::{
+        fs,
+        io::{self, Read},
+    };
 
-    use crate::backwriter::anddress::AnddressTarget;
-    use crate::backwriter::search::{SearchQuery, SearchTarget};
-    use crate::runtime::source_scan::READ_BUFFER_SIZE;
+    use crate::{
+        backwriter::{
+            anchor::AnchorOutcome,
+            anddress::AnddressTarget,
+            edit::{Edit, Position},
+            search::{SearchQuery, SearchRequest, SearchScope, SearchScopeEntry, SearchTarget},
+            view::ViewOutcome,
+        },
+        hash::Sha256,
+        runtime::{AdmissionRoot, WorkspaceAdmission, source_scan::READ_BUFFER_SIZE},
+    };
 
     use super::*;
+
+    fn admission(root: &str) -> WorkspaceAdmission {
+        WorkspaceAdmission::new([AdmissionRoot::new(root).unwrap()]).unwrap()
+    }
+
+    fn host_runtime(root: &std::path::Path) -> WorkspaceRuntime {
+        WorkspaceRuntime::open_host_authoritative(root, admission(".")).unwrap()
+    }
+
+    fn proofs(runtime: &WorkspaceRuntime) -> Vec<(String, String, usize)> {
+        runtime
+            .current_proofs
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|proof| {
+                (
+                    proof.logical_path.clone(),
+                    proof.hash.clone(),
+                    proof.byte_length,
+                )
+            })
+            .collect()
+    }
+
+    fn source_hash(bytes: &[u8]) -> String {
+        let mut hash = Sha256::new();
+        hash.update(bytes);
+        hash.finish().to_hex()
+    }
+
+    fn exact_file(runtime: &WorkspaceRuntime, path: &str) -> Anddress {
+        let SearchOutcome::Found { mut anddresses } = runtime
+            .search(&SearchRequest::exact_file(path).unwrap())
+            .unwrap()
+        else {
+            panic!("exact File")
+        };
+        assert_eq!(anddresses.len(), 1);
+        anddresses.pop().unwrap()
+    }
 
     struct FixtureReader<'a> {
         bytes: &'a [u8],
@@ -1157,5 +1264,210 @@ mod tests {
             full[1].source_identity()
         ));
         assert_ne!(full[0].encode().unwrap(), full[1].encode().unwrap());
+    }
+
+    #[test]
+    fn only_host_search_installs_exact_content_and_file_proofs() {
+        let fixture = tempfile::tempdir().unwrap();
+        fs::write(fixture.path().join("exact.txt"), b"exact\n").unwrap();
+        fs::write(fixture.path().join("content.txt"), b"needle\n").unwrap();
+
+        let untrusted = WorkspaceRuntime::open(fixture.path(), admission(".")).unwrap();
+        exact_file(&untrusted, "exact.txt");
+        assert!(proofs(&untrusted).is_empty());
+
+        let host = host_runtime(fixture.path());
+        exact_file(&host, "exact.txt");
+        host.search(&SearchRequest::new(
+            SearchQuery::new("needle").unwrap(),
+            SearchScope::only([SearchScopeEntry::source("content.txt").unwrap()]).unwrap(),
+            SearchTarget::Line,
+        ))
+        .unwrap();
+        assert_eq!(
+            proofs(&host),
+            vec![
+                ("content.txt".to_owned(), source_hash(b"needle\n"), 7,),
+                ("exact.txt".to_owned(), source_hash(b"exact\n"), 6),
+            ]
+        );
+    }
+
+    #[test]
+    fn host_research_replaces_one_path_without_retaining_the_old_state() {
+        let fixture = tempfile::tempdir().unwrap();
+        fs::write(fixture.path().join("note.txt"), b"old\n").unwrap();
+        let mut host = host_runtime(fixture.path());
+
+        exact_file(&host, "note.txt");
+        exact_file(&host, "note.txt");
+        assert_eq!(proofs(&host).len(), 1);
+        let old_hash = source_hash(b"old\n");
+        assert_eq!(proofs(&host)[0].1, old_hash);
+
+        host.invalidate_source("note.txt").unwrap();
+        fs::write(fixture.path().join("note.txt"), b"new state\n").unwrap();
+        exact_file(&host, "note.txt");
+        let current = proofs(&host);
+        assert_eq!(current.len(), 1);
+        assert_eq!(current[0].1, source_hash(b"new state\n"));
+        assert_eq!(current[0].2, 10);
+        assert_ne!(current[0].1, old_hash);
+
+        fs::write(fixture.path().join("note.txt"), b"invalid\0source").unwrap();
+        assert_eq!(
+            host.search(&SearchRequest::exact_file("note.txt").unwrap()),
+            Err(SearchError::Unavailable)
+        );
+        assert!(proofs(&host).is_empty());
+
+        fs::remove_file(fixture.path().join("note.txt")).unwrap();
+        assert_eq!(
+            host.search(&SearchRequest::exact_file("note.txt").unwrap()),
+            Ok(SearchOutcome::Empty)
+        );
+        assert!(proofs(&host).is_empty());
+    }
+
+    #[test]
+    fn host_multi_source_success_installs_independent_proofs_and_failure_installs_none() {
+        let fixture = tempfile::tempdir().unwrap();
+        fs::write(fixture.path().join("a.txt"), b"needle\n").unwrap();
+        fs::write(fixture.path().join("b.txt"), b"other\n").unwrap();
+        let host = host_runtime(fixture.path());
+        host.search(&SearchRequest::new(
+            SearchQuery::new("needle").unwrap(),
+            SearchScope::all_admitted(),
+            SearchTarget::Line,
+        ))
+        .unwrap();
+        assert_eq!(
+            proofs(&host)
+                .iter()
+                .map(|proof| proof.0.as_str())
+                .collect::<Vec<_>>(),
+            vec!["a.txt", "b.txt"]
+        );
+
+        fs::write(fixture.path().join("z.txt"), b"late\xff").unwrap();
+        let failed = host_runtime(fixture.path());
+        assert_eq!(
+            failed.search(&SearchRequest::new(
+                SearchQuery::new("needle").unwrap(),
+                SearchScope::all_admitted(),
+                SearchTarget::Line,
+            )),
+            Err(SearchError::Unavailable)
+        );
+        assert!(proofs(&failed).is_empty());
+    }
+
+    #[test]
+    fn host_proofs_are_runtime_path_exact_and_share_anchor_apply_invalidation() {
+        let fixture = tempfile::tempdir().unwrap();
+        fs::write(fixture.path().join("note.txt"), b"one\n").unwrap();
+        fs::write(fixture.path().join("other.txt"), b"two\n").unwrap();
+        let mut host = host_runtime(fixture.path());
+        let note = exact_file(&host, "note.txt");
+        let other = exact_file(&host, "other.txt");
+        let note_handle = match host.anchor(&note).unwrap() {
+            AnchorOutcome::Anchored(handle) => handle,
+            AnchorOutcome::AlreadyLive => panic!("note Anchor"),
+        };
+        let other_handle = match host.anchor(&other).unwrap() {
+            AnchorOutcome::Anchored(handle) => handle,
+            AnchorOutcome::AlreadyLive => panic!("other Anchor"),
+        };
+
+        host.invalidate_source("note.txt").unwrap();
+        assert_eq!(
+            proofs(&host)
+                .iter()
+                .map(|proof| proof.0.as_str())
+                .collect::<Vec<_>>(),
+            vec!["other.txt"]
+        );
+        assert!(host.view_anchored(&note_handle).is_err());
+        assert!(matches!(
+            host.view_anchored(&other_handle),
+            Ok(ViewOutcome::File { text }) if text == "two\n"
+        ));
+
+        exact_file(&host, "note.txt");
+        let current_other = exact_file(&host, "other.txt");
+        host.apply(&Edit::Insert {
+            position: Position::StartOf(current_other),
+            content: String::new(),
+        })
+        .unwrap();
+        assert_eq!(
+            proofs(&host)
+                .iter()
+                .map(|proof| proof.0.as_str())
+                .collect::<Vec<_>>(),
+            vec!["note.txt"]
+        );
+
+        let isolated = host_runtime(fixture.path());
+        exact_file(&isolated, "other.txt");
+        assert_eq!(proofs(&isolated).len(), 1);
+        assert_eq!(proofs(&host).len(), 1);
+
+        let other_workspace = tempfile::tempdir().unwrap();
+        fs::write(other_workspace.path().join("note.txt"), b"different\n").unwrap();
+        let distinct = host_runtime(other_workspace.path());
+        exact_file(&distinct, "note.txt");
+        assert_ne!(proofs(&host)[0].1, proofs(&distinct)[0].1);
+    }
+
+    #[test]
+    fn proof_shape_debug_and_cli_keep_the_closed_private_boundary() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<WorkspaceRuntime>();
+
+        let fixture = tempfile::tempdir().unwrap();
+        fs::write(fixture.path().join("secret-path.txt"), b"secret bytes\n").unwrap();
+        let host = host_runtime(fixture.path());
+        exact_file(&host, "secret-path.txt");
+        let current = proofs(&host);
+        let debug = format!("{host:?}");
+        assert!(!debug.contains("secret-path.txt"));
+        assert!(!debug.contains(&current[0].1));
+
+        let runtime_source = include_str!("../runtime.rs");
+        let proof_shape = runtime_source
+            .split("struct CurrentProof")
+            .nth(1)
+            .unwrap()
+            .split("impl CurrentProof")
+            .next()
+            .unwrap();
+        for forbidden in [
+            "Vec<u8>",
+            "Anddress",
+            "SearchOutcome",
+            "byte_start",
+            "byte_end",
+            "previous",
+            "history",
+        ] {
+            assert!(!proof_shape.contains(forbidden), "retained {forbidden}");
+        }
+        let cli = include_str!("../bin/bw.rs");
+        assert!(cli.contains("WorkspaceRuntime::open(&workspace, admission)"));
+        assert!(!cli.contains("open_host_authoritative"));
+
+        let apply = include_str!("apply.rs");
+        let execute = apply
+            .split("pub(super) fn execute")
+            .nth(1)
+            .unwrap()
+            .split("fn map_edit_error")
+            .next()
+            .unwrap();
+        let invalidation = execute.find("invalidate_current_proof").unwrap();
+        let validation = execute.find("edit.validate()").unwrap();
+        assert!(invalidation < validation);
+        assert!(!apply.contains("install_search_proofs"));
     }
 }

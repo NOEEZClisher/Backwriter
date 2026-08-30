@@ -1,7 +1,7 @@
 # Backwriter 0.2.1 Current-Observation Reuse
 
-Status: Phase 1 authority and current-flow audit complete; implementation,
-measurement, version change, and publication not started.
+Status: Phases 1 and 2 complete; trusted consumption, measurement, version
+change, and publication not started.
 
 This tracker records execution evidence and phase progress only. Normative
 semantics belong to the active
@@ -9,7 +9,7 @@ semantics belong to the active
 [address model](../architecture/rebuildable-structural-addressing.md), and
 [principles](../principles/backwriter-core-principles.md). The closed public
 `0.2.0` release and its 28-file publication are immutable. `0.2.1` remains
-an unimplemented and unpublished target using the same Anddress v4 wire,
+a partially implemented and unpublished target using the same Anddress v4 wire,
 SHA-256, exact source length, target kind, and `[start,end)` range.
 
 ## Phase 1 current execution audit
@@ -76,9 +76,9 @@ are Adapter/caller values rather than observation authority.
 1. **Authority and current-flow audit — complete.** Record actual observer,
    hash, Apply, Anchor, Check, and CLI Runtime paths; close the two-mode
    authority without naming a Rust API.
-2. **Minimal host kernel and Search installation — pending.** Choose the
-   smallest explicit host mode/invalidation seam and private proof state, then
-   allow successful Search observation to install proof.
+2. **Minimal host kernel and Search installation — complete.** The explicit
+   Host constructor, path-exact source invalidation, private proof state, and
+   whole-call successful Search installation are implemented.
 3. **View bounded reuse — pending.** Add trusted direct-range View and a bounded
    related-Paragraph path without whole-source or complete-Line retention.
 4. **Check trusted hit — pending.** Reuse matching proof with zero
@@ -124,17 +124,20 @@ Phase 7 must also preserve exact semantic output, ordering, multiplicity,
 Untrusted fallback, v4 KATs, and the complete drift matrix. Passing these gates
 does not itself publish a release.
 
-## Phase 2 open decisions
+## Phase 2 closure
 
-Phase 1 deliberately does not name or choose:
-
-- a constructor, mode, token, invalidation, or getter API;
-- the private state container, cardinality, or eviction policy;
-- retained handle versus reopen behavior;
-- multi-source Search proof installation policy;
-- the related Paragraph bounded lookup mechanism.
-
-Phase 2 must audit direct consumers and race boundaries before making the
-minimum choice. It must not introduce a watcher, metadata proof, result cache,
-target registry, history, context matching, retry, global snapshot, new wire,
-or compatibility layer.
+- `WorkspaceRuntime::open` remains Untrusted;
+  `WorkspaceRuntime::open_host_authoritative` is the sole explicit Host entry.
+- `WorkspaceRuntime::invalidate_source` validates through existing logical-path,
+  admission, and spill rules and shares Anchor's path-exact invalidation.
+- A private synchronized sorted vector retains at most one hash/length proof per
+  logical path. It has no fixed cap, eviction, retained handle, public getter,
+  or generation token; invalidation/removal is the per-path generation boundary.
+- A successful content or exact-File Search installs every fully observed source
+  only after the whole call succeeds. Entries are independent and do not claim
+  workspace completeness. A failed call installs no provisional proof.
+- View and Check do not consume proof. Every Apply call removes matching proof
+  before validation and preserves unrelated paths; Apply installs none.
+- The implementation introduces no watcher, metadata proof, result cache,
+  target registry, history, context matching, retry, global snapshot, new wire,
+  or compatibility layer. Bounded related-Paragraph lookup remains Phase 3.

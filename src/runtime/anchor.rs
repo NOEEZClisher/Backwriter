@@ -24,10 +24,11 @@ pub(super) fn anchor(
     let observed = match observe_current(runtime, input, &inputs, None) {
         Ok(observed) => observed,
         Err(ObservationError::InvalidSource) => {
-            runtime.invalidate_anchors_for_path(input.logical_path());
+            runtime.invalidate_source_state(input.logical_path());
             return Err(AnchorError::Unavailable);
         }
         Err(ObservationError::Read | ObservationError::Resource) => {
+            runtime.invalidate_current_proof(input.logical_path());
             return Err(AnchorError::Unavailable);
         }
     };
@@ -40,7 +41,7 @@ pub(super) fn anchor(
         .enumerate()
         .any(|(index, current)| index != focus_index && !current)
     {
-        runtime.invalidate_anchors_for_path(input.logical_path());
+        runtime.invalidate_source_state(input.logical_path());
         return Err(AnchorError::Unavailable);
     }
     if runtime
@@ -80,15 +81,16 @@ pub(super) fn view_anchored(
     let observed = match observe_current(runtime, &input, std::slice::from_ref(&input), Some(0)) {
         Ok(observed) => observed,
         Err(ObservationError::InvalidSource) => {
-            runtime.invalidate_anchors_for_path(input.logical_path());
+            runtime.invalidate_source_state(input.logical_path());
             return Err(ViewError::Unavailable);
         }
         Err(ObservationError::Read | ObservationError::Resource) => {
+            runtime.invalidate_current_proof(input.logical_path());
             return Err(ViewError::Unavailable);
         }
     };
     if !observed.current[0] {
-        runtime.invalidate_anchors_for_path(input.logical_path());
+        runtime.invalidate_source_state(input.logical_path());
         return Err(ViewError::Unavailable);
     }
     observed.outcome.ok_or(ViewError::Unavailable)
@@ -105,7 +107,7 @@ pub(super) fn invalidate_source(
         return Err(AnchorError::Unavailable);
     }
     runtime.prune_dead_anchors();
-    runtime.invalidate_anchors_for_path(path);
+    runtime.invalidate_source_state(path);
     Ok(())
 }
 

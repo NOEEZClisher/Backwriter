@@ -30,12 +30,13 @@ v3 remains only in Git history and immutable `0.1.0` release evidence. The
 canonical four-target `0.2.0` artifacts, manifest, installers, live publication,
 fresh installation, and explicit update are complete.
 
-`0.2.1` is an unimplemented and unpublished development target. Its closed
-authority preserves v4 identity and the existing `0.2.0` execution path as the
-default Untrusted Mode. Only an explicit Host-authoritative Mode may retain a
-Runtime-local current SHA-256/length proof for a logical source across calls;
-the Protocol owns the exact authority and invalidation boundary. No public API
-name or state representation is fixed yet.
+`0.2.1` is an unpublished development target. Phase 2 implements its minimal
+Host-authoritative observation kernel while preserving v4 identity and the
+existing `0.2.0` execution path as the default Untrusted Mode.
+`WorkspaceRuntime::open_host_authoritative` explicitly selects that mode and
+`WorkspaceRuntime::invalidate_source` is its host mutation boundary. The
+Runtime may retain one private current SHA-256/length proof per logical source;
+View, Check, and Apply do not consume or install proof in this phase.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,
@@ -150,19 +151,21 @@ are preserved evidence, never current authority.
   `WorkspaceRuntime` exposes Search, View, Apply, Check, and anchored Runtime
   execution seams. Runtime retains no ordinary observation, source bytes,
   result, target map, snapshot, lease, or history across calls or selected
-  sources. `CurrentObservation` contains only the current hash and exact byte
+  sources. The private Host proof is the sole exception. `CurrentObservation`
+  contains only the current hash and exact byte
   length and is consumed or discarded before Search opens another source or any
-  View, Check, Apply, or Anchor call returns. A successful observation may
-  replace the narrow trusted proof without retaining its projection. Anchor may
-  retain only target-local session continuity.
+  View, Check, Apply, or Anchor call returns. A successful Host Search may
+  replace the narrow trusted proof without retaining its projection. Anchor
+  may retain only target-local session continuity.
 - Future spill belongs only to a host-provided system root. This repository does
   not create `.artext`; the exact Runtime-root-relative `.artext/bw` path and
   its descendants are ignored by Backwriter Runtime execution. Other `.artext`
   children remain ordinary Workspace Source subject to the normal safety policy.
 - Search is read-only discovery over admitted live Workspace Source inside a
   structured scope. Every call scans live source directly; it creates or uses
-  no persistent index or authority, global snapshot, cache, history, or
-  past-result completeness evidence.
+  no persistent index, global snapshot, result cache, history, or past-result
+  completeness evidence. A successful Host Search may install only independent
+  current source proofs after the whole call succeeds.
 - Search matches at Line-content granularity. Its requested target kind is
   Line, Paragraph, or File and changes only returned Anddress granularity.
   Separator Lines have no Paragraph.
@@ -207,7 +210,8 @@ are preserved evidence, never current authority.
   In `0.2.1` Host-authoritative Mode, confirmed publication may replace a
   matching old proof with the already computed prospective-after SHA-256 and
   length, while an exact no-op preserves it. Unavailable or uncertain source
-  state discards the affected proof.
+  state discards the affected proof. Phase 2 Apply does not yet consume or
+  install proof and removes matching proof before every call.
 - **Anchor** has closed live-continuity authority and an implemented public
   surface. It retains only opaque owning Runtime-local
   continuity, non-aliasing `AlreadyLive`, no history/persistence/
@@ -265,6 +269,8 @@ are preserved evidence, never current authority.
   `WorkspaceRuntime::apply(&mut self, &Edit)`,
   `WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
   `check_pick(PickOutcome)`.
+  `WorkspaceRuntime::open_host_authoritative` explicitly selects Host mode;
+  `WorkspaceRuntime::invalidate_source` is its pre-mutation source boundary.
   There is no public Runtime enumeration or listing API. Core owns the validated
   content and exact-File Search requests, scope, query, target, outcome, and
   error types.

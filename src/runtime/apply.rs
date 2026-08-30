@@ -37,7 +37,7 @@ pub(super) fn finish_publication(
             Ok(())
         }
         Err(ApplyError::PublicationUncertain) => {
-            runtime.invalidate_anchors_for_path(path);
+            runtime.invalidate_source_state(path);
             Err(ApplyError::PublicationUncertain)
         }
         Err(error) => Err(error),
@@ -554,8 +554,14 @@ fn stage_source(
 }
 
 pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(), ApplyError> {
-    edit.validate().map_err(map_edit_error)?;
     let (first, second) = operands(edit);
+    runtime.invalidate_current_proof(first.logical_path());
+    if let Some(second) = second
+        && second.logical_path() != first.logical_path()
+    {
+        runtime.invalidate_current_proof(second.logical_path());
+    }
+    edit.validate().map_err(map_edit_error)?;
     if second.is_some_and(|second| !same_coordinate_path(first, second)) {
         return Err(ApplyError::InvalidInput);
     }
@@ -580,7 +586,7 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
     let before = match stage_source(&mut source, &mut staging) {
         Ok(state) => state,
         Err(SourceScanError::InvalidSource) => {
-            runtime.invalidate_anchors_for_path(first.logical_path());
+            runtime.invalidate_source_state(first.logical_path());
             return Err(ApplyError::Unavailable);
         }
         Err(SourceScanError::Read | SourceScanError::Resource) => {
@@ -592,7 +598,7 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
         .iter()
         .any(|binding| !matches_state(binding, &before))
     {
-        runtime.invalidate_anchors_for_path(first.logical_path());
+        runtime.invalidate_source_state(first.logical_path());
         return Err(ApplyError::Unavailable);
     }
     if !matches_state(first, &before)

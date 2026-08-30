@@ -2,11 +2,13 @@
 
 ## Planned: 0.2.1 current-observation reuse
 
-`0.2.1` is an unimplemented and unpublished performance target governed by the
+`0.2.1` is a partially implemented and unpublished performance target governed by the
 [seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md).
-Phase 1 closes authority and records the current execution flow only. V4
-Anddress identity/wire, SHA-256, exact source length, kind, and
-`[start,end)` remain unchanged, and Search remains the only target finder.
+Phase 1 closes authority and records the current execution flow. Phase 2 adds
+the explicit Host Runtime, source invalidation, private current proof state, and
+successful-Search installation. V4 Anddress identity/wire, SHA-256, exact
+source length, kind, and `[start,end)` remain unchanged, and Search remains the
+only target finder.
 
 Default Runtime, one-shot CLI, and ordinary CLI Session behavior remain
 Untrusted Mode and preserve `0.2.0` per-call observation. Reuse is available
@@ -17,13 +19,13 @@ replace-only current SHA-256/length proof bound to workspace, admission, source
 generation, and logical path. It retains no source bytes, results, target map,
 prior proof, history, or relocation evidence.
 
-The implementation phases add the smallest host-mode/state/invalidation kernel
-and Search proof installation; bounded View related-range work; Check trusted
-hits; Apply and Anchor integration; full race/drift semantics; then fixed A/B
-gates and the `0.2.1` version decision. Public API names, private state shape,
-cardinality/eviction, retained handle versus reopen, multi-source Search proof
-installation, and related Paragraph mechanics remain intentionally open until
-their direct consumers are audited in Phase 2.
+The completed Phase 2 kernel uses `open_host_authoritative` and
+`invalidate_source`, a synchronized sorted path vector with one independent
+proof per observed source and no eviction or retained handle, and whole-call
+successful installation for every fully observed Search source. Later phases
+add bounded View related-range reuse; Check trusted hits; Apply and Anchor
+integration; full race/drift semantics; then fixed A/B gates and the `0.2.1`
+version decision. Related Paragraph mechanics remain a Phase 3 decision.
 
 ## Completed: 0.2.0 release closure
 
@@ -179,10 +181,10 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
-For `0.2.1`, Phase 2 must close the minimal public host-authority seam and
-private proof representation, cardinality/eviction, retained-handle versus
-reopen policy, multi-source Search installation policy, and bounded related
-Paragraph path. No name or representation is implied by the Phase 1 authority.
+For `0.2.1`, Phase 2 closes the minimal public host-authority seam, private
+proof representation, cardinality, no-eviction/no-handle choice, and
+multi-source Search installation policy. Phase 3 must implement bounded View
+reuse and close its related-Paragraph path without whole-source retention.
 
 ## Completed: 0.1.0 exact File lookup
 

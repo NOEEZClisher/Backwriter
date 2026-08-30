@@ -2,22 +2,30 @@
 
 ## 0.2.1 observation-reuse development gates
 
-`0.2.1` is currently unimplemented and unpublished. Phase 1 changes authority
-and tracking documents only; Rust, Cargo, tests, v4 wire, and the closed public
-`0.2.0` release remain byte-identical. The Protocol owns default Untrusted
-Mode and explicit Host-authoritative Mode; the
+`0.2.1` is partially implemented and unpublished. Phase 2 adds only the Host
+Runtime constructor, source invalidation kernel, private proof state, and
+successful-Search proof installation; Cargo/version, v4 wire, default
+Untrusted behavior, and the closed public `0.2.0` release remain unchanged. The
+Protocol owns default Untrusted Mode and explicit Host-authoritative Mode; the
 [phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
 owns the execution audit, fixed not-yet-remeasured `0.2.0` comparison inputs,
 and phase evidence.
 
-Future verification must prove that Untrusted Mode remains byte-for-byte and
-semantically equivalent to `0.2.0`; trusted misses use the same observation
-path; trusted hits retain no source bytes, results, target map, or history; and
-invalidation, admission/workspace/generation changes, unavailable source, and
-uncertain publication discard proof before reuse. Search remains the only
-target finder. View, Check, and Apply must not relocate or context-match.
-Confirmed Apply may install only the prospective-after hash/length already
-computed during output emission; no extra source hash pass is permitted.
+Phase 2 regressions prove that Untrusted Search installs no proof; Host exact
+File and content Search install exact hash/length; re-search replaces one path;
+workspaces and logical paths remain isolated; multi-source success installs all
+fully observed sources while late failure installs none; and invalidation,
+unavailable source, Anchor fail-closure, Apply entry, and uncertain publication
+remove only affected proof. Structural checks exclude retained bytes, results,
+ranges, history, public getters, CLI Host activation, and Debug disclosure.
+Search remains the only target finder. View, Check, and Apply still use the full
+`0.2.0` observation path and must not relocate or context-match.
+The Phase 2 development suite passes 208 GNU-host Rust tests.
+
+Future verification must prove trusted consumer hits and the remaining
+invalidation/race matrix. Confirmed Apply may install only the prospective-after
+hash/length already computed during output emission; no extra source hash pass
+is permitted.
 
 The fixed later gates are Search median at most 105% of `0.2.0`, trusted
 Search-to-View at most 400 ms with at most 350 ms recommended, zero
