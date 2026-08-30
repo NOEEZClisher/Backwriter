@@ -30,9 +30,9 @@ v3 remains only in Git history and immutable `0.1.0` release evidence. The
 canonical four-target `0.2.0` artifacts, manifest, installers, live publication,
 fresh installation, and explicit update are complete.
 
-`0.2.1` is an unpublished development target. Phases 2 through 4 implement its
+`0.2.1` is an unpublished development target. Phases 2 through 5 implement its
 minimal Host-authoritative observation kernel, bounded ordinary View reuse, and
-Check current-proof reuse while preserving v4 identity and the existing
+Check and Apply current-proof reuse while preserving v4 identity and the existing
 `0.2.0` execution path as the default Untrusted Mode.
 `WorkspaceRuntime::open_host_authoritative` explicitly selects that mode and
 `WorkspaceRuntime::invalidate_source` is its host mutation boundary. The
@@ -40,8 +40,11 @@ Runtime may retain one private current SHA-256/length proof per logical source.
 Ordinary View consumes a complete matching proof for bounded direct-range
 access. Check consumes a matching path proof entirely in RAM and classifies the
 whole coordinate/path group from hash and length without source open, read, or
-hash work. Check never installs, replaces, or removes proof. Apply does not
-consume or install proof yet.
+hash work. Check never installs, replaces, or removes proof. Apply uses a
+matching proof as its source-state precondition, stages the exact proof length
+without a before hash, preserves it across an exact no-op, and installs the
+already computed prospective-after hash and length only after confirmed changed
+publication.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,
@@ -214,9 +217,11 @@ are preserved evidence, never current authority.
   authority.
   In `0.2.1` Host-authoritative Mode, confirmed publication may replace a
   matching old proof with the already computed prospective-after SHA-256 and
-  length, while an exact no-op preserves it. Unavailable or uncertain source
-  state discards the affected proof. Phase 2 Apply does not yet consume or
-  install proof and removes matching proof before every call.
+  length, while an exact no-op preserves it. A proof mismatch rejects before
+  source access without changing proof or Anchor state. Unavailable or
+  uncertain source state discards the affected proof; publication uncertainty
+  also fail-closes every same-path live Anchor. Untrusted execution and proof
+  misses retain the complete `0.2.0` before-observation path.
 - **Anchor** has closed live-continuity authority and an implemented public
   surface. It retains only opaque owning Runtime-local
   continuity, non-aliasing `AlreadyLive`, no history/persistence/

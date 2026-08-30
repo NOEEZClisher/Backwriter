@@ -6,6 +6,8 @@
 constructor, source invalidation kernel, private proof state, and
 successful-Search proof installation. Phase 3 adds bounded ordinary View proof
 consumption. Phase 4 adds Check current-proof group classification;
+Phase 5 adds Apply proof precondition reuse, exact no-op preservation,
+prospective-after proof installation, and coupled Anchor reflection;
 Cargo/version, v4 wire, default Untrusted behavior, and the closed public
 `0.2.0` release remain unchanged. The
 Protocol owns default Untrusted Mode and explicit Host-authoritative Mode; the
@@ -47,10 +49,24 @@ evidence fixes the proof lookup before filesystem open, one fallback observer,
 owned fixed-size digest evidence, and lock release before I/O, hashing, and
 report assembly. The Phase 4 development suite passes 220 GNU-host Rust tests.
 
-Future verification must prove Apply trusted consumer hits and the remaining
-invalidation/race matrix. Confirmed Apply may install only the prospective-after
-hash/length already computed during output emission; no extra source hash pass
-is permitted.
+Phase 5 regressions prove Host Search-to-Apply proof hit without a before hash,
+exact changed publication, prospective-after proof installation, a second Apply
+using that proof, and old-address Safe Reject. Direct and assembled identical
+no-op preserve proof, live Anchor, inode, source bytes, and temporary state;
+proof-mismatched operands reject before source access while preserving proof
+and Anchor. They cover Host proof miss, Untrusted fallback through the complete
+existing suite, post-Apply View and Check reuse, File/Paragraph/Line Anchor
+reflection from the same after identity, unrelated-path isolation, short/grown/
+invalid trusted source fail-closure, temporary collision, source read/resource
+classification, publication uncertainty, and the existing duplicate-drift
+matrix. Structural evidence fixes exact-length-plus-one fixed-scratch staging,
+zero SHA-256 on the trusted before path, prospective proof preparation before
+publication, no proof lock across I/O/hash/emission/publication, and no retained
+source, previous proof, or history. The Phase 5 development suite passes 228
+GNU-host Rust tests.
+
+Future verification must prove the remaining invalidation/race matrix. No Phase
+5 result is a benchmark or release-readiness claim.
 
 The fixed later gates are Search median at most 105% of `0.2.0`, trusted
 Search-to-View at most 400 ms with at most 350 ms recommended, zero

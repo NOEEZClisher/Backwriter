@@ -1,7 +1,7 @@
 # Backwriter 0.2.1 Current-Observation Reuse
 
-Status: Phases 1–4 complete; Apply/Anchor trusted consumption, invalidation
-closure, measurement, version change, and publication not started.
+Status: Phases 1–5 complete; invalidation closure, measurement, version change,
+and publication not started.
 
 This tracker records execution evidence and phase progress only. Normative
 semantics belong to the active
@@ -84,7 +84,7 @@ are Adapter/caller values rather than observation authority.
    whole-source or complete-Line retention.
 4. **Check trusted hit — complete.** Reuse matching proof with zero filesystem
    open/read/hash while preserving reports, order, and multiplicity.
-5. **Apply and Anchor integration — pending.** Enforce proof preconditions,
+5. **Apply and Anchor integration — complete.** Enforce proof preconditions,
    preserve exact no-op proof, install confirmed prospective-after proof, and
    share existing Anchor invalidation/publication fail-closure.
 6. **Invalidation and semantic closure — pending.** Prove host mutation guards,
@@ -161,8 +161,8 @@ does not itself publish a release.
   and remove the matching proof. The public API, errors, v4 identity/wire,
   target text, terminators, related addresses, ordering, and CLI behavior are
   unchanged.
-- Apply and Anchor proof consumption remains deferred to Phase 5; Phase 6
-  retains the complete invalidation/race closure.
+- Apply and Anchor proof consumption is complete in Phase 5; Phase 6 retains
+  the complete invalidation/race closure.
 
 ## Phase 4 closure
 
@@ -183,5 +183,32 @@ does not itself publish a release.
   duplicates and arbitrary order, raw-valid nonstructural ranges, multiple hit
   and miss sources, explicit invalidation boundaries, and structural zero-I/O/
   hash and lock-scope evidence. The complete GNU-host suite passes 220 tests.
-- Apply and Anchor proof consumption remains deferred to Phase 5; Phase 6 keeps
-  the broader invalidation/race closure.
+- Apply and Anchor proof consumption is complete in Phase 5; Phase 6 keeps the
+  broader invalidation/race closure.
+
+## Phase 5 closure
+
+- Host Apply keeps Edit, same-coordinate/path, Runtime coordinate, private-path,
+  and admission validation priority, then copies one fixed hash/length proof
+  and releases proof state before any later work.
+- Every operand must match a present path proof. A mismatch is `Unavailable`
+  before source access, publication, or Anchor mutation and preserves the proof.
+- A hit stages one retained no-follow source read with fixed scratch, exact proof
+  length plus one growth-byte check, and UTF-8/NUL validation, but no before
+  SHA-256. Miss, poison, and Untrusted execution retain the `0.2.0` staging and
+  full before-hash path.
+- Direct and assembled byte-identical no-op preserve matching proof, live
+  Anchors, source bytes, inode, and temporary state. A miss no-op installs no
+  proof.
+- Changed output uses its existing prospective-after SHA-256/length as the sole
+  identity for both the Anchor plan and a preallocated next proof. Confirmed
+  publication installs proof and reflects Anchors without fallible work;
+  uncertainty invalidates both on only that logical path.
+- Regressions cover a second trusted Apply, old-address Safe Reject, after View
+  and Check reuse, File/Paragraph/Line reflection, unrelated paths, short/grown/
+  invalid sources, read/resource and temporary boundaries, publication
+  uncertainty, no proof lock during I/O/hash/emission/publication, and the
+  existing zero-Wrong-Apply drift matrix. The GNU-host suite passes 228 tests.
+- Phase 6 retains host mutation/race and authority-drift closure. Phase 7 retains
+  all measurement, version, and release-readiness decisions; Phase 5 makes no
+  performance claim.

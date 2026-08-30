@@ -19,9 +19,11 @@ use crate::backwriter::{
 use crate::hash::transcript_hex;
 
 use super::{
-    AnchorPlanEntry, WorkspaceRuntime, is_backwriter_spill, mark_anchor_collisions,
+    AnchorPlanEntry, CurrentProof, SourceProofEvidence, WorkspaceRuntime, is_backwriter_spill,
+    mark_anchor_collisions,
     source_scan::{
         CurrentObservation, ObservationBuilder, READ_BUFFER_SIZE, SourceScanError, observe_source,
+        validate_source_exact,
     },
 };
 
@@ -29,10 +31,12 @@ pub(super) fn finish_publication(
     runtime: &mut WorkspaceRuntime,
     path: &str,
     plan: Vec<AnchorPlanEntry>,
+    proof: Option<CurrentProof>,
     publication: Result<(), ApplyError>,
 ) -> Result<(), ApplyError> {
     match publication {
         Ok(()) => {
+            runtime.install_prepared_current_proof(proof);
             runtime.reflect_anchors(plan);
             Ok(())
         }
@@ -500,7 +504,7 @@ fn ranges_overlap(left: &Anddress, right: &Anddress) -> bool {
 fn reflection_plan(
     runtime: &WorkspaceRuntime,
     path: &str,
-    state: CurrentObservation,
+    state: &CurrentObservation,
     candidates: Vec<Option<(usize, usize)>>,
 ) -> Result<Vec<AnchorPlanEntry>, ApplyError> {
     let source = construct_source_identity(
@@ -553,14 +557,18 @@ fn stage_source(
     })
 }
 
+fn stage_source_trusted(
+    source: &mut impl Read,
+    staging: &mut Temporary<'_>,
+    expected_length: usize,
+) -> Result<(), SourceScanError> {
+    validate_source_exact(source, expected_length, |bytes, _| {
+        staging.write(bytes).map_err(|_| SourceScanError::Resource)
+    })
+}
+
 pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(), ApplyError> {
     let (first, second) = operands(edit);
-    runtime.invalidate_current_proof(first.logical_path());
-    if let Some(second) = second
-        && second.logical_path() != first.logical_path()
-    {
-        runtime.invalidate_current_proof(second.logical_path());
-    }
     edit.validate().map_err(map_edit_error)?;
     if second.is_some_and(|second| !same_coordinate_path(first, second)) {
         return Err(ApplyError::InvalidInput);
@@ -570,45 +578,89 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
     {
         return Err(ApplyError::Unavailable);
     }
+    runtime
+        .selected_root(first.logical_path())
+        .map_err(|_| ApplyError::Unavailable)?;
+    let proof = runtime.select_current_proof(first.logical_path());
+    if proof.is_some_and(|proof| {
+        !matches_proof(first, &proof) || second.is_some_and(|second| !matches_proof(second, &proof))
+    }) {
+        return Err(ApplyError::Unavailable);
+    }
 
     runtime.prune_dead_anchors();
     let bindings = same_path_bindings(runtime, first.logical_path())?;
-    let mut source = runtime
-        .open_admitted_source(first.logical_path())
-        .map_err(|_| ApplyError::Unavailable)?;
-    let (parent, destination) = runtime
-        .open_admitted_parent(first.logical_path())
-        .map_err(|_| ApplyError::Unavailable)?;
+    if proof.is_some_and(|proof| {
+        bindings
+            .iter()
+            .any(|binding| !matches_proof(binding, &proof))
+    }) {
+        runtime.invalidate_source_state(first.logical_path());
+        return Err(ApplyError::Unavailable);
+    }
+    let mut source = match runtime.open_admitted_source(first.logical_path()) {
+        Ok(source) => source,
+        Err(_) => {
+            if proof.is_some() {
+                runtime.invalidate_current_proof(first.logical_path());
+            }
+            return Err(ApplyError::Unavailable);
+        }
+    };
+    let (parent, destination) = match runtime.open_admitted_parent(first.logical_path()) {
+        Ok(parent) => parent,
+        Err(_) => {
+            if proof.is_some() {
+                runtime.invalidate_current_proof(first.logical_path());
+            }
+            return Err(ApplyError::Unavailable);
+        }
+    };
     let mut staging = Temporary::create(
         &parent,
         edit_temporary_name(runtime, first.logical_path(), "staging")?,
     )?;
-    let before = match stage_source(&mut source, &mut staging) {
-        Ok(state) => state,
-        Err(SourceScanError::InvalidSource) => {
+    let before_length = if let Some(proof) = proof {
+        match stage_source_trusted(&mut source, &mut staging, proof.byte_length) {
+            Ok(()) => proof.byte_length,
+            Err(SourceScanError::InvalidSource) => {
+                runtime.invalidate_source_state(first.logical_path());
+                return Err(ApplyError::Unavailable);
+            }
+            Err(SourceScanError::Read) => {
+                runtime.invalidate_current_proof(first.logical_path());
+                return Err(ApplyError::Unavailable);
+            }
+            Err(SourceScanError::Resource) => return Err(ApplyError::Unavailable),
+        }
+    } else {
+        let before = match stage_source(&mut source, &mut staging) {
+            Ok(state) => state,
+            Err(SourceScanError::InvalidSource) => {
+                runtime.invalidate_source_state(first.logical_path());
+                return Err(ApplyError::Unavailable);
+            }
+            Err(SourceScanError::Read | SourceScanError::Resource) => {
+                return Err(ApplyError::Unavailable);
+            }
+        };
+        if bindings
+            .iter()
+            .any(|binding| !matches_state(binding, &before))
+        {
             runtime.invalidate_source_state(first.logical_path());
             return Err(ApplyError::Unavailable);
         }
-        Err(SourceScanError::Read | SourceScanError::Resource) => {
+        if !matches_state(first, &before)
+            || second.is_some_and(|second| !matches_state(second, &before))
+        {
             return Err(ApplyError::Unavailable);
         }
+        before.byte_length
     };
-
-    if bindings
-        .iter()
-        .any(|binding| !matches_state(binding, &before))
-    {
-        runtime.invalidate_source_state(first.logical_path());
-        return Err(ApplyError::Unavailable);
-    }
-    if !matches_state(first, &before)
-        || second.is_some_and(|second| !matches_state(second, &before))
-    {
-        return Err(ApplyError::Unavailable);
-    }
     staging.close()?;
 
-    let geometry = Geometry::new(edit, before.byte_length)?;
+    let geometry = Geometry::new(edit, before_length)?;
     if geometry.direct_noop(edit) {
         staging.remove()?;
         return Ok(());
@@ -641,12 +693,19 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
         .permissions()
         .mode()
         & 0o777;
-    let plan = reflection_plan(runtime, first.logical_path(), after, candidates)?;
+    let plan = reflection_plan(runtime, first.logical_path(), &after, candidates)?;
+    let after_length = after.byte_length;
+    let next_proof = runtime.prepare_current_proof_installation(
+        first.logical_path(),
+        after.hash,
+        after_length,
+    )?;
     staging.remove()?;
     finish_publication(
         runtime,
         first.logical_path(),
         plan,
+        next_proof,
         publish(
             &parent,
             destination,
@@ -701,6 +760,10 @@ fn same_coordinate_path(left: &Anddress, right: &Anddress) -> bool {
 
 fn matches_state(input: &Anddress, state: &CurrentObservation) -> bool {
     input.source_state_hash() == state.hash && input.source_byte_length() == state.byte_length
+}
+
+fn matches_proof(input: &Anddress, proof: &SourceProofEvidence) -> bool {
+    super::source_state_matches(&proof.hash, proof.byte_length, input)
 }
 
 #[derive(Clone, Copy)]
@@ -998,12 +1061,14 @@ mod apply_tests {
 
     use crate::{
         backwriter::{
+            anchor::AnchorOutcome,
             anddress::{Anddress, AnddressTarget},
             apply::ApplyError,
             edit::Edit,
+            view::ViewOutcome,
         },
         hash::Sha256,
-        runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
+        runtime::{AdmissionRoot, CurrentProof, WorkspaceAdmission, WorkspaceRuntime},
     };
 
     use super::{SourceScanError, Temporary, edit_temporary_name, execute, publish, stage_source};
@@ -1027,6 +1092,14 @@ mod apply_tests {
 
     fn runtime(root: &std::path::Path) -> WorkspaceRuntime {
         WorkspaceRuntime::open(
+            root,
+            WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn host_runtime(root: &std::path::Path) -> WorkspaceRuntime {
+        WorkspaceRuntime::open_host_authoritative(
             root,
             WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
         )
@@ -1097,21 +1170,35 @@ mod apply_tests {
     }
 
     #[test]
-    fn staging_and_after_collisions_preserve_source_and_collision() {
+    fn staging_and_after_collisions_preserve_source_proof_anchor_and_collision() {
         for purpose in ["staging", "after"] {
             let fixture = tempfile::tempdir().unwrap();
             let bytes = b"source";
             fs::write(fixture.path().join("note.txt"), bytes).unwrap();
-            let mut runtime = runtime(fixture.path());
+            let mut runtime = host_runtime(fixture.path());
             let name = edit_temporary_name(&runtime, "note.txt", purpose).unwrap();
             fs::write(fixture.path().join(&name), "collision").unwrap();
             let target = file(&runtime, bytes);
+            let handle = match runtime.anchor(&target).unwrap() {
+                AnchorOutcome::Anchored(handle) => handle,
+                AnchorOutcome::AlreadyLive => panic!("File Anchor"),
+            };
+            runtime
+                .install_search_proofs(vec![
+                    CurrentProof::new(
+                        "note.txt",
+                        target.source_state_hash().to_owned(),
+                        target.source_byte_length(),
+                    )
+                    .unwrap(),
+                ])
+                .unwrap();
 
             assert_eq!(
                 execute(
                     &mut runtime,
                     &Edit::Replace {
-                        target,
+                        target: target.clone(),
                         content: "changed".to_owned(),
                     },
                 ),
@@ -1122,6 +1209,15 @@ mod apply_tests {
                 fs::read_to_string(fixture.path().join(name)).unwrap(),
                 "collision"
             );
+            let proofs = runtime.current_proofs.lock().unwrap();
+            assert_eq!(proofs.len(), 1);
+            assert_eq!(proofs[0].logical_path, "note.txt");
+            assert_eq!(proofs[0].hash, target.source_state_hash());
+            drop(proofs);
+            assert!(matches!(
+                runtime.view_anchored(&handle),
+                Ok(ViewOutcome::File { text }) if text == "source"
+            ));
         }
     }
 

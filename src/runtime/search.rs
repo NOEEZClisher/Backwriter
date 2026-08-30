@@ -1405,13 +1405,13 @@ mod tests {
                 .iter()
                 .map(|proof| proof.0.as_str())
                 .collect::<Vec<_>>(),
-            vec!["note.txt"]
+            vec!["note.txt", "other.txt"]
         );
 
         let isolated = host_runtime(fixture.path());
         exact_file(&isolated, "other.txt");
         assert_eq!(proofs(&isolated).len(), 1);
-        assert_eq!(proofs(&host).len(), 1);
+        assert_eq!(proofs(&host).len(), 2);
 
         let other_workspace = tempfile::tempdir().unwrap();
         fs::write(other_workspace.path().join("note.txt"), b"different\n").unwrap();
@@ -1458,16 +1458,19 @@ mod tests {
         assert!(!cli.contains("open_host_authoritative"));
 
         let apply = include_str!("apply.rs");
-        let execute = apply
+        let production_apply = apply.split("#[cfg(test)]").next().unwrap();
+        let execute = production_apply
             .split("pub(super) fn execute")
             .nth(1)
             .unwrap()
             .split("fn map_edit_error")
             .next()
             .unwrap();
-        let invalidation = execute.find("invalidate_current_proof").unwrap();
         let validation = execute.find("edit.validate()").unwrap();
-        assert!(invalidation < validation);
-        assert!(!apply.contains("install_search_proofs"));
+        let selection = execute.find("select_current_proof").unwrap();
+        assert!(validation < selection);
+        assert!(!execute[..validation].contains("invalidate_current_proof"));
+        assert!(execute.contains("prepare_current_proof_installation"));
+        assert!(!production_apply.contains("install_search_proofs"));
     }
 }

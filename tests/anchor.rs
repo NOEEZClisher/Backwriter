@@ -22,6 +22,14 @@ fn runtime(root: &std::path::Path) -> WorkspaceRuntime {
     .unwrap()
 }
 
+fn host_runtime(root: &std::path::Path) -> WorkspaceRuntime {
+    WorkspaceRuntime::open_host_authoritative(
+        root,
+        WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+    )
+    .unwrap()
+}
+
 #[derive(Clone)]
 struct Natural(usize);
 
@@ -150,6 +158,80 @@ fn current_at(
     target: AnddressTarget,
 ) -> Anddress {
     build_address(workspace, logical_path, target, coordinate(workspace))
+}
+
+#[test]
+fn host_apply_reflects_file_paragraph_and_line_from_the_installed_after_identity() {
+    let fixture = tempdir().unwrap();
+    let before = b"one\n\ntwo\n";
+    fs::write(fixture.path().join("note.txt"), before).unwrap();
+    let mut workspace = host_runtime(fixture.path());
+    let file = current(&workspace, AnddressTarget::File);
+    let paragraph = support::address(
+        file.workspace_coordinate(),
+        "note.txt",
+        before,
+        PublicAnddressTarget::Paragraph,
+        0,
+        4,
+    );
+    let line = support::address(
+        file.workspace_coordinate(),
+        "note.txt",
+        before,
+        PublicAnddressTarget::Line,
+        0,
+        4,
+    );
+    let file_handle = match workspace.anchor(&file).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("File Anchor"),
+    };
+    let paragraph_handle = match workspace.anchor(&paragraph).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("Paragraph Anchor"),
+    };
+    let line_handle = match workspace.anchor(&line).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("Line Anchor"),
+    };
+
+    workspace
+        .apply(&Edit::Insert {
+            position: Position::StartOf(file),
+            content: "prefix\n\n".to_owned(),
+        })
+        .unwrap();
+
+    let after = b"prefix\n\none\n\ntwo\n";
+    let after_file = support::file(paragraph.workspace_coordinate(), "note.txt", after);
+    let after_paragraph = support::address(
+        paragraph.workspace_coordinate(),
+        "note.txt",
+        after,
+        PublicAnddressTarget::Paragraph,
+        8,
+        12,
+    );
+    assert_eq!(fs::read(fixture.path().join("note.txt")).unwrap(), after);
+    assert_eq!(
+        workspace.check(after_file.clone()).unwrap().filtered,
+        Some(after_file.clone())
+    );
+    assert!(matches!(
+        workspace.view_anchored(&file_handle),
+        Ok(ViewOutcome::File { text }) if text.as_bytes() == after
+    ));
+    assert!(matches!(
+        workspace.view_anchored(&paragraph_handle),
+        Ok(ViewOutcome::Paragraph { text, file })
+            if text == "one\n" && file == after_file
+    ));
+    assert!(matches!(
+        workspace.view_anchored(&line_handle),
+        Ok(ViewOutcome::Line { content, file, paragraph: Some(related), .. })
+            if content == "one" && file == after_file && related == after_paragraph
+    ));
 }
 
 #[test]

@@ -200,6 +200,42 @@ uses the unchanged admission plus one complete observation per eligible source
 group. Check never installs, updates, invalidates, or removes proof. No proof
 lock is held during fallback I/O, hashing, filtering, or report assembly.
 
+Phase 5 adds proof consumption and replacement to Apply without changing its
+public API, errors, v4 geometry, publication, or Anchor semantics. Apply first
+keeps existing source-less Edit validation, same-coordinate/path validation,
+Runtime coordinate, private path, and admission priority. It then copies at
+most one fixed-size path proof and releases proof state. Every Edit operand must
+match that proof's SHA-256 and exact length. Any mismatch returns `Unavailable`
+before source access, temporary creation, or publication and preserves the
+proof and every live Anchor.
+
+A matching hit opens the existing retained no-follow source handle once and
+stages exactly the proof length while enforcing UTF-8/NUL policy. Fixed scratch
+requests at most one additional byte to reject growth; short input, extra input,
+or invalid text fails closed. The trusted staging path computes no before
+SHA-256 and retains no source bytes. Untrusted Mode, missing proof, poisoned
+state, or unusable proof evidence uses the unchanged `0.2.0` staging observer
+and complete before hash/length validation.
+
+Direct and assembled byte-identical no-op remove their temporaries, publish
+nothing, and preserve a matching old proof and existing Anchor state. A proof
+miss no-op installs nothing. For changed output, the one existing output
+emission computes the prospective-after SHA-256 and exact length. That single
+identity constructs the prepared Anchor plan and the next proof; Apply performs
+no after-source read or second hash pass.
+
+Every proof record allocation, proof-vector capacity reservation, Anchor plan,
+collision decision, and other fallible preparation completes before
+publication. Confirmed publication first replaces or installs the prepared
+same-path proof without allocation and then applies the existing allocation-free
+Anchor reflection plan. Definite prepublication failure preserves the accepted
+old source identity and continuity except where source invalidity or exact
+length drift proves the path state unusable. Source read/open failure removes a
+matching proof without inventing Anchor mutation evidence. Publication
+uncertainty discards both proof and all live same-path Anchors through the
+existing path-exact fail-closure. No proof state is held during source I/O,
+hashing, emission, Anchor planning, or publication.
+
 ### Current 0.2.0 execution audit
 
 The common `observe_source` path performs one forward read from one retained
@@ -223,14 +259,15 @@ and live Anchor bindings.
   bytes to staging and computes the before hash and length. Apply has no
   separate pre-hash source pass. Staging readback is preparation, not a second
   live-source observation. Prospective-after SHA-256 and length are computed
-  while output bytes are emitted, without an after-source reread, and are
-  currently discarded after Anchor planning/reflection.
+  while output bytes are emitted, without an after-source reread. In Host mode,
+  Phase 5 instead uses a matching proof to omit the before hash and retains only
+  the confirmed changed prospective-after proof after publication.
 - Search followed by View, Check, or Apply therefore performs two full live
   observations of the same source: one in Search and one in the consumer.
-  Apply followed by any later consumer also reopens and rehashes because Apply
-  retains no before or prospective-after proof. A confirmed no-op likewise
-  retains no proof after Phase 2 Apply, which removes matching proof before
-  every call and does not consume or install proof yet.
+  In Untrusted Mode, Apply followed by any later consumer reopens and rehashes.
+  In Host mode, confirmed changed Apply installs its prospective-after proof;
+  matching View, Check, and a later Apply can reuse that identity. A confirmed
+  no-op preserves only an already matching proof and never installs on a miss.
 - Each one-shot Search, View, or Check opens a fresh Runtime. A CLI Session
   retains one default Runtime across commands, but that Runtime stores no
   ordinary proof; Adapter bindings and `DataStore` values are not observation
@@ -243,8 +280,10 @@ uses a matching proof as specified above. Phase 4 Check classifies a matching
 path group entirely from copied hash/length evidence and retains the full
 observation path for Untrusted execution and proof misses. Explicit invalidation
 removes the same-path proof and live Anchors;
-confirmed source unavailability, anchored fail-closure, every Apply call,
-publication uncertainty, and Runtime drop leave no reusable matching proof.
+confirmed source unavailability, anchored fail-closure, publication uncertainty,
+and Runtime drop leave no reusable matching proof. Phase 5 Apply preserves an
+accepted proof through no-op and definite preparation failure, replaces it only
+after confirmed changed publication, and leaves unrelated path proofs unchanged.
 
 ## Current structure only
 

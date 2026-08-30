@@ -27,9 +27,28 @@ Phase 3 adds ordinary View proof matching, direct target-range reads, and a
 fixed-scratch bidirectional related-Paragraph scan to the nearest separator or
 source boundary. Completed Phase 4 makes Check classify an entire matching
 coordinate/path group from copied hash/length proof with no filesystem open,
-read, or hash while preserving its existing report/filter path. Later phases
-add Apply and Anchor integration; full race/drift semantics; then fixed A/B
-gates and the `0.2.1` version decision.
+read, or hash while preserving its existing report/filter path. Completed
+Phase 5 integrates Apply and Anchor proof transitions. Later phases close full
+race/drift semantics and then run fixed A/B gates for the `0.2.1` version
+decision.
+
+## Completed: 0.2.1 Phase 5 Apply and Anchor proof integration
+
+Host Apply selects proof only after Edit, coordinate/path, private-path, and
+admission validation. Every operand must match one copied path hash/length or
+the call rejects before source access without changing proof or Anchor state.
+A hit stages and validates exactly the proof length plus one growth byte through
+fixed scratch without computing a before SHA-256. A miss, poison, and Untrusted
+execution keep the complete `0.2.0` staging and before-hash path.
+
+Direct and assembled byte-identical no-op publish nothing and preserve a
+matching proof, live Anchors, source bytes, and source object. Changed output
+reuses the already computed prospective-after SHA-256/length for both the
+prepared Anchor plan and a preallocated proof replacement. Confirmed
+publication installs proof and reflects Anchors through the existing
+allocation-free finish path; publication uncertainty invalidates both for only
+that logical path. Phase 6 retains broader mutation/race closure, and Phase 7
+retains measurement, version, and release-readiness decisions.
 
 ## Completed: 0.2.1 Phase 4 Check current-proof reuse
 
@@ -44,9 +63,9 @@ matches are `Current` without source open, read, or hash.
 
 Untrusted execution, a proof miss, poisoned state, or unusable private evidence
 uses the unchanged admitted one-observation-per-source path. Check installs,
-replaces, invalidates, and removes no proof. Apply and Anchor integration,
-broader invalidation/race closure, measurement, version change, and publication
-remain later phases.
+replaces, invalidates, and removes no proof. Apply and Anchor integration is
+complete in Phase 5; broader invalidation/race closure, measurement, version
+change, and publication remain later phases.
 
 ## Completed: 0.2.0 release closure
 
@@ -206,9 +225,10 @@ For `0.2.1`, Phase 2 closes the minimal public host-authority seam, private
 proof representation, cardinality, no-eviction/no-handle choice, and
 multi-source Search installation policy. Phase 3 closes bounded ordinary View
 reuse and its related-Paragraph path without whole-source retention. Phase 4
-closes Check proof reuse without changing report semantics. Apply, Anchor,
-invalidation closure, measurement, and the version decision remain later
-phases.
+closes Check proof reuse without changing report semantics. Phase 5 closes
+Apply precondition reuse, exact no-op preservation, prospective-after proof
+installation, and coupled Anchor reflection/fail-closure. Invalidation/race
+closure, measurement, and the version decision remain later phases.
 
 ## Completed: 0.1.0 exact File lookup
 

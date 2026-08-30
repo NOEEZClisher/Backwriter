@@ -2,7 +2,7 @@ mod support;
 
 use std::fs;
 #[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 
 use backwriter::backwriter::anchor::AnchorOutcome;
 use backwriter::backwriter::anddress::{Anddress, AnddressTarget as PublicAnddressTarget};
@@ -25,6 +25,24 @@ fn runtime_with_admission(root: &std::path::Path, admission: &str) -> WorkspaceR
         WorkspaceAdmission::new([AdmissionRoot::new(admission).unwrap()]).unwrap(),
     )
     .unwrap()
+}
+
+fn host_runtime(root: &std::path::Path) -> WorkspaceRuntime {
+    WorkspaceRuntime::open_host_authoritative(
+        root,
+        WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+    )
+    .unwrap()
+}
+
+fn exact_file(runtime: &WorkspaceRuntime, path: &str) -> Anddress {
+    match runtime
+        .search(&SearchRequest::exact_file(path).unwrap())
+        .unwrap()
+    {
+        SearchOutcome::Found { anddresses } => anddresses.into_iter().next().unwrap(),
+        SearchOutcome::Empty => panic!("exact File"),
+    }
 }
 
 #[derive(Clone)]
@@ -173,6 +191,16 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
     assert_eq!(apply.matches(".open_admitted_source(").count(), 1);
     assert_eq!(apply.matches("observe_source(source").count(), 1);
     assert_eq!(apply.matches("stage_source(&mut source").count(), 1);
+    let trusted = apply
+        .split_once("fn stage_source_trusted")
+        .map(|(_, trusted)| trusted)
+        .unwrap()
+        .split_once("pub(super) fn execute")
+        .map(|(trusted, _)| trusted)
+        .unwrap();
+    assert!(trusted.contains("validate_source_exact"));
+    assert!(!trusted.contains("observe_source"));
+    assert!(!trusted.contains("ObservationBuilder"));
     assert!(apply.contains("staging.write(bytes)"));
     assert!(apply.contains("staging.open_read()?"));
     for forbidden in [
@@ -190,7 +218,10 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
     let execute = apply
         .split_once("pub(super) fn execute")
         .map(|(_, execute)| execute)
-        .expect("Apply execution");
+        .expect("Apply execution")
+        .split_once("fn map_edit_error")
+        .map(|(execute, _)| execute)
+        .expect("Apply execution end");
     let staging_close = execute.find("staging.close()?;").expect("staging close");
     let empty_insert = execute
         .find("if geometry.direct_noop(edit)")
@@ -202,6 +233,249 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
     assert!(staging_close < empty_insert);
     assert!(empty_insert < comparison);
     assert!(empty_insert < after);
+    let validation = execute.find("edit.validate()").unwrap();
+    let proof_selection = execute.find("select_current_proof").unwrap();
+    let source_open = execute.find("open_admitted_source").unwrap();
+    let prepared_proof = execute.find("prepare_current_proof_installation").unwrap();
+    let publication = execute.rfind("publish(").unwrap();
+    assert!(validation < proof_selection);
+    assert!(proof_selection < source_open);
+    assert!(prepared_proof < publication);
+    assert!(!execute[..validation].contains("invalidate_current_proof"));
+    assert!(!execute.contains("current_proofs.lock"));
+
+    let source_scan = include_str!("../src/runtime/source_scan.rs");
+    let exact_validation = source_scan
+        .split_once("pub(crate) fn validate_source_exact")
+        .map(|(_, exact)| exact)
+        .unwrap();
+    assert!(!exact_validation.contains("Sha256"));
+}
+
+#[test]
+fn host_apply_reuses_and_replaces_current_proof_across_publications() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("note.txt"), b"one\n").unwrap();
+    fs::write(root.join("other.txt"), b"other\n").unwrap();
+    let mut workspace = host_runtime(&root);
+    let first = exact_file(&workspace, "note.txt");
+    let other = exact_file(&workspace, "other.txt");
+    let handle = match workspace.anchor(&first).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("File Anchor"),
+    };
+
+    workspace
+        .apply(&Edit::Replace {
+            target: first.clone(),
+            content: "two\n".to_owned(),
+        })
+        .unwrap();
+    let second = support::file(first.workspace_coordinate(), "note.txt", b"two\n");
+    assert_eq!(workspace.check(first.clone()).unwrap().filtered, None);
+    assert_eq!(
+        workspace.check(second.clone()).unwrap().filtered,
+        Some(second.clone())
+    );
+    assert!(matches!(
+        workspace.view(&second),
+        Ok(ViewOutcome::File { text }) if text == "two\n"
+    ));
+    let parked_other = root.join("parked-other");
+    fs::rename(root.join("other.txt"), &parked_other).unwrap();
+    assert_eq!(
+        workspace.check(other.clone()).unwrap().filtered,
+        Some(other)
+    );
+    fs::rename(&parked_other, root.join("other.txt")).unwrap();
+
+    let parked = root.join("parked");
+    fs::rename(root.join("note.txt"), &parked).unwrap();
+    assert_eq!(
+        workspace.check(second.clone()).unwrap().filtered,
+        Some(second.clone())
+    );
+    fs::rename(&parked, root.join("note.txt")).unwrap();
+
+    workspace
+        .apply(&Edit::Replace {
+            target: second.clone(),
+            content: "three\n".to_owned(),
+        })
+        .unwrap();
+    assert_eq!(fs::read(root.join("note.txt")).unwrap(), b"three\n");
+    assert_eq!(
+        workspace.apply(&Edit::Replace {
+            target: first,
+            content: "wrong\n".to_owned(),
+        }),
+        Err(ApplyError::Unavailable)
+    );
+    assert!(matches!(
+        workspace.view_anchored(&handle),
+        Ok(ViewOutcome::File { text }) if text == "three\n"
+    ));
+    assert_no_apply_temp(&root);
+}
+
+#[cfg(unix)]
+#[test]
+fn host_apply_direct_and_identical_noops_preserve_proof_anchor_inode_and_bytes() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source_path = root.join("note.txt");
+    fs::write(&source_path, b"same\n").unwrap();
+    let mut workspace = host_runtime(&root);
+    let file = exact_file(&workspace, "note.txt");
+    let handle = match workspace.anchor(&file).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("File Anchor"),
+    };
+    let inode = fs::metadata(&source_path).unwrap().ino();
+
+    workspace
+        .apply(&Edit::Insert {
+            position: Position::StartOf(file.clone()),
+            content: String::new(),
+        })
+        .unwrap();
+    workspace
+        .apply(&Edit::Replace {
+            target: file.clone(),
+            content: "same\n".to_owned(),
+        })
+        .unwrap();
+
+    assert_eq!(fs::read(&source_path).unwrap(), b"same\n");
+    assert_eq!(fs::metadata(&source_path).unwrap().ino(), inode);
+    assert!(matches!(
+        workspace.view_anchored(&handle),
+        Ok(ViewOutcome::File { text }) if text == "same\n"
+    ));
+    let parked = root.join("parked");
+    fs::rename(&source_path, &parked).unwrap();
+    assert_eq!(workspace.check(file.clone()).unwrap().filtered, Some(file));
+    fs::rename(&parked, &source_path).unwrap();
+    assert_no_apply_temp(&root);
+}
+
+#[test]
+fn host_apply_proof_mismatch_rejects_before_source_io_and_preserves_state() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source_path = root.join("note.txt");
+    fs::write(&source_path, b"current\n").unwrap();
+    let mut workspace = host_runtime(&root);
+    let current = exact_file(&workspace, "note.txt");
+    let stale = support::file(current.workspace_coordinate(), "note.txt", b"stale\n");
+    let handle = match workspace.anchor(&current).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("File Anchor"),
+    };
+    let parked = root.join("parked");
+    fs::rename(&source_path, &parked).unwrap();
+
+    assert_eq!(
+        workspace.apply(&Edit::Replace {
+            target: stale,
+            content: "wrong\n".to_owned(),
+        }),
+        Err(ApplyError::Unavailable)
+    );
+
+    fs::rename(&parked, &source_path).unwrap();
+    assert!(matches!(
+        workspace.view_anchored(&handle),
+        Ok(ViewOutcome::File { text }) if text == "current\n"
+    ));
+    fs::rename(&source_path, &parked).unwrap();
+    assert_eq!(
+        workspace.check(current.clone()).unwrap().filtered,
+        Some(current)
+    );
+    fs::rename(&parked, &source_path).unwrap();
+    assert_no_apply_temp(&root);
+}
+
+#[test]
+fn host_apply_trusted_short_and_invalid_source_fail_close_proof_and_anchor() {
+    for mutated in [
+        b"short".as_slice(),
+        b"bad\0text".as_slice(),
+        b"current\nextra".as_slice(),
+    ] {
+        let fixture = tempdir().unwrap();
+        let root = fixture.path().join("workspace");
+        fs::create_dir(&root).unwrap();
+        let source_path = root.join("note.txt");
+        fs::write(&source_path, b"current\n").unwrap();
+        let mut workspace = host_runtime(&root);
+        let current = exact_file(&workspace, "note.txt");
+        let handle = match workspace.anchor(&current).unwrap() {
+            AnchorOutcome::Anchored(handle) => handle,
+            AnchorOutcome::AlreadyLive => panic!("File Anchor"),
+        };
+        fs::write(&source_path, mutated).unwrap();
+
+        assert_eq!(
+            workspace.apply(&Edit::Replace {
+                target: current.clone(),
+                content: "wrong\n".to_owned(),
+            }),
+            Err(ApplyError::Unavailable)
+        );
+        assert_eq!(fs::read(&source_path).unwrap(), mutated);
+        assert_eq!(
+            workspace.view_anchored(&handle),
+            Err(backwriter::backwriter::view::ViewError::Unavailable)
+        );
+        fs::remove_file(&source_path).unwrap();
+        assert_eq!(workspace.check(current).unwrap().filtered, None);
+        assert_no_apply_temp(&root);
+    }
+}
+
+#[test]
+fn host_apply_miss_noop_does_not_install_but_changed_publication_does() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source_path = root.join("note.txt");
+    fs::write(&source_path, b"before\n").unwrap();
+    let coordinate_runtime = runtime(&root);
+    let before = exact_file(&coordinate_runtime, "note.txt");
+    let coordinate = before.workspace_coordinate().to_owned();
+    let mut workspace = host_runtime(&root);
+
+    workspace
+        .apply(&Edit::Insert {
+            position: Position::StartOf(before.clone()),
+            content: String::new(),
+        })
+        .unwrap();
+    let parked = root.join("parked");
+    fs::rename(&source_path, &parked).unwrap();
+    assert_eq!(workspace.check(before.clone()).unwrap().filtered, None);
+    fs::rename(&parked, &source_path).unwrap();
+
+    workspace
+        .apply(&Edit::Replace {
+            target: before,
+            content: "after\n".to_owned(),
+        })
+        .unwrap();
+    let after = support::file(&coordinate, "note.txt", b"after\n");
+    fs::rename(&source_path, &parked).unwrap();
+    assert_eq!(
+        workspace.check(after.clone()).unwrap().filtered,
+        Some(after)
+    );
+    fs::rename(&parked, &source_path).unwrap();
+    assert_no_apply_temp(&root);
 }
 
 #[test]

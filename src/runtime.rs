@@ -175,12 +175,14 @@ struct CurrentProof {
 
 impl CurrentProof {
     fn new(logical_path: &str, hash: String, byte_length: usize) -> Result<Self, SearchError> {
+        Self::prepare(logical_path, hash, byte_length).ok_or(SearchError::Unavailable)
+    }
+
+    fn prepare(logical_path: &str, hash: String, byte_length: usize) -> Option<Self> {
         let mut owned_path = String::new();
-        owned_path
-            .try_reserve_exact(logical_path.len())
-            .map_err(|_| SearchError::Unavailable)?;
+        owned_path.try_reserve_exact(logical_path.len()).ok()?;
         owned_path.push_str(logical_path);
-        Ok(Self {
+        Some(Self {
             logical_path: owned_path,
             hash,
             byte_length,
@@ -516,6 +518,54 @@ impl WorkspaceRuntime {
         Ok(())
     }
 
+    fn prepare_current_proof_installation(
+        &mut self,
+        path: &str,
+        hash: String,
+        byte_length: usize,
+    ) -> Result<Option<CurrentProof>, ApplyError> {
+        if self.authority == ObservationAuthority::Untrusted {
+            return Ok(None);
+        }
+        let proof =
+            CurrentProof::prepare(path, hash, byte_length).ok_or(ApplyError::Unavailable)?;
+        let current = match self.current_proofs.get_mut() {
+            Ok(current) => current,
+            Err(poisoned) => {
+                poisoned.into_inner().clear();
+                return Ok(None);
+            }
+        };
+        if current
+            .binary_search_by(|candidate| candidate.logical_path.as_bytes().cmp(path.as_bytes()))
+            .is_err()
+        {
+            current
+                .try_reserve(1)
+                .map_err(|_| ApplyError::Unavailable)?;
+        }
+        Ok(Some(proof))
+    }
+
+    fn install_prepared_current_proof(&mut self, proof: Option<CurrentProof>) {
+        let Some(proof) = proof else {
+            return;
+        };
+        let current = match self.current_proofs.get_mut() {
+            Ok(current) => current,
+            Err(_) => unreachable!("prepared current proof state remains usable"),
+        };
+        match current.binary_search_by(|candidate| {
+            candidate
+                .logical_path
+                .as_bytes()
+                .cmp(proof.logical_path.as_bytes())
+        }) {
+            Ok(index) => current[index] = proof,
+            Err(index) => current.insert(index, proof),
+        }
+    }
+
     pub(crate) fn prune_dead_anchors(&mut self) {
         self.anchors
             .retain(|binding| binding.token.upgrade().is_some());
@@ -809,6 +859,7 @@ mod tests {
                 &mut runtime,
                 "first.txt",
                 Vec::new(),
+                Some(CurrentProof::new("first.txt", "c".repeat(64), 3).unwrap()),
                 Err(crate::backwriter::apply::ApplyError::PublicationUncertain),
             ),
             Err(crate::backwriter::apply::ApplyError::PublicationUncertain)

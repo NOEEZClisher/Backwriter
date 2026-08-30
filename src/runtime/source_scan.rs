@@ -170,24 +170,44 @@ struct Utf8Validator {
     length: usize,
 }
 
+#[derive(Default)]
+struct SourceTextBuilder {
+    utf8: Utf8Validator,
+    byte_length: usize,
+}
+
 /// Incremental source-policy and exact-state accumulator shared by retained
 /// source observation and generated Apply output.
 pub(crate) struct ObservationBuilder {
-    utf8: Utf8Validator,
+    source: SourceTextBuilder,
     hash: Sha256,
-    byte_length: usize,
 }
 
 impl ObservationBuilder {
     pub(crate) fn new() -> Result<Self, SourceScanError> {
         Ok(Self {
-            utf8: Utf8Validator::default(),
+            source: SourceTextBuilder::default(),
             hash: Sha256::new(),
-            byte_length: 0,
         })
     }
 
     pub(crate) fn push(&mut self, bytes: &[u8]) -> Result<usize, SourceScanError> {
+        let chunk_start = self.source.push(bytes)?;
+        self.hash.update(bytes);
+        Ok(chunk_start)
+    }
+
+    pub(crate) fn finish(self) -> Result<CurrentObservation, SourceScanError> {
+        let byte_length = self.source.finish()?;
+        Ok(CurrentObservation {
+            hash: self.hash.finish().to_hex(),
+            byte_length,
+        })
+    }
+}
+
+impl SourceTextBuilder {
+    fn push(&mut self, bytes: &[u8]) -> Result<usize, SourceScanError> {
         if !self.utf8.push(bytes) {
             return Err(SourceScanError::InvalidSource);
         }
@@ -196,18 +216,14 @@ impl ObservationBuilder {
             .byte_length
             .checked_add(bytes.len())
             .ok_or(SourceScanError::Resource)?;
-        self.hash.update(bytes);
         Ok(chunk_start)
     }
 
-    pub(crate) fn finish(self) -> Result<CurrentObservation, SourceScanError> {
-        if !self.utf8.finish() {
-            return Err(SourceScanError::InvalidSource);
-        }
-        Ok(CurrentObservation {
-            hash: self.hash.finish().to_hex(),
-            byte_length: self.byte_length,
-        })
+    fn finish(self) -> Result<usize, SourceScanError> {
+        self.utf8
+            .finish()
+            .then_some(self.byte_length)
+            .ok_or(SourceScanError::InvalidSource)
     }
 }
 
@@ -276,5 +292,129 @@ pub(crate) fn observe_source(
         let bytes = &scratch[..count];
         let chunk_start = observation.push(bytes)?;
         on_chunk(bytes, chunk_start)?;
+    }
+}
+
+/// Validates and consumes exactly one trusted source length without hashing.
+/// One final byte is requested only to reject growth beyond the proof.
+pub(crate) fn validate_source_exact(
+    reader: &mut impl Read,
+    expected_length: usize,
+    mut on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
+) -> Result<(), SourceScanError> {
+    let mut source = SourceTextBuilder::default();
+    let mut scratch = [0_u8; READ_BUFFER_SIZE];
+    while source.byte_length < expected_length {
+        let remaining = expected_length
+            .checked_sub(source.byte_length)
+            .ok_or(SourceScanError::Resource)?;
+        let capacity = remaining.min(scratch.len());
+        let count = reader
+            .read(&mut scratch[..capacity])
+            .map_err(|_| SourceScanError::Read)?;
+        if count == 0 {
+            return Err(SourceScanError::InvalidSource);
+        }
+        let bytes = &scratch[..count];
+        let chunk_start = source.push(bytes)?;
+        on_chunk(bytes, chunk_start)?;
+    }
+    let mut extra = [0_u8; 1];
+    if reader.read(&mut extra).map_err(|_| SourceScanError::Read)? != 0 {
+        return Err(SourceScanError::InvalidSource);
+    }
+    let actual = source.finish()?;
+    (actual == expected_length)
+        .then_some(())
+        .ok_or(SourceScanError::InvalidSource)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::{self, Read};
+
+    use super::{READ_BUFFER_SIZE, SourceScanError, validate_source_exact};
+
+    struct CountingReader {
+        bytes: Vec<u8>,
+        position: usize,
+        requested: usize,
+        returned: usize,
+        fail_at: Option<usize>,
+    }
+
+    impl CountingReader {
+        fn new(bytes: Vec<u8>) -> Self {
+            Self {
+                bytes,
+                position: 0,
+                requested: 0,
+                returned: 0,
+                fail_at: None,
+            }
+        }
+    }
+
+    impl Read for CountingReader {
+        fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+            self.requested += buffer.len();
+            if self.fail_at == Some(self.position) {
+                return Err(io::Error::other("injected read failure"));
+            }
+            let count = buffer.len().min(self.bytes.len() - self.position);
+            buffer[..count].copy_from_slice(&self.bytes[self.position..self.position + count]);
+            self.position += count;
+            self.returned += count;
+            Ok(count)
+        }
+    }
+
+    #[test]
+    fn exact_validation_uses_fixed_chunks_and_one_growth_byte_without_hashing() {
+        let expected = READ_BUFFER_SIZE + 1;
+        let mut exact = CountingReader::new(vec![b'a'; expected]);
+        let mut chunks = Vec::new();
+        validate_source_exact(&mut exact, expected, |bytes, start| {
+            chunks.push((start, bytes.len()));
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(chunks, [(0, READ_BUFFER_SIZE), (READ_BUFFER_SIZE, 1)]);
+        assert_eq!(exact.returned, expected);
+        assert_eq!(exact.requested, expected + 1);
+
+        let mut grown = CountingReader::new(vec![b'a'; 1024 * 1024]);
+        assert_eq!(
+            validate_source_exact(&mut grown, expected, |_, _| Ok(())),
+            Err(SourceScanError::InvalidSource)
+        );
+        assert_eq!(grown.returned, expected + 1);
+        assert_eq!(grown.requested, expected + 1);
+    }
+
+    #[test]
+    fn exact_validation_rejects_short_invalid_and_failed_reads() {
+        let mut short = CountingReader::new(b"short".to_vec());
+        assert_eq!(
+            validate_source_exact(&mut short, 6, |_, _| Ok(())),
+            Err(SourceScanError::InvalidSource)
+        );
+
+        for bytes in [b"nul\0".to_vec(), b"invalid\xff".to_vec()] {
+            let length = bytes.len();
+            let mut invalid = CountingReader::new(bytes);
+            assert_eq!(
+                validate_source_exact(&mut invalid, length, |_, _| Ok(())),
+                Err(SourceScanError::InvalidSource)
+            );
+        }
+
+        let mut failed = CountingReader::new(b"exact".to_vec());
+        failed.fail_at = Some(5);
+        assert_eq!(
+            validate_source_exact(&mut failed, 5, |_, _| Ok(())),
+            Err(SourceScanError::Read)
+        );
+        assert_eq!(failed.returned, 5);
     }
 }

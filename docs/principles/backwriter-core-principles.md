@@ -7,7 +7,8 @@ v4 Core contract. The partially implemented and unpublished `0.2.1` target adds
 only the explicitly guarded observation-reuse authority below; Phase 2 provides
 the Host kernel and Search proof installation, and Phase 3 adds bounded ordinary
 View proof consumption. Phase 4 adds Check group classification from matching
-proof without changing public View or Check meaning.
+proof, and Phase 5 adds Apply precondition reuse and prospective-after proof
+replacement coupled to existing Anchor reflection.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash and length only while its
@@ -42,14 +43,17 @@ proof without changing public View or Check meaning.
    length and returns exact caller-range bytes. Check compares only source hash
    and length; a trusted path proof may supply that comparison without source
    access for the complete group. Apply requires the exact source state before
-   direct range splice preparation and publication. None is a target finder.
+   direct range splice preparation and publication; a matching trusted proof
+   may remove only its before hash work, and confirmed changed publication may
+   retain only the already computed after hash/length. None is a target finder.
 8. **Pick is pure input selection.** Pick preserves an input-order subsequence
    of valid caller-provided Anddress values without Runtime or Workspace access,
    currentness, relation discovery, or retained result state.
 9. **Anchor is the sole continuity exception.** Only live Runtime-local Anchor
    state may arithmetically transform a range across a Backwriter-owned Apply.
-   External changes invalidate rather than relocate it; Anchor adds no history,
-   persistence, watcher, or generic transition engine.
+   The same prospective-after identity drives both that reflection and Host
+   proof replacement. External changes invalidate rather than relocate it;
+   Anchor adds no history, persistence, watcher, or generic transition engine.
 10. **Current observation is bounded and ephemeral.** The private
     `CurrentObservation` holds only one selected source's hash and byte length
     until the current Search, View, Check, Apply, or Anchor consumer discards
