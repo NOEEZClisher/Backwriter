@@ -153,6 +153,14 @@ fn classify_group(
         set_group(statuses, group, Currentness::NotCurrent);
         return Ok(());
     }
+    if runtime.selected_root(exemplar.logical_path()).is_err() {
+        set_group(statuses, group, Currentness::NotCurrent);
+        return Ok(());
+    }
+    if let Some(proof) = runtime.select_current_proof(exemplar.logical_path()) {
+        classify_source_state(&proof.hash, proof.byte_length, inputs, group, statuses);
+        return Ok(());
+    }
     let mut file = match runtime.open_admitted_source(exemplar.logical_path()) {
         Ok(file) => file,
         Err(DirectoryAccessError::Unadmitted | DirectoryAccessError::NotCurrent) => {
@@ -175,14 +183,13 @@ fn classify_observed_source(
 ) -> Result<(), CheckError> {
     match observe_source(reader, |_, _| Ok(())) {
         Ok(state) => {
-            for &index in group {
-                let input = &inputs[index];
-                if input.source_byte_length() == state.byte_length
-                    && input.source_state_hash() == state.hash
-                {
-                    statuses[index] = Currentness::Current;
-                }
-            }
+            classify_source_state(
+                state.hash.as_bytes(),
+                state.byte_length,
+                inputs,
+                group,
+                statuses,
+            );
             Ok(())
         }
         Err(SourceScanError::Read | SourceScanError::InvalidSource) => {
@@ -190,6 +197,23 @@ fn classify_observed_source(
             Ok(())
         }
         Err(SourceScanError::Resource) => Err(CheckError::Resource),
+    }
+}
+
+fn classify_source_state(
+    hash: &[u8],
+    byte_length: usize,
+    inputs: &[Anddress],
+    group: &[usize],
+    statuses: &mut [Currentness],
+) {
+    for &index in group {
+        let input = &inputs[index];
+        statuses[index] = if super::source_state_matches(hash, byte_length, input) {
+            Currentness::Current
+        } else {
+            Currentness::NotCurrent
+        };
     }
 }
 
@@ -259,11 +283,17 @@ fn pick_outcome(anddresses: Vec<Anddress>) -> PickOutcome {
 
 #[cfg(test)]
 mod tests {
-    use std::io::{self, Read};
+    use std::{
+        fs,
+        io::{self, Read},
+        panic::{AssertUnwindSafe, catch_unwind},
+    };
 
     use crate::backwriter::anddress::AnddressTarget;
     use crate::hash::Sha256;
-    use crate::runtime::source_scan::READ_BUFFER_SIZE;
+    use crate::runtime::{
+        AdmissionRoot, CurrentProof, WorkspaceAdmission, source_scan::READ_BUFFER_SIZE,
+    };
 
     use super::*;
 
@@ -337,6 +367,21 @@ mod tests {
             address(bytes, AnddressTarget::Line, 0, 4),
             address(bytes, AnddressTarget::Line, 4, bytes.len()),
         ]
+    }
+
+    fn runtime_address(runtime: &WorkspaceRuntime, bytes: &[u8]) -> Anddress {
+        let mut hash = Sha256::new();
+        hash.update(bytes);
+        Anddress::new(
+            &runtime.workspace_coordinate,
+            "source.txt",
+            &hash.finish().to_hex(),
+            bytes.len(),
+            AnddressTarget::File,
+            0,
+            bytes.len(),
+        )
+        .unwrap()
     }
 
     #[test]
@@ -446,6 +491,56 @@ mod tests {
     }
 
     #[test]
+    fn proof_miss_poison_and_unusable_state_fall_back_without_check_installation() {
+        let fixture = tempfile::tempdir().unwrap();
+        let bytes = b"current\n";
+        fs::write(fixture.path().join("source.txt"), bytes).unwrap();
+        let admission = || WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap();
+
+        let missing =
+            WorkspaceRuntime::open_host_authoritative(fixture.path(), admission()).unwrap();
+        let input = runtime_address(&missing, bytes);
+        assert_eq!(missing.check(input.clone()).unwrap().filtered, Some(input));
+        assert!(missing.current_proofs.lock().unwrap().is_empty());
+
+        let unusable =
+            WorkspaceRuntime::open_host_authoritative(fixture.path(), admission()).unwrap();
+        unusable
+            .install_search_proofs(vec![
+                CurrentProof::new("source.txt", "short".to_owned(), bytes.len()).unwrap(),
+            ])
+            .unwrap();
+        let input = runtime_address(&unusable, bytes);
+        assert_eq!(unusable.check(input.clone()).unwrap().filtered, Some(input));
+        let proofs = unusable.current_proofs.lock().unwrap();
+        assert_eq!(proofs.len(), 1);
+        assert_eq!(proofs[0].hash, "short");
+        drop(proofs);
+
+        let poisoned =
+            WorkspaceRuntime::open_host_authoritative(fixture.path(), admission()).unwrap();
+        let input = runtime_address(&poisoned, bytes);
+        poisoned
+            .install_search_proofs(vec![
+                CurrentProof::new(
+                    "source.txt",
+                    input.source_state_hash().to_owned(),
+                    input.source_byte_length(),
+                )
+                .unwrap(),
+            ])
+            .unwrap();
+        assert!(
+            catch_unwind(AssertUnwindSafe(|| {
+                let _proofs = poisoned.current_proofs.lock().unwrap();
+                panic!("poison current proof lock");
+            }))
+            .is_err()
+        );
+        assert_eq!(poisoned.check(input.clone()).unwrap().filtered, Some(input));
+    }
+
+    #[test]
     fn check_production_has_no_structural_scanner_or_target_branch() {
         let production = include_str!("check.rs")
             .split("#[cfg(test)]")
@@ -460,6 +555,17 @@ mod tests {
             assert!(!production.contains(forbidden));
         }
         assert_eq!(production.matches("observe_source(").count(), 1);
+        assert_eq!(production.matches("select_current_proof(").count(), 1);
+        assert!(!production.contains("install_search_proofs"));
+        assert!(!production.contains("invalidate_current_proof"));
+        let group = production
+            .split("fn classify_group")
+            .nth(1)
+            .unwrap()
+            .split("fn classify_observed_source")
+            .next()
+            .unwrap();
+        assert!(group.find("select_current_proof") < group.find("open_admitted_source"));
 
         let source_scan = include_str!("source_scan.rs")
             .split("#[cfg(test)]")
@@ -471,5 +577,13 @@ mod tests {
         assert_eq!(apply.matches("stage_source(&mut source").count(), 1);
         assert!(!apply.contains("scan_source("));
         assert!(include_str!("anchor.rs").contains("observe_anchored"));
+
+        let runtime = include_str!("../runtime.rs");
+        assert!(runtime.contains("#[derive(Clone, Copy)]\nstruct SourceProofEvidence"));
+        assert!(
+            runtime.contains(
+                "fn select_current_proof(&self, path: &str) -> Option<SourceProofEvidence>"
+            )
+        );
     }
 }

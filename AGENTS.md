@@ -30,15 +30,18 @@ v3 remains only in Git history and immutable `0.1.0` release evidence. The
 canonical four-target `0.2.0` artifacts, manifest, installers, live publication,
 fresh installation, and explicit update are complete.
 
-`0.2.1` is an unpublished development target. Phases 2 and 3 implement its
-minimal Host-authoritative observation kernel and bounded ordinary View reuse
-while preserving v4 identity and the existing `0.2.0` execution path as the
-default Untrusted Mode.
+`0.2.1` is an unpublished development target. Phases 2 through 4 implement its
+minimal Host-authoritative observation kernel, bounded ordinary View reuse, and
+Check current-proof reuse while preserving v4 identity and the existing
+`0.2.0` execution path as the default Untrusted Mode.
 `WorkspaceRuntime::open_host_authoritative` explicitly selects that mode and
 `WorkspaceRuntime::invalidate_source` is its host mutation boundary. The
 Runtime may retain one private current SHA-256/length proof per logical source.
 Ordinary View consumes a complete matching proof for bounded direct-range
-access; Check and Apply do not consume or install proof yet.
+access. Check consumes a matching path proof entirely in RAM and classifies the
+whole coordinate/path group from hash and length without source open, read, or
+hash work. Check never installs, replaces, or removes proof. Apply does not
+consume or install proof yet.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,
@@ -249,9 +252,11 @@ are preserved evidence, never current authority.
   decisions. View does not classify input state; Check does not change View.
 - **Check V1** has closed semantic/API/type/report authority and a stateless
   result/history contract. Default execution remains the `0.2.0` observation
-  path; the optional trusted current proof is the sole cross-call exception and
-  is not a Check result store. **Data V1** semantic/public API/type/error authority
-  and Rust implementation are complete.
+  path. A Host-authoritative matching path proof classifies every occurrence in
+  that source group by hash and length without filesystem access; mismatches do
+  not fall back or alter proof. The optional trusted current proof is the sole
+  cross-call exception and is not a Check result store. **Data V1**
+  semantic/public API/type/error authority and Rust implementation are complete.
   Edit V1 semantic/public API/type/error authority and single-source Apply
   Runtime implementation are complete. Apply has closed V1 semantic/public
   API/error authority and Runtime implementation. Apply's reference letter is

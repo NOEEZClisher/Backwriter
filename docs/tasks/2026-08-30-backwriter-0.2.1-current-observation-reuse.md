@@ -1,7 +1,7 @@
 # Backwriter 0.2.1 Current-Observation Reuse
 
-Status: Phases 1–3 complete; Check/Apply/Anchor trusted consumption,
-measurement, version change, and publication not started.
+Status: Phases 1–4 complete; Apply/Anchor trusted consumption, invalidation
+closure, measurement, version change, and publication not started.
 
 This tracker records execution evidence and phase progress only. Normative
 semantics belong to the active
@@ -82,9 +82,8 @@ are Adapter/caller values rather than observation authority.
 3. **View bounded reuse — complete.** Trusted ordinary View uses direct-range
    reads and a fixed-scratch nearest-boundary related-Paragraph path without
    whole-source or complete-Line retention.
-4. **Check trusted hit — pending.** Reuse matching proof with zero
-   source-size-proportional I/O/hash while preserving reports, order, and
-   multiplicity.
+4. **Check trusted hit — complete.** Reuse matching proof with zero filesystem
+   open/read/hash while preserving reports, order, and multiplicity.
 5. **Apply and Anchor integration — pending.** Enforce proof preconditions,
    preserve exact no-op proof, install confirmed prospective-after proof, and
    share existing Anchor invalidation/publication fail-closure.
@@ -162,5 +161,27 @@ does not itself publish a release.
   and remove the matching proof. The public API, errors, v4 identity/wire,
   target text, terminators, related addresses, ordering, and CLI behavior are
   unchanged.
-- Check, Apply, and Anchor proof consumption remains deferred to Phases 4–5;
-  Phase 6 retains the complete invalidation/race closure.
+- Apply and Anchor proof consumption remains deferred to Phase 5; Phase 6
+  retains the complete invalidation/race closure.
+
+## Phase 4 closure
+
+- Host-authoritative raw, Search-outcome, and Pick-outcome Check preserve the
+  existing source-less validation, coordinate/path grouping, filtering, report,
+  order, duplicates, multiplicity, and public errors.
+- After workspace, private-path, and admission classification, a path proof is
+  copied as fixed-size SHA-256 bytes plus exact length under the proof lock; the
+  lock is released before occurrence comparison or any later work.
+- Every matching-proof group performs zero filesystem open, source read, and
+  SHA-256 work. Matching occurrences are `Current`; hash or length mismatches
+  are `NotCurrent`; kind and range are ignored exactly as before.
+- A present proof covers the entire group. Mismatches do not fall back and Check
+  never installs, replaces, invalidates, removes, or refreshes proof.
+- Untrusted Mode, proof miss, poison, and unusable private proof evidence retain
+  the unchanged admission and one-observation-per-eligible-source fallback.
+- Regressions cover every Check input form, a 10,000-occurrence mixed group,
+  duplicates and arbitrary order, raw-valid nonstructural ranges, multiple hit
+  and miss sources, explicit invalidation boundaries, and structural zero-I/O/
+  hash and lock-scope evidence. The complete GNU-host suite passes 220 tests.
+- Apply and Anchor proof consumption remains deferred to Phase 5; Phase 6 keeps
+  the broader invalidation/race closure.

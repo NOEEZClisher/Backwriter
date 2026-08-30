@@ -25,9 +25,28 @@ proof per observed source and no eviction or retained handle, and whole-call
 successful installation for every fully observed Search source. Completed
 Phase 3 adds ordinary View proof matching, direct target-range reads, and a
 fixed-scratch bidirectional related-Paragraph scan to the nearest separator or
-source boundary. Later phases add Check trusted hits; Apply and Anchor
-integration; full race/drift semantics; then fixed A/B gates and the `0.2.1`
-version decision.
+source boundary. Completed Phase 4 makes Check classify an entire matching
+coordinate/path group from copied hash/length proof with no filesystem open,
+read, or hash while preserving its existing report/filter path. Later phases
+add Apply and Anchor integration; full race/drift semantics; then fixed A/B
+gates and the `0.2.1` version decision.
+
+## Completed: 0.2.1 Phase 4 Check current-proof reuse
+
+Host-authoritative Check validates all inputs first, preserves the existing
+coordinate/path grouping, then copies only one fixed-size hash and length from
+a matching path proof under the lock. The lock is released before group
+classification and every later operation. Each occurrence compares only its
+source hash and length; kind, range, input order, duplicates, multiplicity,
+filtering, and report semantics are unchanged. A present proof covers the whole
+group, so mismatches are `NotCurrent` without fallback or proof mutation and
+matches are `Current` without source open, read, or hash.
+
+Untrusted execution, a proof miss, poisoned state, or unusable private evidence
+uses the unchanged admitted one-observation-per-source path. Check installs,
+replaces, invalidates, and removes no proof. Apply and Anchor integration,
+broader invalidation/race closure, measurement, version change, and publication
+remain later phases.
 
 ## Completed: 0.2.0 release closure
 
@@ -186,9 +205,10 @@ slices are complete.
 For `0.2.1`, Phase 2 closes the minimal public host-authority seam, private
 proof representation, cardinality, no-eviction/no-handle choice, and
 multi-source Search installation policy. Phase 3 closes bounded ordinary View
-reuse and its related-Paragraph path without whole-source retention. Check,
-Apply, Anchor, invalidation closure, measurement, and the version decision
-remain later phases.
+reuse and its related-Paragraph path without whole-source retention. Phase 4
+closes Check proof reuse without changing report semantics. Apply, Anchor,
+invalidation closure, measurement, and the version decision remain later
+phases.
 
 ## Completed: 0.1.0 exact File lookup
 

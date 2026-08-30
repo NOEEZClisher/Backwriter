@@ -41,7 +41,7 @@ while exact no-op preserves it. Host-coordinated or opaque mutation, explicit
 invalidation, authority change, unavailable source, uncertain publication, or
 Runtime drop discards proof.
 
-Phases 2 and 3 add `WorkspaceRuntime::open_host_authoritative` and
+Phases 2 through 4 add `WorkspaceRuntime::open_host_authoritative` and
 `WorkspaceRuntime::invalidate_source` without changing `open` or any capability
 signature. Private synchronized state holds at most one replace-only
 hash/length proof per logical path and no retained handle. A successful Host
@@ -51,21 +51,27 @@ failed call installs none of its provisional proofs. Untrusted Search installs
 none. Ordinary Host View uses an exact matching proof to read only its recorded
 range plus fixed-scratch nearest-boundary Line relation evidence; a proof miss
 and every Untrusted View retain the complete `0.2.0` observation path. A
-same-path proof mismatch fails before source access. Check does not consume
-proof yet, and every Apply call removes its matching proof before validation or
-execution while preserving unrelated paths.
+same-path proof mismatch fails before source access. Host Check uses one copied
+matching path proof to classify every occurrence in that coordinate/path group
+by hash and length with no source open, read, or hash. Mixed matches and
+mismatches preserve their original order and multiplicity; a mismatch neither
+falls back nor changes proof. Proof miss, Untrusted execution, poison, or
+unusable private state keeps the existing one-observation-per-source fallback.
+Every Apply call still removes its matching proof before validation or execution
+while preserving unrelated paths.
 
 Trusted Search followed by ordinary View no longer performs View's complete
 source read or hash; File still returns the complete file range, while
-Paragraph and Line retain only their returned target allocation. Search
-followed by Check or Apply still performs one Search observation plus one
-consumer observation. Apply has no separate pre-hash source pass: its single
+Paragraph and Line retain only their returned target allocation. Host Search
+followed by Check performs no Check source observation on a proof hit; Search
+followed by Apply still performs one Search observation plus one consumer
+observation. Apply has no separate pre-hash source pass: its single
 live-source read emits accepted bytes to staging and computes before
 hash/length, while prospective-after hash/length are computed during output
 emission and then discarded. The next consumer therefore reopens and rehashes.
 The
 [0.2.1 phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
-owns the audited flow, Phase 2–3 choices, fixed comparison inputs, gates, and
+owns the audited flow, Phase 2–4 choices, fixed comparison inputs, gates, and
 remaining phases.
 
 ## Core capability inventory

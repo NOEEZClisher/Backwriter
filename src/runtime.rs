@@ -157,6 +157,16 @@ enum CurrentProofMatch {
     Mismatched,
 }
 
+#[derive(Clone, Copy)]
+struct SourceProofEvidence {
+    hash: [u8; 64],
+    byte_length: usize,
+}
+
+fn source_state_matches(hash: &[u8], byte_length: usize, input: &Anddress) -> bool {
+    hash == input.source_state_hash().as_bytes() && byte_length == input.source_byte_length()
+}
+
 struct CurrentProof {
     logical_path: String,
     hash: String,
@@ -413,31 +423,35 @@ impl WorkspaceRuntime {
     }
 
     fn match_current_proof(&self, input: &Anddress) -> CurrentProofMatch {
+        match self.select_current_proof(input.logical_path()) {
+            Some(proof) if source_state_matches(&proof.hash, proof.byte_length, input) => {
+                CurrentProofMatch::Matching
+            }
+            Some(_) => CurrentProofMatch::Mismatched,
+            None => CurrentProofMatch::Missing,
+        }
+    }
+
+    fn select_current_proof(&self, path: &str) -> Option<SourceProofEvidence> {
         if self.authority == ObservationAuthority::Untrusted {
-            return CurrentProofMatch::Missing;
+            return None;
         }
         let current = match self.current_proofs.lock() {
             Ok(current) => current,
             Err(mut poisoned) => {
                 poisoned.get_mut().clear();
-                return CurrentProofMatch::Missing;
+                return None;
             }
         };
-        match current.binary_search_by(|proof| {
-            proof
-                .logical_path
-                .as_bytes()
-                .cmp(input.logical_path().as_bytes())
-        }) {
-            Ok(index)
-                if current[index].hash == input.source_state_hash()
-                    && current[index].byte_length == input.source_byte_length() =>
-            {
-                CurrentProofMatch::Matching
-            }
-            Ok(_) => CurrentProofMatch::Mismatched,
-            Err(_) => CurrentProofMatch::Missing,
-        }
+        let index = current
+            .binary_search_by(|proof| proof.logical_path.as_bytes().cmp(path.as_bytes()))
+            .ok()?;
+        let proof = &current[index];
+        let hash: [u8; 64] = proof.hash.as_bytes().try_into().ok()?;
+        Some(SourceProofEvidence {
+            hash,
+            byte_length: proof.byte_length,
+        })
     }
 
     fn invalidate_source_state(&mut self, path: &str) {

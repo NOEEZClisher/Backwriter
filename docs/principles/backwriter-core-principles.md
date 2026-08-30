@@ -6,7 +6,8 @@ hard-cutover v4 value/wire with SHA-256; these principles describe the active
 v4 Core contract. The partially implemented and unpublished `0.2.1` target adds
 only the explicitly guarded observation-reuse authority below; Phase 2 provides
 the Host kernel and Search proof installation, and Phase 3 adds bounded ordinary
-View proof consumption without changing public View meaning.
+View proof consumption. Phase 4 adds Check group classification from matching
+proof without changing public View or Check meaning.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash and length only while its
@@ -39,8 +40,9 @@ View proof consumption without changing public View meaning.
    read.
 7. **Capability responsibility stays narrow.** View validates source hash and
    length and returns exact caller-range bytes. Check compares only source hash
-   and length. Apply requires the exact source state before direct range splice
-   preparation and publication. None is a target finder.
+   and length; a trusted path proof may supply that comparison without source
+   access for the complete group. Apply requires the exact source state before
+   direct range splice preparation and publication. None is a target finder.
 8. **Pick is pure input selection.** Pick preserves an input-order subsequence
    of valid caller-provided Anddress values without Runtime or Workspace access,
    currentness, relation discovery, or retained result state.
@@ -60,9 +62,11 @@ View proof consumption without changing public View meaning.
     lookup, deterministic ordering, and no-fixed-limit behavior remain baseline
     constraints for the v4 cutover.
 12. **Check result semantics remain stateless.** Check creates no result store
-    or latest slot; Runtime stores no `CurrentObservation` across calls. The
-    narrow trusted current proof is the sole cross-call exception and carries
-    no Check result or history. Data remains explicit caller-owned state.
+    or latest slot; Runtime stores no `CurrentObservation` across calls. A
+    trusted proof hit classifies one path group without filesystem access and
+    never installs, changes, or removes proof. The narrow trusted current proof
+    is the sole cross-call exception and carries no Check result or history.
+    Data remains explicit caller-owned state.
 13. **Composition belongs to the caller.** Shared native types and explicit
     value passing establish neither provenance nor a required call order or
     general workflow. The Protocol's named integrations remain explicit.

@@ -5,8 +5,9 @@
 `0.2.1` is partially implemented and unpublished. Phase 2 adds the Host Runtime
 constructor, source invalidation kernel, private proof state, and
 successful-Search proof installation. Phase 3 adds bounded ordinary View proof
-consumption; Cargo/version, v4 wire, default Untrusted behavior, and the closed
-public `0.2.0` release remain unchanged. The
+consumption. Phase 4 adds Check current-proof group classification;
+Cargo/version, v4 wire, default Untrusted behavior, and the closed public
+`0.2.0` release remain unchanged. The
 Protocol owns default Untrusted Mode and explicit Host-authoritative Mode; the
 [phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
 owns the execution audit, fixed not-yet-remeasured `0.2.0` comparison inputs,
@@ -18,9 +19,10 @@ workspaces and logical paths remain isolated; multi-source success installs all
 fully observed sources while late failure installs none; and invalidation,
 unavailable source, Anchor fail-closure, Apply entry, and uncertain publication
 remove only affected proof. Structural checks exclude retained bytes, results,
-ranges, history, public getters, CLI Host activation, and Debug disclosure.
-Search remains the only target finder. Check and Apply still use the full
-`0.2.0` observation path and must not relocate or context-match.
+ranges, history, public getters, CLI Host activation, and Debug disclosure. At
+Phase 2 closure, Check and Apply still used the full `0.2.0` observation path.
+Search remains the only target finder; Check and Apply must not relocate or
+context-match.
 
 Phase 3 regressions prove ordinary View proof hit, miss, mismatch, explicit
 invalidation fallback, and unchanged Untrusted behavior. They cover
@@ -33,8 +35,20 @@ Line relation, releases proof state before I/O, and retains only the returned
 target plus fixed scratch. The Phase 3 development suite passes 215 GNU-host
 Rust tests.
 
-Future verification must prove Check and Apply trusted consumer hits and the
-remaining invalidation/race matrix. Confirmed Apply may install only the prospective-after
+Phase 4 regressions prove Host Search to raw, Search-outcome, and Pick-outcome
+Check hits; 10,000 mixed matching/stale occurrences with duplicates and exact
+order; hash and length mismatches without fallback or proof mutation; and
+raw-valid nonstructural Paragraph and Line currentness. They cover mixed
+proof-hit/proof-miss sources, one observation per miss group, no Check proof
+installation, Untrusted/miss/poison/unusable fallback, explicit invalidation
+followed by changed, missing, and invalid source, and unchanged workspace,
+private-path, admission, empty-report, and Resource boundaries. Structural
+evidence fixes the proof lookup before filesystem open, one fallback observer,
+owned fixed-size digest evidence, and lock release before I/O, hashing, and
+report assembly. The Phase 4 development suite passes 220 GNU-host Rust tests.
+
+Future verification must prove Apply trusted consumer hits and the remaining
+invalidation/race matrix. Confirmed Apply may install only the prospective-after
 hash/length already computed during output emission; no extra source hash pass
 is permitted.
 

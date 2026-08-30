@@ -182,6 +182,24 @@ unavailable without asserting that the complete proof is stale. The trusted
 path computes no source hash, searches for no target, retains no handle, and
 changes no `ViewOutcome` or related-Anddress semantics.
 
+Phase 4 adds proof consumption to Check without changing any public Check type,
+status, filtering, report, ordering, or error. Check completes source-less
+validation for every occurrence first, then preserves its existing
+coordinate/path groups and workspace, private-path, and admission boundaries.
+For a path proof, Runtime copies only its fixed-size SHA-256 bytes and exact
+length while holding the proof lock and releases the lock immediately. Every
+occurrence in that group compares its own hash and length against the copied
+evidence; kind and range remain irrelevant. A match is `Current`, a mismatch is
+`NotCurrent`, and original order, duplicates, and multiplicity remain exact.
+
+A path proof covers the complete group. Therefore a mixed matching/mismatching
+group performs zero filesystem open, source read, or SHA-256 work, and a
+mismatch neither falls back nor removes, replaces, or refreshes proof. Untrusted
+Mode, a proof miss, poisoned proof state, or unusable private proof evidence
+uses the unchanged admission plus one complete observation per eligible source
+group. Check never installs, updates, invalidates, or removes proof. No proof
+lock is held during fallback I/O, hashing, filtering, or report assembly.
+
 ### Current 0.2.0 execution audit
 
 The common `observe_source` path performs one forward read from one retained
@@ -197,8 +215,10 @@ and live Anchor bindings.
   range. Anchor creation and anchored View also use one source observation with
   direct target projection.
 - Raw, Search-outcome, and Pick-outcome Check group eligible inputs by
-  coordinate and logical path, then observe each eligible path once for hash and
-  length. They retain no proof after returning.
+  coordinate and logical path. Untrusted and proof-miss groups observe each
+  eligible path once for hash and length; a Host proof hit uses copied proof
+  evidence and performs no source observation. Check retains no result and does
+  not mutate proof after returning.
 - Apply's single live-source observation simultaneously writes accepted before
   bytes to staging and computes the before hash and length. Apply has no
   separate pre-hash source pass. Staging readback is preparation, not a second
@@ -219,8 +239,10 @@ and live Anchor bindings.
 Host Search uses the same observer and projection. It moves only the completed
 logical path, SHA-256, and exact length into provisional proof records, then
 installs them after the complete Search result succeeds. Phase 3 ordinary View
-uses a matching proof as specified above; Check remains on the full observation
-path. Explicit invalidation removes the same-path proof and live Anchors;
+uses a matching proof as specified above. Phase 4 Check classifies a matching
+path group entirely from copied hash/length evidence and retains the full
+observation path for Untrusted execution and proof misses. Explicit invalidation
+removes the same-path proof and live Anchors;
 confirmed source unavailability, anchored fail-closure, every Apply call,
 publication uncertainty, and Runtime drop leave no reusable matching proof.
 
@@ -647,6 +669,14 @@ values, in-place updates of stored Check outputs, and their associated RAM commi
 semantics remain deferred. Any Adapter-facing Check spelling remains Adapter
 syntax rather than storage syntax or Data authority. Wire remains outside the
 Core cutline; Adapter spelling does not alter Check Core authority.
+
+In Host-authoritative Mode, a matching path proof replaces the source
+observation for that complete group. Each occurrence is `Current` exactly when
+its hash and length match the proof and otherwise `NotCurrent`; kind and range
+remain irrelevant. A present proof never falls back or mutates proof. Untrusted,
+missing, poisoned, or unusable proof state retains the complete observation
+classification above. This creates no Check result retention, target lookup,
+new status, public proof API, or metadata authority.
 
 ## Implemented 0.1.0 Data V1 public authority
 
