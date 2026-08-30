@@ -74,6 +74,103 @@ opaque source change invalidates rather than relocates ordinary Anddresses and
 live Anchor continuity. This adds no history, watcher, retry, CAS, persistent
 index, or Git semantics.
 
+## 0.2.1 Host-authoritative observation-reuse authority
+
+`0.2.1` is an unimplemented and unpublished development target. It preserves
+the v4 Anddress algebra, SHA-256, exact source byte length, target kind, and
+`[start,end)` range without a wire or compatibility change. Search remains the
+only target finder. View, Check, and Apply do not relocate, context-match, or
+search for a target.
+
+The default `WorkspaceRuntime`, every one-shot CLI invocation, and an ordinary
+CLI Session use **Untrusted Mode**. They retain the closed `0.2.0` behavior:
+each consuming call obtains its own admitted retained-handle observation and
+computes the source hash and length during that read. No watcher, metadata, or
+prior call changes that default.
+
+Reuse is permitted only in an explicit **Host-authoritative Mode**. The host
+must coordinate every source-visible writer and logical-path replacement that
+can affect the Runtime. It must exclude mutation from the reuse decision until
+the consuming capability call completes and must synchronously notify the
+Runtime before any coordinated mutation begins. A watcher, `mtime`, size,
+inode, path identity, or notification after mutation is not current
+source-state proof. A host that cannot satisfy the complete guard must use
+Untrusted Mode or cause a proof miss.
+
+The sole permitted cross-call state shape is a current SHA-256 and exact-length
+proof record bound to the owning Runtime, workspace authority, admission
+authority, source generation, and logical path. It is Runtime-local, RAM-only,
+replace-only, and non-persistent. It contains no source bytes, Search results,
+target map, previous hash, predecessor or successor, history chain, relocation
+context, or retained observation object. It is not Anddress identity, target
+continuity, a registry, a cache of capability results, or proof of any other
+logical path, workspace, admission, or generation.
+
+Only a complete trusted hit may reuse that proof. A miss, incomplete host
+guard, or binding to a different logical path, workspace, admission, or source
+generation falls back to the complete `0.2.0` observation path. Successful
+Search observation may replace the proof for its observed source, but Search
+retains no result or target projection. The policy for installing proof from a
+multi-source Search remains a Phase 2 decision.
+
+View and Check may skip only the source-size-proportional observation/hash work
+when their complete v4 source hash and length match a trusted proof. Their
+target and result semantics do not change. Check remains stateless with respect
+to results and history; this narrow current proof is its only cross-call
+exception. Apply may rely on a trusted matching proof only while the host guard
+remains in force. Confirmed publication may replace the old proof with the
+SHA-256 and length already computed during prospective-after emission. An exact
+no-op preserves the matching proof. Apply still performs no target search or
+relocation.
+
+Host-coordinated mutation, Runtime-known opaque mutation, explicit invalidation,
+workspace or admission authority change, unavailable source, uncertain
+publication, and Runtime drop discard the affected proof before it can authorize
+reuse. A stale ordinary Anddress after invalidation must remain a Safe Reject,
+and Wrong Apply must remain zero. Anchor's existing logical-source invalidation and
+`PublicationUncertain` fail-closure remain reusable, but the proof creates no
+Anchor and is not Anchor continuity.
+
+This authority fixes no Rust constructor, mode, token, invalidation, or getter
+name; no state container, cardinality, or eviction policy; no retained-handle
+versus reopen choice; no multi-source Search installation policy; and no
+related-Paragraph lookup algorithm. Phase 2 must choose the smallest public
+host seam and private state only after auditing its direct consumers and race
+boundary.
+
+### Current 0.2.0 execution audit
+
+The common `observe_source` path performs one forward read from one retained
+no-follow source handle. Its `ObservationBuilder` incrementally enforces
+UTF-8/NUL policy and computes SHA-256 and checked byte length with fixed scratch.
+The resulting `CurrentObservation` is call-local and is discarded after its
+consumer; `WorkspaceRuntime` currently stores only admission/workspace state
+and live Anchor bindings.
+
+- Content and exact-File Search each observe a selected source once. Content
+  projection runs during that same read; there is no separate hash pass.
+- Ordinary View opens and observes the source once while capturing the requested
+  range. Anchor creation and anchored View also use one source observation with
+  direct target projection.
+- Raw, Search-outcome, and Pick-outcome Check group eligible inputs by
+  coordinate and logical path, then observe each eligible path once for hash and
+  length. They retain no proof after returning.
+- Apply's single live-source observation simultaneously writes accepted before
+  bytes to staging and computes the before hash and length. Apply has no
+  separate pre-hash source pass. Staging readback is preparation, not a second
+  live-source observation. Prospective-after SHA-256 and length are computed
+  while output bytes are emitted, without an after-source reread, and are
+  currently discarded after Anchor planning/reflection.
+- Search followed by View, Check, or Apply therefore performs two full live
+  observations of the same source: one in Search and one in the consumer.
+  Apply followed by any later consumer also reopens and rehashes because Apply
+  retains no before or prospective-after proof. A confirmed no-op likewise
+  retains no proof today.
+- Each one-shot Search, View, or Check opens a fresh Runtime. A CLI Session
+  retains one Runtime across commands, but its current Runtime stores no
+  ordinary proof; Adapter bindings and `DataStore` values are not observation
+  authority.
+
 ## Current structure only
 
 Backwriter is not Git. It establishes only the File/Paragraph/Line structure of
@@ -198,8 +295,9 @@ migration, alias, or parallel schema.
 
 Backwriter Core constructs and provides target Anddress values from an accepted
 current observation. Search delivers those values as results; it is not an
-issuer. This creates no separate registry, issuance lifecycle, lookup/reuse
-state, durable identity, or global identity.
+issuer. This creates no target registry, issuance lifecycle, locator
+lookup/reuse state, durable identity, or global identity. The optional current
+source-state proof retains no target map or result.
 
 Raw exact-source/range equality and v4 wire representation are closed only in the address
 model. Target-specific View currentness, Search projection, Pick predicates,
@@ -360,8 +458,9 @@ View V1 has one `&Anddress` input and the implemented
 `WorkspaceRuntime::view(&Anddress)` seam. Its admitted capability-relative
 no-follow one-read access and File/Paragraph/Line text projection shape remain
 reusable. Its former v2 evidence-based construction is rejected; successful
-related results use v4 source identity and ranges. View stays current-only, stateless,
-non-mutating, and without range, plural, descendant, or partial behavior.
+related results use v4 source identity and ranges. View stays current-only,
+result/history-stateless, non-mutating, and without range, plural, descendant,
+or partial behavior.
 
 View first performs source-less v4 validation before any I/O. It preserves the
 existing `UnsupportedVersion`, `InvalidInput`, and `Unavailable` errors and the

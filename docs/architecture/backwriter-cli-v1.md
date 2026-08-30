@@ -32,6 +32,13 @@ CLI V1 capability execution has two intended forms:
   `DataStore`, and CLI-local Search/Pick/Anddress/Edit/View/Check values plus
   non-aliasing owning Anchedress handles until EOF or `exit`.
 
+Both forms construct the existing default Runtime and therefore use Untrusted
+Mode. One-shot creates a new Runtime for its single call; Session retains one
+Runtime but has no CLI syntax or implicit authority that enables the planned
+`0.2.1` Host-authoritative Mode. That mode requires a future explicit host
+seam and complete writer coordination; Phase 1 defines no CLI flag, command,
+token, or Session behavior for it.
+
 One-shot human and JSON Search, View, and Check plus raw View, Session Pick,
 batch Check, Anchor, Edit, Apply, result binding, and explicit typed Data are
 implemented.

@@ -1,5 +1,30 @@
 # Verification
 
+## 0.2.1 observation-reuse development gates
+
+`0.2.1` is currently unimplemented and unpublished. Phase 1 changes authority
+and tracking documents only; Rust, Cargo, tests, v4 wire, and the closed public
+`0.2.0` release remain byte-identical. The Protocol owns default Untrusted
+Mode and explicit Host-authoritative Mode; the
+[phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
+owns the execution audit, fixed not-yet-remeasured `0.2.0` comparison inputs,
+and phase evidence.
+
+Future verification must prove that Untrusted Mode remains byte-for-byte and
+semantically equivalent to `0.2.0`; trusted misses use the same observation
+path; trusted hits retain no source bytes, results, target map, or history; and
+invalidation, admission/workspace/generation changes, unavailable source, and
+uncertain publication discard proof before reuse. Search remains the only
+target finder. View, Check, and Apply must not relocate or context-match.
+Confirmed Apply may install only the prospective-after hash/length already
+computed during output emission; no extra source hash pass is permitted.
+
+The fixed later gates are Search median at most 105% of `0.2.0`, trusted
+Search-to-View at most 400 ms with at most 350 ms recommended, zero
+source-size-proportional I/O/hash for a trusted Check hit, memory slope at most
+110%, zero whole-source retention, and zero Wrong Apply. These are future A/B
+gates, not measurements or release-readiness claims in Phase 1.
+
 ## 0.2.0 Phase 7 and Search recommendation closure
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current

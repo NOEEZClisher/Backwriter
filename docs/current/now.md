@@ -20,6 +20,37 @@ explicit update are closed. The evidence
 tracker is
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 
+## Backwriter 0.2.1 observation-reuse development target
+
+`0.2.1` is unimplemented and unpublished. It preserves the complete v4
+Anddress API/wire and the closed `0.2.0` release. The Protocol now closes two
+execution modes: the default `WorkspaceRuntime`, one-shot CLI, and ordinary CLI
+Session remain Untrusted Mode with the existing per-call one-read/hash path;
+only an explicit Host-authoritative Mode may reuse a Runtime-local,
+RAM-only, replace-only current SHA-256/length proof bound to Runtime, workspace,
+admission, source generation, and logical path.
+
+The host must coordinate all source-visible writers and path replacements,
+exclude mutation from proof selection through call completion, and invalidate
+synchronously before mutation. Watchers and filesystem metadata are not proof.
+A trusted miss or incomplete guard falls back to `0.2.0` observation. Search
+may install proof without caching results; View and Check may skip only
+source-size-proportional read/hash work on a complete trusted hit; confirmed
+Apply may replace proof with its already computed prospective-after hash/length,
+while exact no-op preserves it. Host-coordinated or opaque mutation, explicit
+invalidation, authority change, unavailable source, uncertain publication, or
+Runtime drop discards proof.
+
+The current implementation retains no such proof. Search followed by View,
+Check, or Apply performs one Search observation plus one consumer observation.
+Apply has no separate pre-hash source pass: its single live-source read emits
+accepted bytes to staging and computes before hash/length, while
+prospective-after hash/length are computed during output emission and then
+discarded. The next consumer therefore reopens and rehashes. The
+[0.2.1 phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
+owns the audited flow, fixed comparison inputs, gates, phases, and intentionally
+open API/state choices.
+
 ## Core capability inventory
 
 | Letter | Word | Current status |
@@ -231,8 +262,9 @@ and offsets are canonical unsigned-decimal strings. Well-formed v3 input is
 
 Backwriter Core constructs and provides target Anddress values from an accepted
 current observation. Search delivers them as results; it is not an issuer. This
-creates no separate registry, issuance lifecycle, lookup/reuse state, durable
-identity, or global identity.
+creates no target registry, issuance lifecycle, locator reuse, durable identity,
+or global identity. The planned narrow current source-state proof is neither
+target lookup nor result retention.
 
 Search projects v4 source identity and ranges directly; Pick provides
 `same_file` instead of observation, paragraph, or hierarchy relations; and

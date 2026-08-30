@@ -1,5 +1,30 @@
 # Backwriter Roadmap
 
+## Planned: 0.2.1 current-observation reuse
+
+`0.2.1` is an unimplemented and unpublished performance target governed by the
+[seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md).
+Phase 1 closes authority and records the current execution flow only. V4
+Anddress identity/wire, SHA-256, exact source length, kind, and
+`[start,end)` remain unchanged, and Search remains the only target finder.
+
+Default Runtime, one-shot CLI, and ordinary CLI Session behavior remain
+Untrusted Mode and preserve `0.2.0` per-call observation. Reuse is available
+only under explicit Host-authoritative Mode with complete writer coordination,
+mutation exclusion through call completion, and synchronous invalidation before
+mutation. The only permitted retained state shape is a Runtime-local, RAM-only,
+replace-only current SHA-256/length proof bound to workspace, admission, source
+generation, and logical path. It retains no source bytes, results, target map,
+prior proof, history, or relocation evidence.
+
+The implementation phases add the smallest host-mode/state/invalidation kernel
+and Search proof installation; bounded View related-range work; Check trusted
+hits; Apply and Anchor integration; full race/drift semantics; then fixed A/B
+gates and the `0.2.1` version decision. Public API names, private state shape,
+cardinality/eviction, retained handle versus reopen, multi-source Search proof
+installation, and related Paragraph mechanics remain intentionally open until
+their direct consumers are audited in Phase 2.
+
 ## Completed: 0.2.0 release closure
 
 The closed public `0.1.0` release remains immutable v3 evidence. The public
@@ -154,6 +179,11 @@ Runtime implementation are complete.
 The bounded source-memory Check, Search, View, Anchor, Apply streaming Rust
 slices are complete.
 
+For `0.2.1`, Phase 2 must close the minimal public host-authority seam and
+private proof representation, cardinality/eviction, retained-handle versus
+reopen policy, multi-source Search installation policy, and bounded related
+Paragraph path. No name or representation is implied by the Phase 1 authority.
+
 ## Completed: 0.1.0 exact File lookup
 
 Core Search now has a distinct validated exact logical File request. It returns
@@ -233,8 +263,10 @@ is closed. The complete `0.2.0` version directory is likewise immutable; the
 current installers and manifest select `0.2.0` in the exact 28-file public tree.
 
 Backwriter Core construction from an accepted current observation and Search
-delivery of those values are fixed authority boundaries, not a separate registry,
-issuance lifecycle, lookup/reuse state, durable identity, or global identity.
+delivery of those values are fixed authority boundaries, not a target registry,
+issuance lifecycle, locator lookup/reuse state, durable identity, or global
+identity. The optional current source-state proof retains no target map or
+result.
 
 ## Completed: Anchor live continuity
 

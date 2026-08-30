@@ -47,6 +47,10 @@ range directly from fixed-chunk staging. It creates no private ordinal/text
 locator or relocation mapping.
 `CurrentObservation` is Runtime-private, call-local hash/length producer state
 for one selected source and is not part of wire or equality.
+The Protocol's optional `0.2.1` Host-authoritative proof may retain only the
+completed source hash and length plus its Runtime/workspace/admission/generation/
+logical-path binding. It is neither an Anddress field nor target identity,
+locator state, equality evidence for another binding, or continuity.
 Anchor is not an ordinary Anddress; creation directly confirms exact current
 structure, and only its live Runtime-local continuity may follow one unique
 same-kind range/provenance candidate across a Backwriter-owned Apply.
@@ -188,8 +192,10 @@ Source, and no before/after or second-read guarantee is added.
 
 Backwriter Core constructs and provides target Anddress values from an accepted
 current observation. Search delivers those values as results; it is not an
-issuer. There is no separate registry, issuance lifecycle, lookup/reuse state,
-durable identity, or global identity.
+issuer. There is no target registry, issuance lifecycle, locator lookup/reuse
+state, durable identity, or global identity. Optional Runtime-local current
+source-state proof is governed only by the Protocol and retains no target map or
+result.
 
 No generic locator layer, registry, issuance lifecycle, temporal identity, or
 locator algorithm is implied by this algebra. Anchor authority is closed only

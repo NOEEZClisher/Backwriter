@@ -30,6 +30,13 @@ v3 remains only in Git history and immutable `0.1.0` release evidence. The
 canonical four-target `0.2.0` artifacts, manifest, installers, live publication,
 fresh installation, and explicit update are complete.
 
+`0.2.1` is an unimplemented and unpublished development target. Its closed
+authority preserves v4 identity and the existing `0.2.0` execution path as the
+default Untrusted Mode. Only an explicit Host-authoritative Mode may retain a
+Runtime-local current SHA-256/length proof for a logical source across calls;
+the Protocol owns the exact authority and invalidation boundary. No public API
+name or state representation is fixed yet.
+
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,
 one-shot human and JSON Search/View/Check, raw View, Session Pick, batch Check,
@@ -52,10 +59,13 @@ A structural change creates no past-structure predecessor/successor/survivor
 lineage or reconciliation mapping. Past-state recovery belongs to Git or another
 external history system, never Backwriter.
 
-For the `0.2.0` target, current-only is not history: a capability may hold only
-the bounded call-local observation defined by the Protocol while that call is
-running. Search is the only capability that finds a target; View, Check, and
-Apply consume an Anddress without searching or relocating it.
+For the closed `0.2.0` release and default Untrusted Mode, current-only is not
+history: a capability may hold only the bounded call-local observation defined
+by the Protocol while that call is running. The `0.2.1` Host-authoritative Mode
+may retain only the Protocol's narrow current source-state proof; it creates no
+target continuity or history. Search is the only capability that finds a
+target; View, Check, and Apply consume an Anddress without searching or
+relocating it.
 
 ## Active authority
 
@@ -82,16 +92,21 @@ are preserved evidence, never current authority.
   call order or workflow; the Protocol's named cross-capability contracts
   remain in force.
 - **Runtime** owns admission, internal safe enumeration, current-call source
-  reads, and the V1 publication seam;
+  reads, the optional Host-authoritative current-proof boundary, and the V1
+  publication seam;
   Anchor owns only its closed target-local RAM continuity contract.
 - Workspace Source owns canonical source bytes. Runtime never creates
   repository-local `.artext` authority.
 - An accepted current observation is the bytes returned by one retained
   no-follow read of currently admitted Workspace Source. Editor-only buffers,
-  keystrokes, IME, undo, and dirty-state lifecycle are outside Core. A
-  source-visible write can affect a call only through that call's one-read
-  observation; Save is not a Runtime event and creates no watcher, automatic
-  re-evaluation, durability, or stable-read guarantee.
+  keystrokes, IME, undo, and dirty-state lifecycle are outside Core. In default
+  Untrusted Mode, a source-visible write can affect a call only through that
+  call's one-read observation. Host-authoritative reuse instead requires the
+  host to coordinate every source-visible writer and path replacement, exclude
+  mutation from the reuse decision through call completion, and synchronously
+  invalidate before mutation. Save is not an automatic Runtime event and
+  creates no watcher, automatic re-evaluation, durability, or stable-read
+  guarantee.
 - Anddress, admission, current-call parsing, and path safety are foundation
   mechanisms, not separate Core capability names.
 - Admission has one fixed regular UTF-8-text policy. It is path-safe, rejects
@@ -119,23 +134,27 @@ are preserved evidence, never current authority.
   Check, Search, View, Anchor, Apply streaming slices are complete.
 - Backwriter Core constructs and provides target Anddress values from an
   accepted current observation. Search delivers them as results; it is not an
-  issuer. This creates no separate registry, issuance lifecycle, lookup/reuse
-  state, durable identity, or global identity.
+  issuer. This creates no target registry, issuance lifecycle, locator reuse,
+  durable identity, or global identity. The optional `0.2.1` proof is only
+  current SHA-256/length evidence, never target lookup or retained results.
 - The [address model](docs/architecture/rebuildable-structural-addressing.md)
   is the sole detailed raw-locator contract. Its active production algebra is
   v4 source-state/range identity; the shipped v3 baseline is historical release
   evidence only. Admission decides construct/use availability, not raw equality.
-- Search and View remain current-only. The v4 target permits only
+- Search and View remain current-only. Default Untrusted Mode permits only
   Protocol-bounded, source-local `CurrentObservation` state during one call.
-  Pick remains pure and stateless over caller-provided Anddress values without
-  asserting currentness.
+  Explicit Host-authoritative Mode may retain only the Protocol's Runtime-local,
+  replace-only SHA-256/length proof bound to workspace, admission, source
+  generation, and logical path. Pick remains pure and stateless over
+  caller-provided Anddress values without asserting currentness.
   `WorkspaceRuntime` exposes Search, View, Apply, Check, and anchored Runtime
-  execution seams. Runtime retains no ordinary observation, source, result,
-  snapshot, lease, or authenticity state across calls or selected sources.
-  `CurrentObservation` contains only the current hash and exact byte length and
-  is consumed or discarded before Search opens another source or any View,
-  Check, Apply, or Anchor call returns. Anchor may retain only target-local
-  session continuity.
+  execution seams. Runtime retains no ordinary observation, source bytes,
+  result, target map, snapshot, lease, or history across calls or selected
+  sources. `CurrentObservation` contains only the current hash and exact byte
+  length and is consumed or discarded before Search opens another source or any
+  View, Check, Apply, or Anchor call returns. A successful observation may
+  replace the narrow trusted proof without retaining its projection. Anchor may
+  retain only target-local session continuity.
 - Future spill belongs only to a host-provided system root. This repository does
   not create `.artext`; the exact Runtime-root-relative `.artext/bw` path and
   its descendants are ignored by Backwriter Runtime execution. Other `.artext`
@@ -185,6 +204,10 @@ are preserved evidence, never current authority.
   Concurrent-writer coordination is caller-owned; do not add Apply locks, CAS,
   serialization, conflict detection, or retries without explicit owner
   authority.
+  In `0.2.1` Host-authoritative Mode, confirmed publication may replace a
+  matching old proof with the already computed prospective-after SHA-256 and
+  length, while an exact no-op preserves it. Unavailable or uncertain source
+  state discards the affected proof.
 - **Anchor** has closed live-continuity authority and an implemented public
   surface. It retains only opaque owning Runtime-local
   continuity, non-aliasing `AlreadyLive`, no history/persistence/
@@ -219,7 +242,9 @@ are preserved evidence, never current authority.
 - Plural input, ranges, descendants, and partial behavior are post-V1 owner
   decisions. View does not classify input state; Check does not change View.
 - **Check V1** has closed semantic/API/type/report authority and a stateless
-  Runtime implementation. **Data V1** semantic/public API/type/error authority
+  result/history contract. Default execution remains the `0.2.0` observation
+  path; the optional trusted current proof is the sole cross-call exception and
+  is not a Check result store. **Data V1** semantic/public API/type/error authority
   and Rust implementation are complete.
   Edit V1 semantic/public API/type/error authority and single-source Apply
   Runtime implementation are complete. Apply has closed V1 semantic/public
