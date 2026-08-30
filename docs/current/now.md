@@ -4,11 +4,13 @@
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current Rust,
 Cargo, tests, and CLI use the unpublished `0.2.0` hard-cutover Anddress v4 API
-and wire. Phases 3–6 implement SHA-256 source identity, exact byte length,
+and wire. Phases 3–7 implement and verify SHA-256 source identity, exact byte length,
 target kind, `[start,end)` range, target-specific Search observation, direct
 View/Check consumption, and direct Apply/Anchor consumers without a v3
-compatibility seam. No `0.2.0`
-artifact or publication exists. The tracking plan is
+compatibility seam. The integrated correctness and formal performance gates
+pass, but the original 2× 256 MiB Search and 50% million-hit output-bytes
+recommendations do not; the recorded release decision is NO-GO. No `0.2.0`
+artifact or publication exists. The completed evidence tracker is
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 
 ## Core capability inventory
@@ -114,6 +116,15 @@ publication is closed: the current installers and manifest select `0.1.0`, and
 acceptance remains transition compatibility only.
 
 ## Unpublished 0.2.0 authority
+
+Phase 7 reproduces the Phase 2 fixtures and v3 timing binary from immutable Git
+objects, proves one Correct Apply plus six Safe Rejects and zero Wrong Applies
+across the exact drift matrix, and preserves source, current Anchor, and
+publication state on rejection. Late View, late Check, range Apply, Search wall,
+p95, peak HWM, and bounded low-hit source-memory gates pass. The current source
+and benchmark evidence are complete, but release remains NO-GO because the two
+original recommendations above remain unresolved. This creates no release,
+artifact, tag, installer, or publication authority.
 
 Current-only does not require historical identity. Runtime keeps each
 `CurrentObservation` call-local to one selected source. It contains only the

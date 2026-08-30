@@ -4,12 +4,14 @@ use std::fs;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
+use backwriter::backwriter::anchor::AnchorOutcome;
 use backwriter::backwriter::anddress::{Anddress, AnddressTarget as PublicAnddressTarget};
 use backwriter::backwriter::apply::ApplyError;
 use backwriter::backwriter::edit::{Edit, Position};
 use backwriter::backwriter::search::{
     SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
 };
+use backwriter::backwriter::view::ViewOutcome;
 use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
 
@@ -297,34 +299,87 @@ fn exact_file_lookup_enables_start_and_end_insert_into_empty_files() {
 }
 
 #[test]
-fn v4_duplicate_line_drift_fails_without_wrong_publication() {
-    let fixture = tempdir().unwrap();
-    let root = fixture.path().join("workspace");
-    fs::create_dir(&root).unwrap();
-    let original = b"header\nneedle\nneedle\nfooter\n";
-    fs::write(root.join("note.txt"), original).unwrap();
-    let mut workspace = runtime(&root);
-    let request = SearchRequest::new(
-        SearchQuery::new("needle").unwrap(),
-        SearchScope::all_admitted(),
-        SearchTarget::Line,
-    );
-    let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
-        panic!("duplicate lines")
-    };
-    let selected = anddresses[1].clone();
-    let changed = b"needle\nheader\nneedle\nneedle\nfooter\n";
-    fs::write(root.join("note.txt"), changed).unwrap();
+fn v4_drift_matrix_has_one_correct_apply_and_no_wrong_publication() {
+    const ORIGINAL: &[u8] = b"header\nneedle\nneedle\nfooter\n";
+    const CORRECT: &[u8] = b"header\nneedle\nTARGET\nfooter\n";
+    let cells: [(&str, &[u8], bool); 7] = [
+        ("no drift", ORIGINAL, true),
+        (
+            "edit before target",
+            b"expanded-header\nneedle\nneedle\nfooter\n",
+            false,
+        ),
+        (
+            "edit after target",
+            b"header\nneedle\nneedle\nfooter changed\n",
+            false,
+        ),
+        (
+            "adjacent similar context",
+            b"header\ncontext\nneedle\nfooter\n",
+            false,
+        ),
+        (
+            "target changed",
+            b"header\nneedle\nchanged\nfooter\n",
+            false,
+        ),
+        (
+            "equal text inserted at another range",
+            b"needle\nheader\nneedle\nneedle\nfooter\n",
+            false,
+        ),
+        ("target deleted", b"header\nneedle\nfooter\n", false),
+    ];
 
-    assert_eq!(
-        workspace.apply(&Edit::Replace {
+    for (name, before_apply, succeeds) in cells {
+        let fixture = tempdir().unwrap();
+        let root = fixture.path().join("workspace");
+        fs::create_dir(&root).unwrap();
+        fs::write(root.join("note.txt"), ORIGINAL).unwrap();
+        let mut workspace = runtime(&root);
+        let request = SearchRequest::new(
+            SearchQuery::new("needle").unwrap(),
+            SearchScope::all_admitted(),
+            SearchTarget::Line,
+        );
+        let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
+            panic!("{name}: duplicate lines")
+        };
+        let selected = anddresses[1].clone();
+        fs::write(root.join("note.txt"), before_apply).unwrap();
+
+        let file = support::file(selected.workspace_coordinate(), "note.txt", before_apply);
+        let handle = match workspace.anchor(&file).unwrap() {
+            AnchorOutcome::Anchored(handle) => handle,
+            AnchorOutcome::AlreadyLive => panic!("{name}: fresh File anchor"),
+        };
+        let result = workspace.apply(&Edit::Replace {
             target: selected,
             content: "TARGET\n".to_owned(),
-        }),
-        Err(ApplyError::Unavailable)
-    );
-    assert_eq!(fs::read(root.join("note.txt")).unwrap(), changed);
-    assert_no_apply_temp(&root);
+        });
+
+        if succeeds {
+            assert_eq!(result, Ok(()), "{name}");
+            assert_eq!(fs::read(root.join("note.txt")).unwrap(), CORRECT, "{name}");
+            assert!(
+                matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::File { text }) if text.as_bytes() == CORRECT),
+                "{name}"
+            );
+        } else {
+            assert_eq!(result, Err(ApplyError::Unavailable), "{name}");
+            assert_eq!(
+                fs::read(root.join("note.txt")).unwrap(),
+                before_apply,
+                "{name}"
+            );
+            assert!(
+                matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::File { text }) if text.as_bytes() == before_apply),
+                "{name}"
+            );
+        }
+        assert_no_apply_temp(&root);
+    }
 }
 
 #[test]

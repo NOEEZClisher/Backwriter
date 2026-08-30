@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.0 Phase 6 verification boundary
+## 0.2.0 Phase 7 verification boundary
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current
 unpublished `0.2.0` Rust, Cargo, CLI, and tests use only Anddress v4. Phase 3
@@ -8,7 +8,9 @@ implements the SHA-256 source-state/value/wire kernel and hard-cutover decoding.
 Phase 4 implements one-read target-specific Search observation. Phase 5 makes
 ordinary View and Check direct consumers of the same hash/length observer.
 Phase 6 makes Apply and Anchor direct v4 range/provenance consumers and removes
-the last legacy locator/parser and generic event-framer path. Their phase gates, the historical v3
+the last legacy locator/parser and generic event-framer path. Phase 7 completes
+integrated correctness and A/B measurement without adding a benchmark framework
+or changing public meaning. Their phase gates, the historical v3
 drift reproduction, fixtures, raw samples, and profile results are tracked in
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 That task tracks progress only; the Protocol, address model, and principles own
@@ -20,9 +22,11 @@ hash, length, kind, and range equality; strict malformed/duplicate/missing/
 unknown/wrong-type handling; well-formed v3 `UnsupportedVersion`; shared private
 source identity across same-source results; one-read hash/range Search; v4
 human/JSON/Session round trips; and full existing capability regressions. The
-canonical duplicate-Line drift fixture returns `Unavailable` without
-publication. Phase 6 preserves those results without an Apply/Anchor consumer
-indirection.
+exact seven-cell duplicate-Line drift matrix produces one Correct Apply, six
+Safe Rejects, and zero Wrong Applies. Each reject preserves exact source bytes,
+a current same-path File Anchor, and temporary/publication state. The duplicate
+Paragraph regression separately preserves the same fail-closed result. Phase 6
+preserves those results without an Apply/Anchor consumer indirection.
 
 Current regressions cover SHA-256 transcript and platform-coordinate KATs,
 strict v4 flat-wire encoding/decoding and error priority, zero/nonzero/maximum
@@ -97,8 +101,9 @@ prospective-after UTF-8/NUL/hash/length validation, one rename, and absence of
 whole-source/after materialization. They cover 8,191/8,192/8,193 UTF-8 and
 CR/LF/CRLF/no-EOL boundaries; exact File/Paragraph/Line and raw ranges; every
 Position and forward/reverse Copy/Move direction; strict interior Move
-rejection; zero-range, empty, boundary, and byte-identical no-ops; duplicate
-Line/Paragraph drift; late source read and staging write failure; temporary
+rejection; zero-range, empty, boundary, and byte-identical no-ops; the seven
+exact no-drift/edit-before/edit-after/adjacent/changed/equal-range/deleted Line
+cells and duplicate Paragraph drift; late source read and staging write failure; temporary
 collision/cleanup; Unix basic mode; and uncertain rename. Source-target
 containment and overlap use only direct before ranges. The after projector
 retains exact same-kind candidates and minimal original/copied/replacement
@@ -114,6 +119,27 @@ Anddress/Edit/Position, `LegacyResolver`, `ExactTargetTracker`, `SourceEvent`,
 persistent observation, and source-sized complete before/after buffers from
 production. Successful Anchor reflection remains allocation-free and
 non-failing after all fallible planning completes.
+
+Phase 7 benchmark verification exports v3
+`399805906b352f1c8d0cc2fa0bbe6dee1a73a13c` and v4
+`55999768cc7ad75ea84a08d597dbc7a7913fe6c3` directly from Git objects, builds
+separate offline/locked stripped release and profiler binaries, and recreates
+the exact Phase 2 fixture hashes under the fixed tmpfs task root. Each cell has
+one warm-up and seven fresh processes or Sessions pinned to CPU 8. Exact
+semantic output/order/count/final-source checks, deterministic output hashes,
+empty stderr, wall/user/system time, HWM/RSS, `rchar`/`wchar`, throughput, and
+million-hit bytes/HWM per result are required. Representative `perf stat` and
+DWARF stack runs are profile evidence only and must have zero lost samples.
+
+Formal gates require large View/Check and range Apply median CPU at most 75% of
+v3, Search median wall and peak HWM at most 105%, every p95 and peak-memory
+comparison below a 10% regression, bounded low-hit source memory, and no
+consumer target search, relocation, second Search hash pass, whole-source
+`CurrentObservation`, fixed truncation, or output/error drift. Those gates pass.
+The original 2× 256 MiB Search and 50% million-hit output-bytes recommendations
+do not, so the recorded release decision is NO-GO. Missing a recommendation
+does not authorize a speculative optimization, v4 wire change, artifact, or
+publication.
 
 Edit V1 semantic/public API/type/error authority and inert Rust value
 implementation are complete; the single-source Apply Runtime execution
@@ -223,7 +249,7 @@ The repository source package is unpublished `0.2.0`, and its release build
 must print exactly `Backwriter 0.2.0` plus LF. Source verification remains
 distinct from the separately executed operations publication: the current official
 distribution is the closed stable `0.1.0` release, while prior beta files remain
-immutable. The current `0.2.0` source suite passes 200 GNU-host Rust tests; the
+immutable. The current `0.2.0` source suite passes 201 GNU-host Rust tests; the
 historical `0.1.0` source suite passed 193.
 
 CLI process regressions cover the canonical `bw` binary without a `backwriter`

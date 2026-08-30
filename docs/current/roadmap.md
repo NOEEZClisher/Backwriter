@@ -1,20 +1,19 @@
 # Backwriter Roadmap
 
-## Next: Phase 7 integrated verification and release decision
+## Next: Owner decision on Phase 7 performance recommendations
 
 The closed public `0.1.0` release remains immutable v3 evidence. `0.2.0` is an
 unpublished local source-development line governed by
 the [seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
-Phases 1 and 2 recorded semantic authority and reproducible v3 evidence. Phase
-3 is complete: Cargo is `0.2.0`, the public Rust API and sole production wire
-are v4, Search computes SHA-256 and ranges in its one read, every current caller
-accepts v4, and v3 is rejected without a compatibility seam. Phase 4 is also
-complete: Search uses one call-local observation and target-specific projection
-without its former generic per-byte event path. Phase 5 is complete: ordinary
-View and Check consume the common hash/length observation directly without
-structural currentness replay. Phase 6 is complete: Apply patches direct v4
-ranges from staging and Anchor uses direct structural/provenance projection.
-No Phase 7 benchmark result, artifact, or release is complete.
+Phases 1–7 are complete. The exact drift matrix, full semantic suite, immutable
+Git-object A/B builds, fixed Phase 2 fixtures, seven-sample release timings, and
+representative counter/stack profiles pass every correctness and formal
+performance gate. The release decision is nevertheless NO-GO: the original
+2× 256 MiB Search recommendation reached only 1.077×, and million-hit public
+JSON output grew from 212.940 to 327.470 bytes/hit instead of falling to at
+most 50% of v3. No optimization, wire change, artifact, or publication follows
+implicitly. The next step is an explicit Owner decision to retain, revise, or
+replace those recommendations before any release work.
 
 The target replaces ordinal/exact-text identity with an ordinary Anddress that
 authorizes one exact source state and byte range: workspace coordinate, logical
@@ -32,6 +31,21 @@ using direct before-range provenance and one unique same-kind after candidate.
 History, a persistent index, context matching, external-change relocation, and
 a full workspace cache remain excluded. SHA-256 and the v4 hard cutover are
 closed Owner decisions implemented in Phase 3.
+
+## Completed: Phase 7 integrated verification
+
+V4 produces one Correct Apply, six Safe Rejects, and zero Wrong Applies across
+the exact seven drift cells. Every reject preserves source bytes, a current
+same-path File Anchor, and temporary/publication state; duplicate Paragraph,
+ordinal drift, equal text at another range, and similar context are covered.
+
+Large View and Check median CPU are 36.30% and 23.78% of v3, range Apply
+prepublication CPU is 16.80%, Search wall is 79.78%–92.84%, and Search peak HWM
+is 16.90%–92.89%. All p95 and peak-memory comparisons stay below the 110%
+regression gate, while 128/256 MiB low-hit Search remains near 2.5 MiB peak HWM.
+The million-hit cell lowers HWM from 346.539 to 58.551 bytes/hit but expands
+the exact v4 Adapter output to 327.470 bytes/hit. Full raw evidence and the
+NO-GO decision are retained in the tracking task. No `0.2.0` release exists.
 
 ## Completed: Phase 6 direct Apply and Anchor consumers
 

@@ -1,6 +1,7 @@
 # Backwriter 0.2.0 Anddress Fast Path
 
-Status: Phases 1–6 completed; Phase 7 next.
+Status: Phases 1–7 completed; source correctness and formal performance gates
+passed, original performance recommendations missed, release decision NO-GO.
 
 This is the sole progress tracker for the redesign. It records gates and
 evidence but does not own semantics; the active Protocol, address model, and
@@ -351,6 +352,210 @@ shell dispatch 4.06%, capability-relative open 3.81%, Apply event scanning
 removal. This confirms multiple structural/hash/open/publication paths in the
 small Apply without using the repeated run as a latency baseline.
 
+## Phase 7 integrated verification and decision
+
+Phase 7 compared immutable Git object exports, without switching the working
+tree: v3 `399805906b352f1c8d0cc2fa0bbe6dee1a73a13c` and v4
+`55999768cc7ad75ea84a08d597dbc7a7913fe6c3`. The ordinary stripped v3 release
+binary reproduced the Phase 2 SHA-256 exactly:
+`f7b0aaea704561b6842f35778991344a1d5c1fc5a3aed464df27b526dc26db9d`.
+The v4 release binary was 719,944 bytes with SHA-256
+`fa4b8d28227057d239f653f584c5f29b8f39f98359b5a26ea6b008fd86590e5b`.
+The separate object-export profiler binaries were v3
+`6098d2f89c0ab7c7b48f95a013de868f5a024955f3d4b15bbe8c04d36dadde0a`
+and v4
+`296ae40f916490917612b7b3adaf8266653948ef22f896cbb83bcd1f2850739d`;
+their source paths differ from Phase 2, so their hashes are recorded only as
+profile-build identity and never used as timing baselines.
+
+The fixed absent task root `/tmp/backwriter-phase2.oKVyJj`, CPU 8, existing
+`powersave` governor, tmpfs fixture/output, Rust 1.95.0, LLVM 22.1.2, GNU time
+1.10, perf 7.2.2-1, and `perf_event_paranoid=2` reproduced the Phase 2 host
+contract without changing power or kernel state. The recreated generator
+source SHA-256 was
+`6b202eb5d4b30cf5a17b20416b621654b8d75d0d0383bb4f557824393690dd14`;
+the C runner source SHA-256 was
+`19f7fa7769054b89057447c15644451080253ecdfa6c3f812f29cd14bc53cb56`.
+The original task-local sources were never tracked, so source hashes are not
+claimed equal. The generator reproduced all five Phase 2 fixture/family hashes
+exactly, and the runner retained `CLOCK_MONOTONIC_RAW`, child CPU affinity,
+pre-exec `/proc/<pid>/io`, `waitid(WNOWAIT)`, and `wait4` HWM accounting. Every
+cell had one untimed warm-up followed by seven fresh processes or Sessions.
+
+The 256 MiB Search, 2,048-file Search, late View, Search→View, million-hit
+Search, fresh patch, and resident Apply v3 outputs reproduced their Phase 2
+hashes exactly. The historical 128 MiB logical filename was not recorded; this
+run used `medium.txt`, preserving exact fixture bytes while producing a new
+path-dependent raw output hash for both A/B sides.
+
+### V4 drift safety
+
+One table-driven production regression constructs the second duplicate-Line
+Edit from the original Search result, applies the exact seven external byte
+states below, and keeps a current File Anchor for each state. Only the no-drift
+cell publishes. Every other cell returns `Unavailable`, leaves source bytes and
+the current Anchor unchanged, and leaves no staging or after temporary. The
+existing duplicate-Paragraph regression separately proves the same fail-closed
+behavior for ordinal drift among equal Paragraphs.
+
+| Cell | Apply result | Exact final SHA-256 |
+| --- | --- | --- |
+| No drift | Correct Apply | `a0cbd519a88a863fe562c4ac59b800693d562502706b82d220a84db20aa95d27` |
+| Edit before target | Safe Reject | `5191696d17673f68282c2eca041b0a42a0c8a94e9a382f37bf0be2048e6b9a60` |
+| Edit after target | Safe Reject | `9a9f5350603f134fb2ead346274807689c375b946a84c1d543256b30f57fa47b` |
+| Adjacent similar context | Safe Reject | `e4edfddd75c2bcaff25cfb0b95dbe27d5407ae6edf0821ab152fe8454c3fe24b` |
+| Target changed | Safe Reject | `e97c389bc1bf3d49a438998c025249196d261dd1e2e628562892d5a05ab6ba48` |
+| Equal text inserted at another range | Safe Reject | `c8295ff2c29375a172c96c0e356a1b5c123d5c7c7aa8e6dc5ef1a8c09570a14a` |
+| Target deleted | Safe Reject | `4f965179f0a9afac9c01f6ae49778dada99867660cdf879688dccfae4d03c1ff` |
+
+The result is one Correct Apply, six Safe Rejects, and zero Wrong Applies. It
+also covers edits before/after, changed and deleted targets, equal text at a
+different range, ordinal drift, duplicate text, and similar adjacent context.
+
+### Raw A/B samples
+
+Elapsed values below are raw milliseconds in run order. HWM values are raw
+KiB in the same order. Nearest-rank p95 over seven samples is the maximum.
+
+| Build / cell | Raw elapsed ms | Raw HWM KiB |
+| --- | --- | --- |
+| v3 128 MiB Search | 338.671, 338.656, 334.337, 341.844, 346.669, 338.369, 335.310 | 2636, 2860, 2808, 2636, 2680, 2620, 2716 |
+| v4 128 MiB Search | 312.383, 285.053, 311.987, 309.132, 309.064, 301.338, 312.159 | 2432, 2572, 2576, 2416, 2512, 2448, 2556 |
+| v3 256 MiB Search | 674.754, 673.898, 670.633, 668.501, 675.934, 678.609, 670.777 | 2744, 2676, 2668, 2756, 2712, 2668, 2744 |
+| v4 256 MiB Search | 625.999, 625.227, 625.628, 628.018, 612.050, 614.168, 634.207 | 2544, 2520, 2560, 2512, 2544, 2420, 2464 |
+| v3 2,048-file Search | 339.425, 337.139, 343.484, 348.319, 354.136, 347.654, 343.449 | 2880, 2828, 2908, 2876, 2956, 2864, 3100 |
+| v4 2,048-file Search | 316.679, 320.207, 310.159, 312.506, 307.529, 314.610, 301.387 | 2684, 2564, 2712, 2556, 2684, 2672, 2684 |
+| v3 late Line View | 953.871, 950.105, 967.235, 949.986, 965.561, 966.373, 974.967 | 2848, 2684, 2676, 2620, 2572, 2864, 2680 |
+| v4 late Line View | 348.903, 347.469, 350.578, 349.888, 350.500, 355.033, 352.704 | 2548, 2524, 2516, 2524, 2448, 2512, 2544 |
+| v3 Search→View | 1630.262, 1634.518, 1653.215, 1651.792, 1627.493, 1631.957, 1636.699 | 2712, 2832, 2704, 2848, 2900, 2740, 2848 |
+| v4 Search→View | 993.567, 972.550, 973.478, 971.083, 966.568, 973.465, 968.969 | 2708, 2576, 2624, 2640, 2708, 2544, 2664 |
+| v3 1,048,576-hit Search | 620.143, 621.643, 611.297, 604.992, 604.849, 610.300, 621.530 | 354676, 354848, 354856, 354728, 354788, 354688, 354780 |
+| v4 1,048,576-hit Search | 484.616, 489.714, 484.652, 489.427, 483.866, 487.666, 526.514 | 59956, 59928, 59844, 59860, 59828, 59872, 59804 |
+| v3 fresh Search→Edit→Apply | 2.866, 0.452, 0.429, 0.379, 0.368, 0.368, 0.362 | 2568, 2636, 2708, 2720, 2704, 2740, 2856 |
+| v4 fresh Search→Edit→Apply | 0.482, 0.463, 0.437, 0.442, 0.446, 0.417, 0.375 | 2516, 2488, 2524, 2416, 2524, 2524, 2624 |
+| v3 large late-range Check | 665.322, 655.934, 653.927, 653.845, 650.003, 653.956, 651.414 | 2860, 2860, 2744, 2680, 2636, 2660, 2672 |
+| v4 large late-range Check | 155.684, 156.774, 156.804, 154.808, 157.021, 154.390, 154.265 | 2548, 2524, 2556, 2516, 2536, 2452, 2512 |
+| v3 resident Edit→Apply | 0.039, 0.368, 0.042, 0.039, 0.037, 0.038, 0.037 | 2732, 2792, 2688, 2700, 2800, 2796, 2780 |
+| v4 resident Edit→Apply | 0.035, 0.039, 0.037, 0.035, 0.033, 0.032, 0.033 | 2700, 2736, 2736, 2756, 2732, 2716, 2700 |
+| v3 range Apply prepublication | 1256.187, 1239.583, 1239.731, 1246.171, 1242.780, 1260.389, 1240.960 | 2808, 2796, 2792, 2796, 2816, 2832, 2836 |
+| v4 range Apply prepublication | 208.122, 209.329, 211.847, 210.305, 212.253, 212.210, 209.767 | 2652, 2692, 2692, 2696, 2696, 2644, 2732 |
+
+Fresh-process HWM is `wait4` peak RSS. Resident HWM and RSS were read from the
+live process after Apply; both vectors were identical to the resident HWM
+vectors above. The resident CPU clock is 100 Hz, so sub-millisecond Apply user
+and system deltas correctly quantize to zero rather than creating synthetic
+precision.
+
+| Cell | v3 min / median / p95 wall ms | v4 min / median / p95 wall ms | v3 / v4 median CPU ms | v3 / v4 peak HWM KiB | v3 / v4 median `rchar` / `wchar` | v3 / v4 source throughput MiB/s |
+| --- | --- | --- | --- | --- | --- | --- |
+| 128 MiB Search | 334.337 / 338.656 / 346.669 | 285.053 / 309.132 / 312.383 | 337.919 / 308.629 | 2860 / 2576 | 134224198 / 4369; 134224198 / 399 | 377.965 / 414.063 |
+| 256 MiB Search | 668.501 / 673.898 / 678.609 | 612.050 / 625.628 / 634.207 | 672.803 / 624.733 | 2756 / 2560 | 268441926 / 4368; 268441926 / 398 | 379.879 / 409.189 |
+| 2,048-file Search | 337.139 / 343.484 / 354.136 | 301.387 / 312.506 / 320.207 | 342.886 / 311.937 | 3100 / 2712 | 134224198 / 65803; 134224198 / 381 | 372.652 / 409.592 |
+| Late Line View | 949.986 / 965.561 / 974.967 | 347.469 / 350.500 / 355.033 | 963.845 / 349.845 | 2864 / 2548 | 268441926 / 4552; 268441926 / 4846 | 265.131 / 730.385 |
+| Search→View | 1627.493 / 1634.518 / 1653.215 | 966.568 / 972.550 / 993.567 | 1631.620 / 971.077 | 2900 / 2708 | 536877459 / 4127; 536877459 / 4141 | 313.242 / 526.451 over two passes |
+| 1,048,576-hit Search | 604.849 / 611.297 / 621.643 | 483.866 / 487.666 / 526.514 | 609.835 / 483.547 | 354856 / 59956 | 4200774 / 223284217; 4200774 / 343377441 | 6.543 / 8.202 |
+| Fresh Search→Edit→Apply | 0.362 / 0.379 / 2.866 | 0.375 / 0.442 / 0.482 | 0.402 / 0.466 | 2856 / 2624 | 6679 / 73; 6653 / 76 | n/a |
+| Large late-range Check | 650.003 / 653.927 / 665.322 | 154.265 / 155.684 / 157.021 | 652.918 / 155.280 | 2860 / 2556 | 268441926 / 4364; 268441926 / 394 | 391.481 / 1644.357 |
+| Resident Edit→Apply | 0.037 / 0.039 / 0.368 | 0.032 / 0.035 / 0.039 | 0 / 0 | 2800 / 2756 | delta 87 / 46; delta 61 / 46 | n/a |
+| Range Apply prepublication | 1239.583 / 1242.780 / 1260.389 | 208.122 / 210.305 / 212.253 | 1250 / 210 | 2836 / 2732 | delta 536870924 / 268435459; delta 268435468 / 268435459 | 205.990 / 1217.280 |
+
+Fresh user/system median pairs were, in the same table order: v3/v4 128 MiB
+`323.347+15.993` / `294.921+13.990`; 256 MiB `643.757+28.961` /
+`593.252+30.955`; multi-file `328.620+14.994` / `292.011+19.926`; late View
+`934.265+26.955` / `320.905+30.930`; Search→View `1562.616+67.864` /
+`911.200+56.872`; million-hit `505.164+103.796` / `411.617+77.941`; fresh
+Apply `0.402+0` / `0.450+0`; and late Check `621.909+30.943` /
+`124.989+28.998` milliseconds. Range Apply resident medians were
+`1130+100` and `130+80` milliseconds.
+
+Every output was deterministic across warm-up and seven samples, stderr was
+empty, and exits were zero. Raw output identities were:
+
+| Cell | v3 bytes / SHA-256 | v4 bytes / SHA-256 |
+| --- | --- | --- |
+| 128 MiB Search | 4369 / `da40a48f13d4796477c0198bc00ed2f70d08cb62d4fe33c66161c946f06e3310` | 399 / `ee2da437d7f91d64fb7448c497b69ea81dc01d08a5ace04b7ff767fe204fb79b` |
+| 256 MiB Search | 4368 / `2374addb8a18a9ca8f7fab461edcff46fa638adb06bcadebdbcec3988b28f8cd` | 398 / `21655979a82f7bfd7355436b095c6976a7de02aa6174172082c2c5e22f0363a0` |
+| 2,048-file Search | 65803 / `bad1f4a218df7202458aff97c949327df4c11ecca039e1bd5c870f1e74126442` | 381 / `8bae96272f810a46853e1ad707ffd6c673f8a09888852be95488a4ca7a4b96cc` |
+| Late Line View | 4552 / `287c9979267e8723ecb61cb7dc54f0a452335e5c7b39e32dac3608cf03a3516d` | 4846 / `ca936648107d44413ca76cde66cf1c088af8942482dcd149aaa0f66b4d644c4e` |
+| Search→View | 4127 / `bf65c2f9c52694d665050b82815cb8c129c26770c4c352c3a6672eab6a3b6659` | 4141 / `31d7a6a438b1d123f0b21b6d0fb8d6712eb15f39cda47ca6711685dbb5835c72` |
+| 1,048,576-hit Search | 223284217 / `7c3b582c88f2a635d00879a5fc7d00e0ddce114d4fb5e67eed26a3cc35ce70e6` | 343377441 / `3d31f29d76fe4d90495d0f1a68b0db015dc35bf53ca3947fd21e0902a6a4d2f5` |
+| Fresh Search→Edit→Apply | 30 / `eb564f8009332769e900dfac7c491c1ddaff59d2543854226670a64a1038c7ee` | 33 / `63ca2b15c5a5820d9edac1f9b12da943e76cce2fc13296ed1a5092d0a02c68cf` |
+| Late Check | 4364 / `ab5993f33c131bf935891d7951fce16c7d04b4145d28c92c98feac4b9bf970f5` | 394 / `be3793aad45723b6be1f717e22f9452fd391e08072fa42357a8d130246ae41c4` |
+| Resident/range Apply | 3 / `a12b7cb43c9d9134b5bb1b35e9096b66775d9e92e7611d1cc92b02edd6782a87` | same |
+
+The fresh and resident patch final source was exactly SHA-256
+`2e86294b88ae347ebddb6d982a6d5cfe71696d420978db34fcb715714736ef25`.
+The prepublication Move-at-own-boundary cell left the 256 MiB source exactly
+`d4edd123621cf230590d7812e64bec69460789eba3e0c7136b88a3f26c88f5e5`.
+The million-hit outputs contained exactly 1,048,576 ordered Line objects. v3
+used consecutive ordinals and v4 used exact starts `0,4,…,4194300`.
+
+### Profiles and gates
+
+Profiler executions used the separate debuginfo/frame-pointer builds and are
+not timings. Representative `perf stat` values were:
+
+| Build / profile | cycles | instructions | branches | branch misses | cache misses |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| v4 256 MiB Search | 2,680,997,853 | 12,877,820,510 | 3,830,035,802 | 226,947 | 64,253 |
+| v4 late Line View | 1,473,761,888 | 7,243,676,051 | 1,684,169,920 | 153,478 | 64,965 |
+| v4 late-range Check | 610,278,939 | 1,064,931,757 | 72,825,671 | 71,592 | 11,941 |
+| v4 Search→View | 4,159,070,049 | 20,121,072,117 | 5,514,118,051 | 378,874 | 125,849 |
+| v4 1,048,576-hit Search | 2,020,886,309 | 9,551,185,891 | 1,920,121,572 | 1,886,009 | 1,147,417 |
+| v3 Search→range Apply pipeline | 9,128,954,957 | 56,229,660,134 | 14,447,318,163 | 497,015 | 105,711 |
+| v4 Search→range Apply pipeline | 3,301,784,578 | 13,944,718,787 | 3,903,312,745 | 300,143 | 154,170 |
+
+The four DWARF stack runs lost zero samples: v4 Search→View 921, v4
+million-hit 491, v3 range pipeline approximately 2,000, and v4 range pipeline
+780. The v3 range pipeline's largest self symbols were
+`ExactTargetTracker::consume` 23.53%, Search `scan_source` 19.40%, and two
+additional Apply structural scans at 13.38% and 11.97%. The v4 range pipeline
+instead showed one Search projection at 37.22% and SHA-256 compression shared
+by Search and the single Apply staging observation at 33.78%; no target search,
+relocation, or legacy tracker appeared. V4 Search→View showed Search projection
+28.91%, direct View projection 22.25%, and shared SHA-256 compression 27.09%.
+The million-hit profile moved to Adapter wire cost: `serde_json::ser::to_vec`
+was 31.20%, while Search projection was 2.46%.
+
+The formal gates pass:
+
+- late View and late Check median CPU are 36.30% and 23.78% of v3, below 75%;
+- range Apply prepublication median CPU is 16.80% of v3, below 75%;
+- Search median wall ratios are 79.78%–92.84% and peak HWM ratios are
+  16.90%–92.89%, below 105%;
+- every measured p95 and peak HWM ratio is below 110%;
+- v4 128/256 MiB low-hit peak HWM is 2,576/2,560 KiB while input and `rchar`
+  double, so retained memory is not proportional to source size;
+- production audits find no consumer target search/relocation, second Search
+  hash pass, whole-source `CurrentObservation`, fixed result cap, skip, or
+  truncation. The retained `line_bytes.truncate` removes an already captured
+  Line terminator for View, and Pick's `stack.truncate` unwinds its iterative
+  boolean parser; neither truncates input or results.
+
+No allocator-specific instrumentation was added. Available allocation evidence
+is peak HWM, result/output size, and profiler symbols. Million-hit peak HWM
+improved from 346.539 to 58.551 bytes/hit, while public JSON output grew from
+212.940 to 327.470 bytes/hit because every v4 target carries exact source-state
+and range fields.
+
+The final external-state audit left `/home/NOEEZ/server` clean at
+`c6f0b1e46db45646f9abc00401d1749833c2ed8a`, equal to `origin/main`. The exact
+20-file public tree and all recorded hashes remained unchanged, including the
+876-byte manifest SHA-256
+`551ee8b6fc4c5df83421ba7244f191fee8cc70287775088f08f5e1b8e2290570`.
+`backwriter-origin.service` remained loaded, enabled, active/running with zero
+restarts and one `127.0.0.1:8080` listener. Phase 7 changed no server, service,
+tunnel, DNS, installer, public root, artifact, or publication state.
+
+The separately retained original recommendations do not all pass. Late View
+exceeds the requested 2× improvement, but 256 MiB Search is only 1.077× faster,
+not 2×. Million-hit output is 153.79% of the v3 bytes/hit, not at most 50%.
+These are performance recommendation failures rather than correctness or
+formal-gate regressions, so Phase 7 adds no speculative optimization or wire
+change. The integrated source and benchmark are verified, but the release
+decision is **NO-GO** until the Owner resolves or explicitly revises those two
+recommendations. This is not an artifact, publication, or release claim.
+
 ## Forbidden work and release boundary
 
 History, past-target lineage, relocation, context matching, persistent Search
@@ -362,8 +567,8 @@ deployment, service, tunnel, DNS, artifact, or public-root changes.
 
 Public `0.1.0` and prior betas remain closed and immutable. `0.2.0` has no
 artifact, installer, manifest, tag, GitHub Release, crates.io release, or public
-endpoint. Phase 7 completion still requires separate Owner authority for source
-versioning, release construction, and publication.
+endpoint. Resolving the Phase 7 NO-GO and any release construction or
+publication require separate Owner authority.
 
 ## Status and evidence
 
@@ -373,7 +578,7 @@ versioning, release construction, and publication.
 - [x] Phase 4 — Search producer and `CurrentObservation` (completed 2026-08-30)
 - [x] Phase 5 — View and Check consumers (completed 2026-08-30)
 - [x] Phase 6 — Apply and Anchor cutover (completed 2026-08-30)
-- [ ] Phase 7 — integrated verification and release decision
+- [x] Phase 7 — integrated verification and release decision
 
 Evidence:
 
@@ -430,5 +635,13 @@ Evidence:
   nonstructural Anchor creation remains unavailable. The full GNU-host suite
   and every offline/locked Phase 6 gate pass. No benchmark or release claim is
   made.
-- Phase 7: pending integrated verification, benchmark comparison, and release
-  decision.
+- Phase 7: the exact seven-cell drift matrix produces one Correct Apply, six
+  Safe Rejects, and zero Wrong Applies while every reject preserves source,
+  current File Anchor, and temporary/publication state. Git-object A/B builds,
+  fixed Phase 2 fixtures, seven-sample release measurements, and representative
+  profiles prove the formal correctness, CPU, Search wall/RSS, p95, and bounded
+  source-memory gates. All current 201 GNU-host tests and every offline/locked
+  gate pass. The original 2× 256 MiB Search and 50% million-hit output
+  bytes/hit recommendations remain unmet, so source verification is complete
+  but the recorded release decision is NO-GO. No `0.2.0` artifact or
+  publication exists.
