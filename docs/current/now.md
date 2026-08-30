@@ -8,9 +8,13 @@ and wire. Phases 3–7 implement and verify SHA-256 source identity, exact byte 
 target kind, `[start,end)` range, target-specific Search observation, direct
 View/Check consumption, and direct Apply/Anchor consumers without a v3
 compatibility seam. The integrated correctness and formal performance gates
-pass, but the original 2× 256 MiB Search and 50% million-hit output-bytes
-recommendations do not; the recorded release decision is NO-GO. No `0.2.0`
-artifact or publication exists. The completed evidence tracker is
+pass. The Owner correction confirms that the million-hit recommendation is
+result-memory HWM, not JSON payload: 346.539 to 58.551 HWM bytes/hit is an
+83.10% reduction and passes. The Line-only content-slice fast path then lowers
+the fixed 256 MiB median from the paired v3 673.898 ms to 272.111 ms, a 2.476×
+speedup that closes the remaining recommendation. Source release-readiness is
+GO, but no `0.2.0` artifact, publication, or release exists. The evidence
+tracker is
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 
 ## Core capability inventory
@@ -121,10 +125,12 @@ Phase 7 reproduces the Phase 2 fixtures and v3 timing binary from immutable Git
 objects, proves one Correct Apply plus six Safe Rejects and zero Wrong Applies
 across the exact drift matrix, and preserves source, current Anchor, and
 publication state on rejection. Late View, late Check, range Apply, Search wall,
-p95, peak HWM, and bounded low-hit source-memory gates pass. The current source
-and benchmark evidence are complete, but release remains NO-GO because the two
-original recommendations above remain unresolved. This creates no release,
-artifact, tag, installer, or publication authority.
+p95, peak HWM, and bounded low-hit source-memory gates pass. The corrected
+million-hit result-memory recommendation and the subsequent 2× Line Search
+closure also pass. The Line fast path removes per-byte checked-offset and
+state-zero KMP work while reusing the one-read observer, existing failure table,
+terminator carry, and result buckets. Source release-readiness is GO. This
+creates no release, artifact, tag, installer, or publication authority.
 
 Current-only does not require historical identity. Runtime keeps each
 `CurrentObservation` call-local to one selected source. It contains only the

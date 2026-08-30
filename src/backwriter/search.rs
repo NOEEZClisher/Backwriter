@@ -231,6 +231,22 @@ impl LiteralMatcher<'_> {
         if let Some(length) = self.full_line_length {
             self.full_line_length = (length != self.literal.query.len()).then_some(length + 1);
         }
+        self.push_content_byte(byte);
+    }
+
+    pub(crate) fn first_byte(&self) -> u8 {
+        self.literal.query[0]
+    }
+
+    pub(crate) fn has_partial_match(&self) -> bool {
+        self.matched != 0
+    }
+
+    pub(crate) fn found(&self) -> bool {
+        self.found
+    }
+
+    pub(crate) fn push_content_byte(&mut self, byte: u8) {
         while self.matched > 0 && byte != self.literal.query[self.matched] {
             self.matched = self.literal.failure[self.matched - 1];
         }
@@ -241,6 +257,15 @@ impl LiteralMatcher<'_> {
                 self.matched = self.literal.failure[self.matched - 1];
             }
         }
+    }
+
+    pub(crate) fn finish_at_length(&self, line_content_length: usize) -> Option<MatchTier> {
+        self.found
+            .then_some(if line_content_length == self.literal.query.len() {
+                MatchTier::FullLine
+            } else {
+                MatchTier::Substring
+            })
     }
 
     pub(crate) fn finish(&self) -> Option<MatchTier> {

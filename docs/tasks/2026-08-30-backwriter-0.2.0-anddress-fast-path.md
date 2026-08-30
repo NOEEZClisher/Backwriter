@@ -1,7 +1,9 @@
 # Backwriter 0.2.0 Anddress Fast Path
 
-Status: Phases 1–7 completed; source correctness and formal performance gates
-passed, original performance recommendations missed, release decision NO-GO.
+Status: Phases 1–7 and the Line Search recommendation closure are complete.
+Source correctness, formal gates, the corrected result-memory recommendation,
+and the 2× 256 MiB Line Search recommendation pass. Source release-readiness is
+GO; no `0.2.0` artifact, publication, or release exists.
 
 This is the sole progress tracker for the redesign. It records gates and
 evidence but does not own semantics; the active Protocol, address model, and
@@ -291,8 +293,9 @@ The 128 MiB and 256 MiB low-hit Search medians both used 2,672 KiB HWM,
 while elapsed and `rchar` doubled. Low-hit retained memory therefore did not
 scale with source size on this fixture. The million-hit median calculation is
 `354656 KiB × 1024 / 1048576 hits = 346.34375 HWM bytes/hit`; output alone was
-212.940423 bytes/hit. That cell exposes result construction/allocation cost,
-not source retention.
+212.940423 bytes/hit. HWM is the result-memory evidence. Output size is separate
+Adapter payload/I/O evidence and is not an allocation or release gate. The cell
+does not indicate source retention.
 
 No earlier raw same-host v3 performance sample was present in the repository or
 Phase 1 evidence, so there is no direct prior numeric comparison. These pinned
@@ -532,11 +535,13 @@ The formal gates pass:
   Line terminator for View, and Pick's `stack.truncate` unwinds its iterative
   boolean parser; neither truncates input or results.
 
-No allocator-specific instrumentation was added. Available allocation evidence
-is peak HWM, result/output size, and profiler symbols. Million-hit peak HWM
-improved from 346.539 to 58.551 bytes/hit, while public JSON output grew from
-212.940 to 327.470 bytes/hit because every v4 target carries exact source-state
-and range fields.
+No allocator-specific instrumentation was added. Result-memory evidence is peak
+HWM plus profiler allocation symbols; result/output size is separate Adapter
+payload/I/O evidence, not allocation evidence. Million-hit peak HWM improved
+from 346.539 to 58.551 bytes/hit, an 83.10% reduction that passes the Owner's
+50% result-memory recommendation. Public JSON output grew from 212.940 to
+327.470 bytes/hit because every v4 target carries exact source-state and range
+fields; that canonical payload is not the memory recommendation.
 
 The final external-state audit left `/home/NOEEZ/server` clean at
 `c6f0b1e46db45646f9abc00401d1749833c2ed8a`, equal to `origin/main`. The exact
@@ -547,14 +552,89 @@ The final external-state audit left `/home/NOEEZ/server` clean at
 restarts and one `127.0.0.1:8080` listener. Phase 7 changed no server, service,
 tunnel, DNS, installer, public root, artifact, or publication state.
 
-The separately retained original recommendations do not all pass. Late View
-exceeds the requested 2× improvement, but 256 MiB Search is only 1.077× faster,
-not 2×. Million-hit output is 153.79% of the v3 bytes/hit, not at most 50%.
-These are performance recommendation failures rather than correctness or
-formal-gate regressions, so Phase 7 adds no speculative optimization or wire
-change. The integrated source and benchmark are verified, but the release
-decision is **NO-GO** until the Owner resolves or explicitly revises those two
-recommendations. This is not an artifact, publication, or release claim.
+Under the corrected Owner authority, Phase 7 therefore left only the 2× 256 MiB
+Line Search recommendation unresolved. Its 625.628 ms v4 median was 1.077×
+faster than the paired 673.898 ms v3 median, below the required 2×. Phase 7 made
+no speculative optimization or wire change and correctly retained NO-GO at
+that point.
+
+## Line Search recommendation closure
+
+The closure compared the immutable current v4 Git object
+`19cd6649ed4f385f2cc674c0474e7e22001f5cae` with one candidate that changes
+only the existing Line projection and literal matcher. The stripped current
+binary was 719,944 bytes with SHA-256
+`fa4b8d28227057d239f653f584c5f29b8f39f98359b5a26ea6b008fd86590e5b`;
+the candidate was 720,472 bytes with SHA-256
+`1eb3b78bbae54b1895d5a73099deb0e7bf75508de94f7e03bdc8fb935c967fb3`.
+The separate profiler binaries were current
+`7101f1663c0d441d958a97c6b37a3a892ad314bc9df174ddbaea856a6ac1903c`
+and candidate
+`bf99ec29264e8e866116a8327bb9b9fa5c708f976931ebd5bedeb68cb647497a`.
+
+The fixed root was again `/tmp/backwriter-phase2.oKVyJj`, with fixtures under
+`fixtures/`, CPU 8, the unchanged `powersave` governor, tmpfs data/output, one
+warm-up, and seven alternated fresh current/candidate processes. The recreated
+generator source SHA-256 was
+`53c79fd4db86ed09d9849c7d0606ea6858c8f2d01296d3b249bc8c1c32cd667b`;
+the C runner source SHA-256 was
+`bdcc602d64c0dc0e1f77cabb7f6627f05be34f9a9907b40c2997c73f03fd9555`.
+All five fixture/family hashes reproduced Phase 2 exactly.
+
+| Build / cell | Raw elapsed ms | Raw HWM KiB |
+| --- | --- | --- |
+| Current 128 MiB Line Search | 314.026, 323.034, 322.515, 324.872, 325.642, 323.060, 319.157 | 2612, 2548, 2552, 2520, 2540, 2548, 2520 |
+| Candidate 128 MiB Line Search | 140.516, 139.750, 139.335, 139.406, 139.348, 140.083, 140.627 | 2560, 2288, 2512, 2500, 2604, 2576, 2556 |
+| Current 256 MiB Line Search | 672.200, 641.041, 643.512, 638.852, 641.618, 620.078, 638.533 | 2448, 2520, 2384, 2424, 2336, 2524, 2604 |
+| Candidate 256 MiB Line Search | 271.962, 272.065, 272.748, 271.566, 272.111, 276.706, 274.150 | 2452, 2408, 2412, 2540, 2552, 2556, 2552 |
+| Current 2,048-file Line Search | 319.509, 314.736, 307.820, 313.925, 316.050, 304.707, 312.951 | 2684, 2624, 2672, 2544, 2708, 2672, 2684 |
+| Candidate 2,048-file Line Search | 142.143, 141.937, 144.854, 141.194, 141.675, 140.397, 141.767 | 2568, 2736, 2660, 2672, 2544, 2716, 2680 |
+| Current 1,048,576-hit Line Search | 482.301, 478.813, 490.741, 480.742, 482.393, 480.767, 479.036 | 59828, 59840, 59972, 59704, 59852, 59840, 59844 |
+| Candidate 1,048,576-hit Line Search | 484.432, 497.856, 491.420, 486.605, 478.441, 490.899, 484.479 | 59944, 59820, 59916, 59840, 59912, 59864, 59844 |
+
+| Cell | Current median / p95 ms | Candidate median / p95 ms | Current / candidate peak HWM KiB | Current / candidate `rchar` / `wchar` |
+| --- | --- | --- | --- | --- |
+| 128 MiB Line Search | 323.034 / 325.642 | 139.750 / 140.627 | 2612 / 2604 | 134224190 / 399; 134224198 / 399 |
+| 256 MiB Line Search | 641.041 / 672.200 | 272.111 / 276.706 | 2604 / 2556 | 268441918 / 398; 268441926 / 398 |
+| 2,048-file Line Search | 313.925 / 319.509 | 141.767 / 144.854 | 2708 / 2736 | 134224190 / 381; 134224198 / 381 |
+| 1,048,576-hit Line Search | 480.767 / 490.741 | 486.605 / 497.856 | 59972 / 59944 | 4200766 / 343377441; 4200774 / 343377441 |
+
+Every current/candidate pair had identical successful semantics, empty stderr,
+and deterministic output. The 128 MiB output remained 399 bytes with SHA-256
+`ee2da437d7f91d64fb7448c497b69ea81dc01d08a5ace04b7ff767fe204fb79b`;
+the required 256 MiB output remained 398 bytes with SHA-256
+`21655979a82f7bfd7355436b095c6976a7de02aa6174172082c2c5e22f0363a0`;
+the multi-file output remained 381 bytes with SHA-256
+`8bae96272f810a46853e1ad707ffd6c673f8a09888852be95488a4ca7a4b96cc`;
+and the million-hit output remained 343,377,441 bytes with SHA-256
+`3d31f29d76fe4d90495d0f1a68b0db015dc35bf53ca3947fd21e0902a6a4d2f5`.
+
+On 256 MiB Line Search, paired profiler counters changed from
+2,723,726,907 to 1,158,597,307 cycles, 12,877,820,629 to 4,557,140,799
+instructions, 3,830,036,021 to 1,147,090,186 branches, 242,736 to 151,288
+branch misses, and 25,748 to 64,219 cache misses. Instructions fell 64.61% and
+branches 70.05%. Both DWARF runs lost zero samples: current used 605 samples
+and candidate 279. The Line projection's inlined closure fell from 68.44% of
+approximately 2.668 billion sampled cycles to 41.14% of approximately 1.153
+billion, about 1.826 billion to 0.474 billion projection cycles. The old
+per-byte `checked_add` stack disappeared above the 0.5% reporting threshold.
+
+The candidate's 272.111 ms median is 40.38% of the paired v3 673.898 ms median,
+a 2.476× speedup and below the required 336.949 ms maximum. Candidate p95 and
+peak HWM stay within 10% of current in every retained Search cell; the largest
+p95 ratio is 101.45% in the million-hit cell and the largest HWM ratio is
+101.03% in the multi-file cell. Candidate 128/256 MiB low-hit peak HWM is
+2,604/2,556 KiB while source bytes and `rchar` double, so source memory remains
+bounded. The only added fast path bulk-skips ordinary Line content before the
+query's first byte, carries the existing KMP state only across real candidates
+or chunk partials, stops KMP after one Line match, and checks offsets and Line
+length by chunk/span. It retains the existing observer, failure table, framing,
+result buckets, and one-read/hash/fail-all behavior.
+
+The corrected result-memory recommendation and the remaining 2× Line Search
+recommendation now pass. Source release-readiness is **GO**. This is only a
+source-readiness decision; it creates no artifact, tag, installer, endpoint,
+publication, or release authority.
 
 ## Forbidden work and release boundary
 
@@ -567,8 +647,8 @@ deployment, service, tunnel, DNS, artifact, or public-root changes.
 
 Public `0.1.0` and prior betas remain closed and immutable. `0.2.0` has no
 artifact, installer, manifest, tag, GitHub Release, crates.io release, or public
-endpoint. Resolving the Phase 7 NO-GO and any release construction or
-publication require separate Owner authority.
+endpoint. Any release construction or publication requires separate Owner
+authority.
 
 ## Status and evidence
 
@@ -579,6 +659,7 @@ publication require separate Owner authority.
 - [x] Phase 5 — View and Check consumers (completed 2026-08-30)
 - [x] Phase 6 — Apply and Anchor cutover (completed 2026-08-30)
 - [x] Phase 7 — integrated verification and release decision
+- [x] Line Search recommendation closure
 
 Evidence:
 
@@ -640,8 +721,12 @@ Evidence:
   current File Anchor, and temporary/publication state. Git-object A/B builds,
   fixed Phase 2 fixtures, seven-sample release measurements, and representative
   profiles prove the formal correctness, CPU, Search wall/RSS, p95, and bounded
-  source-memory gates. All current 201 GNU-host tests and every offline/locked
-  gate pass. The original 2× 256 MiB Search and 50% million-hit output
-  bytes/hit recommendations remain unmet, so source verification is complete
-  but the recorded release decision is NO-GO. No `0.2.0` artifact or
-  publication exists.
+  source-memory gates. All 201 Phase 7 GNU-host tests and every offline/locked
+  gate pass. The Owner correction classifies million-hit HWM, not JSON payload,
+  as the result-memory recommendation; its 83.10% reduction passes.
+- Line Search recommendation closure: maximal content slices remove per-byte
+  offset and state-zero matcher work from the Line-only hot path. The fixed
+  candidate reaches a 272.111 ms 256 MiB median, 2.476× faster than v3, with
+  exact output and retained p95/HWM gates. All 203 current GNU-host tests pass.
+  Source release-readiness is GO. No `0.2.0` artifact, publication, or release
+  exists.

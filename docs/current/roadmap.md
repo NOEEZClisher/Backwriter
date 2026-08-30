@@ -1,6 +1,6 @@
 # Backwriter Roadmap
 
-## Next: Owner decision on Phase 7 performance recommendations
+## Next: separate 0.2.0 release authority
 
 The closed public `0.1.0` release remains immutable v3 evidence. `0.2.0` is an
 unpublished local source-development line governed by
@@ -8,12 +8,13 @@ the [seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.0-anddress-fa
 Phases 1–7 are complete. The exact drift matrix, full semantic suite, immutable
 Git-object A/B builds, fixed Phase 2 fixtures, seven-sample release timings, and
 representative counter/stack profiles pass every correctness and formal
-performance gate. The release decision is nevertheless NO-GO: the original
-2× 256 MiB Search recommendation reached only 1.077×, and million-hit public
-JSON output grew from 212.940 to 327.470 bytes/hit instead of falling to at
-most 50% of v3. No optimization, wire change, artifact, or publication follows
-implicitly. The next step is an explicit Owner decision to retain, revise, or
-replace those recommendations before any release work.
+performance gate. The Owner correction classifies million-hit peak-HWM slope,
+not JSON payload size, as the result-memory recommendation; its 346.539 to
+58.551 HWM bytes/hit change is an 83.10% reduction and passes. The subsequent
+Line-only content-slice closure reaches a 272.111 ms 256 MiB median, 2.476×
+faster than the paired v3 median and below the 336.949 ms target. Source
+release-readiness is GO. Any artifact, tag, installer, publication, or release
+still requires separate Owner authority.
 
 The target replaces ordinal/exact-text identity with an ordinary Anddress that
 authorizes one exact source state and byte range: workspace coordinate, logical
@@ -32,7 +33,7 @@ History, a persistent index, context matching, external-change relocation, and
 a full workspace cache remain excluded. SHA-256 and the v4 hard cutover are
 closed Owner decisions implemented in Phase 3.
 
-## Completed: Phase 7 integrated verification
+## Completed: Phase 7 and Line Search recommendation closure
 
 V4 produces one Correct Apply, six Safe Rejects, and zero Wrong Applies across
 the exact seven drift cells. Every reject preserves source bytes, a current
@@ -43,9 +44,15 @@ Large View and Check median CPU are 36.30% and 23.78% of v3, range Apply
 prepublication CPU is 16.80%, Search wall is 79.78%–92.84%, and Search peak HWM
 is 16.90%–92.89%. All p95 and peak-memory comparisons stay below the 110%
 regression gate, while 128/256 MiB low-hit Search remains near 2.5 MiB peak HWM.
-The million-hit cell lowers HWM from 346.539 to 58.551 bytes/hit but expands
-the exact v4 Adapter output to 327.470 bytes/hit. Full raw evidence and the
-NO-GO decision are retained in the tracking task. No `0.2.0` release exists.
+The million-hit cell lowers HWM from 346.539 to 58.551 bytes/hit. Its exact v4
+Adapter output is separately 327.470 bytes/hit; payload/I/O size is not result
+memory or a release gate. The Line-only fast path bulk-skips maximal ordinary
+content slices, runs the existing KMP only for first-byte candidates or carried
+partials, stops matching after a Line hit, and updates range/length in checked
+chunks and spans. Fixed current/candidate measurements reduce the 256 MiB median
+from 641.041 to 272.111 ms while preserving the exact 398-byte result and all
+p95/HWM gates. Full raw evidence and profiles are retained in the tracking task.
+Source release-readiness is GO; no `0.2.0` release exists.
 
 ## Completed: Phase 6 direct Apply and Anchor consumers
 

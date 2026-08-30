@@ -305,6 +305,7 @@ struct FileProjection<'a> {
 struct LineProjection<'a> {
     matcher: LiteralMatcher<'a>,
     line_start: usize,
+    line_content_length: usize,
     line_started: bool,
     pending_cr: bool,
     provisional: Vec<ProvisionalTarget>,
@@ -470,6 +471,7 @@ impl<'a> LineProjection<'a> {
         Self {
             matcher: literal.matcher(),
             line_start: 0,
+            line_content_length: 0,
             line_started: false,
             pending_cr: false,
             provisional: Vec::new(),
@@ -477,24 +479,58 @@ impl<'a> LineProjection<'a> {
     }
 
     fn push(&mut self, bytes: &[u8], chunk_start: usize) -> Result<(), SourceScanError> {
-        for (index, &byte) in bytes.iter().enumerate() {
-            let byte_start = chunk_start
-                .checked_add(index)
-                .ok_or(SourceScanError::Resource)?;
+        chunk_start
+            .checked_add(bytes.len())
+            .ok_or(SourceScanError::Resource)?;
+        let mut cursor = 0;
+        while cursor < bytes.len() {
+            let byte_start = chunk_start + cursor;
             if self.pending_cr {
-                if byte == b'\n' {
-                    self.finish_line(byte_start.checked_add(1).ok_or(SourceScanError::Resource)?)?;
+                if bytes[cursor] == b'\n' {
+                    self.finish_line(byte_start + 1)?;
+                    cursor += 1;
                     continue;
                 }
                 self.finish_line(byte_start)?;
             }
             self.begin_line(byte_start);
+
+            let remaining = &bytes[cursor..];
+            let span_length = if self.matcher.found() {
+                remaining
+                    .iter()
+                    .position(|&byte| matches!(byte, b'\r' | b'\n'))
+                    .unwrap_or(remaining.len())
+            } else if self.matcher.has_partial_match() {
+                0
+            } else {
+                let first = self.matcher.first_byte();
+                remaining
+                    .iter()
+                    .position(|&byte| byte == first || matches!(byte, b'\r' | b'\n'))
+                    .unwrap_or(remaining.len())
+            };
+            self.add_content_length(span_length)?;
+            cursor += span_length;
+            if cursor == bytes.len() {
+                break;
+            }
+
+            let byte = bytes[cursor];
             match byte {
-                b'\r' => self.pending_cr = true,
-                b'\n' => {
-                    self.finish_line(byte_start.checked_add(1).ok_or(SourceScanError::Resource)?)?
+                b'\r' => {
+                    self.pending_cr = true;
+                    cursor += 1;
                 }
-                _ => self.matcher.push(byte),
+                b'\n' => {
+                    self.finish_line(chunk_start + cursor + 1)?;
+                    cursor += 1;
+                }
+                _ => {
+                    self.add_content_length(1)?;
+                    self.matcher.push_content_byte(byte);
+                    cursor += 1;
+                }
             }
         }
         Ok(())
@@ -511,12 +547,13 @@ impl<'a> LineProjection<'a> {
         if !self.line_started {
             self.line_started = true;
             self.line_start = byte_start;
+            self.line_content_length = 0;
             self.matcher.reset();
         }
     }
 
     fn finish_line(&mut self, byte_end: usize) -> Result<(), SourceScanError> {
-        if let Some(tier) = self.matcher.finish() {
+        if let Some(tier) = self.matcher.finish_at_length(self.line_content_length) {
             push_provisional(
                 &mut self.provisional,
                 tier,
@@ -527,6 +564,14 @@ impl<'a> LineProjection<'a> {
         }
         self.line_started = false;
         self.pending_cr = false;
+        Ok(())
+    }
+
+    fn add_content_length(&mut self, length: usize) -> Result<(), SourceScanError> {
+        self.line_content_length = self
+            .line_content_length
+            .checked_add(length)
+            .ok_or(SourceScanError::Resource)?;
         Ok(())
     }
 }
@@ -839,6 +884,86 @@ mod tests {
         assert_eq!((full[1].byte_start(), full[1].byte_end()), (18, 24));
         let (full, substring) = project(b"nee\ndle", "needle", SearchTarget::Line, None).unwrap();
         assert!(full.is_empty() && substring.is_empty());
+    }
+
+    #[test]
+    fn line_slice_fast_path_preserves_tiers_fallback_and_dense_candidates() {
+        let (full, substring) =
+            project_chunked(b"x\nax\n", "x", SearchTarget::Line, None, 1).unwrap();
+        assert_eq!(full.len(), 1);
+        assert_eq!((full[0].byte_start(), full[0].byte_end()), (0, 2));
+        assert_eq!(substring.len(), 1);
+        assert_eq!((substring[0].byte_start(), substring[0].byte_end()), (2, 5));
+
+        let (full, substring) = project_chunked(
+            b"need\nneedle\nneedlex\n",
+            "needle",
+            SearchTarget::Line,
+            None,
+            READ_BUFFER_SIZE,
+        )
+        .unwrap();
+        assert_eq!(full.len(), 1);
+        assert_eq!((full[0].byte_start(), full[0].byte_end()), (5, 12));
+        assert_eq!(substring.len(), 1);
+        assert_eq!(
+            (substring[0].byte_start(), substring[0].byte_end()),
+            (12, 20)
+        );
+
+        for (source, query) in [("aaaaaaaaab\n", "aaaaab"), ("abababaca\n", "ababaca")] {
+            let (full, substring) =
+                project_chunked(source.as_bytes(), query, SearchTarget::Line, None, 2).unwrap();
+            assert!(full.is_empty());
+            assert_eq!(substring.len(), 1);
+        }
+
+        let dense_no_hit = format!("{}\n", "a".repeat(READ_BUFFER_SIZE * 2));
+        let (full, substring) = project_chunked(
+            dense_no_hit.as_bytes(),
+            "aaaaab",
+            SearchTarget::Line,
+            None,
+            READ_BUFFER_SIZE,
+        )
+        .unwrap();
+        assert!(full.is_empty() && substring.is_empty());
+
+        let (full, substring) =
+            project_chunked(b"abab\naca", "ababaca", SearchTarget::Line, None, 2).unwrap();
+        assert!(full.is_empty() && substring.is_empty());
+    }
+
+    #[test]
+    fn line_slice_fast_path_preserves_terminators_and_long_query_carry() {
+        let source = b"needle\rneedle\nneedle\r\nneedle";
+        let (full, substring) =
+            project_chunked(source, "needle", SearchTarget::Line, None, 7).unwrap();
+        assert!(substring.is_empty());
+        assert_eq!(full.len(), 4);
+        assert_eq!(
+            full.iter()
+                .map(|anddress| (anddress.byte_start(), anddress.byte_end()))
+                .collect::<Vec<_>>(),
+            vec![(0, 7), (7, 14), (14, 22), (22, 28)]
+        );
+
+        let query = format!("{}é", "z".repeat(READ_BUFFER_SIZE * 2));
+        let source = format!("prefix{query}\n");
+        let (full, substring) = project_chunked(
+            source.as_bytes(),
+            &query,
+            SearchTarget::Line,
+            None,
+            READ_BUFFER_SIZE,
+        )
+        .unwrap();
+        assert!(full.is_empty());
+        assert_eq!(substring.len(), 1);
+        assert_eq!(
+            (substring[0].byte_start(), substring[0].byte_end()),
+            (0, source.len())
+        );
     }
 
     #[test]

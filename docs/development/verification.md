@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.0 Phase 7 verification boundary
+## 0.2.0 Phase 7 and Search recommendation closure
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current
 unpublished `0.2.0` Rust, Cargo, CLI, and tests use only Anddress v4. Phase 3
@@ -81,7 +81,11 @@ Search streaming regressions cover target-specific File, Paragraph, and Line
 projection; 8,191/8,192/8,193 scratch boundaries; split multibyte UTF-8, CRLF,
 and literals; Line-scoped KMP; complete matching ranges; one-read incremental
 SHA-256; shared same-source identity; File `FullLine` projection stop with
-continued validation; and late text/read failure discard. Exact File structure
+continued validation; and late text/read failure discard. The Line-only slice
+fast path additionally covers one-byte queries and chunks, shorter/equal/longer
+Lines, `aaaaab` and `ababaca` fallback/overlap, dense first-byte no-hit input,
+cross-Line rejection, chunk-ending CR and every terminator, no-EOL, Unicode,
+and a multi-scratch query. Exact File structure
 audits prove one common observation and no generic Line framer. Ordinary View
 regressions cover File/Paragraph/Line exact bytes, terminators, Unicode,
 8,191/8,192/8,193 scratch boundaries, raw-valid nonstructural ranges, UTF-8
@@ -136,10 +140,16 @@ v3, Search median wall and peak HWM at most 105%, every p95 and peak-memory
 comparison below a 10% regression, bounded low-hit source memory, and no
 consumer target search, relocation, second Search hash pass, whole-source
 `CurrentObservation`, fixed truncation, or output/error drift. Those gates pass.
-The original 2× 256 MiB Search and 50% million-hit output-bytes recommendations
-do not, so the recorded release decision is NO-GO. Missing a recommendation
-does not authorize a speculative optimization, v4 wire change, artifact, or
-publication.
+The Owner correction defines the million-hit recommendation as result-memory
+peak-HWM slope, not JSON output size. Phase 7's 346.539 to 58.551 HWM bytes/hit
+is an 83.10% reduction and passes the 50% recommendation; 327.470 JSON bytes/hit
+is canonical Adapter payload/I/O evidence only. The remaining 2× 256 MiB Line
+Search recommendation is closed by a Line-only maximal content-slice fast path.
+Against the paired v3 673.898 ms median, its 272.111 ms median is a 2.476×
+speedup and below the 336.949 ms target. Fixed current/candidate 128 MiB,
+256 MiB, 2,048-file, and million-hit measurements preserve exact output and
+all p95/peak-HWM gates. Source release-readiness is GO; this does not authorize
+an artifact or publication.
 
 Edit V1 semantic/public API/type/error authority and inert Rust value
 implementation are complete; the single-source Apply Runtime execution
@@ -249,7 +259,7 @@ The repository source package is unpublished `0.2.0`, and its release build
 must print exactly `Backwriter 0.2.0` plus LF. Source verification remains
 distinct from the separately executed operations publication: the current official
 distribution is the closed stable `0.1.0` release, while prior beta files remain
-immutable. The current `0.2.0` source suite passes 201 GNU-host Rust tests; the
+immutable. The current `0.2.0` source suite passes 203 GNU-host Rust tests; the
 historical `0.1.0` source suite passed 193.
 
 CLI process regressions cover the canonical `bw` binary without a `backwriter`
