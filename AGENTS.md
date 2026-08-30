@@ -30,10 +30,11 @@ v3 remains only in Git history and immutable `0.1.0` release evidence. The
 canonical four-target `0.2.0` artifacts, manifest, installers, live publication,
 fresh installation, and explicit update are complete.
 
-`0.2.1` is an unpublished development target. Phases 2 through 5 implement its
+`0.2.1` is an unpublished development target. Phases 2 through 6 implement its
 minimal Host-authoritative observation kernel, bounded ordinary View reuse, and
-Check and Apply current-proof reuse while preserving v4 identity and the existing
-`0.2.0` execution path as the default Untrusted Mode.
+Check, Apply, and anchored View current-proof reuse plus complete invalidation
+and race semantics while preserving v4 identity and the existing `0.2.0`
+execution path as the default Untrusted Mode.
 `WorkspaceRuntime::open_host_authoritative` explicitly selects that mode and
 `WorkspaceRuntime::invalidate_source` is its host mutation boundary. The
 Runtime may retain one private current SHA-256/length proof per logical source.
@@ -45,6 +46,12 @@ matching proof as its source-state precondition, stages the exact proof length
 without a before hash, preserves it across an exact no-op, and installs the
 already computed prospective-after hash and length only after confirmed changed
 publication.
+Both public source-invalidation seams share one I/O-free path-exact proof and
+Anchor invalidator. Correct Host sequencing invalidates before every visible
+mutation and excludes mutation through capability completion; unsignaled or
+in-call mutation is a host contract violation rather than a supported race.
+Matching anchored View reuses ordinary trusted View execution, while a proof
+mismatch fail-closes the same-path proof and live Anchors before source access.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,

@@ -41,7 +41,7 @@ while exact no-op preserves it. Host-coordinated or opaque mutation, explicit
 invalidation, authority change, unavailable source, uncertain publication, or
 Runtime drop discards proof.
 
-Phases 2 through 5 add `WorkspaceRuntime::open_host_authoritative` and
+Phases 2 through 6 add `WorkspaceRuntime::open_host_authoritative` and
 `WorkspaceRuntime::invalidate_source` without changing `open` or any capability
 signature. Private synchronized state holds at most one replace-only
 hash/length proof per logical path and no retained handle. A successful Host
@@ -63,6 +63,21 @@ direct and byte-identical no-op, and installs the existing prospective-after
 hash/length only after confirmed changed publication. Proof misses and
 Untrusted execution retain the complete before-observation path.
 
+Phase 6 closes the complete proof lifecycle. Both source invalidation methods
+delegate to one I/O-free path-exact proof-plus-Anchor invalidator. After
+invalidation, same-length or different-length replacement, deletion, invalid
+UTF-8, and NUL source all make stale View, Check, and Apply safe-reject through
+the existing fallback paths. Proof mismatch remains I/O-free and preserves
+state for ordinary View and Apply; anchored View instead fail-closes its live
+same-path continuity and proof. Matching anchored View now shares ordinary
+trusted View execution rather than performing a second full-source observer.
+Open, seek, read, short, and resource failure remove a consumed View proof but
+preserve Anchor continuity without mutation evidence. Apply retains its Phase
+5 failure boundaries, no-op preservation, confirmed after installation, and
+uncertain-publication fail-closure. Unsignaled mutation and mutation during a
+capability call remain Host contract violations; Phase 6 adds no watcher,
+metadata check, lock, CAS, retry, or supported race behavior.
+
 Trusted Search followed by ordinary View no longer performs View's complete
 source read or hash; File still returns the complete file range, while
 Paragraph and Line retain only their returned target allocation. Host Search
@@ -75,7 +90,7 @@ emission. Confirmed changed Host publication retains only that after proof; the
 next trusted View, Check, or Apply may reuse it without an intervening Search.
 The
 [0.2.1 phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
-owns the audited flow, Phase 2–5 choices, fixed comparison inputs, gates, and
+owns the audited flow, Phase 2–6 choices, fixed comparison inputs, gates, and
 remaining phases.
 
 ## Core capability inventory

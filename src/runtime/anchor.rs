@@ -8,8 +8,8 @@ use crate::backwriter::{
 use crate::source::validate_logical_path;
 
 use super::{
-    AnchorBinding, WorkspaceRuntime, is_backwriter_spill,
-    view::{AnchoredObservation, ObservationError, observe_anchored},
+    AnchorBinding, CurrentProofMatch, WorkspaceRuntime, is_backwriter_spill,
+    view::{AnchoredObservation, ObservationError, execute_trusted, observe_anchored},
 };
 
 pub(super) fn anchor(
@@ -78,6 +78,14 @@ pub(super) fn view_anchored(
         return Err(ViewError::Unavailable);
     };
     let input = runtime.anchors[index].anddress.clone();
+    match runtime.match_current_proof(&input) {
+        CurrentProofMatch::Mismatched => {
+            runtime.invalidate_source_state(input.logical_path());
+            return Err(ViewError::Unavailable);
+        }
+        CurrentProofMatch::Matching => return execute_trusted(runtime, &input),
+        CurrentProofMatch::Missing => {}
+    }
     let observed = match observe_current(runtime, &input, std::slice::from_ref(&input), Some(0)) {
         Ok(observed) => observed,
         Err(ObservationError::InvalidSource) => {

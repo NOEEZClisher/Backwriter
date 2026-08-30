@@ -72,20 +72,25 @@ pub(super) fn execute(
                 .ok_or(ViewError::Unavailable)
         }
         CurrentProofMatch::Mismatched => Err(ViewError::Unavailable),
-        CurrentProofMatch::Matching => {
-            let outcome = runtime
-                .open_admitted_source(input.logical_path())
-                .map_err(|_| TrustedViewError::Source)
-                .and_then(|mut file| observe_trusted(&mut file, input));
-            if matches!(
-                outcome,
-                Err(TrustedViewError::Source | TrustedViewError::Resource)
-            ) {
-                runtime.invalidate_current_proof(input.logical_path());
-            }
-            outcome.map_err(|_| ViewError::Unavailable)
-        }
+        CurrentProofMatch::Matching => execute_trusted(runtime, input),
     }
+}
+
+pub(super) fn execute_trusted(
+    runtime: &WorkspaceRuntime,
+    input: &Anddress,
+) -> Result<ViewOutcome, ViewError> {
+    let outcome = runtime
+        .open_admitted_source(input.logical_path())
+        .map_err(|_| TrustedViewError::Source)
+        .and_then(|mut file| observe_trusted(&mut file, input));
+    if matches!(
+        outcome,
+        Err(TrustedViewError::Source | TrustedViewError::Resource)
+    ) {
+        runtime.invalidate_current_proof(input.logical_path());
+    }
+    outcome.map_err(|_| ViewError::Unavailable)
 }
 
 pub(super) fn observe_direct(
@@ -726,6 +731,26 @@ mod tests {
         }
     }
 
+    struct FailingTrustedReader {
+        fail_seek: bool,
+    }
+
+    impl Read for FailingTrustedReader {
+        fn read(&mut self, _output: &mut [u8]) -> io::Result<usize> {
+            Err(io::Error::other("injected trusted read failure"))
+        }
+    }
+
+    impl Seek for FailingTrustedReader {
+        fn seek(&mut self, _position: SeekFrom) -> io::Result<u64> {
+            if self.fail_seek {
+                Err(io::Error::other("injected trusted seek failure"))
+            } else {
+                Ok(0)
+            }
+        }
+    }
+
     fn address(bytes: &[u8], target: AnddressTarget, start: usize, end: usize) -> Anddress {
         let mut hash = Sha256::new();
         hash.update(bytes);
@@ -842,7 +867,16 @@ mod tests {
         assert!(execute.contains("CurrentProofMatch::Missing"));
         assert!(execute.contains("observe_direct("));
         assert!(execute.contains("CurrentProofMatch::Matching"));
-        assert!(execute.contains("observe_trusted("));
+        assert!(execute.contains("execute_trusted("));
+        let trusted_execution = production
+            .split("pub(super) fn execute_trusted")
+            .nth(1)
+            .unwrap()
+            .split("pub(super) fn observe_direct")
+            .next()
+            .unwrap();
+        assert!(trusted_execution.contains("observe_trusted("));
+        assert!(trusted_execution.contains("invalidate_current_proof"));
         let trusted = production
             .split("fn observe_trusted")
             .nth(1)
@@ -990,6 +1024,12 @@ mod tests {
             observe_trusted(&mut Cursor::new(b"on"), &input),
             Err(TrustedViewError::Source)
         );
+        for fail_seek in [true, false] {
+            assert_eq!(
+                observe_trusted(&mut FailingTrustedReader { fail_seek }, &input),
+                Err(TrustedViewError::Source)
+            );
+        }
 
         let fixture = tempfile::tempdir().unwrap();
         let runtime = host_runtime(fixture.path());
@@ -1065,6 +1105,27 @@ mod tests {
             .unwrap();
         assert_eq!(runtime.view(&cut), Err(ViewError::Unavailable));
         assert_eq!(runtime.current_proofs.lock().unwrap().len(), 1);
+
+        std::fs::write(fixture.path().join("resource.txt"), b"").unwrap();
+        let resource = Anddress::new(
+            &runtime.workspace_coordinate,
+            "resource.txt",
+            &"d".repeat(64),
+            usize::MAX,
+            AnddressTarget::File,
+            0,
+            usize::MAX,
+        )
+        .unwrap();
+        runtime
+            .install_search_proofs(vec![
+                CurrentProof::new("resource.txt", "d".repeat(64), usize::MAX).unwrap(),
+            ])
+            .unwrap();
+        assert_eq!(runtime.view(&resource), Err(ViewError::Unavailable));
+        let proofs = runtime.current_proofs.lock().unwrap();
+        assert_eq!(proofs.len(), 1);
+        assert_eq!(proofs[0].logical_path, "cut.txt");
     }
 
     fn host_runtime(root: &Path) -> WorkspaceRuntime {

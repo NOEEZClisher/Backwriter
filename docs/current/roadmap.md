@@ -28,9 +28,32 @@ fixed-scratch bidirectional related-Paragraph scan to the nearest separator or
 source boundary. Completed Phase 4 makes Check classify an entire matching
 coordinate/path group from copied hash/length proof with no filesystem open,
 read, or hash while preserving its existing report/filter path. Completed
-Phase 5 integrates Apply and Anchor proof transitions. Later phases close full
-race/drift semantics and then run fixed A/B gates for the `0.2.1` version
-decision.
+Phase 5 integrates Apply and Anchor proof transitions. Completed Phase 6 closes
+the full invalidation, authority-isolation, and guarded drift semantics. Phase
+7 alone retains fixed A/B gates and the `0.2.1` version decision.
+
+## Completed: 0.2.1 Phase 6 invalidation and race closure
+
+The two public source invalidation methods share one I/O-free path-exact
+proof-plus-Anchor operation. Correct Host sequencing invalidates before every
+visible mutation and excludes mutation through capability completion;
+unsignaled or in-call mutation remains outside the supported contract. After
+invalidation, stale View, Check, and Apply safe-reject same-length and
+different-length changes, deletion, invalid UTF-8, and NUL without relocation
+or Wrong Apply.
+
+Ordinary View and Apply proof mismatch remain I/O-free and state-preserving;
+Check mismatch remains `NotCurrent` without proof mutation. Matching anchored
+View now shares ordinary trusted View execution, while an anchored proof
+mismatch fail-closes same-path proof and continuity before source access.
+Read/open/short/resource failure, definite prepublication failure, no-op,
+confirmed publication, and uncertain publication retain their exact Phase 5
+boundaries. Proofs stay isolated by logical path, workspace, admission,
+Runtime, and authority mode, and Runtime drop retains nothing. The seven-cell
+duplicate-Line drift matrix produces one Correct Apply, six Safe Rejects, and
+zero Wrong Applies in both Untrusted and correctly guarded Host modes;
+duplicate Paragraph drift also rejects in both. Phase 7 retains all
+measurement, version, and release-readiness decisions.
 
 ## Completed: 0.2.1 Phase 5 Apply and Anchor proof integration
 
@@ -47,7 +70,7 @@ reuses the already computed prospective-after SHA-256/length for both the
 prepared Anchor plan and a preallocated proof replacement. Confirmed
 publication installs proof and reflects Anchors through the existing
 allocation-free finish path; publication uncertainty invalidates both for only
-that logical path. Phase 6 retains broader mutation/race closure, and Phase 7
+that logical path. Phase 6 closes broader mutation/race semantics, and Phase 7
 retains measurement, version, and release-readiness decisions.
 
 ## Completed: 0.2.1 Phase 4 Check current-proof reuse
@@ -64,8 +87,9 @@ matches are `Current` without source open, read, or hash.
 Untrusted execution, a proof miss, poisoned state, or unusable private evidence
 uses the unchanged admitted one-observation-per-source path. Check installs,
 replaces, invalidates, and removes no proof. Apply and Anchor integration is
-complete in Phase 5; broader invalidation/race closure, measurement, version
-change, and publication remain later phases.
+complete in Phase 5; broader invalidation/race closure is complete in Phase 6.
+Measurement, version change, and release-readiness remain Phase 7 work, while
+publication remains separate authority.
 
 ## Completed: 0.2.0 release closure
 
@@ -228,7 +252,8 @@ reuse and its related-Paragraph path without whole-source retention. Phase 4
 closes Check proof reuse without changing report semantics. Phase 5 closes
 Apply precondition reuse, exact no-op preservation, prospective-after proof
 installation, and coupled Anchor reflection/fail-closure. Invalidation/race
-closure, measurement, and the version decision remain later phases.
+closure, authority isolation, and both-mode guarded drift are complete in Phase
+6. Measurement and the version decision remain Phase 7 work.
 
 ## Completed: 0.1.0 exact File lookup
 

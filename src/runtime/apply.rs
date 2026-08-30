@@ -1071,7 +1071,10 @@ mod apply_tests {
         runtime::{AdmissionRoot, CurrentProof, WorkspaceAdmission, WorkspaceRuntime},
     };
 
-    use super::{SourceScanError, Temporary, edit_temporary_name, execute, publish, stage_source};
+    use super::{
+        SourceScanError, Temporary, edit_temporary_name, execute, publish, stage_source,
+        stage_source_trusted,
+    };
 
     struct FailingReader {
         bytes: Vec<u8>,
@@ -1144,6 +1147,23 @@ mod apply_tests {
             fs::read(fixture.path().join("note.txt")).unwrap(),
             b"source"
         );
+
+        let trusted_name = edit_temporary_name(&runtime, "note.txt", "staging").unwrap();
+        let mut trusted_staging = Temporary::create(&parent, trusted_name.clone()).unwrap();
+        let mut trusted_reader = FailingReader {
+            bytes: b"partial".to_vec(),
+            position: 0,
+        };
+        assert_eq!(
+            stage_source_trusted(&mut trusted_reader, &mut trusted_staging, 7),
+            Err(SourceScanError::Read)
+        );
+        drop(trusted_staging);
+        assert!(!fixture.path().join(trusted_name).exists());
+        assert_eq!(
+            fs::read(fixture.path().join("note.txt")).unwrap(),
+            b"source"
+        );
     }
 
     #[test]
@@ -1163,6 +1183,21 @@ mod apply_tests {
         );
         drop(staging);
         assert!(!fixture.path().join(name).exists());
+        assert_eq!(
+            fs::read(fixture.path().join("note.txt")).unwrap(),
+            b"source"
+        );
+
+        let trusted_name = edit_temporary_name(&runtime, "note.txt", "staging").unwrap();
+        let mut trusted_staging = Temporary::create(&parent, trusted_name.clone()).unwrap();
+        trusted_staging.close().unwrap();
+        let mut trusted_reader = Cursor::new(b"source".as_slice());
+        assert_eq!(
+            stage_source_trusted(&mut trusted_reader, &mut trusted_staging, 6),
+            Err(SourceScanError::Resource)
+        );
+        drop(trusted_staging);
+        assert!(!fixture.path().join(trusted_name).exists());
         assert_eq!(
             fs::read(fixture.path().join("note.txt")).unwrap(),
             b"source"

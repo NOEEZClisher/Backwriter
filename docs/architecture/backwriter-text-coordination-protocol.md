@@ -236,7 +236,51 @@ uncertainty discards both proof and all live same-path Anchors through the
 existing path-exact fail-closure. No proof state is held during source I/O,
 hashing, emission, Anchor planning, or publication.
 
-### Current 0.2.0 execution audit
+Phase 6 closes proof invalidation and race semantics without adding another
+state or execution layer. `invalidate_source` and
+`invalidate_anchored_source` call the same I/O-free path-exact operation. A
+successful call discards the named proof and every same-path live Anchor before
+the host mutates source; invalid syntax or unavailable admission changes no
+state. Hard-link aliases remain distinct logical paths and the host reports
+each mutated alias separately. Proof never crosses logical path, workspace,
+admission, Runtime, authority mode, or Runtime lifetime.
+
+The complete Host guard is a precondition rather than a Runtime mechanism. The
+host excludes every source-visible writer and path replacement from proof
+selection through capability return, invalidates synchronously before its own
+mutation, and performs the mutation only after invalidation returns. An
+unsignaled mutation or write during a capability call violates the Host
+contract. Runtime does not detect or support that race with a watcher,
+metadata, rehash, retained handle, lock, CAS, generation token, retry, or
+rollback.
+
+After correct invalidation, stale View, Check, and Apply use their unchanged
+proof-miss observation paths. Same-length or different-length replacement and
+deletion are confirmed stale; invalid UTF-8 or NUL remains unavailable; none
+relocates or publishes from the stale input. A present proof mismatch returns
+`Unavailable` before I/O for ordinary View and Apply and `NotCurrent` without
+I/O for Check, preserving proof and Anchor state. Check never mutates proof.
+
+Matching Host anchored View shares ordinary trusted View execution instead of
+performing its full observer. A proof mismatch is known continuity drift and
+discards same-path proof and Anchors before source access. A proof miss and
+Untrusted anchored View keep the existing complete structural observer.
+Trusted View open, seek, read, short, and recoverable resource failure remove
+only the matching proof; invalid source or another existing mutation-evidence
+boundary retains the existing same-path Anchor fail-closure.
+
+Apply length drift, invalid source, or stale same-path binding discards proof
+and same-path Anchors. Open or read failure removes only a matching proof;
+resource and definite prepublication failure preserve accepted proof and
+Anchor state when no mutation evidence exists. Direct and byte-identical no-op
+preserve old state, confirmed changed publication installs the one prepared
+after proof and reflects the matching after Anchor plan, and
+`PublicationUncertain` discards both same-path state sets. The exact seven-cell
+duplicate-Line drift matrix remains one Correct Apply, six Safe Rejects, and
+zero Wrong Applies in both Untrusted and correctly guarded Host modes;
+duplicate Paragraph drift also safe-rejects in both.
+
+### Current execution audit
 
 The common `observe_source` path performs one forward read from one retained
 no-follow source handle. Its `ObservationBuilder` incrementally enforces
@@ -248,8 +292,9 @@ and live Anchor bindings.
 - Content and exact-File Search each observe a selected source once. Content
   projection runs during that same read; there is no separate hash pass.
 - Ordinary View opens and observes the source once while capturing the requested
-  range. Anchor creation and anchored View also use one source observation with
-  direct target projection.
+  range. Anchor creation and Untrusted or proof-miss anchored View use one
+  source observation with direct target projection; matching Host anchored View
+  shares the ordinary trusted direct-range execution.
 - Raw, Search-outcome, and Pick-outcome Check group eligible inputs by
   coordinate and logical path. Untrusted and proof-miss groups observe each
   eligible path once for hash and length; a Host proof hit uses copied proof
@@ -262,9 +307,9 @@ and live Anchor bindings.
   while output bytes are emitted, without an after-source reread. In Host mode,
   Phase 5 instead uses a matching proof to omit the before hash and retains only
   the confirmed changed prospective-after proof after publication.
-- Search followed by View, Check, or Apply therefore performs two full live
-  observations of the same source: one in Search and one in the consumer.
-  In Untrusted Mode, Apply followed by any later consumer reopens and rehashes.
+- In Untrusted Mode, Search followed by View, Check, or Apply performs two full
+  live observations of the same source: one in Search and one in the consumer.
+  Apply followed by any later consumer likewise reopens and rehashes.
   In Host mode, confirmed changed Apply installs its prospective-after proof;
   matching View, Check, and a later Apply can reuse that identity. A confirmed
   no-op preserves only an already matching proof and never installs on a miss.
@@ -284,6 +329,9 @@ confirmed source unavailability, anchored fail-closure, publication uncertainty,
 and Runtime drop leave no reusable matching proof. Phase 5 Apply preserves an
 accepted proof through no-op and definite preparation failure, replaces it only
 after confirmed changed publication, and leaves unrelated path proofs unchanged.
+Phase 6 makes a matching anchored View share ordinary trusted View execution,
+closes both public invalidation seams over one path-exact proof-plus-Anchor
+operation, and fixes the guarded mutation and both-mode drift boundaries above.
 
 ## Current structure only
 
@@ -937,7 +985,11 @@ external writes. Writers may race, and one publication may overwrite another
 writer's source-visible change. This is an accepted contract boundary, not an
 Apply correctness failure. A host needing a stronger multi-writer guarantee
 must coordinate outside Backwriter or adapt this open-source implementation to
-its environment.
+its environment. This paragraph governs default Untrusted execution. An
+explicit Host-authoritative Runtime instead accepts proof reuse only under the
+complete mutation exclusion and pre-mutation invalidation guard above; an
+uncoordinated race violates that Host contract rather than defining supported
+proof behavior.
 
 `EditError::UnsupportedVersion` and `EditError::InvalidInput` map to their
 same-named `ApplyError`; `EditError::Resource` maps to
@@ -1046,9 +1098,11 @@ handle, alias, or reference count. An invalidated or dropped handle does not
 prevent a fresh anchor, and an equal tuple never revives an old handle. Anchor
 has no fixed live-handle cap; a resource failure returns `Unavailable`.
 
-`view_anchored` reuses the direct ordinary View target projection and compares
-only its selected live binding with current resolution;
-a stale sibling does not prevent that selected current binding from returning a
+`view_anchored` compares only its selected live binding with current
+resolution. In Host mode, a matching proof shares ordinary trusted View
+execution, a mismatch fail-closes same-path proof and continuity before I/O,
+and a miss keeps the complete direct target observer. A stale sibling does not
+prevent that selected current binding from returning a
 View result. A selected-binding mismatch is Runtime-known opaque mutation:
 Runtime invalidates every live anchor for that logical source and returns
 `Unavailable`. `anchor` keeps its same-path batch check only after its new input

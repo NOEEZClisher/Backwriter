@@ -8,7 +8,9 @@ only the explicitly guarded observation-reuse authority below; Phase 2 provides
 the Host kernel and Search proof installation, and Phase 3 adds bounded ordinary
 View proof consumption. Phase 4 adds Check group classification from matching
 proof, and Phase 5 adds Apply precondition reuse and prospective-after proof
-replacement coupled to existing Anchor reflection.
+replacement coupled to existing Anchor reflection. Phase 6 closes path-exact
+invalidation, authority isolation, matching anchored View reuse, and guarded
+drift semantics without adding a watcher or supported race.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash and length only while its
@@ -53,7 +55,11 @@ replacement coupled to existing Anchor reflection.
    state may arithmetically transform a range across a Backwriter-owned Apply.
    The same prospective-after identity drives both that reflection and Host
    proof replacement. External changes invalidate rather than relocate it;
-   Anchor adds no history, persistence, watcher, or generic transition engine.
+   both public invalidation seams discard same-path proof and continuity through
+   one I/O-free operation. A matching Host proof lets anchored View share the
+   ordinary trusted View path; a proof mismatch fail-closes that source before
+   I/O. Anchor adds no history, persistence, watcher, or generic transition
+   engine.
 10. **Current observation is bounded and ephemeral.** The private
     `CurrentObservation` holds only one selected source's hash and byte length
     until the current Search, View, Check, Apply, or Anchor consumer discards

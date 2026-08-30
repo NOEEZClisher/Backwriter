@@ -8,6 +8,9 @@ successful-Search proof installation. Phase 3 adds bounded ordinary View proof
 consumption. Phase 4 adds Check current-proof group classification;
 Phase 5 adds Apply proof precondition reuse, exact no-op preservation,
 prospective-after proof installation, and coupled Anchor reflection;
+Phase 6 closes path-exact invalidation, guarded mutation sequencing,
+authority isolation, matching anchored View reuse, failure transitions, and the
+both-mode drift matrix;
 Cargo/version, v4 wire, default Untrusted behavior, and the closed public
 `0.2.0` release remain unchanged. The
 Protocol owns default Untrusted Mode and explicit Host-authoritative Mode; the
@@ -65,8 +68,35 @@ publication, no proof lock across I/O/hash/emission/publication, and no retained
 source, previous proof, or history. The Phase 5 development suite passes 228
 GNU-host Rust tests.
 
-Future verification must prove the remaining invalidation/race matrix. No Phase
-5 result is a benchmark or release-readiness claim.
+Phase 6 regressions prove both public invalidation methods delegate to one
+I/O-free path-exact proof-plus-Anchor operation; invalid syntax, private paths,
+and unadmitted paths preserve unrelated state; and same-hash paths, workspaces,
+admissions, Runtimes, Host versus Untrusted mode, and Runtime lifetimes remain
+isolated. After correct pre-mutation invalidation, same-length and
+different-length replacement, deletion, invalid UTF-8, and NUL make stale View,
+Check, and Apply safe-reject without publication. A confirmed Apply followed by
+invalidation and external mutation likewise rejects its old after address.
+
+Proof mismatches use filesystem-absence tripwires to prove zero source access
+and state preservation for ordinary View and Apply, while Check remains
+`NotCurrent` without mutation. Matching anchored View structurally shares the
+ordinary trusted View helper; an anchored proof mismatch removes same-path
+proof and continuity before source access. Existing private failure seams and
+integration regressions fix trusted View open/seek/read/short/resource proof
+removal, Apply open/read/resource and definite-prepublication preservation
+boundaries,
+invalid/length-drift fail-closure, no-op preservation, confirmed after
+installation/reflection, and path-exact uncertain-publication invalidation.
+Failed Search installs no provisional proof, Check fallback installs none, and
+Runtime drop retains none.
+
+The exact seven-cell duplicate-Line drift matrix passes in both Untrusted and
+correctly guarded Host modes with one Correct Apply, six Safe Rejects, and zero
+Wrong Applies; duplicate Paragraph drift rejects in both modes. Structural
+evidence continues to exclude proof locks across I/O, hashing, emission, and
+publication, plus whole-source retention, prior-proof chains, history, public
+hooks, or persistent cache. The Phase 6 development suite passes 234 GNU-host
+Rust tests. No Phase 6 result is a benchmark or release-readiness claim.
 
 The fixed later gates are Search median at most 105% of `0.2.0`, trusted
 Search-to-View at most 400 ms with at most 350 ms recommended, zero

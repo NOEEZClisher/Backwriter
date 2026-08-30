@@ -316,13 +316,44 @@ fn anchor_uses_direct_target_projection_without_view_capture() {
     assert!(raw_anchor.contains("&inputs, None"));
     assert!(!raw_anchor.contains("ViewCapture"));
     assert!(!raw_anchor.contains("ViewOutcome"));
+
+    let anchored = source
+        .split_once("pub(super) fn view_anchored")
+        .and_then(|(_, source)| source.split_once("pub(super) fn invalidate_source"))
+        .map(|(anchored, _)| anchored)
+        .expect("anchored View section");
+    assert!(anchored.contains("match_current_proof"));
+    assert!(anchored.contains("CurrentProofMatch::Matching"));
+    assert!(anchored.contains("execute_trusted"));
+    assert!(anchored.contains("CurrentProofMatch::Missing"));
+    assert!(anchored.contains("observe_current"));
 }
 
 #[test]
 fn invalidation_is_path_exact_and_does_not_read_the_source() {
+    assert_eq!(
+        include_str!("../src/runtime.rs")
+            .matches("anchor::invalidate_source(self, path)")
+            .count(),
+        2
+    );
+    let invalidator = include_str!("../src/runtime/anchor.rs")
+        .split_once("pub(super) fn invalidate_source")
+        .and_then(|(_, invalidator)| invalidator.split_once("fn validate("))
+        .map(|(invalidator, _)| invalidator)
+        .unwrap();
+    assert!(invalidator.contains("invalidate_source_state(path)"));
+    assert!(!invalidator.contains("open_admitted"));
+    assert!(!invalidator.contains("observe_"));
+
     let fixture = tempdir().unwrap();
     fs::write(fixture.path().join("note.txt"), "one\n").unwrap();
-    let mut workspace = runtime(fixture.path());
+    let mut workspace = host_runtime(fixture.path());
+    let note = current(&workspace, AnddressTarget::File);
+    let note_handle = match workspace.anchor(&note).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("note File Anchor"),
+    };
     assert_eq!(
         workspace.invalidate_source("."),
         Err(AnchorError::InvalidInput)
@@ -332,19 +363,60 @@ fn invalidation_is_path_exact_and_does_not_read_the_source() {
         workspace.invalidate_source(".artext/bw/x"),
         Err(AnchorError::Unavailable)
     );
+    let parked_note = fixture.path().join("parked-note");
+    fs::rename(fixture.path().join("note.txt"), &parked_note).unwrap();
+    assert_eq!(
+        workspace.check(note.clone()).unwrap().filtered,
+        Some(note.clone())
+    );
+    fs::rename(&parked_note, fixture.path().join("note.txt")).unwrap();
+    assert!(matches!(
+        workspace.view_anchored(&note_handle),
+        Ok(ViewOutcome::File { text }) if text == "one\n"
+    ));
     assert_eq!(workspace.invalidate_anchored_source("note.txt"), Ok(()));
+    assert_eq!(
+        workspace.view_anchored(&note_handle),
+        Err(ViewError::Unavailable)
+    );
 
     fs::create_dir(fixture.path().join("admitted")).unwrap();
+    fs::write(fixture.path().join("admitted/source.txt"), "admitted\n").unwrap();
     let mut named = WorkspaceRuntime::open_host_authoritative(
         fixture.path(),
         WorkspaceAdmission::new([AdmissionRoot::new("admitted").unwrap()]).unwrap(),
     )
     .unwrap();
+    let backwriter::backwriter::search::SearchOutcome::Found { mut anddresses } = named
+        .search(
+            &backwriter::backwriter::search::SearchRequest::exact_file("admitted/source.txt")
+                .unwrap(),
+        )
+        .unwrap()
+    else {
+        panic!("admitted File")
+    };
+    let admitted = anddresses.pop().unwrap();
+    let admitted_handle = match named.anchor(&admitted).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("admitted File Anchor"),
+    };
     assert_eq!(named.invalidate_source("admitted/missing.txt"), Ok(()));
     assert_eq!(
         named.invalidate_source("note.txt"),
         Err(AnchorError::Unavailable)
     );
+    let parked_admitted = fixture.path().join("parked-admitted");
+    fs::rename(fixture.path().join("admitted/source.txt"), &parked_admitted).unwrap();
+    assert_eq!(
+        named.check(admitted.clone()).unwrap().filtered,
+        Some(admitted.clone())
+    );
+    fs::rename(&parked_admitted, fixture.path().join("admitted/source.txt")).unwrap();
+    assert!(matches!(
+        named.view_anchored(&admitted_handle),
+        Ok(ViewOutcome::File { text }) if text == "admitted\n"
+    ));
 }
 
 #[test]
@@ -1762,6 +1834,39 @@ fn anchored_view_checks_only_the_selected_binding_before_a_mismatch_fail_closes_
         workspace.view_anchored(&second_handle),
         Err(ViewError::Unavailable)
     );
+}
+
+#[test]
+fn host_anchored_proof_mismatch_fail_closes_before_source_access() {
+    let fixture = tempdir().unwrap();
+    let source_path = fixture.path().join("note.txt");
+    fs::write(&source_path, "old\n").unwrap();
+    let mut workspace = host_runtime(fixture.path());
+    let old = current(&workspace, AnddressTarget::File);
+    let handle = match workspace.anchor(&old).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("old File Anchor"),
+    };
+
+    // This deliberately violates the Host guard only to create mismatched
+    // proof evidence and use source absence as an I/O tripwire.
+    fs::write(&source_path, "new\n").unwrap();
+    let new = current(&workspace, AnddressTarget::File);
+    let parked = fixture.path().join("parked-note");
+    fs::rename(&source_path, &parked).unwrap();
+
+    assert_eq!(
+        workspace.view_anchored(&handle),
+        Err(ViewError::Unavailable)
+    );
+    assert_eq!(workspace.check(new.clone()).unwrap().filtered, None);
+
+    fs::rename(&parked, &source_path).unwrap();
+    assert_eq!(
+        workspace.view_anchored(&handle),
+        Err(ViewError::Unavailable)
+    );
+    assert_eq!(workspace.check(new.clone()).unwrap().filtered, Some(new));
 }
 
 #[test]

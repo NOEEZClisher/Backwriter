@@ -479,6 +479,158 @@ fn host_apply_miss_noop_does_not_install_but_changed_publication_does() {
 }
 
 #[test]
+fn host_invalidation_before_mutation_safe_rejects_every_stale_consumer() {
+    let cases: [(&str, Option<&[u8]>, bool); 5] = [
+        ("same length", Some(b"two\n"), false),
+        ("different length", Some(b"longer\n"), false),
+        ("invalid UTF-8", Some(b"bad\xff"), true),
+        ("NUL", Some(b"bad\0"), true),
+        ("deleted", None, false),
+    ];
+
+    for (name, mutation, unavailable) in cases {
+        let fixture = tempdir().unwrap();
+        let root = fixture.path().join("workspace");
+        fs::create_dir(&root).unwrap();
+        let source_path = root.join("note.txt");
+        fs::write(&source_path, b"one\n").unwrap();
+        let mut workspace = host_runtime(&root);
+        let stale = exact_file(&workspace, "note.txt");
+        let handle = match workspace.anchor(&stale).unwrap() {
+            AnchorOutcome::Anchored(handle) => handle,
+            AnchorOutcome::AlreadyLive => panic!("{name}: File Anchor"),
+        };
+
+        workspace.invalidate_source("note.txt").unwrap();
+        match mutation {
+            Some(bytes) => fs::write(&source_path, bytes).unwrap(),
+            None => fs::remove_file(&source_path).unwrap(),
+        }
+
+        assert_eq!(
+            workspace.view(&stale),
+            Err(backwriter::backwriter::view::ViewError::Unavailable)
+        );
+        assert_eq!(
+            workspace.view_anchored(&handle),
+            Err(backwriter::backwriter::view::ViewError::Unavailable),
+            "{name}"
+        );
+        let checked = workspace.check(stale.clone()).unwrap();
+        if unavailable {
+            assert_eq!(checked.filtered, Some(stale.clone()), "{name}");
+            assert_eq!(
+                checked.report.unavailable(),
+                std::slice::from_ref(&stale),
+                "{name}"
+            );
+        } else {
+            assert_eq!(checked.filtered, None, "{name}");
+            assert_eq!(
+                checked.report.removed(),
+                std::slice::from_ref(&stale),
+                "{name}"
+            );
+        }
+        assert_eq!(
+            workspace.apply(&Edit::Replace {
+                target: stale,
+                content: "WRONG\n".to_owned(),
+            }),
+            Err(ApplyError::Unavailable),
+            "{name}"
+        );
+        match mutation {
+            Some(bytes) => assert_eq!(fs::read(&source_path).unwrap(), bytes, "{name}"),
+            None => assert!(!source_path.exists(), "{name}"),
+        }
+        assert_no_apply_temp(&root);
+    }
+}
+
+#[test]
+fn host_apply_then_guarded_invalidation_rejects_the_old_after_proof() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source_path = root.join("note.txt");
+    fs::write(&source_path, b"before\n").unwrap();
+    let mut workspace = host_runtime(&root);
+    let before = exact_file(&workspace, "note.txt");
+    let handle = match workspace.anchor(&before).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("before File Anchor"),
+    };
+
+    workspace
+        .apply(&Edit::Replace {
+            target: before.clone(),
+            content: "after\n".to_owned(),
+        })
+        .unwrap();
+    let after = support::file(before.workspace_coordinate(), "note.txt", b"after\n");
+    assert_eq!(
+        workspace.check(after.clone()).unwrap().filtered,
+        Some(after.clone())
+    );
+
+    workspace.invalidate_source("note.txt").unwrap();
+    fs::write(&source_path, b"external\n").unwrap();
+    assert_eq!(
+        workspace.apply(&Edit::Replace {
+            target: after.clone(),
+            content: "WRONG\n".to_owned(),
+        }),
+        Err(ApplyError::Unavailable)
+    );
+    assert_eq!(fs::read(&source_path).unwrap(), b"external\n");
+    assert_eq!(workspace.check(after.clone()).unwrap().filtered, None);
+    assert_eq!(
+        workspace.view_anchored(&handle),
+        Err(backwriter::backwriter::view::ViewError::Unavailable)
+    );
+    assert_no_apply_temp(&root);
+}
+
+#[test]
+fn host_apply_open_failure_removes_only_proof_and_preserves_anchor() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source_path = root.join("note.txt");
+    fs::write(&source_path, b"current\n").unwrap();
+    let mut workspace = host_runtime(&root);
+    let current = exact_file(&workspace, "note.txt");
+    let handle = match workspace.anchor(&current).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("current File Anchor"),
+    };
+    let parked = root.join("parked-note");
+
+    // Deliberately violate the Host guard to inject an open failure. Apply
+    // must remove only the proof because no mutation evidence was observed.
+    fs::rename(&source_path, &parked).unwrap();
+    assert_eq!(
+        workspace.apply(&Edit::Replace {
+            target: current.clone(),
+            content: "wrong\n".to_owned(),
+        }),
+        Err(ApplyError::Unavailable)
+    );
+    assert_no_apply_temp(&root);
+    fs::rename(&parked, &source_path).unwrap();
+    assert!(matches!(
+        workspace.view_anchored(&handle),
+        Ok(ViewOutcome::File { text }) if text == "current\n"
+    ));
+
+    fs::rename(&source_path, &parked).unwrap();
+    assert_eq!(workspace.check(current.clone()).unwrap().filtered, None);
+    fs::rename(&parked, &source_path).unwrap();
+    assert_no_apply_temp(&root);
+}
+
+#[test]
 fn apply_inserts_at_each_exact_position_without_normalization() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
@@ -573,7 +725,7 @@ fn exact_file_lookup_enables_start_and_end_insert_into_empty_files() {
 }
 
 #[test]
-fn v4_drift_matrix_has_one_correct_apply_and_no_wrong_publication() {
+fn v4_drift_matrix_has_one_correct_apply_and_no_wrong_publication_in_both_modes() {
     const ORIGINAL: &[u8] = b"header\nneedle\nneedle\nfooter\n";
     const CORRECT: &[u8] = b"header\nneedle\nTARGET\nfooter\n";
     let cells: [(&str, &[u8], bool); 7] = [
@@ -606,85 +758,114 @@ fn v4_drift_matrix_has_one_correct_apply_and_no_wrong_publication() {
         ("target deleted", b"header\nneedle\nfooter\n", false),
     ];
 
-    for (name, before_apply, succeeds) in cells {
-        let fixture = tempdir().unwrap();
-        let root = fixture.path().join("workspace");
-        fs::create_dir(&root).unwrap();
-        fs::write(root.join("note.txt"), ORIGINAL).unwrap();
-        let mut workspace = runtime(&root);
-        let request = SearchRequest::new(
-            SearchQuery::new("needle").unwrap(),
-            SearchScope::all_admitted(),
-            SearchTarget::Line,
-        );
-        let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
-            panic!("{name}: duplicate lines")
-        };
-        let selected = anddresses[1].clone();
-        fs::write(root.join("note.txt"), before_apply).unwrap();
+    for host_mode in [false, true] {
+        let mode = if host_mode { "Host" } else { "Untrusted" };
+        let mut correct = 0;
+        let mut safe_reject = 0;
+        let mut wrong = 0;
+        for (name, before_apply, succeeds) in cells {
+            let fixture = tempdir().unwrap();
+            let root = fixture.path().join("workspace");
+            fs::create_dir(&root).unwrap();
+            fs::write(root.join("note.txt"), ORIGINAL).unwrap();
+            let mut workspace = if host_mode {
+                host_runtime(&root)
+            } else {
+                runtime(&root)
+            };
+            let request = SearchRequest::new(
+                SearchQuery::new("needle").unwrap(),
+                SearchScope::all_admitted(),
+                SearchTarget::Line,
+            );
+            let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
+                panic!("{mode} {name}: duplicate lines")
+            };
+            let selected = anddresses[1].clone();
+            if !succeeds {
+                if host_mode {
+                    workspace.invalidate_source("note.txt").unwrap();
+                }
+                fs::write(root.join("note.txt"), before_apply).unwrap();
+            }
 
-        let file = support::file(selected.workspace_coordinate(), "note.txt", before_apply);
-        let handle = match workspace.anchor(&file).unwrap() {
-            AnchorOutcome::Anchored(handle) => handle,
-            AnchorOutcome::AlreadyLive => panic!("{name}: fresh File anchor"),
-        };
-        let result = workspace.apply(&Edit::Replace {
-            target: selected,
-            content: "TARGET\n".to_owned(),
-        });
+            let file = support::file(selected.workspace_coordinate(), "note.txt", before_apply);
+            let handle = match workspace.anchor(&file).unwrap() {
+                AnchorOutcome::Anchored(handle) => handle,
+                AnchorOutcome::AlreadyLive => panic!("{mode} {name}: fresh File anchor"),
+            };
+            let result = workspace.apply(&Edit::Replace {
+                target: selected,
+                content: "TARGET\n".to_owned(),
+            });
+            let published = fs::read(root.join("note.txt")).unwrap();
 
-        if succeeds {
-            assert_eq!(result, Ok(()), "{name}");
-            assert_eq!(fs::read(root.join("note.txt")).unwrap(), CORRECT, "{name}");
-            assert!(
-                matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::File { text }) if text.as_bytes() == CORRECT),
-                "{name}"
-            );
-        } else {
-            assert_eq!(result, Err(ApplyError::Unavailable), "{name}");
-            assert_eq!(
-                fs::read(root.join("note.txt")).unwrap(),
-                before_apply,
-                "{name}"
-            );
-            assert!(
-                matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::File { text }) if text.as_bytes() == before_apply),
-                "{name}"
-            );
+            if succeeds && result == Ok(()) && published == CORRECT {
+                correct += 1;
+            } else if !succeeds
+                && result == Err(ApplyError::Unavailable)
+                && published == before_apply
+            {
+                safe_reject += 1;
+            } else {
+                wrong += 1;
+            }
+
+            if succeeds {
+                assert!(
+                    matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::File { text }) if text.as_bytes() == CORRECT),
+                    "{mode} {name}"
+                );
+            } else {
+                assert!(
+                    matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::File { text }) if text.as_bytes() == before_apply),
+                    "{mode} {name}"
+                );
+            }
+            assert_no_apply_temp(&root);
         }
-        assert_no_apply_temp(&root);
+        assert_eq!((correct, safe_reject, wrong), (1, 6, 0), "{mode}");
     }
 }
 
 #[test]
-fn v4_duplicate_paragraph_drift_fails_without_wrong_publication() {
-    let fixture = tempdir().unwrap();
-    let root = fixture.path().join("workspace");
-    fs::create_dir(&root).unwrap();
-    let original = b"header\n\nneedle\n\nneedle\n\nfooter\n";
-    fs::write(root.join("note.txt"), original).unwrap();
-    let mut workspace = runtime(&root);
-    let request = SearchRequest::new(
-        SearchQuery::new("needle").unwrap(),
-        SearchScope::all_admitted(),
-        SearchTarget::Paragraph,
-    );
-    let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
-        panic!("duplicate paragraphs")
-    };
-    let selected = anddresses[1].clone();
-    let changed = b"needle\n\nheader\n\nneedle\n\nneedle\n\nfooter\n";
-    fs::write(root.join("note.txt"), changed).unwrap();
+fn v4_duplicate_paragraph_drift_fails_without_wrong_publication_in_both_modes() {
+    for host_mode in [false, true] {
+        let fixture = tempdir().unwrap();
+        let root = fixture.path().join("workspace");
+        fs::create_dir(&root).unwrap();
+        let original = b"header\n\nneedle\n\nneedle\n\nfooter\n";
+        fs::write(root.join("note.txt"), original).unwrap();
+        let mut workspace = if host_mode {
+            host_runtime(&root)
+        } else {
+            runtime(&root)
+        };
+        let request = SearchRequest::new(
+            SearchQuery::new("needle").unwrap(),
+            SearchScope::all_admitted(),
+            SearchTarget::Paragraph,
+        );
+        let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
+            panic!("duplicate paragraphs")
+        };
+        let selected = anddresses[1].clone();
+        let changed = b"needle\n\nheader\n\nneedle\n\nneedle\n\nfooter\n";
+        if host_mode {
+            workspace.invalidate_source("note.txt").unwrap();
+        }
+        fs::write(root.join("note.txt"), changed).unwrap();
 
-    assert_eq!(
-        workspace.apply(&Edit::Replace {
-            target: selected,
-            content: "TARGET\n".to_owned(),
-        }),
-        Err(ApplyError::Unavailable)
-    );
-    assert_eq!(fs::read(root.join("note.txt")).unwrap(), changed);
-    assert_no_apply_temp(&root);
+        assert_eq!(
+            workspace.apply(&Edit::Replace {
+                target: selected,
+                content: "TARGET\n".to_owned(),
+            }),
+            Err(ApplyError::Unavailable)
+        );
+        assert_eq!(fs::read(root.join("note.txt")).unwrap(), changed);
+        assert_no_apply_temp(&root);
+    }
 }
 
 #[cfg(unix)]

@@ -1,7 +1,7 @@
 # Backwriter 0.2.1 Current-Observation Reuse
 
-Status: Phases 1–5 complete; invalidation closure, measurement, version change,
-and publication not started.
+Status: Phases 1–6 complete; measurement, version change, and publication not
+started.
 
 This tracker records execution evidence and phase progress only. Normative
 semantics belong to the active
@@ -87,9 +87,9 @@ are Adapter/caller values rather than observation authority.
 5. **Apply and Anchor integration — complete.** Enforce proof preconditions,
    preserve exact no-op proof, install confirmed prospective-after proof, and
    share existing Anchor invalidation/publication fail-closure.
-6. **Invalidation and semantic closure — pending.** Prove host mutation guards,
-   explicit/opaque invalidation, races, authority drift, fallback, and the full
-   Correct/Safe-Reject/Wrong matrix.
+6. **Invalidation and semantic closure — complete.** Host mutation guards,
+   explicit/opaque invalidation, authority isolation, fallback, failure
+   transitions, and the full Correct/Safe-Reject/Wrong matrix are closed.
 7. **Fixed A/B and release-readiness decision — pending.** Reproduce fixtures,
    compare against the fixed `0.2.0` inputs, decide GO/NO-GO, and only on GO
    change source version to `0.2.1`. Publication remains separate authority.
@@ -209,6 +209,56 @@ does not itself publish a release.
   invalid sources, read/resource and temporary boundaries, publication
   uncertainty, no proof lock during I/O/hash/emission/publication, and the
   existing zero-Wrong-Apply drift matrix. The GNU-host suite passes 228 tests.
-- Phase 6 retains host mutation/race and authority-drift closure. Phase 7 retains
-  all measurement, version, and release-readiness decisions; Phase 5 makes no
-  performance claim.
+- Phase 6 closes host mutation/race and authority-drift semantics. Phase 7
+  retains all measurement, version, and release-readiness decisions; Phase 5
+  makes no performance claim.
+
+## Phase 6 closure
+
+The proven transition table is:
+
+| Event | Proof | Same-path Anchor | Source | Publication |
+| --- | --- | --- | --- | --- |
+| Successful Host Search | Replace/install only observed paths | Preserve | Read-only | None |
+| Failed Search | Install no provisional proof; discard failed-path proof | Preserve | Read-only | None |
+| Either public source invalidation | Discard target path | Discard target path | No I/O; unchanged | None |
+| Ordinary View or Apply proof mismatch | Preserve | Preserve | No I/O; unchanged | None |
+| Check proof mismatch | Preserve | Preserve | No I/O; unchanged | None |
+| Anchored View proof mismatch | Discard target path | Discard target path | No I/O; unchanged | None |
+| Trusted View open/seek/read/short/resource failure | Discard target proof | Preserve | Unchanged | None |
+| Apply length drift, invalid source, or stale binding | Discard target proof | Discard target path | Unchanged | None |
+| Apply open/read failure | Discard target proof | Preserve | Unchanged | None |
+| Apply resource or definite prepublication failure without mutation evidence | Preserve accepted proof | Preserve | Unchanged | None |
+| Direct or byte-identical no-op | Preserve old proof | Preserve | Unchanged | None |
+| Confirmed changed Apply | Install prepared after proof | Reflect prepared after plan | After bytes | Confirmed |
+| `PublicationUncertain` | Discard target proof | Discard target path | Unknown result | Uncertain |
+| Runtime drop | Discard all RAM proof | Discard all RAM continuity | Unchanged | None |
+
+- Both public invalidation methods delegate to one I/O-free path-exact
+  proof-plus-Anchor operation. Invalid syntax, private paths, and unadmitted
+  paths change no association. Hard-link aliases require separate logical-path
+  notification.
+- The Host guard is caller authority: every visible writer/path replacement is
+  excluded through capability completion, invalidation returns before mutation
+  begins, and unsignaled or in-call mutation is a contract violation. Runtime
+  adds no watcher, metadata check, rehash, retained handle, lock, CAS, token,
+  retry, or supported race.
+- Correct invalidation followed by same-length or different-length change,
+  deletion, invalid UTF-8, or NUL makes stale View, Check, and Apply safe-reject.
+  A guarded mutation after confirmed Apply likewise rejects the old after
+  address. No stale path relocates or publishes.
+- Matching anchored View now shares ordinary trusted View execution; proof miss
+  and Untrusted execution retain its complete direct structural observer. A
+  proof mismatch fail-closes proof and continuity before source access.
+- Proof remains isolated by exact logical path even for equal hashes, and by
+  workspace, admission, Runtime, authority mode, and Runtime lifetime. Failed
+  Search installs no provisional proof, Check fallback installs none, and drop
+  retains none.
+- The seven-cell duplicate-Line drift matrix yields Correct `1`, Safe Reject
+  `6`, Wrong Apply `0` in both Untrusted and correctly guarded Host modes.
+  Duplicate Paragraph drift safe-rejects in both. The GNU-host development
+  suite passes 234 tests.
+- Proof locks remain absent from I/O, hashing, emission, and publication. No
+  whole source, prior proof chain, history, persistent cache, or public failure
+  hook was added. Phase 7 alone retains measurement, version, and
+  release-readiness decisions; Phase 6 makes no performance claim.

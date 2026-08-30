@@ -15,6 +15,15 @@ fn runtime(root: &std::path::Path) -> WorkspaceRuntime {
     )
     .unwrap()
 }
+
+fn host_runtime(root: &std::path::Path, admission: &str) -> WorkspaceRuntime {
+    WorkspaceRuntime::open_host_authoritative(
+        root,
+        WorkspaceAdmission::new([AdmissionRoot::new(admission).unwrap()]).unwrap(),
+    )
+    .unwrap()
+}
+
 fn found(runtime: &WorkspaceRuntime, query: &str, target: SearchTarget) -> Vec<Anddress> {
     match runtime
         .search(&SearchRequest::new(
@@ -37,6 +46,52 @@ fn exact_file(runtime: &WorkspaceRuntime, logical_path: &str) -> SearchOutcome {
     runtime
         .search(&SearchRequest::exact_file(logical_path).unwrap())
         .unwrap()
+}
+
+fn exact_file_address(runtime: &WorkspaceRuntime, logical_path: &str) -> Anddress {
+    let SearchOutcome::Found { mut anddresses } = exact_file(runtime, logical_path) else {
+        panic!("exact File")
+    };
+    assert_eq!(anddresses.len(), 1);
+    anddresses.pop().unwrap()
+}
+
+#[test]
+fn host_proofs_are_path_runtime_admission_mode_and_drop_isolated() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir_all(root.join("docs")).unwrap();
+    fs::write(root.join("a.txt"), b"same\n").unwrap();
+    fs::write(root.join("b.txt"), b"same\n").unwrap();
+    fs::write(root.join("docs/note.txt"), b"same\n").unwrap();
+
+    let mut paths = host_runtime(&root, ".");
+    let a = exact_file_address(&paths, "a.txt");
+    let b = exact_file_address(&paths, "b.txt");
+    assert_eq!(a.source_state_hash(), b.source_state_hash());
+    paths.invalidate_source("a.txt").unwrap();
+    fs::remove_file(root.join("a.txt")).unwrap();
+    fs::remove_file(root.join("b.txt")).unwrap();
+    assert_eq!(paths.check(a).unwrap().filtered, None);
+    assert_eq!(paths.check(b.clone()).unwrap().filtered, Some(b));
+
+    let host = host_runtime(&root, ".");
+    let current = exact_file_address(&host, "docs/note.txt");
+    let named = host_runtime(&root, "docs");
+    let untrusted = runtime(&root);
+    fs::remove_file(root.join("docs/note.txt")).unwrap();
+
+    assert_eq!(
+        host.check(current.clone()).unwrap().filtered,
+        Some(current.clone())
+    );
+    assert_eq!(named.check(current.clone()).unwrap().filtered, None);
+    assert_eq!(untrusted.check(current.clone()).unwrap().filtered, None);
+    drop(host);
+    assert_eq!(
+        host_runtime(&root, ".").check(current).unwrap().filtered,
+        None
+    );
 }
 
 #[test]

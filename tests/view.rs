@@ -2,6 +2,7 @@ mod support;
 
 use std::fs;
 
+use backwriter::backwriter::anchor::AnchorOutcome;
 use backwriter::backwriter::anddress::{Anddress, AnddressTarget, LineTerminator};
 use backwriter::backwriter::search::{
     SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
@@ -641,6 +642,13 @@ fn host_view_reuses_matching_search_proof_and_falls_back_after_a_miss_or_invalid
         }) if related == &paragraph
     ));
 
+    let stale = support::file(file.workspace_coordinate(), "note.txt", b"stale\n");
+    let parked = root.join("parked-note");
+    fs::rename(root.join("note.txt"), &parked).unwrap();
+    assert_eq!(host.view(&stale), Err(ViewError::Unavailable));
+    assert_eq!(host.check(file.clone()).unwrap().filtered, Some(file));
+    fs::rename(&parked, root.join("note.txt")).unwrap();
+
     host.invalidate_source("note.txt").unwrap();
     assert!(matches!(
         host.view(&line),
@@ -655,4 +663,49 @@ fn host_view_reuses_matching_search_proof_and_falls_back_after_a_miss_or_invalid
         untrusted.view(&anddresses[0]),
         Ok(ViewOutcome::Line { ref content, .. }) if content == "one"
     ));
+}
+
+#[test]
+fn host_view_open_and_short_failures_remove_only_proof_and_preserve_anchor() {
+    for short in [false, true] {
+        let fixture = tempdir().unwrap();
+        let root = fixture.path().join("workspace");
+        fs::create_dir(&root).unwrap();
+        let source_path = root.join("note.txt");
+        fs::write(&source_path, b"current\n").unwrap();
+        let mut host = host_runtime(&root);
+        let SearchOutcome::Found { mut anddresses } = host
+            .search(&SearchRequest::exact_file("note.txt").unwrap())
+            .unwrap()
+        else {
+            panic!("current File")
+        };
+        let current = anddresses.pop().unwrap();
+        let handle = match host.anchor(&current).unwrap() {
+            AnchorOutcome::Anchored(handle) => handle,
+            AnchorOutcome::AlreadyLive => panic!("File Anchor"),
+        };
+        let parked = root.join("parked-note");
+
+        // Deliberately violate the Host guard to inject the trusted failure.
+        if short {
+            fs::write(&source_path, b"short").unwrap();
+        } else {
+            fs::rename(&source_path, &parked).unwrap();
+        }
+        assert_eq!(host.view(&current), Err(ViewError::Unavailable));
+        if short {
+            fs::write(&source_path, b"current\n").unwrap();
+        } else {
+            fs::rename(&parked, &source_path).unwrap();
+        }
+        assert!(matches!(
+            host.view_anchored(&handle),
+            Ok(ViewOutcome::File { text }) if text == "current\n"
+        ));
+
+        fs::rename(&source_path, &parked).unwrap();
+        assert_eq!(host.check(current.clone()).unwrap().filtered, None);
+        fs::rename(&parked, &source_path).unwrap();
+    }
 }
