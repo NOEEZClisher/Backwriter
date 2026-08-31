@@ -3,8 +3,7 @@
 ## Version boundary
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current
-source-ready `0.2.1` Rust, Cargo, tests, and CLI, plus the closed public `0.2.0`
-release, use the hard-cutover
+published `0.2.1` Rust, Cargo, tests, CLI, and distribution use the hard-cutover
 Anddress v4 API
 and wire. Phases 3–7 implement and verify SHA-256 source identity, exact byte length,
 target kind, `[start,end)` range, target-specific Search observation, direct
@@ -15,22 +14,22 @@ result-memory HWM, not JSON payload: 346.539 to 58.551 HWM bytes/hit is an
 83.10% reduction and passes. The Line-only content-slice fast path then lowers
 the fixed 256 MiB median from the paired v3 673.898 ms to 272.111 ms, a 2.476×
 speedup that closes the remaining recommendation. Source release-readiness is
-GO, and the exact four-target `0.2.0` artifact set, canonical manifest,
-installers, live publication, endpoint verification, fresh installation, and
-explicit update are closed. The evidence
+GO, and the exact four-target `0.2.1` artifact set, canonical manifest,
+installers, 36-file live publication, endpoint verification, fresh
+installation, and explicit public `0.2.0` update are closed. The evidence
 tracker is
-[Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
+[Backwriter 0.2.1 current-observation reuse](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md).
 
-## Backwriter 0.2.1 source-ready observation reuse
+## Published Backwriter 0.2.1 observation reuse
 
-The `0.2.1` observation-reuse target is source-ready and not published. Phase
+The `0.2.1` observation-reuse target is published and closed. Phase
 7A closes the sole failed historical Phase 7 performance gate; Phase 7B then
 remeasures the complete fixed matrix and passes every formal gate. Cargo,
-source, CLI, and version output are `0.2.1`. The work preserves the
-complete v4 Anddress API/wire and the closed `0.2.0` release. The Protocol closes two
-execution modes: the default `WorkspaceRuntime`, one-shot CLI, and ordinary CLI
-Session remain Untrusted Mode with the existing per-call one-read/hash path;
-only an explicit Host-authoritative Mode may reuse a Runtime-local,
+source, CLI, version output, and official distribution are `0.2.1`. The work
+preserves the complete v4 Anddress API/wire and immutable prior releases. The
+Protocol closes two execution modes: the default `WorkspaceRuntime`, one-shot
+CLI, and ordinary CLI Session remain Untrusted Mode with the existing per-call
+one-read/hash path; only an explicit Host-authoritative Mode may reuse a Runtime-local,
 RAM-only, replace-only current SHA-256/length proof bound to Runtime, workspace,
 admission, source generation, and logical path.
 
@@ -110,8 +109,8 @@ hit is exact zero source I/O, and one-million-hit peak memory is `58.609`
 bytes/hit. All 17 cell payloads, ordering, multiplicity, v4 evidence, related
 Paragraph evidence, and source results are identical across A/BU/BH. The
 seven-cell drift regression remains Correct `1`, Safe Reject `6`, Wrong `0` in
-both modes. This closes source readiness only; artifacts and publication remain
-separate, and official public `0.2.0` is unchanged.
+both modes. At that phase this closed source readiness only; artifacts and
+publication remained separate, and official public `0.2.0` was unchanged.
 
 Trusted Search followed by ordinary View no longer performs View's complete
 source read or hash; File still returns the complete file range, while
@@ -126,8 +125,15 @@ next trusted View, Check, or Apply may reuse it without an intervening Search.
 The
 [0.2.1 phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
 owns the audited flow, Phase 2–7B choices, complete raw samples, checksums, and
-gate evidence. Artifacts and publication remain separate Owner-authorized
-scopes.
+gate evidence. The separate Owner-authorized release closure regenerated the
+four canonical artifacts and manifest from Source Authority revision
+`4a1b06fb375bfd906a6f27de4de15a8febfe08ec`, published the exact 36-file tree
+with the manifest last, and idempotently reused every file on a second run.
+All 36 loopback and public HTTPS GET/HEAD endpoints, task-local fresh install,
+actual public `0.2.0` update, installed capability probes, GNU and musl 236-test
+suites, and operations regressions passed without changing service, tunnel,
+credential, or actual user HOME state. macOS and Windows remain static
+cross-build evidence without native execution claims.
 
 ## Core capability inventory
 
@@ -185,7 +191,7 @@ DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
 batch Check, Edit, and Apply await collection or Edit transport schema
 authority. Raw output other than completed one-shot View and further Session
 behavior remain deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
-The published `0.2.0` Core/Runtime and CLI surface is frozen. The current source
+The published `0.2.1` Core/Runtime and CLI surface is frozen. The current source
 has completed the v4 value/wire hard cutover. Further
 Adapter work still requires owner authority for
 collection/Edit transport or Session machine output.
@@ -194,14 +200,14 @@ GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.0` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.1` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses
 `aarch64-apple-darwin` at minimum 11.0 and `x86_64-apple-darwin` at minimum
 10.12. Windows uses `x86_64-pc-windows-gnu` and canonical `bw.exe`. Their
 artifacts, manual-verification checksum sidecars, expanded canonical manifest,
 POSIX and PowerShell installers, and publication are complete from Source
-Authority revision `2fad6e46d3a9d1da01f79f34b9ffc187447c76a8`. The installer verifies the
+Authority revision `4a1b06fb375bfd906a6f27de4de15a8febfe08ec`. The installer verifies the
 manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/bw`
 with a same-directory rename, without changing `PATH` or shell startup files.
 Fresh installation prints the installed version and replacement prints the
@@ -215,22 +221,22 @@ Concurrent same-user HOME mutation is caller-owned.
 macOS and Windows support are based on static cross-build verification without
 native runtime-test or native CMD claims. Linux arm64 remains unsupported, and
 no universal host compatibility is claimed. The public beta.1, beta.2, and
-beta.3 files remain unchanged and immutable. The complete stable `0.1.0` and
-current `0.2.0` version directories are immutable, the full planned matrix is
-complete, and the `0.2.0` release is closed; any later platform or version
-requires separate Owner authority. Tags, GitHub Releases,
+beta.3 files remain unchanged and immutable. The complete stable `0.1.0`,
+`0.2.0`, and current `0.2.1` version directories are immutable, the full
+planned matrix is complete, and the `0.2.1` release is closed; any later
+platform or version requires separate Owner authority. Tags, GitHub Releases,
 crates.io publication, and GitHub distribution
 remain outside the completed publication.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.0`; the sole canonical executable and external Adapter command are `bw`.
+`0.2.1`; the sole canonical executable and external Adapter command are `bw`.
 There is no current `backwriter` binary, alias, or wrapper. Product prose
 continues to use Backwriter, and persisted Core wire/private-path and
-distribution artifact/domain contracts keep their existing names. `0.2.0`
-publication is closed: the exact 28-file public tree retains all prior
+distribution artifact/domain contracts keep their existing names. `0.2.1`
+publication is closed: the exact 36-file public tree retains all 24 prior
 versioned files and `install.cmd`, while the current installers and manifest
-select `0.2.0` and `bw update` delegates to that official installer. The
-installers accept only the exact stable `0.1.0` and current `0.2.0` manifests;
-beta.3 acceptance is retired.
+select `0.2.1` and `bw update` delegates to that official installer. The
+installers accept only the exact closed `0.2.0` and current `0.2.1` manifests;
+stable `0.1.0` and beta.3 acceptance is retired.
 
 ## Published 0.2.0 authority
 
@@ -275,7 +281,7 @@ rather than relocate ordinary Anddresses or Anchors. The source-hash
 algorithm is SHA-256 and the compatibility policy is a hard cutover: production
 has no v3 decoder, encoder, alias, or migration layer.
 
-## Implemented published 0.2.0 current-only Runtime contract
+## Implemented published 0.2.1 current-only Runtime contract
 
 The v4 Search and View implementation is current-only and stateless;
 Pick is pure and stateless over caller input. `WorkspaceRuntime::search`, `WorkspaceRuntime::view`,
@@ -321,7 +327,7 @@ cursor, Search live traversal/matching/ordering/no-limit behavior, View's
 one-read text projection, and Pick's stable-subsequence/non-relational
 predicates remain reusable foundation.
 
-## Implemented 0.2.0 v4 exact-source address kernel
+## Implemented 0.2.1 v4 exact-source address kernel
 
 File, Paragraph, and Line are independent target addresses with structural
 relationships, not a persistent parent/child identity tree. Their raw equality

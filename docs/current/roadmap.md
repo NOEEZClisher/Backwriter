@@ -1,8 +1,8 @@
 # Backwriter Roadmap
 
-## Source-ready and unpublished: 0.2.1 current-observation reuse
+## Completed: 0.2.1 current-observation reuse and release
 
-`0.2.1` is a source-ready, unpublished performance target governed by the
+`0.2.1` is a published, closed performance release governed by the
 [seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md).
 Phase 1 closes authority and records the current execution flow. Phase 2 adds
 the explicit Host Runtime, source invalidation, private current proof state, and
@@ -33,8 +33,10 @@ the full invalidation, authority-isolation, and guarded drift semantics. Phase
 7 records the historical fixed A/B source-readiness NO-GO. Phase 7A closes its
 sole failed related-Paragraph performance gate without changing public meaning.
 Phase 7B remeasures the full matrix against immutable baseline `2fad6e4`;
-every formal gate passes and Cargo/source version is `0.2.1`. Artifact and
-publication work remains separate and public `0.2.0` is unchanged.
+every formal gate passes and Cargo/source version is `0.2.1`. The subsequent
+release closure publishes the exact four-target artifacts and 36-file public
+tree from Source Authority revision
+`4a1b06fb375bfd906a6f27de4de15a8febfe08ec`.
 
 ## Completed: 0.2.1 Phase 7B final readiness and version closure
 
@@ -45,8 +47,9 @@ ms, Host Check proof hit has zero source I/O, and one-million-hit HWM is
 `58.609` bytes/hit. Exact output, order, multiplicity, v4 Anddress and related
 Paragraph evidence, source results, and the Correct `1`/Safe Reject `6`/Wrong
 `0` drift outcome are preserved. Production fast paths remain unchanged.
-`0.2.1` is source-ready but unpublished; artifacts, installers, server state,
-and the closed public `0.2.0` distribution remain untouched.
+This phase established source readiness without publication. The later
+Owner-authorized distribution closure published and closed `0.2.1` while
+preserving every earlier versioned file and the CMD Adapter.
 
 ## Completed: 0.2.1 Phase 7A related Paragraph scan closure
 
@@ -311,8 +314,8 @@ Apply precondition reuse, exact no-op preservation, prospective-after proof
 installation, and coupled Anchor reflection/fail-closure. Invalidation/race
 closure, authority isolation, and both-mode guarded drift are complete in Phase
 6. Phase 7 measurement, the Phase 7A performance correction, and Phase 7B
-full-matrix/version closure are complete. Artifact and publication work remains
-separate.
+full-matrix/version closure are complete. The separate artifact and publication
+closure is also complete.
 
 ## Completed: 0.1.0 exact File lookup
 
@@ -357,7 +360,7 @@ behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
 or wire authority. Version and Update are Adapter-owned standalone utilities
 outside Core. Explicit Update invokes the canonical installer; background and
 automatic update remain deferred.
-The published `0.2.0` Core/Runtime and CLI surface is frozen after its recorded
+The published `0.2.1` Core/Runtime and CLI surface is frozen after its recorded
 phase gates; Adapter collection/Edit transport and Session machine output remain
 separate Owner decisions.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
@@ -365,9 +368,9 @@ The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 The target choice and direct build verification are complete. The external
 operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.0` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.1` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
-`2fad6e46d3a9d1da01f79f34b9ffc187447c76a8`. Linux uses
+`4a1b06fb375bfd906a6f27de4de15a8febfe08ec`. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
 and `x86_64-apple-darwin` at minimum 10.12. Windows uses
 `x86_64-pc-windows-gnu` and canonical `bw.exe`. Archives, checksum sidecars,
@@ -385,12 +388,13 @@ installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
 Windows build and installer verification make no native-runtime or native-CMD
 claim.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.0`; the sole canonical executable and external Adapter command are `bw`.
+`0.2.1`; the sole canonical executable and external Adapter command are `bw`.
 The public beta.1, beta.2, and beta.3 files remain unchanged immutable
 prior artifacts. The complete stable `0.1.0` Linux/macOS/Windows version
 directory is immutable, the planned matrix is complete, and the stable release
-is closed. The complete `0.2.0` version directory is likewise immutable; the
-current installers and manifest select `0.2.0` in the exact 28-file public tree.
+is closed. The complete `0.2.0` and `0.2.1` version directories are likewise
+immutable; the current installers and manifest select `0.2.1` in the exact
+36-file public tree.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a target registry,
@@ -418,7 +422,7 @@ repository-local authority.
 The Linux/WSL x86_64, macOS arm64/x86_64, Windows PowerShell x86_64, and
 Windows CMD stable `0.1.0` publication is complete. At that milestone, the
 installers and manifest selected `0.1.0`; its complete version directory remains
-immutable. Current installers and the manifest select the closed `0.2.0`
+immutable. Current installers and the manifest select the closed `0.2.1`
 distribution recorded below.
 Existing public `0.1.0-beta.1`, `0.1.0-beta.2`, and `0.1.0-beta.3` files remain
 unchanged and immutable. Explicit `bw update` is complete, while background or
@@ -440,3 +444,25 @@ task-local fresh installation, explicit stable `0.1.0` update, and installed
 `0.2.0` capability probes passed. Native macOS and Windows runtime execution was
 not performed. Tags, GitHub Releases, crates.io, cache purge, and new platform
 support remain outside this closure.
+
+## Completed: 0.2.1 distribution
+
+The existing builders reproduced the four canonical artifacts from Source
+Authority revision `4a1b06fb375bfd906a6f27de4de15a8febfe08ec`, and the
+generator reproduced the exact 876-byte manifest with SHA-256
+`04b111122f844bee17d40f68358386e6e64112ef9e3c2e7ef7547439586afc46`.
+The version-specific publisher added eight immutable `0.2.1` files, replaced
+the POSIX and PowerShell installers, and published the manifest last without
+changing the 24 prior versioned files or `install.cmd`. An idempotent rerun
+reused the complete 36-file tree without metadata change.
+
+All 36 loopback and public HTTPS GET/HEAD endpoints, root and unknown-path 404
+boundaries, task-local fresh installation, actual public `0.2.0` update, and
+installed help, version, Search, View, Check, Session, empty-File Apply, and
+duplicate-drift Safe Reject probes passed. Origin and cloudflared process
+identity, restarts, listener, unit/YAML, credential metadata, and actual user
+HOME state remained unchanged. GNU and musl each passed 236 tests; Origin 13,
+installer 35, publisher 52, and CMD 12 regressions passed. macOS and Windows
+received static build verification only and were not executed natively. Tags,
+GitHub Releases, crates.io, cache purge, and new platform support remain outside
+this closure.

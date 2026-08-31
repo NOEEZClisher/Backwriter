@@ -1,8 +1,8 @@
 # Verification
 
-## 0.2.1 observation-reuse development gates
+## 0.2.1 observation-reuse and release closure
 
-The `0.2.1` target is source-ready and unpublished. Phase 2 adds the Host Runtime
+The `0.2.1` target is published and closed. Phase 2 adds the Host Runtime
 constructor, source invalidation kernel, private proof state, and
 successful-Search proof installation. Phase 3 adds bounded ordinary View proof
 consumption. Phase 4 adds Check current-proof group classification;
@@ -14,8 +14,9 @@ both-mode drift matrix;
 Phase 7 records the historical fixed A/B source-readiness NO-GO; Phase 7A
 closes that run's sole failed related-Paragraph performance gate; Phase 7B
 remeasures the complete matrix and closes source readiness with every gate PASS.
-V4 wire, default Untrusted behavior, and the closed public
-`0.2.0` release remain unchanged. The
+V4 wire and default Untrusted behavior remain unchanged; the development phases
+preserved the then-current public `0.2.0` release until the separate `0.2.1`
+publication closure. The
 Protocol owns default Untrusted Mode and explicit Host-authoritative Mode; the
 [phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
 owns the execution audit, fixed `0.2.0` comparison inputs, complete raw Phase 7,
@@ -431,18 +432,46 @@ macOS, Windows, PowerShell, or CMD execution is claimed. No tag, GitHub Release,
 crates.io publication, cache purge, service, tunnel, DNS, route, or credential
 change occurred.
 
+Backwriter `0.2.1` release closure regenerated the four artifacts and sidecars
+from source revision `4a1b06fb375bfd906a6f27de4de15a8febfe08ec` and
+reproduced the canonical 876-byte manifest with SHA-256
+`04b111122f844bee17d40f68358386e6e64112ef9e3c2e7ef7547439586afc46`.
+The existing publisher added the eight `releases/0.2.1` files, atomically
+replaced the POSIX and PowerShell installers, and replaced the manifest last.
+It preserved metadata and bytes for all 24 beta.3/stable/`0.2.0` versioned
+files and `install.cmd`; a complete rerun preserved metadata for all 36 files.
+
+All 36 files passed both loopback and public HTTPS GET and HEAD checks with
+exact bodies, lengths, content types, zero HEAD bodies, and cache policy. Root
+and unknown-path GET/HEAD checks remained 404/no-store. A task-local canonical
+`curl | sh` fresh install and an actual public `0.2.0` binary's explicit update
+installed byte-identical `0.2.1` Linux binaries and printed exact Installed and
+Updated outcomes. The installed binary passed help, version, Search, View,
+Check, Session, empty-File Apply, and duplicate-drift safe-rejection probes.
+
+Closure passed 236 GNU-host tests, 236 musl tests, 13 Origin tests, 35 installer
+regressions, 52 publisher regressions, 12 CMD regressions, and offline/locked
+metadata, tree, formatting, all-target checking, clippy with warnings denied,
+and release builds. Origin and cloudflared PID, InvocationID, restart count,
+listener, units, ingress YAML, credential metadata, actual user HOME, process
+PATH, and shell startup files remained unchanged. macOS and Windows artifacts
+received static cross-build verification only; no native macOS, Windows,
+PowerShell, or CMD execution is claimed. No tag, GitHub Release, crates.io
+publication, cache purge, service, tunnel, DNS, route, or credential change
+occurred.
+
 Before staging, verify the diff and empty index, confirm repository-root
 `.artext` is absent and untracked, and preserve unrelated task/history files.
 Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
-The repository source package is source-ready `0.2.1`, while the closed public
-release remains `0.2.0`; the source release build must print exactly
-`Backwriter 0.2.1` plus LF. Source verification remains
-distinct from the separately executed operations publication: the current official
-distribution is the closed `0.2.0` release, while `0.1.0` and prior beta files
-remain immutable. The closed `0.2.0` source suite passed 203 GNU-host Rust tests; the
-historical `0.1.0` source suite passed 193.
+The repository source package and closed public release are `0.2.1`; the source
+release build must print exactly `Backwriter 0.2.1` plus LF. Source verification
+remains distinct from the separately executed operations publication. Prior
+`0.2.0`, `0.1.0`, and beta versioned files remain immutable. The closed `0.2.1`
+source suite passed 236 GNU-host and 236 musl Rust tests; the closed `0.2.0`
+source suite passed 203 GNU-host Rust tests, and the historical `0.1.0` source
+suite passed 193.
 
 CLI process regressions cover the canonical `bw` binary without a `backwriter`
 binary, `--help`, exact `bw version`, explicit `bw update` download/exit/output
