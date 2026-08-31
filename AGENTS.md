@@ -22,15 +22,16 @@ semantic/public API/error authority and its single-source Edit Runtime
 implementation uses direct v4 ranges and provenance and is complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
-The closed public `0.1.0` release is the immutable v3 baseline. Current `0.2.1`
-source and Cargo, plus the closed public `0.2.0` release, use the hard-cutover
+The closed public `0.1.0` release is the immutable v3 baseline. Current
+published `0.2.1` source, Cargo, and distribution, plus the prior closed public
+`0.2.0` release, use the hard-cutover
 `artext.backwriter-anddress.v4` Rust API and wire. SHA-256, exact source byte
 length, target kind, and `[start, end)` byte range are implemented identity;
 v3 remains only in Git history and immutable `0.1.0` release evidence. The
 canonical four-target `0.2.0` artifacts, manifest, installers, live publication,
 fresh installation, and explicit update are complete.
 
-`0.2.1` is source-ready and unpublished. Phases 2 through 6 implement its
+`0.2.1` is published and closed. Phases 2 through 6 implement its
 minimal Host-authoritative observation kernel, bounded ordinary View reuse, and
 Check, Apply, and anchored View current-proof reuse plus complete invalidation
 and race semantics while preserving v4 identity and the existing `0.2.0`
@@ -54,8 +55,10 @@ Matching anchored View reuses ordinary trusted View execution, while a proof
 mismatch fail-closes the same-path proof and live Anchors before source access.
 Phase 7B remeasures the complete A/Untrusted/Host matrix against immutable
 `0.2.0` baseline `2fad6e4`; every formal performance, memory, I/O, semantic,
-and drift gate passes. No artifact or publication is authorized by source
-readiness, and the official distribution remains the closed `0.2.0` release.
+and drift gate passes. Source readiness alone authorized no artifact or
+publication; the separate release closure made the closed `0.2.1` release from
+Source Authority revision `4a1b06fb375bfd906a6f27de4de15a8febfe08ec` the
+official distribution.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,

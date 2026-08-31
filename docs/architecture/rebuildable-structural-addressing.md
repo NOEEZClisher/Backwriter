@@ -1,8 +1,8 @@
 # Backwriter Anddress and Exact Line Model
 
-Status: normative raw-address authority. Current source-ready `0.2.1` and the
-closed public `0.2.0` production release implement the v4 algebra and hard
-cutover below. The closed public `0.1.0` v3
+Status: normative raw-address authority. Current published `0.2.1` and the
+prior closed public `0.2.0` production release implement the v4 algebra and
+hard cutover below. The closed public `0.1.0` v3
 algebra is preserved later in this document only as immutable release evidence;
 it is not accepted by current production code.
 
