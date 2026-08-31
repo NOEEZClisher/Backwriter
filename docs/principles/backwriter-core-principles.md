@@ -1,9 +1,10 @@
 # Backwriter Principles
 
 The closed public `0.1.0` release remains immutable v3 evidence. Current
-`0.2.0` Rust, including the closed public release build, implements the
+source-ready `0.2.1` Rust and the closed public `0.2.0` release build implement
+the
 hard-cutover v4 value/wire with SHA-256; these principles describe the active
-v4 Core contract. The partially implemented and unpublished `0.2.1` target adds
+v4 Core contract. The source-ready and unpublished `0.2.1` target adds
 only the explicitly guarded observation-reuse authority below; Phase 2 provides
 the Host kernel and Search proof installation, and Phase 3 adds bounded ordinary
 View proof consumption. Phase 4 adds Check group classification from matching

@@ -476,7 +476,7 @@ fn canonical_binary_help_and_default_workspace_search() {
 
     let version = run(root.path(), &["version"]);
     assert!(version.status.success());
-    assert_eq!(version.stdout, b"Backwriter 0.2.0\n");
+    assert_eq!(version.stdout, b"Backwriter 0.2.1\n");
     assert!(version.stderr.is_empty());
 }
 

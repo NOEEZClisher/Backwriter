@@ -2,8 +2,9 @@
 
 ## Version boundary
 
-The closed public `0.1.0` release remains immutable v3 evidence. Current Rust,
-Cargo, tests, CLI, and the closed public `0.2.0` release use the hard-cutover
+The closed public `0.1.0` release remains immutable v3 evidence. Current
+source-ready `0.2.1` Rust, Cargo, tests, and CLI, plus the closed public `0.2.0`
+release, use the hard-cutover
 Anddress v4 API
 and wire. Phases 3–7 implement and verify SHA-256 source identity, exact byte length,
 target kind, `[start,end)` range, target-specific Search observation, direct
@@ -20,12 +21,12 @@ explicit update are closed. The evidence
 tracker is
 [Backwriter 0.2.0 Anddress fast path](../tasks/2026-08-30-backwriter-0.2.0-anddress-fast-path.md).
 
-## Backwriter 0.2.1 observation-reuse development target
+## Backwriter 0.2.1 source-ready observation reuse
 
-The `0.2.1` observation-reuse development target is implemented through Phase
-7A but has no Owner version decision and is not published. Phase 7A closes the
-sole failed Phase 7 performance gate; Cargo, source, CLI, and version output
-remain `0.2.0`. The work preserves the
+The `0.2.1` observation-reuse target is source-ready and not published. Phase
+7A closes the sole failed historical Phase 7 performance gate; Phase 7B then
+remeasures the complete fixed matrix and passes every formal gate. Cargo,
+source, CLI, and version output are `0.2.1`. The work preserves the
 complete v4 Anddress API/wire and the closed `0.2.0` release. The Protocol closes two
 execution modes: the default `WorkspaceRuntime`, one-shot CLI, and ordinary CLI
 Session remain Untrusted Mode with the existing per-call one-read/hash path;
@@ -101,6 +102,17 @@ Untrusted View, and Wrong-Apply evidence remain intact. This performance
 closure does not decide the `0.2.1` version or authorize artifacts or
 publication.
 
+Phase 7B uses immutable A=`2fad6e4` and candidate `d3d0861`, the same task-local
+source for A, B Untrusted, and B Host, CPU 2 P-core, `powersave`, one warm-up,
+and seven order-crossed samples. BU/BH 256 MiB Search medians are `267.397` and
+`267.273` ms. Host Search-to-late-Line View is `324.254` ms, Host Check proof
+hit is exact zero source I/O, and one-million-hit peak memory is `58.609`
+bytes/hit. All 17 cell payloads, ordering, multiplicity, v4 evidence, related
+Paragraph evidence, and source results are identical across A/BU/BH. The
+seven-cell drift regression remains Correct `1`, Safe Reject `6`, Wrong `0` in
+both modes. This closes source readiness only; artifacts and publication remain
+separate, and official public `0.2.0` is unchanged.
+
 Trusted Search followed by ordinary View no longer performs View's complete
 source read or hash; File still returns the complete file range, while
 Paragraph and Line retain only their returned target allocation. Host Search
@@ -113,9 +125,9 @@ emission. Confirmed changed Host publication retains only that after proof; the
 next trusted View, Check, or Apply may reuse it without an intervening Search.
 The
 [0.2.1 phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
-owns the audited flow, Phase 2–7A choices, complete raw samples, checksums, and
-gate evidence. The version decision and any artifact or publication remain
-separate Owner-authorized scopes.
+owns the audited flow, Phase 2–7B choices, complete raw samples, checksums, and
+gate evidence. Artifacts and publication remain separate Owner-authorized
+scopes.
 
 ## Core capability inventory
 

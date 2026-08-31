@@ -1,10 +1,11 @@
 # Backwriter Protocol
 
 Status: normative current-only Core/Runtime contract. The closed public `0.1.0`
-release remains immutable v3 evidence. Current `0.2.0` source and the closed
-public release use the hard-cutover v4 value/wire in all production callers.
+release remains immutable v3 evidence. Current source-ready `0.2.1` and the
+closed public `0.2.0` release use the hard-cutover v4 value/wire in all
+production callers.
 The call-local target-specific Search observation and direct View, Check,
-Apply, and Anchor consumers are complete through Phase 6.
+Apply, and Anchor consumers are complete; Phase 7B verifies source readiness.
 
 ## 0.2.0 current-observation authority
 
@@ -76,7 +77,7 @@ index, or Git semantics.
 
 ## 0.2.1 Host-authoritative observation-reuse authority
 
-`0.2.1` is a partially implemented and unpublished development target. It preserves
+`0.2.1` is implemented, source-ready, and unpublished. It preserves
 the v4 Anddress algebra, SHA-256, exact source byte length, target kind, and
 `[start,end)` range without a wire or compatibility change. Search remains the
 only target finder. View, Check, and Apply do not relocate, context-match, or

@@ -1,8 +1,8 @@
 # Backwriter Roadmap
 
-## Unpublished: 0.2.1 current-observation reuse
+## Source-ready and unpublished: 0.2.1 current-observation reuse
 
-`0.2.1` is an unpublished performance target governed by the
+`0.2.1` is a source-ready, unpublished performance target governed by the
 [seven-phase tracking task](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md).
 Phase 1 closes authority and records the current execution flow. Phase 2 adds
 the explicit Host Runtime, source invalidation, private current proof state, and
@@ -30,10 +30,23 @@ coordinate/path group from copied hash/length proof with no filesystem open,
 read, or hash while preserving its existing report/filter path. Completed
 Phase 5 integrates Apply and Anchor proof transitions. Completed Phase 6 closes
 the full invalidation, authority-isolation, and guarded drift semantics. Phase
-7 completes fixed A/B measurement with a source-readiness NO-GO. Phase 7A
-closes its sole failed related-Paragraph performance gate without changing
-public meaning. Cargo and source version remain `0.2.0`; the version decision,
-artifact, and publication remain separate work.
+7 records the historical fixed A/B source-readiness NO-GO. Phase 7A closes its
+sole failed related-Paragraph performance gate without changing public meaning.
+Phase 7B remeasures the full matrix against immutable baseline `2fad6e4`;
+every formal gate passes and Cargo/source version is `0.2.1`. Artifact and
+publication work remains separate and public `0.2.0` is unchanged.
+
+## Completed: 0.2.1 Phase 7B final readiness and version closure
+
+The full 17-cell A/BU/BH matrix uses one task-local harness, CPU 2 P-core,
+`powersave`, one warm-up, and seven crossed samples. BU/BH 256 MiB Search
+medians are `267.397`/`267.273` ms, Host Search-to-late-Line View is `324.254`
+ms, Host Check proof hit has zero source I/O, and one-million-hit HWM is
+`58.609` bytes/hit. Exact output, order, multiplicity, v4 Anddress and related
+Paragraph evidence, source results, and the Correct `1`/Safe Reject `6`/Wrong
+`0` drift outcome are preserved. Production fast paths remain unchanged.
+`0.2.1` is source-ready but unpublished; artifacts, installers, server state,
+and the closed public `0.2.0` distribution remain untouched.
 
 ## Completed: 0.2.1 Phase 7A related Paragraph scan closure
 
@@ -297,8 +310,9 @@ closes Check proof reuse without changing report semantics. Phase 5 closes
 Apply precondition reuse, exact no-op preservation, prospective-after proof
 installation, and coupled Anchor reflection/fail-closure. Invalidation/race
 closure, authority isolation, and both-mode guarded drift are complete in Phase
-6. Phase 7 measurement and the Phase 7A performance correction are complete;
-the version decision remains separate work.
+6. Phase 7 measurement, the Phase 7A performance correction, and Phase 7B
+full-matrix/version closure are complete. Artifact and publication work remains
+separate.
 
 ## Completed: 0.1.0 exact File lookup
 

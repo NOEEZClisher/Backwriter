@@ -2,8 +2,7 @@
 
 ## 0.2.1 observation-reuse development gates
 
-The `0.2.1` development target is implemented through Phase 7A but remains
-source version `0.2.0`, has no Owner version decision, and is unpublished. Phase 2 adds the Host Runtime
+The `0.2.1` target is source-ready and unpublished. Phase 2 adds the Host Runtime
 constructor, source invalidation kernel, private proof state, and
 successful-Search proof installation. Phase 3 adds bounded ordinary View proof
 consumption. Phase 4 adds Check current-proof group classification;
@@ -12,14 +11,15 @@ prospective-after proof installation, and coupled Anchor reflection;
 Phase 6 closes path-exact invalidation, guarded mutation sequencing,
 authority isolation, matching anchored View reuse, failure transitions, and the
 both-mode drift matrix;
-Phase 7 completes fixed A/B measurement and records a source-readiness NO-GO;
-Phase 7A closes that run's sole failed related-Paragraph performance gate;
-Cargo/version, v4 wire, default Untrusted behavior, and the closed public
+Phase 7 records the historical fixed A/B source-readiness NO-GO; Phase 7A
+closes that run's sole failed related-Paragraph performance gate; Phase 7B
+remeasures the complete matrix and closes source readiness with every gate PASS.
+V4 wire, default Untrusted behavior, and the closed public
 `0.2.0` release remain unchanged. The
 Protocol owns default Untrusted Mode and explicit Host-authoritative Mode; the
 [phase tracker](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md)
-owns the execution audit, fixed `0.2.0` comparison inputs, complete raw Phase 7
-and 7A samples, checksums, and gate evidence.
+owns the execution audit, fixed `0.2.0` comparison inputs, complete raw Phase 7,
+7A, and 7B samples, checksums, and gate evidence.
 
 Phase 2 regressions prove that Untrusted Search installs no proof; Host exact
 File and content Search install exact hash/length; re-search replaces one path;
@@ -145,13 +145,19 @@ bytes/hit and below the 61.4383 bound. Separator, forward, File/Paragraph,
 ordinary/anchored, and Untrusted controls have byte-identical outputs and no
 unexplained material regression. Apply code is untouched and the full suite
 retains the existing one-Correct/six-Safe-Reject/zero-Wrong matrix. This closes
-the performance gate only; it changes no version or publication authority.
+the performance gate only. Phase 7B reuses the fixed large fixtures and one
+task-local A/BU/BH source across 17 cells. BU/BH 256 MiB Search medians are
+`267.397`/`267.273` ms, Host Search-to-late-Line View is `324.254` ms, Host
+Check proof hit is exact zero I/O, and one-million-hit HWM is `58.609`
+bytes/hit. All cell payloads agree and the drift regression retains one
+Correct, six Safe Rejects, and zero Wrong Applies. Source version is `0.2.1`;
+artifact and publication authority is unchanged.
 
-Post-decision source verification passes offline/locked metadata and dependency
-tree, format, all-target check, 234 GNU-host tests, clippy with warnings denied,
-and release build. Release `bw --help`, `bw version`, one-shot human and JSON
-Search, and Session Search probes pass; version output remains exactly
-`Backwriter 0.2.0`.
+Phase 7A source verification passed 236 GNU-host tests. Phase 7B post-decision
+verification passes offline/locked metadata and dependency tree, format,
+all-target check, all 236 GNU-host tests, clippy with warnings denied, release
+build, and release capability probes; version output is exactly
+`Backwriter 0.2.1`.
 
 ## 0.2.0 Phase 7 and Search recommendation closure
 
@@ -430,11 +436,12 @@ Before staging, verify the diff and empty index, confirm repository-root
 Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
-The repository source package and closed public release are `0.2.0`, and its
-release build must print exactly `Backwriter 0.2.0` plus LF. Source verification remains
+The repository source package is source-ready `0.2.1`, while the closed public
+release remains `0.2.0`; the source release build must print exactly
+`Backwriter 0.2.1` plus LF. Source verification remains
 distinct from the separately executed operations publication: the current official
 distribution is the closed `0.2.0` release, while `0.1.0` and prior beta files
-remain immutable. The current `0.2.0` source suite passes 203 GNU-host Rust tests; the
+remain immutable. The closed `0.2.0` source suite passed 203 GNU-host Rust tests; the
 historical `0.1.0` source suite passed 193.
 
 CLI process regressions cover the canonical `bw` binary without a `backwriter`

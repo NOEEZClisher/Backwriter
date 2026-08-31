@@ -22,15 +22,15 @@ semantic/public API/error authority and its single-source Edit Runtime
 implementation uses direct v4 ranges and provenance and is complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
-The closed public `0.1.0` release is the immutable v3 baseline. Current source,
-Cargo, and the closed public `0.2.0` release use the hard-cutover
+The closed public `0.1.0` release is the immutable v3 baseline. Current `0.2.1`
+source and Cargo, plus the closed public `0.2.0` release, use the hard-cutover
 `artext.backwriter-anddress.v4` Rust API and wire. SHA-256, exact source byte
 length, target kind, and `[start, end)` byte range are implemented identity;
 v3 remains only in Git history and immutable `0.1.0` release evidence. The
 canonical four-target `0.2.0` artifacts, manifest, installers, live publication,
 fresh installation, and explicit update are complete.
 
-`0.2.1` is an unpublished development target. Phases 2 through 6 implement its
+`0.2.1` is source-ready and unpublished. Phases 2 through 6 implement its
 minimal Host-authoritative observation kernel, bounded ordinary View reuse, and
 Check, Apply, and anchored View current-proof reuse plus complete invalidation
 and race semantics while preserving v4 identity and the existing `0.2.0`
@@ -52,6 +52,10 @@ mutation and excludes mutation through capability completion; unsignaled or
 in-call mutation is a host contract violation rather than a supported race.
 Matching anchored View reuses ordinary trusted View execution, while a proof
 mismatch fail-closes the same-path proof and live Anchors before source access.
+Phase 7B remeasures the complete A/Untrusted/Host matrix against immutable
+`0.2.0` baseline `2fad6e4`; every formal performance, memory, I/O, semantic,
+and drift gate passes. No artifact or publication is authorized by source
+readiness, and the official distribution remains the closed `0.2.0` release.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,

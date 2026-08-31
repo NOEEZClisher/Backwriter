@@ -1,16 +1,15 @@
 # Backwriter 0.2.1 Current-Observation Reuse
 
-Status: Phases 1–7A complete; Phase 7A closes the sole failed performance gate,
-the source version remains `0.2.0`, no version decision has been made, and
-publication has not started.
+Status: Phases 1–7B complete; Phase 7B passes the complete fixed readiness
+matrix, source version is `0.2.1`, and publication has not started.
 
 This tracker records execution evidence and phase progress only. Normative
 semantics belong to the active
 [Protocol](../architecture/backwriter-text-coordination-protocol.md),
 [address model](../architecture/rebuildable-structural-addressing.md), and
 [principles](../principles/backwriter-core-principles.md). The closed public
-`0.2.0` release and its 28-file publication are immutable. `0.2.1` remains
-a partially implemented and unpublished target using the same Anddress v4 wire,
+`0.2.0` release and its 28-file publication are immutable. `0.2.1` is a
+source-ready and unpublished target using the same Anddress v4 wire,
 SHA-256, exact source length, target kind, and `[start,end)` range.
 
 ## Phase 1 current execution audit
@@ -72,7 +71,7 @@ are Adapter/caller values rather than observation authority.
 - Check retains no result/history state. The narrow trusted current proof is its
   sole cross-call exception.
 
-## Seven phases and Phase 7A correction
+## Seven phases, Phase 7A correction, and Phase 7B closure
 
 1. **Authority and current-flow audit — complete.** Record actual observer,
    hash, Apply, Anchor, Check, and CLI Runtime paths; close the two-mode
@@ -99,6 +98,11 @@ are Adapter/caller values rather than observation authority.
    removes the trusted Line relation's single-consumer byte cursor layer,
    preserves exact semantics and I/O, and closes the 400/350 ms gate without a
    version, artifact, or publication decision.
+9. **Full remeasurement and version closure — complete, GO.** Phase 7B uses
+   immutable A=`2fad6e4` and B=`d3d0861`, repeats the complete A/BU/BH matrix,
+   passes every formal gate, and moves source/Cargo/CLI version to `0.2.1`.
+   Production fast paths are unchanged; artifacts and publication remain
+   separate authority.
 
 ## Fixed 0.2.0 comparison inputs
 
@@ -638,3 +642,221 @@ The task-local baseline export, targets, fixtures, harnesses, runner, raw TSV,
 and outputs are removed after this evidence is recorded. Phase 7A closes only
 the failed performance gate. Cargo and `bw version` remain `0.2.0`; the Owner
 version decision, artifacts, and publication remain separate.
+
+## Phase 7B final readiness and version closure
+
+Phase 7B is **GO**. Immutable A=`2fad6e46d3a9d1da01f79f34b9ffc187447c76a8`
+and B=`d3d0861a9ebb19f2a31f57a3cafdeada1fdc28cf` use one byte-identical
+task-local harness source. A and B Untrusted use `WorkspaceRuntime::open`;
+B Host uses only the public `open_host_authoritative` selector. Production
+Rust, public API, proof shape, v4 wire, dependencies, and repository benchmark
+surface are unchanged.
+
+The Intel i7-12700K host used logical CPU 2 P-core with the existing
+`powersave` governor and the same tmpfs workspace. Every one of 17 cells ran
+one warm-up per A/BU/BH variant followed by seven measured samples with rotated
+`A→BU→BH`, `BH→BU→A`, and `BU→A→BH` order. The external runner pins the
+child, gates only the operation with a one-byte/five-byte protocol, and samples
+`VmHWM`, `rchar`, and `wchar` while the child remains alive. The raw TSV
+contains 408 rows: 51 warm-ups and 357 measurements.
+
+The fixed 128 MiB, 256 MiB, and 1,048,576-hit sources reproduce their Phase 7
+byte lengths and SHA-256 exactly. The 2,048-source fixture contains 2,048
+byte-sorted regular files and 14,336 total bytes; its relative-name/content
+tree fingerprint is
+`a23f3b523d877f0bd2bdbb63c8c2aa29f462dc2fba536728a7f7409b7fbd0921`.
+Resident cells use one fixed 19-byte three-Line patch source. Repository tests,
+not the performance process, retain the Unicode/CR/LF/CRLF/no-EOL, public v4
+KAT, related Paragraph, and seven-cell drift assertions.
+
+| Fixture | Bytes | SHA-256 |
+| --- | ---: | --- |
+| 128 MiB low-hit | 134,217,728 | `efa0da04277e9bcb2c2ce81c8b8886e685e1db4d50959fa5ac917c7e011725f6` |
+| 256 MiB low-hit / late target | 268,435,456 | `d4edd123621cf230590d7812e64bec69460789eba3e0c7136b88a3f26c88f5e5` |
+| 1,048,576 hits | 4,194,304 | `f7621d1ce80529f36f9e5c467399bd27c4aeae11aef1d0bf85e104a29f2804fa` |
+
+### Phase 7B formal gate decision
+
+| Gate | Evidence | Result |
+| --- | --- | --- |
+| B Search 256 MiB median ≤313.929 ms | BU `267.397`; BH `267.273` ms | PASS |
+| Host Search-to-late-Line View median ≤400 ms; ≤350 recommended | BH `324.254` ms; p95 `326.104` ms | PASS |
+| Host Check proof hit source I/O/hash/target Search 0 | BH `0.001763` ms; exact `rchar=0`, `wchar=0`; structural proof test unchanged | PASS |
+| 1M result memory ≤61.4383 bytes/hit | BU/BH peak 60,016 KiB = `58.609375` bytes/hit | PASS |
+| Whole-source/history/past-chain retention 0 | 128→256 MiB Search HWM stays 2.74 MiB; `CurrentProof` owns path/hash/length only | PASS |
+| Drift Correct 1 / Safe Reject 6 / Wrong 0 | Exact both-mode regression passes, including Host invalidation before all six stale cases | PASS |
+| Untrusted and output equivalence | Every cell has one payload across A/BU/BH; all 357 measured payloads agree | PASS |
+
+The 2,048-file Host HWM increase (3,964 KiB versus A 3,356 KiB) is the expected
+one path/hash/length proof per successfully observed source, not source bytes or
+target state. BU is 3,648 KiB. Large Apply BU median/p95 is
+`211.488/212.866` ms versus A `208.213/208.946` ms, with identical one-read,
+one-write counts and source SHA; the small percentage delta is not material.
+Resident p95 variation is tens of microseconds. No other p95, HWM, resident, or
+large-Apply result shows an unexplained material regression.
+
+### Phase 7B summary
+
+Nearest-rank p95 is the maximum of seven samples. HWM is the seven-sample
+maximum; I/O is the median.
+
+| Cell | Variant | Median / p95 ms | Peak HWM KiB | Median rchar / wchar |
+| --- | --- | ---: | ---: | ---: |
+| changed-chain | A | 0.261169 / 0.301403 | 2716 | 102 / 38 |
+| changed-chain | BH | 0.266239 / 0.278217 | 2752 | 103 / 38 |
+| changed-chain | BU | 0.264111 / 0.277138 | 2748 | 102 / 38 |
+| check256-line | A | 157.955776 / 158.204982 | 2712 | 268435456 / 0 |
+| check256-line | BH | 0.001763 / 0.002216 | 2732 | 0 / 0 |
+| check256-line | BU | 157.911611 / 158.183015 | 2728 | 268435456 / 0 |
+| range-apply256 | A | 208.213254 / 208.946391 | 2700 | 268435456 / 268435456 |
+| range-apply256 | BH | 101.606715 / 102.922388 | 2736 | 268435456 / 268435456 |
+| range-apply256 | BU | 211.488430 / 212.866439 | 2736 | 268435456 / 268435456 |
+| resident-anchored-view | A | 0.003273 / 0.003461 | 2712 | 19 / 0 |
+| resident-anchored-view | BH | 0.003788 / 0.004031 | 2740 | 20 / 0 |
+| resident-anchored-view | BU | 0.003314 / 0.003621 | 2740 | 19 / 0 |
+| resident-apply | A | 0.032251 / 0.032926 | 2724 | 45 / 38 |
+| resident-apply | BH | 0.031834 / 0.059442 | 2752 | 45 / 38 |
+| resident-apply | BU | 0.032973 / 0.070626 | 2748 | 45 / 38 |
+| resident-check | A | 0.005725 / 0.008437 | 2716 | 19 / 0 |
+| resident-check | BH | 0.001500 / 0.002031 | 2728 | 0 / 0 |
+| resident-check | BU | 0.005865 / 0.007833 | 2728 | 19 / 0 |
+| resident-view | A | 0.016935 / 0.019150 | 2712 | 19 / 0 |
+| resident-view | BH | 0.018318 / 0.028351 | 2740 | 20 / 0 |
+| resident-view | BU | 0.016077 / 0.019452 | 2728 | 19 / 0 |
+| search-apply | A | 0.213379 / 0.279124 | 2692 | 64 / 38 |
+| search-apply | BH | 0.218460 / 0.238476 | 2752 | 64 / 38 |
+| search-apply | BU | 0.221277 / 0.237578 | 2748 | 64 / 38 |
+| search-check256 | A | 426.456385 / 429.089850 | 2692 | 536870912 / 0 |
+| search-check256 | BH | 267.758390 / 268.443289 | 2740 | 268435456 / 0 |
+| search-check256 | BU | 425.716491 / 427.682694 | 2724 | 536870912 / 0 |
+| search-view256 | A | 616.851474 / 621.725311 | 2696 | 536870912 / 0 |
+| search-view256 | BH | 324.254056 / 326.104135 | 2740 | 536870913 / 0 |
+| search-view256 | BU | 590.621358 / 593.664888 | 2740 | 536870912 / 0 |
+| search128-line | A | 134.192805 / 134.471530 | 2708 | 134217728 / 0 |
+| search128-line | BH | 133.807241 / 134.426041 | 2740 | 134217728 / 0 |
+| search128-line | BU | 134.018598 / 134.410389 | 2740 | 134217728 / 0 |
+| search1m-line | A | 577.870487 / 583.262567 | 59948 | 4194304 / 0 |
+| search1m-line | BH | 566.623655 / 567.194366 | 60016 | 4194304 / 0 |
+| search1m-line | BU | 566.168424 / 571.093288 | 60016 | 4194304 / 0 |
+| search2048-line | A | 4.569153 / 5.141648 | 3356 | 14336 / 0 |
+| search2048-line | BH | 4.936187 / 5.001863 | 3964 | 14336 / 0 |
+| search2048-line | BU | 4.757594 / 4.986993 | 3648 | 14336 / 0 |
+| search256-line | A | 267.654060 / 269.383782 | 2712 | 268435456 / 0 |
+| search256-line | BH | 267.272868 / 268.165158 | 2740 | 268435456 / 0 |
+| search256-line | BU | 267.397071 / 268.736853 | 2736 | 268435456 / 0 |
+| view256-file | A | 198.779073 / 200.164985 | 264864 | 268435456 / 0 |
+| view256-file | BH | 74.244962 / 75.836392 | 264884 | 268435456 / 0 |
+| view256-file | BU | 199.093274 / 199.784836 | 264820 | 268435456 / 0 |
+| view256-line | A | 349.587510 / 351.182442 | 2716 | 268435456 / 0 |
+| view256-line | BH | 57.424548 / 57.650723 | 2744 | 268435457 / 0 |
+| view256-line | BU | 323.405047 / 324.236373 | 2740 | 268435456 / 0 |
+| view256-paragraph | A | 198.720722 / 217.129009 | 264868 | 268435456 / 0 |
+| view256-paragraph | BH | 74.049325 / 76.013337 | 264800 | 268435456 / 0 |
+| view256-paragraph | BU | 198.624005 / 199.480124 | 264848 | 268435456 / 0 |
+
+### Phase 7B representative output SHA-256
+
+Each listed payload is byte-identical across A, BU, and BH.
+
+| Cell | Payload SHA-256 |
+| --- | --- |
+| changed-chain | `560ad4677dae579504815936ffc21ea930533d0792687dd2de53d25d4182a9f8` |
+| check256-line | `82baf019fe55e97e9bb29412276e795f00df6acaeeefb3eaff74db768078b13b` |
+| range-apply256 | `346012653ed4273fc346a354c3e4871f71bd5988654dcea9ff8dbf7aebe7fd87` |
+| resident-anchored-view | `ebb702040b5d306c30ba18eb9252c013f000fdadd735b47ac94d34d86c29bdd6` |
+| resident-apply | `346012653ed4273fc346a354c3e4871f71bd5988654dcea9ff8dbf7aebe7fd87` |
+| resident-check | `82baf019fe55e97e9bb29412276e795f00df6acaeeefb3eaff74db768078b13b` |
+| resident-view | `ebb702040b5d306c30ba18eb9252c013f000fdadd735b47ac94d34d86c29bdd6` |
+| search-apply | `346012653ed4273fc346a354c3e4871f71bd5988654dcea9ff8dbf7aebe7fd87` |
+| search-check256 | `82baf019fe55e97e9bb29412276e795f00df6acaeeefb3eaff74db768078b13b` |
+| search-view256 | `1a440081e4f04d165ff5d8d290c8651560ad74e79b6235d9d901e5c5cd90a2f6` |
+| search128-line | `a5577b93d2b10ecf950be000c38681803f27074f62b63352d4c4e0e51d79c5df` |
+| search1m-line | `40894507370f299d4b3412fbfb99acbd6cc79400461f123c14c0ae59d731cefe` |
+| search2048-line | `f8d44e0edd938bee4208c7215e332c4813a53a046f22dca5bf645399f0a15d19` |
+| search256-line | `b714c4044161b2da427d12dce088d0cba505f12cca6f808826ae2e0c1a15f3ca` |
+| view256-file | `d68e85f15a894643515145df083a83bb97ec05b556f5883e99d007f7c61f27b5` |
+| view256-line | `1a440081e4f04d165ff5d8d290c8651560ad74e79b6235d9d901e5c5cd90a2f6` |
+| view256-paragraph | `52e3fdfdccedc79cbcc1192aa14dac910ae131294ec595ccd12fdc7d886d7926` |
+
+### Phase 7B raw samples
+
+Rows preserve execution-round order within each variant.
+
+| Cell | Variant | Raw inner wall ms | Raw HWM KiB | rchar / wchar |
+| --- | --- | --- | --- | --- |
+| changed-chain | A | 0.148102, 0.250028, 0.301403, 0.273318, 0.249652, 0.261940, 0.261169 | 2696, 2688, 2716, 2660, 2700, 2688, 2716 | 102/38, 102/38, 102/38, 102/38, 102/38, 102/38, 102/38 |
+| changed-chain | BH | 0.274269, 0.265999, 0.263893, 0.267230, 0.278217, 0.264215, 0.266239 | 2684, 2684, 2652, 2752, 2752, 2704, 2700 | 103/38, 103/38, 103/38, 103/38, 103/38, 103/38, 103/38 |
+| changed-chain | BU | 0.197804, 0.265639, 0.261551, 0.268087, 0.277138, 0.264111, 0.262668 | 2684, 2664, 2736, 2744, 2644, 2708, 2748 | 102/38, 102/38, 102/38, 102/38, 102/38, 102/38, 102/38 |
+| check256-line | A | 157.630006, 158.109595, 157.955776, 157.726706, 158.204982, 158.165257, 157.417511 | 2712, 2676, 2700, 2660, 2588, 2676, 2684 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| check256-line | BH | 0.001763, 0.001912, 0.001760, 0.002216, 0.001908, 0.001758, 0.001682 | 2732, 2716, 2656, 2708, 2732, 2724, 2728 | 0/0, 0/0, 0/0, 0/0, 0/0, 0/0, 0/0 |
+| check256-line | BU | 157.911611, 158.126197, 157.978533, 157.528451, 157.580726, 157.344821, 158.183015 | 2728, 2708, 2728, 2644, 2680, 2656, 2720 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| range-apply256 | A | 207.065757, 207.504344, 207.993265, 208.946391, 208.213254, 208.530292, 208.689961 | 2652, 2700, 2608, 2576, 2600, 2700, 2608 | 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456 |
+| range-apply256 | BH | 102.327294, 102.778875, 100.610570, 99.667518, 101.606715, 101.484096, 102.922388 | 2716, 2736, 2688, 2676, 2704, 2692, 2712 | 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456 |
+| range-apply256 | BU | 212.689580, 210.170001, 212.482810, 209.061737, 211.488430, 210.624435, 212.866439 | 2696, 2736, 2696, 2696, 2672, 2704, 2716 | 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456, 268435456/268435456 |
+| resident-anchored-view | A | 0.003004, 0.003461, 0.003273, 0.003307, 0.003358, 0.003197, 0.003245 | 2708, 2704, 2696, 2688, 2704, 2676, 2712 | 19/0, 19/0, 19/0, 19/0, 19/0, 19/0, 19/0 |
+| resident-anchored-view | BH | 0.004031, 0.003637, 0.003863, 0.003788, 0.003758, 0.003791, 0.003779 | 2716, 2700, 2648, 2696, 2740, 2640, 2716 | 20/0, 20/0, 20/0, 20/0, 20/0, 20/0, 20/0 |
+| resident-anchored-view | BU | 0.003006, 0.003289, 0.003481, 0.003240, 0.003541, 0.003621, 0.003314 | 2668, 2732, 2676, 2712, 2740, 2684, 2636 | 19/0, 19/0, 19/0, 19/0, 19/0, 19/0, 19/0 |
+| resident-apply | A | 0.032104, 0.030569, 0.031679, 0.032251, 0.032920, 0.032926, 0.032744 | 2724, 2696, 2696, 2692, 2708, 2704, 2692 | 45/38, 45/38, 45/38, 45/38, 45/38, 45/38, 45/38 |
+| resident-apply | BH | 0.029534, 0.059442, 0.030849, 0.031732, 0.031834, 0.034511, 0.033516 | 2748, 2752, 2608, 2712, 2716, 2664, 2704 | 45/38, 45/38, 45/38, 45/38, 45/38, 45/38, 45/38 |
+| resident-apply | BU | 0.033347, 0.030755, 0.031385, 0.032459, 0.033201, 0.032973, 0.070626 | 2736, 2692, 2692, 2724, 2632, 2748, 2652 | 45/38, 45/38, 45/38, 45/38, 45/38, 45/38, 45/38 |
+| resident-check | A | 0.004803, 0.005518, 0.005725, 0.005539, 0.007041, 0.007570, 0.008437 | 2680, 2684, 2684, 2684, 2716, 2572, 2684 | 19/0, 19/0, 19/0, 19/0, 19/0, 19/0, 19/0 |
+| resident-check | BH | 0.001120, 0.001159, 0.001366, 0.001500, 0.001640, 0.001903, 0.002031 | 2724, 2720, 2728, 2712, 2680, 2728, 2716 | 0/0, 0/0, 0/0, 0/0, 0/0, 0/0, 0/0 |
+| resident-check | BU | 0.004985, 0.004778, 0.005391, 0.005865, 0.006963, 0.006995, 0.007833 | 2728, 2656, 2680, 2720, 2724, 2712, 2620 | 19/0, 19/0, 19/0, 19/0, 19/0, 19/0, 19/0 |
+| resident-view | A | 0.011894, 0.016655, 0.011851, 0.018283, 0.016935, 0.017849, 0.019150 | 2588, 2676, 2712, 2684, 2688, 2692, 2700 | 19/0, 19/0, 19/0, 19/0, 19/0, 19/0, 19/0 |
+| resident-view | BH | 0.015607, 0.016159, 0.019012, 0.018318, 0.016624, 0.024673, 0.028351 | 2644, 2652, 2624, 2704, 2728, 2740, 2732 | 20/0, 20/0, 20/0, 20/0, 20/0, 20/0, 20/0 |
+| resident-view | BU | 0.011252, 0.013535, 0.013330, 0.017844, 0.016153, 0.016077, 0.019452 | 2728, 2684, 2700, 2708, 2656, 2716, 2728 | 19/0, 19/0, 19/0, 19/0, 19/0, 19/0, 19/0 |
+| search-apply | A | 0.279124, 0.213379, 0.215268, 0.212460, 0.204469, 0.209797, 0.214805 | 2684, 2668, 2688, 2688, 2692, 2684, 2684 | 64/38, 64/38, 64/38, 64/38, 64/38, 64/38, 64/38 |
+| search-apply | BH | 0.218820, 0.238476, 0.219910, 0.213880, 0.206603, 0.218460, 0.212636 | 2652, 2748, 2660, 2660, 2752, 2664, 2584 | 64/38, 64/38, 64/38, 64/38, 64/38, 64/38, 64/38 |
+| search-apply | BU | 0.226964, 0.219002, 0.211381, 0.206726, 0.221277, 0.237578, 0.224479 | 2716, 2696, 2736, 2708, 2748, 2708, 2716 | 64/38, 64/38, 64/38, 64/38, 64/38, 64/38, 64/38 |
+| search-check256 | A | 426.456385, 425.821632, 429.089850, 425.445806, 426.810363, 426.139905, 426.964885 | 2688, 2676, 2692, 2692, 2676, 2668, 2668 | 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0 |
+| search-check256 | BH | 268.443289, 267.316882, 267.916733, 267.704114, 267.758390, 267.955273, 267.372439 | 2720, 2676, 2704, 2692, 2740, 2712, 2740 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| search-check256 | BU | 424.899192, 425.142099, 424.739342, 426.802821, 426.285808, 425.716491, 427.682694 | 2700, 2708, 2660, 2724, 2712, 2708, 2644 | 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0 |
+| search-view256 | A | 615.859514, 616.851474, 618.308253, 617.897289, 621.725311, 616.690461, 615.521594 | 2696, 2660, 2696, 2652, 2656, 2636, 2688 | 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0 |
+| search-view256 | BH | 324.002080, 324.254056, 323.917970, 326.104135, 324.327324, 324.405539, 324.187940 | 2688, 2728, 2652, 2668, 2740, 2720, 2704 | 536870913/0, 536870913/0, 536870913/0, 536870913/0, 536870913/0, 536870913/0, 536870913/0 |
+| search-view256 | BU | 590.401996, 590.398023, 590.621358, 589.946459, 590.663784, 593.664888, 590.684860 | 2724, 2640, 2656, 2740, 2684, 2712, 2720 | 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0, 536870912/0 |
+| search128-line | A | 133.713991, 134.471530, 134.048344, 134.197751, 134.015383, 134.333143, 134.192805 | 2692, 2692, 2708, 2708, 2680, 2708, 2668 | 134217728/0, 134217728/0, 134217728/0, 134217728/0, 134217728/0, 134217728/0, 134217728/0 |
+| search128-line | BH | 133.745855, 133.559646, 133.545681, 133.809966, 134.426041, 134.401930, 133.807241 | 2656, 2628, 2728, 2648, 2680, 2728, 2740 | 134217728/0, 134217728/0, 134217728/0, 134217728/0, 134217728/0, 134217728/0, 134217728/0 |
+| search128-line | BU | 133.628332, 133.511643, 134.372225, 133.745846, 134.053750, 134.018598, 134.410389 | 2728, 2740, 2704, 2660, 2720, 2660, 2676 | 134217728/0, 134217728/0, 134217728/0, 134217728/0, 134217728/0, 134217728/0, 134217728/0 |
+| search1m-line | A | 577.870487, 576.179413, 578.583218, 575.600777, 578.069455, 577.428789, 583.262567 | 59800, 59676, 59864, 59784, 59836, 59908, 59948 | 4194304/0, 4194304/0, 4194304/0, 4194304/0, 4194304/0, 4194304/0, 4194304/0 |
+| search1m-line | BH | 566.180393, 567.177317, 565.913823, 565.018559, 566.623655, 567.194366, 567.186912 | 59984, 59804, 59876, 59876, 59928, 59888, 60016 | 4194304/0, 4194304/0, 4194304/0, 4194304/0, 4194304/0, 4194304/0, 4194304/0 |
+| search1m-line | BU | 565.470503, 571.093288, 566.540215, 565.975652, 566.168424, 565.608056, 568.162595 | 59812, 59764, 59896, 59812, 60016, 59792, 59920 | 4194304/0, 4194304/0, 4194304/0, 4194304/0, 4194304/0, 4194304/0, 4194304/0 |
+| search2048-line | A | 5.141648, 4.603362, 4.512457, 4.516457, 4.572098, 4.569153, 4.532439 | 3156, 3276, 3356, 3220, 3176, 3176, 3232 | 14336/0, 14336/0, 14336/0, 14336/0, 14336/0, 14336/0, 14336/0 |
+| search2048-line | BH | 4.978898, 5.001863, 4.853971, 4.936187, 4.820238, 4.955121, 4.842157 | 3948, 3908, 3952, 3948, 3964, 3964, 3880 | 14336/0, 14336/0, 14336/0, 14336/0, 14336/0, 14336/0, 14336/0 |
+| search2048-line | BU | 4.986993, 4.802953, 4.796236, 4.699995, 4.718369, 4.757594, 4.754738 | 3640, 3620, 3524, 3492, 3476, 3648, 3612 | 14336/0, 14336/0, 14336/0, 14336/0, 14336/0, 14336/0, 14336/0 |
+| search256-line | A | 268.189113, 267.540346, 269.383782, 267.885488, 267.624897, 267.654060, 267.140603 | 2708, 2680, 2672, 2712, 2712, 2688, 2672 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| search256-line | BH | 267.088585, 266.997629, 268.165158, 267.818308, 267.746056, 267.180175, 267.272868 | 2724, 2724, 2740, 2688, 2740, 2712, 2700 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| search256-line | BU | 266.681107, 266.829290, 267.317929, 267.978938, 267.397071, 268.736853, 267.668426 | 2728, 2732, 2676, 2688, 2732, 2736, 2716 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| view256-file | A | 198.572757, 200.135643, 200.164985, 199.551378, 198.779073, 197.951752, 198.736038 | 264544, 264668, 264768, 264864, 264448, 264752, 264648 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| view256-file | BH | 73.825339, 75.836392, 74.442062, 74.189054, 74.244962, 74.614360, 74.179952 | 264724, 264824, 264700, 264796, 264572, 264884, 264884 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| view256-file | BU | 198.743395, 199.526249, 198.726086, 199.784836, 199.093274, 199.248191, 198.877226 | 264604, 264472, 264676, 264732, 264696, 264820, 264796 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| view256-line | A | 348.610387, 349.381913, 349.587510, 351.182442, 349.718830, 349.229452, 349.877361 | 2652, 2716, 2668, 2700, 2704, 2716, 2676 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| view256-line | BH | 57.409095, 57.461544, 57.409941, 57.495241, 57.030118, 57.650723, 57.424548 | 2684, 2704, 2744, 2736, 2720, 2736, 2704 | 268435457/0, 268435457/0, 268435457/0, 268435457/0, 268435457/0, 268435457/0, 268435457/0 |
+| view256-line | BU | 323.405047, 324.236373, 323.103350, 323.329162, 323.591992, 323.025871, 323.634372 | 2692, 2736, 2660, 2740, 2716, 2660, 2740 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| view256-paragraph | A | 198.450180, 198.702537, 217.129009, 198.746152, 198.720722, 198.547725, 198.735401 | 264852, 264748, 264672, 264700, 264868, 264556, 264744 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| view256-paragraph | BH | 74.049325, 73.919976, 73.878892, 74.076981, 74.069433, 74.006878, 76.013337 | 264672, 264696, 264800, 264756, 264660, 264736, 264616 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+| view256-paragraph | BU | 198.310358, 199.480124, 198.624005, 198.517834, 198.583701, 198.969157, 199.159537 | 264568, 264724, 264848, 264680, 264712, 264576, 264576 | 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0, 268435456/0 |
+
+### Phase 7B reproduction identities and cleanup
+
+| Item | SHA-256 |
+| --- | --- |
+| Harness source | `e10b709e4d2d81b23bda45f268c518d2b4856a3b31f6ce80c7d24354fb4b6a51` |
+| Runner source | `139ae0955f8995aa1cf5f0e3935ea24eab336034aad5129febf5caa7e514ad63` |
+| Fixture generator | `7cfc07ccd1ade7379c66bbf2e4a84b13ab36056e85b9e1191076204033abb53e` |
+| Matrix driver | `acfcb5e4ff47ce4a640d1235558c5e04feea0398572ce8a93efbc31d2c56023d` |
+| Analysis source | `70bc81c045e7daa3d58bbe807146d400a2e30eff8135bfffdd43ce0907d0ee35` |
+| Raw TSV | `d5a7b2373cd4012e2645a9addbdf4756a611ec3eff293d5bb8ccbe0e21286ca5` |
+| Summary TSV | `ebfc2b42b136b9a661d27934c0b1f50d59e76dee281b5ceafbc5fcc7bd518005` |
+| Output digest table | `5c8e8b8be25e2f855e6db9a111613ce71d2a4ec331993df2ea14ecdca15c201a` |
+| A harness binary | `6a4855fd3d4ef311112d73038c65889b3bf7165bbec82795b057445aca7f8f78` |
+| BU harness binary | `d5db7c5e58a461f4edd72b7e78b7823db60d3bce95df4954e47ba98f39b2774b` |
+| BH harness binary | `13eb9f91f41fefe1d1cb38bab35179797eeb76132f95733cc7612be898447563` |
+| Runner binary | `67aded9a02684a279668976bfe4571987051ab3fa586ebdc1e18b3dda630fb61` |
+
+Phase 7B changes no production fast path. Cargo and CLI source version move to
+`0.2.1`; artifacts, installer manifests, publisher, public root, services,
+DNS, tunnel, and the immutable public `0.2.0` release remain unchanged. All
+236 GNU-host tests and the complete offline/locked verification pass. All
+task-local exports, fixtures, harnesses, runners, binaries, and measurement
+outputs are removed after the recorded evidence and final verification are
+complete.

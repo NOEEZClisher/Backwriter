@@ -50,7 +50,7 @@ bw version
 The current source build prints exactly:
 
 ```text
-Backwriter 0.2.0
+Backwriter 0.2.1
 ```
 
 ### Update
@@ -67,11 +67,16 @@ background updater or compare release versions. The installer accepts only the
 exact immutable `0.1.0` manifest and current `0.2.0` manifest; beta.3 acceptance
 is retired.
 
-The product is Backwriter. The Cargo package and library crate are
-`backwriter` at `0.2.0`; the sole canonical executable and external Adapter
-command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
+The product is Backwriter. The source-ready, unpublished Cargo package and
+library crate are `backwriter` at `0.2.1`; the sole canonical executable and
+external Adapter command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
 official installer remains separate and selects the closed public `0.2.0`
 distribution.
+
+The source version and the official distribution are intentionally distinct:
+`0.2.1` has passed its complete local readiness matrix but has no artifacts or
+publication. Install and Update therefore continue to select immutable public
+`0.2.0`.
 
 The default workspace is the process current working directory. An explicit
 `--workspace` must be absolute and is checked by Runtime. Search admits `.` by
