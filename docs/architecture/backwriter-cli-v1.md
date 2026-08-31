@@ -76,16 +76,16 @@ capability workflow.
 `bw version` writes exactly:
 
 ```text
-Backwriter 0.2.0
+Backwriter 0.2.1
 ```
 
 including the final LF and no other successful output.
 
 `bw update` downloads the current platform's official installer over HTTPS and
 delegates installation to it. The current official manifest selects the closed
-public `0.2.0` distribution. The installer accepts only the exact `0.1.0` and
-`0.2.0` manifests; beta.3 acceptance is retired. Update does not publish a
-release and performs no local version comparison, retry,
+public `0.2.1` distribution. The installer accepts only the exact `0.2.0` and
+`0.2.1` manifests; stable `0.1.0` and beta.3 acceptance is retired. Update does not
+publish a release and performs no local version comparison, retry,
 daemon or background update, and adds no compatibility alias. On Unix it uses a
 private temporary directory, runs the downloaded `install.sh` synchronously
 with `sh`, propagates its exit status, and removes the temporary directory. On
