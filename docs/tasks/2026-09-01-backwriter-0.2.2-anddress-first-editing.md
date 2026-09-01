@@ -1,7 +1,8 @@
 # Backwriter 0.2.2 Anddress-First Editing
 
-Status: Gates 1–3 complete; Gates 4–7 pending. Cargo, `bw version`, source
-behavior, and the published distribution remain `0.2.1`.
+Status: Gates 1–4 complete; Gates 5–7 pending. Cargo, `bw version`, and the
+published distribution remain `0.2.1`; the current checkout's implemented
+`0.2.2` slice remains unpublished and is not source-ready.
 
 This tracker records progress and consumer evidence only. Normative meaning
 belongs to the active [Protocol](../architecture/backwriter-text-coordination-protocol.md),
@@ -62,11 +63,31 @@ later Owner-selected single transport. This gate reserves no syntax or
 implementation and adds no stdin, file, JSON, batch, formatter, parser, type,
 dependency, Core/Runtime seam, retry, relocation, or raw Edit transport.
 
-## Gate 4 — README, CLI, and AI surface alignment — pending
+## Gate 4 — README, CLI, and AI surface alignment — complete
 
-After implementation evidence, align user-facing examples and AI guidance.
-Compare the canonical operation against the raw Session path by explicit tool
-calls and failure points rather than by unsupported performance claims.
+README and CLI authority now present JSON Search followed by exact opaque-v4
+one-shot Edit as the default Replace flow. Human Search rows are not address
+input, address fields remain opaque, View/Pick are optional selection aids,
+Check is not required, and a successful old address is not reused. Exit `1`
+does not authorize retry or prove unchanged source. The official installer,
+Cargo version, and `bw version` remain the closed `0.2.1`; only this checkout
+contains the unpublished Edit slice.
+
+The same sole-Line `retry_budget = 3` plus CRLF fixture produced this evidence:
+
+| Evidence | Anddress-first one-shot | Raw Session |
+| --- | --- | --- |
+| Process and operation accounting | Two processes and two one-shot capability operations when Search is needed; one Edit operation if the address is already known | One `bw shell` process; four work expressions plus one `exit` control expression |
+| Selection | Exact 311-byte v4 object transferred unchanged from the JSON `anddresses` array | Search binding plus index; optional View confirms the terminator |
+| Replacement responsibility | Adapter accepts body `retry_budget = 5` and preserves CRLF privately | Caller supplies `retry_budget = 5\r\n`, binds raw Replace Edit, then invokes Apply separately |
+| Success | Exit `0`, exact `OK` plus LF, final CRLF bytes | Exit `0`, Search/View output then exact `OK` plus LF, byte-identical final CRLF bytes |
+| Stale control | Reusing the old address separately exits `1` with Unavailable and preserves the already-edited bytes | Binding/Edit failures precede publication; Apply remains a distinct failure and publication boundary |
+
+The comparison makes no timing claim and does not turn tool calls, processes,
+or expressions into interchangeable counts. Its task-local exact-JSON extractor
+is verification evidence, not a product tool, wrapper, dependency, or schema.
+Raw Session remains the advanced Insert/Delete/Move/Copy, Position, Anchor/Data
+lifetime composition surface rather than a Replace prerequisite or alias.
 
 ## Gate 5 — raw/internal consumer reaudit and separation — pending
 

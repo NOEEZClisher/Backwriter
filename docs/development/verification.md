@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.2 Anddress-first editing Gates 1–3
+## 0.2.2 Anddress-first editing Gates 1–4
 
 Gate 1 closes authority and Gate 2 implements only the one-shot Adapter
 composition tracked in the
@@ -33,6 +33,28 @@ Anddress objects, and the existing status/error path distinguishes success,
 usage, and execution outcomes without claiming that exit `1` preserves source
 bytes or permits retry. Documented residual constraints are OS argument limits,
 shell quoting/newline portability, and process-list/history exposure.
+
+Gate 4 uses one task-local workspace whose sole source is the exact Line
+`retry_budget = 3` plus CRLF. JSON Search returned one exact 311-byte v4 object;
+passing those object bytes unchanged to one-shot Edit with body
+`retry_budget = 5` exited `0`, wrote exactly `OK` plus LF, preserved CRLF, and
+used two processes and two one-shot capability operations including Search.
+A separate stale reuse control exited `1` with the existing Unavailable error
+and preserved the already-edited bytes. The raw comparison used one Session
+process with Search binding, optional View, indexed Replace Edit binding,
+separate Apply, and `exit`: four work expressions plus one control expression.
+It produced byte-identical final source while keeping binding, index, escape,
+terminator, and publication responsibility with the raw caller. No elapsed-time
+claim is made.
+
+The JSON extractor existed only in the task-local fixture and established exact
+substring transfer rather than parse-and-reserialize behavior. It is not a
+product dependency. The fixture was removed after verification. Rust, tests,
+Cargo metadata inputs, lockfile, and toolchain remain byte-identical to the
+Gate 3 parent, so the existing complete 242-test result is reused rather than
+misrepresented as a new code-test run. Direct source-release `bw --help`,
+`bw version`, Search, Edit, stale rejection, and raw Session smoke evidence was
+rerun for this documentation gate.
 
 ## 0.2.1 observation-reuse and release closure
 

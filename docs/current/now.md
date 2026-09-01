@@ -22,8 +22,9 @@ tracker is
 
 ## Active Backwriter 0.2.2 Anddress-first editing authority
 
-`0.2.2` remains an unpublished target. Gates 1–3 close its general editing
-authority, minimum implementation, and no-addition transport decision: one
+`0.2.2` remains an unpublished target. Gates 1–4 close its general editing
+authority, minimum implementation, no-addition transport decision, and
+user/AI surface alignment: one
 Adapter operation accepts an encoded v4
 Anddress and new Content, then privately reuses v4 decode, Runtime View,
 target-specific Content normalization, existing `Edit::Replace`, Runtime
@@ -52,6 +53,16 @@ and process-list/history exposure remain known argv constraints; only reproduced
 consumer, measured payload, or security evidence can justify a later
 Owner-selected single transport.
 
+Gate 4 makes JSON Search followed by exact opaque-v4 one-shot Edit the default
+documented Replace flow. Human Search rows are not Edit input; callers do not
+interpret or rewrite address fields, do not reuse the old address after
+success, and do not automatically retry exit `1`. The exact single-Line CRLF
+fixture proves two one-shot processes and operations produce the same final
+bytes as one raw Session process with Search binding, optional View, indexed
+raw Replace Edit binding, separate Apply, and `exit`. The raw surface remains
+the advanced lifetime/composition path, with no timing claim or new tool,
+wrapper, transport, or schema.
+
 The public raw Core `Edit`/`Position`/Apply surface remains consumed by Runtime
 and direct Edit/Apply/Anchor regressions. Implemented Session Edit bindings,
 index rejection, and `apply` remain end-to-end consumers. They are retained as
@@ -59,7 +70,7 @@ advanced/raw surfaces pending the later consumer-separation gate, without a
 compatibility layer. The ordered work is tracked in
 [Backwriter 0.2.2 Anddress-first editing](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md).
 Cargo, `bw version`, the official distribution, Core, and Runtime remain the
-closed `0.2.1`. These Gates 2–3 changes make no `0.2.2`
+closed `0.2.1`. These Gates 1–4 changes make no `0.2.2`
 source-readiness, artifact, or publication claim.
 
 ## Published Backwriter 0.2.1 observation reuse

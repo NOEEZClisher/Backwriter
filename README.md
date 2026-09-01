@@ -7,8 +7,9 @@ addresses without turning source history or editor state into Core identity.
 The Core capability inventory is Search, View, Pick, Anchor, Check, Edit,
 Apply, and Data. The repository currently provides their Rust Core/Runtime
 surfaces and the canonical `bw` executable's one-shot human and JSON
-Search/View/Check, raw View, Session Pick, batch Check, Anchor, Edit, Apply,
-result-binding, explicit Data modes, and Adapter-owned Version and Update.
+Search/View/Check, raw View, Anddress-first one-shot Edit, Session Pick, batch
+Check, Anchor, Edit, Apply, result-binding, explicit Data modes, and
+Adapter-owned Version and Update.
 
 ## Quick start
 
@@ -73,10 +74,45 @@ external Adapter command are `bw`. There is no `backwriter` binary, alias, or wr
 official installer remains separate and selects the closed public `0.2.1`
 distribution.
 
-Source and official distribution now both identify `0.2.1`. The canonical
+The official installers still select `0.2.1` and do not contain one-shot Edit.
+This source checkout contains only an unpublished `0.2.2` Gates 1–4 slice;
+Cargo and `bw version` remain `0.2.1` until Gate 6. The canonical `0.2.1`
 artifacts retain Source Authority revision
 `4a1b06fb375bfd906a6f27de4de15a8febfe08ec`; the later documentation-only
 closure commit does not change that manifest revision.
+
+## Anddress-first editing
+
+The default source-checkout replacement flow is:
+
+1. Run `bw --json search ...`.
+2. Select one exact v4 object from `anddresses` and pass it unchanged as one
+   argv value.
+3. Run `bw edit anddress '<opaque-v4-object>' '<new-content>'`.
+
+Human Search rows are not encoded Anddress values and cannot be Edit input.
+Treat the selected JSON object as opaque: do not interpret or rewrite its hash,
+range, length, or other fields. File and Paragraph Content is the exact
+replacement. Line Content is body-only, rejects NUL, CR, and LF, and preserves
+the current None, LF, CR, or CRLF terminator. View or Pick may help a caller
+select a target; Check is not required.
+
+Success writes exactly `OK` and LF. The old Anddress must not be reused after
+an edit; explicitly Search again for a new current address. Exit `1` is neither
+a stale-only classification nor proof that source bytes are unchanged, so it
+must not trigger automatic retry. This argv transport remains subject to
+operating-system argument limits, shell-specific quoting and newline behavior,
+and possible Content exposure in process listings or shell history.
+
+Raw Session is the advanced composition surface for Insert/Delete/Move/Copy,
+Position, Anchor/Data lifetime, explicit bindings, and separate Apply. It is
+not a prerequisite or alias for ordinary Replace. On the same single-Line CRLF
+fixture, JSON Search followed by one-shot Edit uses two processes and two
+one-shot capability operations. A raw Session can instead use one process with
+four work expressions—Search binding, optional View, indexed raw Replace Edit
+binding, and Apply—plus `exit`; its caller must carry the binding and index,
+escape the exact terminator, and publish separately. Both paths produce the
+same bytes. No timing advantage is claimed.
 
 The default workspace is the process current working directory. An explicit
 `--workspace` must be absolute and is checked by Runtime. Search admits `.` by
@@ -88,8 +124,8 @@ sources.
 ## Current CLI scope
 
 `bw` currently implements Adapter-owned one-shot Version and Update, one-shot
-human or JSON Search, View, and Check, raw View, plus Session Pick, batch Check,
-Anchor, Edit, Apply, and Data:
+human or JSON Search, View, and Check, raw View, Anddress-first one-shot Edit,
+plus Session Pick, batch Check, Anchor, Edit, Apply, and Data:
 
 ```text
 bw version
@@ -114,6 +150,8 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     view anddress <encoded-v4-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     check anddress <encoded-v4-Anddress>
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+    edit anddress <encoded-v4-Anddress> <content>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 ```
 
@@ -145,9 +183,10 @@ handle only through `let <name> = anchor create <anddress-ref>`, views it throug
 `view anchored @<name>`, and can invalidate its logical source with `anchor
 invalidate-source <logical-path>`. One-shot Data and Anchor are intentionally
 unsupported because their DataStore and live-handle contracts require Session
-lifetime. One-shot Pick, batch Check, Edit, and Apply await collection or Edit
-transport schema authority. Raw output other than one-shot View and further
-Session behavior remain deferred.
+lifetime. One-shot Pick, batch Check, raw Edit-object transport, and a separate
+Apply transport await collection or Edit transport schema authority. The
+distinct Anddress-first one-shot Edit above is implemented. Raw output other
+than one-shot View and further Session behavior remain deferred.
 
 ## Scope
 

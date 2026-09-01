@@ -2,8 +2,8 @@
 
 ## Active: 0.2.2 Anddress-first editing
 
-Gates 1–3 close authority, its minimum implementation, and the no-addition
-transport decision. The canonical
+Gates 1–4 close authority, its minimum implementation, the no-addition
+transport decision, and user/AI surface alignment. The canonical
 general editing Adapter operation
 accepts an encoded v4 Anddress and new Content without making caller-visible
 View, Check, binding, index, or Core Edit construction mandatory. Its
@@ -30,15 +30,22 @@ process-list/history exposure are retained constraints. A later Owner decision
 may add one transport only after reproduced consumer, measured payload, or
 security evidence. Exit `1` proves neither unchanged source nor retry safety.
 
+Gate 4 documents JSON Search to exact opaque-v4 one-shot Edit as the default
+Replace flow and records its equality with the raw Session path on one CRLF
+Line. The canonical comparison uses two processes and two one-shot capability
+operations; the raw comparison uses one Session process, four work expressions,
+and `exit`, with caller-owned binding, index, escaping, terminator, and separate
+Apply. It claims no timing advantage and adds no wrapper, schema, transport, or
+dependency.
+
 Raw Core Edit/Position/Apply and Session `let ... = edit ...`/`apply` remain
 advanced surfaces because Runtime, CLI, and direct Edit/Apply/Anchor regressions
 consume them. Their later separation requires the ordered consumer reaudit, not
 preemptive removal or aliasing. The
 [seven-gate tracker](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md)
-now proceeds to Gate 4 surface alignment and comparison, raw-consumer
-separation, full readiness/version
+now proceeds to Gate 5 raw-consumer separation, the full readiness/version
 decision, and separately authorized server publication. Cargo, `bw version`,
-behavior, and public distribution remain `0.2.1` until those gates close.
+and public distribution remain `0.2.1` until those gates close.
 
 ## Completed: 0.2.1 current-observation reuse and release
 

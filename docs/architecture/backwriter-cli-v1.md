@@ -6,7 +6,9 @@ Search/View/Check, raw View, Anddress-first one-shot Edit, Session Pick, batch
 Check, Anchor, Edit, Apply, result-binding, and Data modes only. This document follows the Core active
 documents in the authority-reading order.
 The `0.2.2` one-shot Anddress-first Edit contract below is closed and implemented
-Adapter authority.
+Adapter authority in the current source checkout only. The official installer,
+Cargo package version, and `bw version` remain the closed `0.2.1` until the
+later readiness/version gate.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -368,6 +370,63 @@ exposure through process listings or shell history. Only a reproduced consumer
 failure, measured payload need, or concrete security requirement can reopen an
 Owner decision for one additional transport. No future syntax or implementation
 is reserved here.
+
+### Gate 4 default flow and raw Session comparison
+
+The default caller flow is JSON Search followed by one-shot Edit. The caller
+selects one exact object from the Search envelope's `anddresses` array and
+passes that complete v4 object unchanged as one argv value:
+
+```text
+bw --json search line "retry_budget = 3" --source note.txt
+bw edit anddress '<opaque-v4-object>' 'retry_budget = 5'
+```
+
+A human Search row contains display text rather than an encoded Anddress and
+cannot be used here. The caller treats every v4 field, including hash, length,
+kind, and range, as opaque. View or Pick may assist selection, but neither is a
+prerequisite and Check is optional. After success, the old Anddress is not
+reusable; obtaining another current address requires an explicit Search.
+
+The comparison fixture is one admitted `note.txt` whose only Line has exact
+bytes `retry_budget = 3` plus CRLF. JSON Search produced one exact 311-byte v4
+object. Passing those bytes unchanged to one-shot Edit with body Content
+`retry_budget = 5` exited `0`, wrote exactly `OK` plus LF, and preserved CRLF.
+Reusing the old object in a separate control invocation exited `1`, wrote
+`error: current source is unavailable` plus LF to stderr, and left the edited
+bytes unchanged. This control demonstrates one stale case; exit `1` generally
+is neither stale-only nor proof that no publication occurred.
+
+The corresponding raw Session input was:
+
+```text
+let hits = search line "retry_budget = 3"
+view anddress @hits[0]
+let replacement = edit replace @hits[0] "retry_budget = 5\r\n"
+apply @replacement
+exit
+```
+
+It used one `bw shell` process, four work expressions, and one `exit` control
+expression. Its exact successful output was `Found 1` plus LF, the indexed
+human row plus LF, the viewed Line with CRLF, then `OK` plus LF. The final
+source bytes were byte-identical to the canonical path. The View expression is
+optional when the caller already knows the terminator. The raw caller owns the
+Search binding, result index, Session quoting and escape decoding, exact
+terminator, Edit binding, and separate Apply; raw Session is therefore the
+advanced Insert/Delete/Move/Copy, Position, Anchor/Data lifetime composition
+surface, not a prerequisite or alias for ordinary Replace.
+
+| Boundary | Anddress-first one-shot Edit | Raw Session Edit/Apply |
+| --- | --- | --- |
+| Invocation count | Two processes and two one-shot capability operations when Search is needed; one Edit operation when the address is already known | One Session process; four work expressions in the compared flow, plus `exit` |
+| Selection and Content | One opaque v4 argv object; private View; File/Paragraph exact Content or Line body-only Content | Named binding and index; optional explicit View; caller supplies the raw replacement including the exact Line terminator |
+| Pre-publication failure | Grammar, decode, or Content rejection exits `2`; Runtime View or Apply failure exits `1` | Search/Edit expression failure retains no new publication; Apply is a separate expression and publication boundary |
+| Success and output failure | Apply precedes exact `OK` plus LF; a later stdout failure exits `1` without proving unchanged source | Apply also precedes its status write; the Session retains bindings and accumulates expression status until EOF or `exit` |
+
+No time or speed advantage is claimed. The task-local JSON extraction used to
+verify exact object transfer is test evidence, not an installed tool, wrapper,
+schema, or README dependency. Neither path authorizes automatic retry.
 
 ## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 
