@@ -2,10 +2,11 @@
 
 ## Active: 0.2.2 Anddress-first editing
 
-Phase 1 closes authority only. The canonical general editing Adapter operation
+Gates 1 and 2 close authority and its minimum implementation. The canonical
+general editing Adapter operation
 accepts an encoded v4 Anddress and new Content without making caller-visible
-View, Check, binding, index, or Core Edit construction mandatory. Its next
-minimum implementation is existing-path composition: strict v4 decode, one
+View, Check, binding, index, or Core Edit construction mandatory. Its
+implementation is existing-path composition: strict v4 decode, one
 private Runtime View, only target-required Content normalization, existing
 `Edit::Replace`, Runtime Apply, and existing CLI status/error writers.
 
@@ -23,8 +24,8 @@ advanced surfaces because Runtime, CLI, and direct Edit/Apply/Anchor regressions
 consume them. Their later separation requires the ordered consumer reaudit, not
 preemptive removal or aliasing. The
 [seven-gate tracker](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md)
-orders implementation, conditional transport/machine-output work, surface
-alignment and comparison, raw-consumer separation, full readiness/version
+now proceeds to conditional transport/machine-output work, surface alignment
+and comparison, raw-consumer separation, full readiness/version
 decision, and separately authorized server publication. Cargo, `bw version`,
 behavior, and public distribution remain `0.2.1` until those gates close.
 
@@ -383,8 +384,8 @@ automatic storage or persistence. It directly reuses Core validation and public
 Runtime seams. One-shot Data and Anchor remain intentionally unsupported because
 their DataStore and live-handle contracts require Session lifetime. One-shot
 Pick, batch Check, and raw Edit/Apply transport await collection or transport
-authority. The `0.2.2` Anddress-first one-shot Edit contract is closed but
-unimplemented. Raw output other than completed one-shot View and further
+authority. The distinct `0.2.2` Anddress-first one-shot Edit is implemented.
+Raw output other than completed one-shot View and further
 Session behavior remain deferred Adapter decisions; CLI syntax creates no Core
 workflow or wire authority. Version and Update are Adapter-owned standalone
 utilities outside Core. Explicit Update invokes the canonical installer;

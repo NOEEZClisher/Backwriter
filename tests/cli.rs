@@ -8,7 +8,10 @@ use std::{
 };
 
 #[cfg(unix)]
-use std::{env, os::unix::fs::PermissionsExt};
+use std::{
+    env,
+    os::unix::fs::{MetadataExt, PermissionsExt},
+};
 
 use backwriter::{
     backwriter::{
@@ -238,6 +241,12 @@ fn assert_execution_error(output: Output) {
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
     assert!(text(output.stderr).starts_with("error: "));
+}
+
+fn assert_unavailable(output: Output) {
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    assert!(text(output.stderr).contains("unavailable"));
 }
 
 fn assert_check_status(output: Output, status: &str) {
@@ -470,6 +479,7 @@ fn canonical_binary_help_and_default_workspace_search() {
     assert!(help_stdout.contains("[--json] search"));
     assert!(help_stdout.contains("[--json] check"));
     assert!(help_stdout.contains("[--json|--raw] view"));
+    assert!(help_stdout.contains("edit anddress <encoded-v4-Anddress> <content>"));
     assert!(help_stdout.contains("  bw version\n"));
     assert!(help_stdout.contains("  bw update\n"));
     assert!(help.stderr.is_empty());
@@ -1317,6 +1327,237 @@ fn view_rejects_anchored_and_extra_operands() {
 
     assert_usage(run(root.path(), &["view", "anchored", "handle"]));
     assert_usage(run(root.path(), &["view", "anddress", &operand, "extra"]));
+}
+
+#[test]
+fn one_shot_edit_replaces_file_and_paragraph_with_exact_content() {
+    for (before, target, content, expected) in [
+        ("old\n", AnddressTarget::File, "", ""),
+        (
+            "old\n",
+            AnddressTarget::File,
+            "한글\r\nsecond\n",
+            "한글\r\nsecond\n",
+        ),
+        (
+            "first\nline\n\nkeep\n",
+            AnddressTarget::Paragraph {
+                ordinal: Natural::zero(),
+            },
+            "",
+            "\nkeep\n",
+        ),
+        (
+            "first\nline\n\nkeep\n",
+            AnddressTarget::Paragraph {
+                ordinal: Natural::zero(),
+            },
+            "새 문단\r\n둘\n",
+            "새 문단\r\n둘\n\nkeep\n",
+        ),
+    ] {
+        let workspace = tempfile::tempdir().unwrap();
+        let caller = tempfile::tempdir().unwrap();
+        write(workspace.path(), "admitted/coordinate.txt", "coordinate\n");
+        write(workspace.path(), "admitted/note.txt", before);
+        let operand = view_operand(workspace.path(), "admitted/note.txt", target);
+        let output = run(
+            caller.path(),
+            &[
+                "--admit",
+                "admitted",
+                "--workspace",
+                workspace.path().to_str().unwrap(),
+                "edit",
+                "anddress",
+                &operand,
+                content,
+            ],
+        );
+        assert!(output.status.success(), "{}", text(output.stderr.clone()));
+        assert_eq!(output.stdout, b"OK\n");
+        assert!(output.stderr.is_empty());
+        assert_eq!(
+            fs::read(workspace.path().join("admitted/note.txt")).unwrap(),
+            expected.as_bytes()
+        );
+    }
+}
+
+#[test]
+fn one_shot_edit_replaces_line_body_and_preserves_every_terminator() {
+    for (before, content, expected) in [
+        ("old", "한글", "한글"),
+        ("old\n", "", "\n"),
+        ("old\r", "β", "β\r"),
+        ("old\r\n", "새 줄", "새 줄\r\n"),
+    ] {
+        let root = tempfile::tempdir().unwrap();
+        write(root.path(), "coordinate.txt", "coordinate\n");
+        write(root.path(), "note.txt", before);
+        let operand = view_operand(
+            root.path(),
+            "note.txt",
+            AnddressTarget::Line {
+                ordinal: Natural::zero(),
+                exact_extent: before.to_owned(),
+            },
+        );
+        let output = run(root.path(), &["edit", "anddress", &operand, content]);
+        assert!(output.status.success(), "{}", text(output.stderr.clone()));
+        assert_eq!(output.stdout, b"OK\n");
+        assert!(output.stderr.is_empty());
+        assert_eq!(
+            fs::read(root.path().join("note.txt")).unwrap(),
+            expected.as_bytes()
+        );
+    }
+}
+
+#[test]
+fn one_shot_edit_rejects_line_break_content_without_touching_source() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "old\r\n");
+    let operand = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::zero(),
+            exact_extent: "old\r\n".to_owned(),
+        },
+    );
+
+    for content in ["bad\nbody", "bad\rbody", "bad\r\nbody"] {
+        let output = run(root.path(), &["edit", "anddress", &operand, content]);
+        assert_eq!(output.status.code(), Some(2));
+        assert!(output.stdout.is_empty());
+        assert!(text(output.stderr).contains("Edit input is invalid"));
+        assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"old\r\n");
+    }
+}
+
+#[test]
+fn one_shot_edit_rejects_invalid_forms_flags_and_addresses_before_publication() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "old\n");
+    let operand = view_operand(root.path(), "note.txt", AnddressTarget::File);
+    let noncanonical = operand.replacen(
+        "\"sourceByteLength\":\"4\"",
+        "\"sourceByteLength\":\"04\"",
+        1,
+    );
+    assert_ne!(noncanonical, operand);
+    let v3 = r#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"x","logicalPath":"note.txt","kind":"file"}"#;
+
+    for arguments in [
+        vec!["edit"],
+        vec!["edit", "wrong"],
+        vec!["edit", "anddress"],
+        vec!["edit", "anddress", &operand],
+        vec!["edit", "anddress", &operand, "new", "extra"],
+        vec!["edit", "anddress", "{", "new"],
+        vec!["edit", "anddress", v3, "new"],
+        vec!["edit", "anddress", &noncanonical, "new"],
+        vec!["--json", "edit", "anddress", &operand, "new"],
+        vec!["--raw", "edit", "anddress", &operand, "new"],
+        vec!["edit", "anddress", &operand, "--json"],
+        vec!["edit", "anddress", &operand, "--raw"],
+        vec!["edit", "anddress", &operand, "new", "--json"],
+        vec!["edit", "anddress", &operand, "new", "--raw"],
+    ] {
+        assert_usage(run(root.path(), &arguments));
+        assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"old\n");
+    }
+}
+
+#[test]
+fn one_shot_edit_maps_stale_missing_and_unadmitted_sources_to_execution_failure() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "stale.txt", "old\n");
+    let stale = view_operand(root.path(), "stale.txt", AnddressTarget::File);
+    write(root.path(), "stale.txt", "external\n");
+    assert_unavailable(run(
+        root.path(),
+        &["edit", "anddress", &stale, "replacement"],
+    ));
+    assert_eq!(
+        fs::read(root.path().join("stale.txt")).unwrap(),
+        b"external\n"
+    );
+
+    let missing = view_operand(root.path(), "missing.txt", AnddressTarget::File);
+    assert_unavailable(run(
+        root.path(),
+        &["edit", "anddress", &missing, "replacement"],
+    ));
+    assert!(!root.path().join("missing.txt").exists());
+
+    write(root.path(), "other.txt", "other\n");
+    let unadmitted = view_operand(root.path(), "other.txt", AnddressTarget::File);
+    assert_unavailable(run(
+        root.path(),
+        &[
+            "--admit",
+            "coordinate.txt",
+            "edit",
+            "anddress",
+            &unadmitted,
+            "replacement",
+        ],
+    ));
+    assert_eq!(fs::read(root.path().join("other.txt")).unwrap(), b"other\n");
+}
+
+#[test]
+fn one_shot_edit_exact_noop_preserves_bytes_and_inode_and_reuses_existing_seams() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "same\r\n");
+    let operand = view_operand(root.path(), "note.txt", AnddressTarget::File);
+    #[cfg(unix)]
+    let inode = fs::metadata(root.path().join("note.txt")).unwrap().ino();
+
+    let output = run(root.path(), &["edit", "anddress", &operand, "same\r\n"]);
+    assert!(output.status.success(), "{}", text(output.stderr.clone()));
+    assert_eq!(output.stdout, b"OK\n");
+    assert!(output.stderr.is_empty());
+    assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"same\r\n");
+    #[cfg(unix)]
+    assert_eq!(
+        fs::metadata(root.path().join("note.txt")).unwrap().ino(),
+        inode
+    );
+
+    let source = include_str!("../src/bin/bw.rs");
+    let edit = source
+        .split_once("fn execute_edit")
+        .unwrap()
+        .1
+        .split_once("fn execute_view")
+        .unwrap()
+        .0;
+    let decode = edit.find("decode_anddress(encoded)").unwrap();
+    let open = edit.find("open_runtime(workspace, admissions)").unwrap();
+    let view = edit.find("run_view(&runtime, &anddress)").unwrap();
+    let construct = edit.find("Edit::Replace").unwrap();
+    let validate = edit.find("edit.validate()").unwrap();
+    let apply = edit.find(".apply(&edit)").unwrap();
+    let status = edit.find("write_session_status(\"OK\")").unwrap();
+    assert!(decode < open);
+    assert!(open < view);
+    assert!(view < construct);
+    assert!(construct < validate);
+    assert!(validate < apply);
+    assert!(apply < status);
+    assert!(!edit.contains("run_search"));
+    assert!(!edit.contains("run_check"));
+    assert_eq!(source.matches("fn execute_edit").count(), 1);
+
+    let core_edit = include_str!("../src/backwriter/edit.rs");
+    assert!(core_edit.contains("!content.contains('\\0')"));
 }
 
 #[test]

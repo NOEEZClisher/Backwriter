@@ -1,31 +1,28 @@
 # Verification
 
-## 0.2.2 Anddress-first editing Phase 1 authority
+## 0.2.2 Anddress-first editing Gates 1–2
 
-Phase 1 is documentation-only. Production Rust, Cargo files, CLI behavior, and
-all existing regressions remain byte-identical to the closed `0.2.1` source.
-This phase reuses the recorded passing 236-test GNU-host evidence rather than
-rerunning unchanged Rust tests. The ordered implementation and verification
-work belongs to the
+Gate 1 closes authority and Gate 2 implements only the one-shot Adapter
+composition tracked in the
 [0.2.2 tracker](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md).
+CLI regressions prove exact File and Paragraph replacement; Line body
+replacement with None, LF, CR, and CRLF preservation; empty and Unicode
+Content; CR/LF Line rejection before Apply; strict v4 decode; stale, missing,
+and unadmitted source rejection; byte-identical no-op and Unix inode
+preservation; exact `OK` plus LF success; stderr-only exit `1`/`2` failures;
+and JSON/raw/extra operand rejection without source mutation.
 
-The next implementation gate must prove one-shot File and Paragraph exact
-replacement and Line body replacement with None, LF, CR, and CRLF preservation.
-It must cover empty and Unicode Content; NUL/CR/LF Line rejection before Apply;
-strict v4 decode; missing, unavailable, stale, and mutation-between-View-and-
-Apply safe rejection through existing errors; byte-identical no-op; confirmed
-publication; uncertain publication; live Anchor reflection/fail-closure; and
-both Untrusted and optional Host proof/invalidation paths.
-
-Structural review must show one existing Runtime opened for private View then
-Apply; only `Edit::Replace`; the original decoded Anddress as Apply target; no
-Check call; no new Runtime seam, engine, state machine, retained observation,
-relocation, context match, retry, merge, history, fallback, v4 schema, error
-alias, or compatibility layer. CLI regressions must fix the exact `OK` plus LF
-success, stderr-only usage/execution failures, exit `0`/`1`/`2`, no partial
-success output, and rejection of JSON/raw/extra operands. Raw Core
-Edit/Position/Apply, Session Edit bindings/index rules, all 236 existing Rust
-tests, Cargo `0.2.1`, and `Backwriter 0.2.1` remain unchanged controls.
+Structural evidence fixes one ordinary Runtime, one private View, only
+`Edit::Replace`, the original decoded Anddress as Apply target, existing Edit
+validation, Runtime Apply, and the existing status writer in that order. It
+excludes Search, Check, a new Runtime seam, engine, state machine, retained
+observation, relocation, retry, fallback, v4 schema, error alias, or
+compatibility layer. Existing Apply/Anchor regressions continue to own
+View-to-Apply mutation, uncertain publication, Anchor reflection, Host proof,
+and invalidation evidence. Raw Core Edit/Position/Apply, Session Edit and Apply,
+Cargo `0.2.1`, `Backwriter 0.2.1`, Core, Runtime, and the public distribution
+remain unchanged controls. The complete offline/locked GNU-host suite passes
+242 tests: 236 existing controls plus six Gate 2 CLI regressions.
 
 ## 0.2.1 observation-reuse and release closure
 

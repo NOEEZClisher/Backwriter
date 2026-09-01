@@ -56,7 +56,7 @@ Anchor is not an ordinary Anddress; creation directly confirms exact current
 structure, and only its live Runtime-local continuity may follow one unique
 same-kind range/provenance candidate across a Backwriter-owned Apply.
 
-The closed but unimplemented `0.2.2` general editing Adapter accepts an encoded
+The closed and implemented `0.2.2` general editing Adapter accepts an encoded
 v4 Anddress unchanged, decodes it through this wire authority, and uses that
 same value as the existing `Edit::Replace` target after a private Runtime View.
 Line body replacement may append only the terminator observed by that View.

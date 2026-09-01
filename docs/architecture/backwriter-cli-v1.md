@@ -2,11 +2,11 @@
 
 Status: Adapter authority. The completed slices are the canonical `bw`
 executable's standalone Version and Update operations, one-shot human and JSON
-Search/View/Check, raw View, Session Pick, batch Check, Anchor, Edit, Apply,
-result-binding, and Data modes only. This document follows the Core active
+Search/View/Check, raw View, Anddress-first one-shot Edit, Session Pick, batch
+Check, Anchor, Edit, Apply, result-binding, and Data modes only. This document follows the Core active
 documents in the authority-reading order.
-The `0.2.2` one-shot Anddress-first Edit contract below is closed Adapter
-authority with no implementation yet.
+The `0.2.2` one-shot Anddress-first Edit contract below is closed and implemented
+Adapter authority.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -41,15 +41,15 @@ Runtime but has no CLI syntax or implicit authority that enables the planned
 coordination remains a host responsibility; the CLI defines no flag, command,
 token, or Session behavior for it.
 
-One-shot human and JSON Search, View, and Check plus raw View, Session Pick,
-batch Check, Anchor, Edit, Apply, result binding, and explicit typed Data are
-implemented.
+One-shot human and JSON Search, View, and Check plus raw View and Anddress-first
+Edit, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and
+explicit typed Data are implemented.
 Standalone `version` and `update` are Adapter-owned executable operations, not
 Core capabilities or Session commands.
 One-shot Data and Anchor are intentionally unsupported because their DataStore
 and live-handle contracts require Session lifetime. One-shot Pick, batch Check,
-and raw Edit/Apply transport remain deferred. The `0.2.2` Anddress-first
-one-shot Edit form has closed Adapter authority but is not implemented. Raw
+and raw Edit/Apply transport remain deferred. The distinct `0.2.2`
+Anddress-first one-shot Edit form is implemented. Raw
 output other than one-shot View, all other capabilities, and further Session
 behavior are deferred and rejected rather than silently accepted.
 
@@ -300,9 +300,9 @@ An inconsistent report/filtered combination is an execution error before either
 writer emits output. The writer keeps no JSON `Value`, cloned `CheckOutcome`, or
 result collection. The human Check projection is unchanged.
 
-## Closed 0.2.2 one-shot Anddress-first Edit (implementation pending)
+## Implemented 0.2.2 one-shot Anddress-first Edit
 
-The exact planned syntax is:
+The exact syntax is:
 
 ```text
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
@@ -478,8 +478,8 @@ The following are intentionally outside the completed initial slice:
 - One-shot Data and Anchor, which require the Session-owned DataStore or live
   handle lifetime.
 - One-shot Pick, batch Check, and raw Edit/Apply transport, pending collection
-  or transport authority. The closed Anddress-first one-shot Edit form above is
-  a distinct pending implementation, not raw Edit transport.
+  or transport authority. The implemented Anddress-first one-shot Edit form
+  above is distinct from raw Edit transport.
 - Raw output other than one-shot View, and any JSON form other than one-shot
   Search, View, or Check.
 

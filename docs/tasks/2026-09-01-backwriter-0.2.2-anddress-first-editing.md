@@ -1,14 +1,14 @@
 # Backwriter 0.2.2 Anddress-First Editing
 
-Status: Gate 1 complete; Gates 2–7 pending. Cargo, `bw version`, source
+Status: Gates 1–2 complete; Gates 3–7 pending. Cargo, `bw version`, source
 behavior, and the published distribution remain `0.2.1`.
 
 This tracker records progress and consumer evidence only. Normative meaning
 belongs to the active [Protocol](../architecture/backwriter-text-coordination-protocol.md),
 [address model](../architecture/rebuildable-structural-addressing.md),
 [principles](../principles/backwriter-core-principles.md), and
-[CLI authority](../architecture/backwriter-cli-v1.md). `0.2.2` is not
-implemented, source-ready, released, or published by this task.
+[CLI authority](../architecture/backwriter-cli-v1.md). The Gate 2 CLI slice is
+implemented; `0.2.2` is not source-ready, released, or published by this task.
 
 ## Gate 1 — authority and consumer inventory — complete
 
@@ -29,13 +29,18 @@ implemented, source-ready, released, or published by this task.
   cloning/index rejection, and `apply` are implemented end-to-end CLI
   consumers. They remain advanced/raw surfaces without a compatibility layer.
 
-## Gate 2 — one-shot Adapter implementation and regressions — pending
+## Gate 2 — one-shot Adapter implementation and regressions — complete
 
-Implement only the Anddress-first one-shot composition. Cover File, Paragraph,
-and every Line terminator; empty and Unicode body; NUL/CR/LF rejection; exact
-no-op; mutation between View and Apply; broad Apply errors; publication; Anchor
-reflection; and Host proof/invalidation behavior without changing Core or
-Runtime semantics.
+The one-shot Adapter now composes strict v4 decode, one ordinary Runtime, one
+private View, target-specific Content handling, existing `Edit::Replace`,
+existing validation and Runtime Apply, then the existing status writer. CLI
+regressions cover File, Paragraph, every Line terminator, empty and Unicode
+Content, CR/LF Line rejection, malformed/stale/missing/unadmitted inputs,
+output-option rejection, exact no-op, and status/error boundaries. Existing
+Apply and Anchor regressions continue to cover mutation, publication
+uncertainty, Anchor reflection, and Host proof/invalidation without Core or
+Runtime changes. The complete offline/locked suite passes 242 tests: 236
+existing controls plus six Gate 2 CLI regressions.
 
 ## Gate 3 — content transport and machine output — pending if needed
 

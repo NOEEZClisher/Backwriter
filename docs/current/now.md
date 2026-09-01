@@ -22,8 +22,8 @@ tracker is
 
 ## Active Backwriter 0.2.2 Anddress-first editing authority
 
-`0.2.2` is an unimplemented and unpublished target. Phase 1 closes only its
-general editing authority: one Adapter operation accepts an encoded v4
+`0.2.2` remains an unpublished target. Gate 1 closes its general editing
+authority and Gate 2 implements it: one Adapter operation accepts an encoded v4
 Anddress and new Content, then privately reuses v4 decode, Runtime View,
 target-specific Content normalization, existing `Edit::Replace`, Runtime
 Apply, and the existing CLI status/error writers. Caller-visible View, Check,
@@ -44,9 +44,9 @@ index rejection, and `apply` remain end-to-end consumers. They are retained as
 advanced/raw surfaces pending the later consumer-separation gate, without a
 compatibility layer. The ordered work is tracked in
 [Backwriter 0.2.2 Anddress-first editing](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md).
-Cargo, `bw version`, Rust behavior, tests, and the official distribution remain
-the closed `0.2.1`; no `0.2.2` implementation, readiness, artifact, or
-publication is claimed.
+Cargo, `bw version`, the official distribution, Core, and Runtime remain the
+closed `0.2.1`. This Gate 2 CLI implementation makes no `0.2.2`
+source-readiness, artifact, or publication claim.
 
 ## Published Backwriter 0.2.1 observation reuse
 
@@ -217,8 +217,8 @@ registry, persistence, or retained Core state beyond existing Anchor continuity.
 One-shot Data and Anchor remain intentionally unsupported because their
 DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
 batch Check, and raw Edit/Apply transport still await collection or transport
-authority. The `0.2.2` Anddress-first one-shot Edit contract is closed but
-unimplemented. Raw output other than completed one-shot View and further
+authority. The distinct `0.2.2` Anddress-first one-shot Edit is implemented.
+Raw output other than completed one-shot View and further
 Session behavior remain deferred under the
 [CLI V1 authority](../architecture/backwriter-cli-v1.md). The published
 `0.2.1` Core/Runtime and CLI behavior remains frozen; no collection wire, raw

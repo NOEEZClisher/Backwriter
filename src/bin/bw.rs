@@ -1,4 +1,4 @@
-//! Human and JSON Search/View/Check and Session adapter for Backwriter CLI V1.
+//! Human and JSON Search/View/Check, one-shot Edit, and Session adapter for Backwriter CLI V1.
 
 use std::{
     env,
@@ -34,7 +34,7 @@ use backwriter::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v4-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v4-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v4-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v4-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... edit anddress <encoded-v4-Anddress> <content>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, and Check, raw View, and Anddress-first Edit plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 #[cfg(unix)]
 const INSTALL_SH_URL: &str = "https://backwriter.pentagration.com/install.sh";
@@ -299,6 +299,10 @@ fn execute() -> Result<ExitCode, CliError> {
                 return execute_check(arguments, workspace, admissions, output)
                     .map(|()| ExitCode::SUCCESS);
             }
+            "edit" => {
+                return execute_edit(arguments, workspace, admissions, output)
+                    .map(|()| ExitCode::SUCCESS);
+            }
             "shell" => {
                 if output != OutputMode::Human {
                     return Err(CliError::usage("output options are unsupported for shell"));
@@ -308,7 +312,7 @@ fn execute() -> Result<ExitCode, CliError> {
                 }
                 return execute_shell(workspace, admissions);
             }
-            "pick" | "anchor" | "edit" | "apply" | "data" => {
+            "pick" | "anchor" | "apply" | "data" => {
                 if output != OutputMode::Human {
                     return Err(CliError::usage(
                         "output options are unsupported for this capability",
@@ -504,6 +508,66 @@ fn parse_search(arguments: &[String]) -> Result<SearchRequest, CliError> {
         SearchScope::only(entries).map_err(|error| CliError::usage(error.to_string()))?
     };
     Ok(SearchRequest::new(query, scope, target))
+}
+
+fn execute_edit(
+    mut arguments: impl Iterator<Item = OsString>,
+    workspace: Option<PathBuf>,
+    admissions: Vec<AdmissionRoot>,
+    output: OutputMode,
+) -> Result<(), CliError> {
+    if output != OutputMode::Human {
+        return Err(CliError::usage("output options are unsupported for Edit"));
+    }
+    let form = required_text(&mut arguments, "edit input form")?;
+    if form != "anddress" {
+        return Err(CliError::usage("edit requires the anddress input form"));
+    }
+    let encoded = required_text(&mut arguments, "edit anddress")?;
+    let mut content = required_text(&mut arguments, "edit content")?;
+    if matches!(content.as_str(), "--json" | "--raw") {
+        return Err(CliError::usage(
+            "output options must precede the capability",
+        ));
+    }
+    if arguments.next().is_some() {
+        return Err(CliError::usage(
+            "edit anddress accepts exactly one anddress and content operand",
+        ));
+    }
+
+    let anddress = decode_anddress(encoded)?;
+    let mut runtime = open_runtime(workspace, admissions)?;
+    let outcome = run_view(&runtime, &anddress)?;
+    if let ViewOutcome::Line { terminator, .. } = outcome {
+        if content
+            .as_bytes()
+            .iter()
+            .any(|byte| matches!(byte, b'\0' | b'\r' | b'\n'))
+        {
+            return Err(map_edit_error(EditError::InvalidInput));
+        }
+        let terminator = match terminator {
+            LineTerminator::None => "",
+            LineTerminator::Lf => "\n",
+            LineTerminator::Cr => "\r",
+            LineTerminator::Crlf => "\r\n",
+        };
+        content
+            .try_reserve_exact(terminator.len())
+            .map_err(|_| map_edit_error(EditError::Resource))?;
+        content.push_str(terminator);
+    }
+
+    let edit = Edit::Replace {
+        target: anddress,
+        content,
+    };
+    edit.validate().map_err(map_edit_error)?;
+    runtime
+        .apply(&edit)
+        .map_err(|error: ApplyError| CliError::execution(error.to_string()))?;
+    write_session_status("OK")
 }
 
 fn execute_view(

@@ -6,8 +6,8 @@ closed public `0.2.0` release use the hard-cutover v4 value/wire in all
 production callers.
 The call-local target-specific Search observation and direct View, Check,
 Apply, and Anchor consumers are complete; Phase 7B verifies source readiness.
-The `0.2.2` Anddress-first general editing Adapter authority below is closed,
-but its implementation and version decision are pending.
+The `0.2.2` Anddress-first general editing Adapter authority and its minimum
+one-shot implementation below are closed; its version decision remains pending.
 
 ## 0.2.0 current-observation authority
 
@@ -887,7 +887,7 @@ API. Search-over-Data; Append; persistence, durability, serialization, or wire;
 automatic latest or Store; stored Check mutation and its RAM commit; and Adapter
 API remain deferred.
 
-## Closed 0.2.2 Anddress-first editing authority (implementation pending)
+## Implemented 0.2.2 Anddress-first editing authority
 
 The canonical general editing Adapter operation accepts exactly one encoded v4
 Anddress and one new Content value. A Search or Pick result may supply that
@@ -895,7 +895,7 @@ encoded value, but the operation requires no caller-visible View, Check,
 binding, index, or Core `Edit` construction. This is an Adapter contraction,
 not a new Core capability, required capability workflow, or Anddress wire.
 
-The minimum implementation composition is fixed: decode the v4 Anddress; call
+The implemented composition is fixed: decode the v4 Anddress; call
 Runtime View with that exact value; normalize only the replacement Content
 required by the target kind; construct the existing `Edit::Replace` with the
 original Anddress; then call Runtime Apply on the same Runtime. It must not add
@@ -1114,7 +1114,7 @@ validated and hashed incrementally while the direct after projector prepares
 Anchor candidates. Publication occurs only after every fallible preparation
 has completed. Cross- or multi-source execution, Data storage, wire, and
 general raw Edit transport remain deferred. The closed `0.2.2` one-shot
-Anddress-first Adapter composition above is the sole planned general-edit
+Anddress-first Adapter composition above is the sole implemented general-edit
 contraction and does not change this executor.
 
 ## Implemented 0.1.0 Anchor live-continuity authority
