@@ -60,9 +60,10 @@ publication; the separate release closure made the closed `0.2.1` release from
 Source Authority revision `4a1b06fb375bfd906a6f27de4de15a8febfe08ec` the
 official distribution.
 
-`0.2.2` remains an unpublished target. Gate 1 closes its authority and Gate 2
-implements the canonical general editing Adapter operation as one encoded v4
-Anddress plus one replacement Content value. The implementation reuses v4
+`0.2.2` remains an unpublished target. Gates 1–5 close its authority, minimum
+implementation, transport decision, user/AI surface, and consumer separation.
+The canonical general editing Adapter operation accepts one encoded v4
+Anddress plus one replacement Content value and reuses v4
 decode, Runtime View, existing `Edit::Replace`, Runtime Apply, and the
 existing CLI status/error writers. File and Paragraph use exact replacement
 Content. Line accepts body Content without NUL, CR, or LF and preserves the
@@ -70,9 +71,11 @@ current terminator returned by View. View and Check are not caller-visible
 prerequisites; the Adapter's private View supplies Line terminator evidence and
 Apply remains the sole currentness/publication authority. This adds no Core
 API, Runtime seam, wire, target finder, relocation, retry, or compatibility
-layer. The public raw Core Edit/Position/Apply surface and implemented Session
-`let ... = edit ...`/`apply` forms remain advanced consumers until a later
-consumer audit decides their separation.
+layer. Gate 5 retains three non-aliasing responsibilities: public Rust
+Edit/Position/Apply is the exact low-level primitive, Session `let ... = edit
+...`/`apply` is the advanced exact-byte and lifetime-composition surface, and
+one-shot Anddress-first Edit is the canonical Replace contraction. None is
+internal, deprecated, renamed, aliased, or wrapped by that separation.
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,

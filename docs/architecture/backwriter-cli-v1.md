@@ -428,6 +428,24 @@ No time or speed advantage is claimed. The task-local JSON extraction used to
 verify exact object transfer is test evidence, not an installed tool, wrapper,
 schema, or README dependency. Neither path authorizes automatic retry.
 
+### Gate 5 retained surface separation
+
+Consumer reaudit retains the existing raw Session and canonical one-shot forms
+as different Adapter responsibilities. Raw Session exposes all five Core Edit
+variants and four Position forms with exact bytes, explicit binding/index
+selection, Edit clone/reuse, and a separate borrowed Apply call. An Edit binding
+cannot be indexed or transferred to `DataStore`. The canonical one-shot form
+continues to expose only Anddress-plus-Content Replace and privately reuses
+`Edit::Replace` plus Apply; only that Adapter preserves a Line terminator.
+
+The deferred top-level one-shot `apply` branch remains an explicit usage-error
+boundary; treating it as an unknown capability would remove no concept. Session
+validates an Edit before storing its binding, while `WorkspaceRuntime::apply`
+validates again to defend every public Rust caller. Those checks have distinct
+consumers and are not duplicate execution paths. Gate 5 adds no raw prefix,
+rename, alias, facade, re-export, feature gate, parallel enum/executor, shim,
+one-shot Insert/Delete/Move/Copy, raw Edit transport, or Edit Data kind.
+
 ## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 
 The Session starts with:

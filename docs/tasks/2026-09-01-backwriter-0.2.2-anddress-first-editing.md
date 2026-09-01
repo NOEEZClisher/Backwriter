@@ -1,6 +1,6 @@
 # Backwriter 0.2.2 Anddress-First Editing
 
-Status: Gates 1–4 complete; Gates 5–7 pending. Cargo, `bw version`, and the
+Status: Gates 1–5 complete; Gates 6–7 pending. Cargo, `bw version`, and the
 published distribution remain `0.2.1`; the current checkout's implemented
 `0.2.2` slice remains unpublished and is not source-ready.
 
@@ -89,11 +89,30 @@ is verification evidence, not a product tool, wrapper, dependency, or schema.
 Raw Session remains the advanced Insert/Delete/Move/Copy, Position, Anchor/Data
 lifetime composition surface rather than a Replace prerequisite or alias.
 
-## Gate 5 — raw/internal consumer reaudit and separation — pending
+## Gate 5 — raw/internal consumer reaudit and separation — complete
 
-Reaudit every public raw Core Edit/Position/Apply and Session binding/index
-consumer. Decide separation only from remaining consumers; do not remove,
-rename, alias, or wrap the surface preemptively.
+| Surface | Production caller | Behavioral regression | Separation decision |
+| --- | --- | --- | --- |
+| Public Rust exact primitive | `WorkspaceRuntime::apply` delegates to the single `runtime/apply.rs` executor, which exhaustively matches all five Edit variants and four Position forms for validation, geometry, publication, and existing live-Anchor reflection | External-crate-style `tests/edit.rs`, `tests/apply.rs`, and `tests/anchor.rs` cover value/error traits, kind and NUL validation, exact source/range geometry, publication/failure, every operation/position, and Anchor provenance/collision/fail-closure | Retain `Edit`, `Position`, `EditError`, `ApplyError`, `validate`, and `apply` as public, exact, non-deprecated low-level contracts; repository-local search cannot prove external Rust consumers absent |
+| Advanced raw Session | `parse_session_edit`, `SessionValue::Edit`, binding/index resolution, explicit clone, borrowed `execute_session_apply`, and Data rejection adapt the public primitive without another executor | Existing CLI cases cover all five operations, all four positions, exact output bytes, invalid kind/index/form continuation, explicit clone with both Apply calls, borrowed Apply structure, and rejected Edit Data transfer | Retain as the advanced exact-byte and Insert/Delete/Move/Copy, Position, Pick/Anchor/Data-lifetime composition surface; Edit itself is unindexed and not stored or persisted |
+| Canonical general Adapter | `execute_edit` privately composes strict v4 decode, View, target-specific Content handling, `Edit::Replace`, public Apply, and the shared status/error writers | Six existing one-shot CLI regressions cover File/Paragraph/Line replacement, every terminator, invalid Content/forms, stale/missing/unadmitted source, no-op/inode preservation, and exact composition order | Retain as the default Anddress-plus-Content Replace contraction; Line terminator preservation stays Adapter-only and raw Replace stays exact |
+
+The Session operations case removes its unused clone, adds valid
+`After(Line)` and `StartOf(File)` inserts to complete Position evidence, and is
+renamed to match that scope. The invalid case now asserts
+`Edit input is invalid` for `StartOf(Line)` and drops one duplicate wrong-kind
+assertion. The separate clone-and-both-Apply regression, Core NUL guard,
+borrowed Apply guard, exact source assertions, and direct Apply/Anchor
+regressions remain because each is unique evidence.
+
+Adapter binding validation before storage and public Runtime validation at
+Apply defend different callers and both remain. The deferred top-level
+one-shot `apply` usage-error branch also remains; collapsing it into the unknown
+case removes no concept. Production Rust is unchanged, and no internalization,
+deprecation, raw prefix, rename, alias, facade, re-export, feature gate,
+parallel enum/executor, shim, one-shot non-Replace operation, raw Edit transport,
+or Edit `DataKind` is introduced. Automated JSON Search-to-one-shot Edit
+end-to-end coverage is Gate 6 input rather than part of this audit.
 
 ## Gate 6 — full integration and 0.2.2 readiness/version decision — pending
 

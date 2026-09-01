@@ -2011,11 +2011,21 @@ fn session_anchor_preserves_file_paragraph_and_line_views() {
 }
 
 #[test]
-fn session_edit_apply_builds_each_core_edit_and_preserves_bindings() {
+fn session_edit_apply_builds_each_core_edit_and_every_position() {
     let cases = [
         (
             "one\n",
-            "let lines = search line one\nlet edit = edit insert before @lines[0] \"zero\\n\"\nlet copy = @edit\napply @edit\nexit\n",
+            "let lines = search line one\nlet edit = edit insert before @lines[0] \"zero\\n\"\napply @edit\nexit\n",
+            "zero\none\n",
+        ),
+        (
+            "one\n",
+            "let lines = search line one\nlet edit = edit insert after @lines[0] \"zero\\n\"\napply @edit\nexit\n",
+            "one\nzero\n",
+        ),
+        (
+            "one\n",
+            "let files = search file one\nlet edit = edit insert start-of @files[0] \"zero\\n\"\napply @edit\nexit\n",
             "zero\none\n",
         ),
         (
@@ -2085,9 +2095,9 @@ fn session_edit_apply_rejects_invalid_forms_without_stopping_later_commands() {
     );
     let stderr = text(output.stderr);
     assert!(stderr.contains("unsupported Session command: edit"));
+    assert!(stderr.contains("Edit input is invalid"));
     assert!(stderr.contains("binding is not an Edit: wrong"));
     assert!(stderr.contains("Edit bindings cannot be indexed"));
-    assert!(stderr.contains("binding is not an Edit: wrong"));
     assert!(stderr.contains("apply accepts exactly one Edit binding"));
 }
 

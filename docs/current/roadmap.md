@@ -2,8 +2,8 @@
 
 ## Active: 0.2.2 Anddress-first editing
 
-Gates 1–4 close authority, its minimum implementation, the no-addition
-transport decision, and user/AI surface alignment. The canonical
+Gates 1–5 close authority, its minimum implementation, the no-addition
+transport decision, user/AI surface alignment, and consumer separation. The canonical
 general editing Adapter operation
 accepts an encoded v4 Anddress and new Content without making caller-visible
 View, Check, binding, index, or Core Edit construction mandatory. Its
@@ -38,13 +38,17 @@ and `exit`, with caller-owned binding, index, escaping, terminator, and separate
 Apply. It claims no timing advantage and adds no wrapper, schema, transport, or
 dependency.
 
-Raw Core Edit/Position/Apply and Session `let ... = edit ...`/`apply` remain
-advanced surfaces because Runtime, CLI, and direct Edit/Apply/Anchor regressions
-consume them. Their later separation requires the ordered consumer reaudit, not
-preemptive removal or aliasing. The
+Gate 5 keeps public Rust Edit/Position/Apply as the exact primitive, raw Session
+as the advanced exact-byte and lifetime-composition surface, and one-shot
+Anddress-first Edit as the canonical Replace contraction. Runtime geometry and
+publication, Anchor reflection, direct external-crate-style regressions, all
+five Session operations, all four positions, explicit clone/reuse, borrowed
+Apply, and Data rejection are distinct consumers. No type, wrapper, alias,
+transport, or compatibility path is added. The
 [seven-gate tracker](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md)
-now proceeds to Gate 5 raw-consumer separation, the full readiness/version
-decision, and separately authorized server publication. Cargo, `bw version`,
+now proceeds to Gate 6 full integration and the readiness/version decision,
+including an automated JSON Search-to-one-shot Edit end-to-end control. Server
+publication remains separately authorized. Cargo, `bw version`,
 and public distribution remain `0.2.1` until those gates close.
 
 ## Completed: 0.2.1 current-observation reuse and release

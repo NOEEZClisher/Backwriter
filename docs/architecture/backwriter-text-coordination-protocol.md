@@ -928,6 +928,30 @@ and every Core/Runtime meaning are unchanged. The existing public raw
 consumers and remain an advanced/raw surface; they are neither removed nor
 aliased by this authority.
 
+Gate 5 fixes the existing three-part separation without adding a type or
+execution layer:
+
+- The public Rust exact primitive is `Edit::{Insert, Replace, Delete, Move,
+  Copy}`, `Position::{Before, After, StartOf, EndOf}`, `EditError`,
+  `ApplyError`, `Edit::validate`, and `WorkspaceRuntime::apply`. Direct Rust
+  callers own exact Content and every operation/position; Runtime owns geometry
+  and publication, including reflection of existing live Anchor continuity.
+- The advanced raw Session constructs those same values through explicit
+  bindings and indexes, preserves exact replacement bytes and all operations
+  and positions, permits explicit Edit clone/reuse, and invokes Apply
+  separately. Edit bindings are unindexed and are neither stored nor persisted
+  by `DataStore`.
+- The canonical general Adapter accepts only Anddress plus Content Replace. It
+  reuses `Edit::Replace` and Apply while keeping Line terminator preservation
+  solely in the Adapter; it does not change raw Replace semantics.
+
+Repository-local reference search cannot establish that no external Rust
+caller consumes the public surface, so public Rust and raw Session remain
+public, supported, and non-deprecated. The separation creates no raw prefix,
+rename, alias, facade, re-export, feature gate, parallel enum or executor,
+compatibility shim, one-shot Insert/Delete/Move/Copy, raw Edit transport, or
+Edit `DataKind`.
+
 ## Implemented 0.1.0 Edit V1 public authority
 
 Edit V1 semantic/public API/type/error authority and its inert Rust value

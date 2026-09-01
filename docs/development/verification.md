@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.2 Anddress-first editing Gates 1–4
+## 0.2.2 Anddress-first editing Gates 1–5
 
 Gate 1 closes authority and Gate 2 implements only the one-shot Adapter
 composition tracked in the
@@ -55,6 +55,28 @@ Gate 3 parent, so the existing complete 242-test result is reused rather than
 misrepresented as a new code-test run. Direct source-release `bw --help`,
 `bw version`, Search, Edit, stale rejection, and raw Session smoke evidence was
 rerun for this documentation gate.
+
+Gate 5's tracker consumer matrix binds each retained surface to its production
+caller and behavioral regression. Public Rust Edit/Position validation,
+`WorkspaceRuntime::apply`, Runtime geometry/publication, and Anchor reflection
+remain covered by external-crate-style `edit`, `apply`, and `anchor`
+integration tests. Raw Session remains covered by its parser, explicit binding
+and clone/reuse paths, borrowed unindexed Apply, exact source results, and Data
+rejection. Canonical one-shot Edit remains covered by the six existing
+File/Paragraph/Line, terminator, invalid-input, unavailable-source, no-op, and
+structural-composition regressions.
+
+The existing Session operations case now proves all five Edit variants and all
+four Position forms by adding valid `After(Line)` and `StartOf(File)` inserts.
+Its unused clone is removed because the separate clone-and-both-Apply regression
+is the unique reuse evidence. The invalid-form case now asserts the actual
+`Edit input is invalid` stderr from `StartOf(Line)` and removes one duplicate
+wrong-binding assertion. No test function, helper, fixture, production Rust,
+Cargo input, CLI behavior, or public contract is added. Core NUL validation,
+public Apply revalidation, exact source assertions, borrowed Apply structure,
+and direct Apply/Anchor regressions remain distinct controls. The complete
+offline/locked GNU-host suite remains 242 tests. Automated JSON
+Search-to-one-shot Edit end-to-end coverage is intentionally Gate 6 input.
 
 ## 0.2.1 observation-reuse and release closure
 
