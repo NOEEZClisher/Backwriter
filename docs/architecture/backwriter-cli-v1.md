@@ -6,9 +6,8 @@ Search/View/Check, raw View, Anddress-first one-shot Edit, Session Pick, batch
 Check, Anchor, Edit, Apply, result-binding, and Data modes only. This document follows the Core active
 documents in the authority-reading order.
 The `0.2.2` one-shot Anddress-first Edit contract below is closed, implemented,
-and source-ready Adapter authority. Source Cargo and `bw version` are `0.2.2`;
-the official installer and distribution remain the closed `0.2.1` until a
-separately authorized publication gate.
+and published Adapter authority. Source Cargo, `bw version`, the official
+installer, and the closed distribution are `0.2.2`.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -39,8 +38,8 @@ CLI V1 execution has two intended forms:
 
 Both forms construct the existing default Runtime and therefore use Untrusted
 Mode. One-shot creates a new Runtime for its command; Session retains one
-Runtime but has no CLI syntax or implicit authority that enables the planned
-`0.2.1` Host-authoritative Mode. The Rust host seam exists, but complete writer
+Runtime but has no CLI syntax or implicit authority that enables the
+implemented `0.2.1` Host-authoritative Mode. The Rust host seam exists, but complete writer
 coordination remains a host responsibility; the CLI defines no flag, command,
 token, or Session behavior for it.
 
@@ -89,8 +88,8 @@ including the final LF and no other successful output.
 
 `bw update` downloads the current platform's official installer over HTTPS and
 delegates installation to it. The current official manifest selects the closed
-public `0.2.1` distribution. The installer accepts only the exact `0.2.0` and
-`0.2.1` manifests; stable `0.1.0` and beta.3 acceptance is retired. Update does not
+public `0.2.2` distribution. The installer accepts only the exact `0.2.1` and
+`0.2.2` manifests; `0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired. Update does not
 publish a release and performs no local version comparison, retry,
 daemon or background update, and adds no compatibility alias. On Unix it uses a
 private temporary directory, runs the downloaded `install.sh` synchronously
@@ -101,10 +100,10 @@ parent before replacing `bw.exe`. A Windows parent status of `0` means only that
 handoff started successfully; the child owns final installer output, final
 status, replacement, and bootstrap cleanup.
 
-The source-built `0.2.2` command has no version-comparison guard. Until Gate 7
-publishes `0.2.2`, invoking Update can therefore install the official `0.2.1`
-release. This explicit temporary boundary does not authorize a guard, retry,
-rollback, alternate installer, or publication.
+The source-built and published `0.2.2` command has no version-comparison guard.
+Invoking Update therefore installs or reinstalls the official `0.2.2` release.
+This boundary does not authorize a guard, retry, rollback, alternate installer,
+or publication.
 
 ## Implemented one-shot Search
 
@@ -452,11 +451,12 @@ consumers and are not duplicate execution paths. Gate 5 adds no raw prefix,
 rename, alias, facade, re-export, feature gate, parallel enum/executor, shim,
 one-shot Insert/Delete/Move/Copy, raw Edit transport, or Edit Data kind.
 
-Gate 6 adds one integration control without changing this execution path. It
+Gate 6 added one integration control without changing this execution path. It
 removes only the fixed Search JSON envelope bytes, validates the remaining
 single object as v4, and passes those exact bytes unchanged as one Edit argv.
-The source version is `0.2.2`; Core, Runtime, v4 wire, and published `0.2.1`
-behavior remain unchanged.
+At Gate 6 the source version became `0.2.2`, while Core, Runtime, v4 wire, and
+then-published `0.2.1` behavior remained unchanged. The subsequent Gate 7
+publication changed only the official distribution boundary to `0.2.2`.
 
 ## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 

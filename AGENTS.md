@@ -22,14 +22,16 @@ semantic/public API/error authority and its single-source Edit Runtime
 implementation uses direct v4 ranges and provenance and is complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
-The closed public `0.1.0` release is the immutable v3 baseline. The
-source-ready unpublished `0.2.2` source and Cargo package, the published
-`0.2.1` distribution, and the prior closed public `0.2.0` release use the hard-cutover
+The closed public `0.1.0` release is the immutable v3 baseline. The published
+and closed `0.2.2` source, Cargo package, and official distribution, the prior
+closed `0.2.1` distribution, and the prior closed public `0.2.0` release use the hard-cutover
 `artext.backwriter-anddress.v4` Rust API and wire. SHA-256, exact source byte
 length, target kind, and `[start, end)` byte range are implemented identity;
 v3 remains only in Git history and immutable `0.1.0` release evidence. The
-canonical four-target `0.2.0` artifacts, manifest, installers, live publication,
-fresh installation, and explicit update are complete.
+canonical four-target `0.2.2` artifacts, manifest, installers, exact 44-file
+live publication, fresh installation, and explicit public `0.2.1` update are
+complete from Source Authority revision
+`04b36d9ca9cc725bedeb17231339c67b5f0590ea`.
 
 `0.2.1` is published and closed. Phases 2 through 6 implement its
 minimal Host-authoritative observation kernel, bounded ordinary View reuse, and
@@ -60,9 +62,10 @@ publication; the separate release closure made the closed `0.2.1` release from
 Source Authority revision `4a1b06fb375bfd906a6f27de4de15a8febfe08ec` the
 official distribution.
 
-`0.2.2` is source-ready and remains unpublished. Gates 1–6 close its authority,
+`0.2.2` is published and closed. Gates 1–6 close its authority,
 minimum implementation, transport decision, user/AI surface, consumer
-separation, integration, and version decision.
+separation, integration, and version decision; Gate 7 closes its artifacts,
+installers, manifest-last publication, and release verification.
 The canonical general editing Adapter operation accepts one encoded v4
 Anddress plus one replacement Content value and reuses v4
 decode, Runtime View, existing `Edit::Replace`, Runtime Apply, and the
@@ -90,9 +93,9 @@ work remain outside that cutline. Beyond the completed Session Pick, batch
 Check, Anchor, Edit, Apply, result-binding, Data, Search/View/Check JSON, raw
 View, Version, Update, and `0.2.2` Anddress-first one-shot Edit slice, every
 other capability remains deferred Adapter work. `bw update` is an explicit
-user-invoked installer handoff with no version comparison. Until a separately
-authorized `0.2.2` publication, a source-built `0.2.2` command may therefore
-install the current official `0.2.1` release; it
+user-invoked installer handoff with no version comparison. It installs or
+reinstalls the current official `0.2.2` release through installers that accept
+only the exact closed `0.2.1` and current `0.2.2` manifests; it
 creates no daemon, background updater, retry authority, or version-comparison
 engine.
 

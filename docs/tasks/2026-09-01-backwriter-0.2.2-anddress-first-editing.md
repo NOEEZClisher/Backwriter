@@ -1,16 +1,16 @@
 # Backwriter 0.2.2 Anddress-First Editing
 
-Status: Gates 1–6 complete; Gate 7 pending. Cargo and `bw version` are
-source-ready unpublished `0.2.2`; the published distribution remains the
-closed `0.2.1`.
+Status: Gates 1–7 complete. Cargo, `bw version`, and the published distribution
+are closed `0.2.2`.
 
 This tracker records progress and consumer evidence only. Normative meaning
 belongs to the active [Protocol](../architecture/backwriter-text-coordination-protocol.md),
 [address model](../architecture/rebuildable-structural-addressing.md),
 [principles](../principles/backwriter-core-principles.md), and
 [CLI authority](../architecture/backwriter-cli-v1.md). The Gate 2 CLI slice is
-implemented and Gate 6 closes source readiness; `0.2.2` is not released or
-published by this task.
+implemented, Gate 6 closes source readiness, and Gate 7 records the separately
+authorized release closure. This tracker records that evidence but does not
+own artifact or publication authority.
 
 ## Gate 1 — authority and consumer inventory — complete
 
@@ -135,14 +135,22 @@ Compared with `4a1b06fb375bfd906a6f27de4de15a8febfe08ec`, Core, Runtime,
 Anddress v4, toolchain, and dependencies are byte-identical; Adapter and Runtime
 retain one Edit executor each.
 
-The decision is GO. Root Cargo and `bw version` advance to source-ready
-unpublished `0.2.2`. Official artifacts, installers, manifest, exact 36-file
-public root, and service remain the closed `0.2.1`. Because Update deliberately
-performs no version comparison, source-built `0.2.2` `bw update` may install
-official `0.2.1` until the separately authorized Gate 7 publication.
+The Gate 6 decision was GO. Root Cargo and `bw version` advanced to source-ready
+unpublished `0.2.2`. At that gate, official artifacts, installers, manifest,
+the exact 36-file public root, and service remained the closed `0.2.1`.
+Because Update deliberately performs no version comparison, source-built
+`0.2.2` `bw update` could install official `0.2.1` until the separately
+authorized Gate 7 publication.
 
-## Gate 7 — artifact and publication — pending separate server approval
+## Gate 7 — artifact and publication — complete
 
-Artifact generation, installer/publisher changes, public-root mutation,
-service verification, and release publication require a separate server task
-and explicit approval after source readiness.
+Separate server authority reconstructed the four canonical artifacts from
+Source Authority revision `04b36d9ca9cc725bedeb17231339c67b5f0590ea`,
+published the exact 876-byte manifest with SHA-256
+`c2e55c9617db5a30fc5320d00e70d547ed9720bacbeac7e0a3cbec33b2fb079d`
+last, and closed the exact 44-file public tree. The installers accept only the
+exact closed `0.2.1` and current `0.2.2` manifests. Fresh installation and an
+actual public `0.2.1` update installed the byte-identical `0.2.2` Linux binary;
+`bw update` performs no version comparison and now installs or reinstalls that
+official release. The closure changed no Core, Runtime, v4, service, tunnel,
+DNS, credential, or actual user HOME authority.

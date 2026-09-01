@@ -1,7 +1,7 @@
 # Backwriter Anddress and Exact Line Model
 
-Status: normative raw-address authority. Source-ready unpublished `0.2.2`,
-published `0.2.1`, and the prior closed public `0.2.0` production release
+Status: normative raw-address authority. Published and closed `0.2.2`, the
+prior published `0.2.1`, and the prior closed public `0.2.0` production release
 implement the v4 algebra and hard cutover below. The closed public `0.1.0` v3
 algebra is preserved later in this document only as immutable release evidence;
 it is not accepted by current production code.
@@ -56,7 +56,7 @@ Anchor is not an ordinary Anddress; creation directly confirms exact current
 structure, and only its live Runtime-local continuity may follow one unique
 same-kind range/provenance candidate across a Backwriter-owned Apply.
 
-The source-ready and implemented `0.2.2` general editing Adapter accepts an encoded
+The implemented and published `0.2.2` general editing Adapter accepts an encoded
 v4 Anddress unchanged, decodes it through this wire authority, and uses that
 same value as the existing `Edit::Replace` target after a private Runtime View.
 Line body replacement may append only the terminator observed by that View.

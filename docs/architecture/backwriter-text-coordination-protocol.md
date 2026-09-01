@@ -1,13 +1,14 @@
 # Backwriter Protocol
 
 Status: normative current-only Core/Runtime contract. The closed public `0.1.0`
-release remains immutable v3 evidence. Source-ready unpublished `0.2.2`,
+release remains immutable v3 evidence. Published and closed `0.2.2`, the prior
 published `0.2.1`, and the prior closed public `0.2.0` release use the
 hard-cutover v4 value/wire in all production callers.
 The call-local target-specific Search observation and direct View, Check,
-Apply, and Anchor consumers are complete; Phase 7B verifies source readiness.
+Apply, and Anchor consumers are complete; Phase 7B verifies `0.2.1` source readiness.
 The `0.2.2` Anddress-first general editing Adapter authority, minimum one-shot
-implementation, integration, and source-version decision below are closed.
+implementation, integration, source-version decision, and separate Gate 7
+publication are closed.
 
 ## 0.2.0 current-observation authority
 
@@ -952,15 +953,17 @@ rename, alias, facade, re-export, feature gate, parallel enum or executor,
 compatibility shim, one-shot Insert/Delete/Move/Copy, raw Edit transport, or
 Edit `DataKind`.
 
-Gate 6 closes integration and source readiness without changing this authority.
+Gate 6 closed integration and source readiness without changing this authority.
 One exact CRLF fixture passes the JSON Search object's original encoded v4
 bytes directly to one-shot Edit; that command privately performs View and Apply
 and preserves the terminator. The complete v4 KAT, Search/View/Check/Apply,
 Correct `1`/Safe Reject `6`/Wrong Apply `0`, raw Session, target-specific
 one-shot Edit, and exit/output matrices remain unchanged. Source Cargo and
-`bw version` are `0.2.2`; official artifacts, installers, manifest, and public
-root remain the closed `0.2.1` release. Source-built `bw update` performs no
-version comparison and may install that official `0.2.1` until Gate 7.
+`bw version` became `0.2.2`; at that gate the official artifacts, installers,
+manifest, and public root remained the closed `0.2.1` release. Source-built
+`bw update` performed no version comparison and could install that official
+`0.2.1` until Gate 7. The separately authorized Gate 7 subsequently published
+and closed the official `0.2.2` distribution without changing this authority.
 
 ## Implemented 0.1.0 Edit V1 public authority
 
