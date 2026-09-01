@@ -13,7 +13,7 @@ Adapter-owned Version and Update.
 
 ## Quick start
 
-Install the closed official `0.2.1` release with the command for your
+Install the closed official `0.2.2` release with the command for your
 platform.
 
 Linux, macOS, or WSL:
@@ -61,30 +61,24 @@ bw update
 ```
 
 `bw update` downloads and delegates to the current official installer. The
-current manifest selects the closed `0.2.1` distribution. The installer
+current manifest selects the closed `0.2.2` distribution. The installer
 reads that manifest, verifies the selected artifact, and installs or reinstalls
 that manifest version only after validation succeeds. It does not run a
 background updater or compare release versions. The installer accepts only the
-exact immutable `0.2.0` manifest and current `0.2.1` manifest; stable `0.1.0`
-and beta.3 acceptance is retired.
-
-Until `0.2.2` publication is separately authorized, running `bw update` from a
-source-built `0.2.2` executable can install the official `0.2.1` release. This
-is the explicit Gate 7 boundary; the command does not compare versions or add a
-version guard.
+exact immutable `0.2.1` manifest and current `0.2.2` manifest; `0.2.0`, stable
+`0.1.0`, and beta.3 acceptance is retired. The command still performs no
+version comparison and adds no version guard.
 
 The product is Backwriter. The source Cargo package and
 library crate are `backwriter` at `0.2.2`; the sole canonical executable and
 external Adapter command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
-official installer remains separate and selects the closed public `0.2.1`
+official installer remains separate and selects the closed public `0.2.2`
 distribution.
 
-The official installers still select `0.2.1` and do not contain one-shot Edit.
-This source checkout is the source-ready, unpublished `0.2.2` Gates 1–6
-closure; Cargo and `bw version` are `0.2.2`. The canonical `0.2.1`
-artifacts retain Source Authority revision
-`4a1b06fb375bfd906a6f27de4de15a8febfe08ec`; the later documentation-only
-closure commit does not change that manifest revision.
+The source checkout and closed official distribution are `0.2.2`; Cargo and
+`bw version` are also `0.2.2`. The canonical artifacts retain Source Authority
+revision `04b36d9ca9cc725bedeb17231339c67b5f0590ea`; the later
+documentation-only closure commit does not change that manifest provenance.
 
 ## Anddress-first editing
 
@@ -219,9 +213,9 @@ cargo test --offline --locked
 
 The official distribution authority is
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com).
-It publishes the closed Backwriter `0.2.1` release for Linux/WSL x86_64,
+It publishes the closed Backwriter `0.2.2` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
-`4a1b06fb375bfd906a6f27de4de15a8febfe08ec`. Linux uses canonical target
+`04b36d9ca9cc725bedeb17231339c67b5f0590ea`. Linux uses canonical target
 `x86_64-unknown-linux-musl`;
 `x86_64-unknown-linux-gnu` remains the local development/test-host target.
 macOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and
@@ -256,17 +250,17 @@ publisher-authenticity signature or trusted signing identity, background or
 automatic update, telemetry, `sudo` execution, or automatic `PATH` or
 shell-startup-file change.
 GitHub is a public source and documentation mirror, not the distribution
-authority. The complete beta.1, beta.2, beta.3, stable `0.1.0`, and `0.2.0`
-version directories remain unchanged and immutable. The complete `0.2.1`
-version directory is immutable, its planned matrix is complete, and the release
-is closed. The active public tree has exactly 36 files; the current installers
-and manifest select `0.2.1`. Any later platform or version requires separate
-Owner authority. Linux arm64, tags, GitHub Releases, crates.io publication,
-and background or automatic update remain outside the completed publication. The
-`0.2.1` publication added its eight versioned files and replaced only the two
-installers and manifest pointers without replacing any of the 24 prior
-versioned files or the CMD Adapter. A second publisher run reused all 36 files
-without metadata change.
+authority. The complete beta.1, beta.2, beta.3, stable `0.1.0`, `0.2.0`, and
+`0.2.1` version directories remain unchanged and immutable. The complete
+`0.2.2` version directory is immutable, its planned matrix is complete, and the
+release is closed. The active public tree has exactly 44 files; the current
+installers and manifest select `0.2.2`. Any later platform or version requires
+separate Owner authority. Linux arm64, tags, GitHub Releases, crates.io
+publication, and background or automatic update remain outside the completed
+publication. The `0.2.2` publication added its eight versioned files and
+replaced only the two installers and manifest pointers without replacing any
+of the 32 prior versioned files or the CMD Adapter. A second publisher run
+reused all 44 files without metadata change.
 
 ## Architecture
 

@@ -99,6 +99,37 @@ retain one Edit executor each. Source Cargo and `bw version` advance to
 service remain unchanged. A source-built `0.2.2` Update may install official
 `0.2.1` because the command has no version comparison; Gate 7 owns publication.
 
+## 0.2.2 release closure
+
+Gate 7 reconstructs the four canonical artifacts and sidecars from Source
+Authority revision `04b36d9ca9cc725bedeb17231339c67b5f0590ea` and reproduces
+the exact 876-byte manifest with SHA-256
+`c2e55c9617db5a30fc5320d00e70d547ed9720bacbeac7e0a3cbec33b2fb079d`.
+The publisher adds the eight `releases/0.2.2` files, replaces `install.sh`,
+replaces `install.ps1`, and publishes the manifest last. It preserves bytes,
+inode, mode, owner, size, and mtime for all 32 earlier versioned files and
+`install.cmd`; an idempotent rerun reuses all 44 files and their metadata.
+
+All 44 loopback and public HTTPS files pass GET and HEAD with exact bodies,
+SHA-256, lengths, content type, zero HEAD downloads, and cache policy. Root and
+unknown-path GET/HEAD remain 404/no-store. A task-local canonical `curl | sh`
+fresh install and an actual public `0.2.1` binary's explicit update install
+byte-identical `0.2.2` Linux binaries and print the exact Installed and Updated
+outcomes. The installed binary passes Help, Version, JSON Search-to-exact-v4
+one-shot Edit with CRLF preservation, View, Check, raw Session Apply, stale
+reuse, and duplicate-drift Safe Reject probes.
+
+Closure includes the completed 243-test GNU and 243-test musl source matrices and
+their offline/locked metadata, tree, formatting, all-target checking, clippy
+with warnings denied, and release builds. Origin 13, installer 37, publisher
+53, and CMD 12 regressions pass with their standard checks and build. Origin
+and cloudflared PID, InvocationID, restart count, listener, unit/YAML,
+credential metadata, tunnel, DNS, actual user HOME, process PATH, and shell
+startup files remain unchanged. macOS and Windows artifacts receive static
+cross-build verification only; no native macOS, Windows, PowerShell, or CMD
+execution is claimed. No tag, GitHub Release, crates.io publication, cache
+purge, service, tunnel, DNS, route, or credential change occurs.
+
 ## 0.2.1 observation-reuse and release closure
 
 The `0.2.1` target is published and closed. Phase 2 adds the Host Runtime
@@ -564,11 +595,11 @@ Before staging, verify the diff and empty index, confirm repository-root
 Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
-The repository source package is source-ready unpublished `0.2.2`; the source
-release build must print exactly `Backwriter 0.2.2` plus LF. The closed public
-release, installers, and manifest remain `0.2.1`. Source verification remains
-distinct from the separately authorized Gate 7 publication. Prior
-`0.2.0`, `0.1.0`, and beta versioned files remain immutable. The closed `0.2.1`
+The repository source package and closed public distribution are `0.2.2`; the
+source and installed release builds print exactly `Backwriter 0.2.2` plus LF.
+The current installers and manifest select `0.2.2`; exact `0.2.1` remains the
+only other accepted manifest. Prior `0.2.1`, `0.2.0`, `0.1.0`, and beta
+versioned files remain immutable. The closed `0.2.1`
 source suite passed 236 GNU-host and 236 musl Rust tests; the closed `0.2.0`
 source suite passed 203 GNU-host Rust tests, and the historical `0.1.0` source
 suite passed 193.

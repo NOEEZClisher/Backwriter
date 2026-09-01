@@ -2,10 +2,9 @@
 
 ## Version boundary
 
-The closed public `0.1.0` release remains immutable v3 evidence. Source-ready
-unpublished `0.2.2` Rust, Cargo, tests, and CLI plus the published `0.2.1`
-distribution use the hard-cutover Anddress v4 API
-and wire. Phases 3–7 implement and verify SHA-256 source identity, exact byte length,
+The closed public `0.1.0` release remains immutable v3 evidence. Published
+`0.2.2` Rust, Cargo, tests, CLI, and distribution use the hard-cutover Anddress
+v4 API and wire. Phases 3–7 implement and verify SHA-256 source identity, exact byte length,
 target kind, `[start,end)` range, target-specific Search observation, direct
 View/Check consumption, and direct Apply/Anchor consumers without a v3
 compatibility seam. The integrated correctness and formal performance gates
@@ -14,15 +13,15 @@ result-memory HWM, not JSON payload: 346.539 to 58.551 HWM bytes/hit is an
 83.10% reduction and passes. The Line-only content-slice fast path then lowers
 the fixed 256 MiB median from the paired v3 673.898 ms to 272.111 ms, a 2.476×
 speedup that closes the remaining recommendation. Source release-readiness is
-GO, and the exact four-target `0.2.1` artifact set, canonical manifest,
-installers, 36-file live publication, endpoint verification, fresh
-installation, and explicit public `0.2.0` update are closed. The evidence
+GO, and the exact four-target `0.2.2` artifact set, canonical manifest,
+installers, 44-file live publication, endpoint verification, fresh
+installation, and explicit public `0.2.1` update are closed. The earlier evidence
 tracker is
 [Backwriter 0.2.1 current-observation reuse](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md).
 
-## Active Backwriter 0.2.2 Anddress-first editing authority
+## Published Backwriter 0.2.2 Anddress-first editing authority
 
-`0.2.2` is source-ready and remains unpublished. Gates 1–6 close its general
+`0.2.2` is published and closed. Gates 1–6 close its general
 editing authority, minimum implementation, no-addition transport decision,
 user/AI surface alignment, consumer separation, integration, and version
 decision: one
@@ -77,11 +76,12 @@ work is tracked in
 Gate 6 passes the complete 243-test GNU and musl semantic matrix and one exact
 JSON Search-to-one-shot Edit CRLF E2E. Source Cargo and `bw version` are now
 `0.2.2`, while Core, Runtime, Anddress v4, toolchain, and dependencies remain
-unchanged from the closed `0.2.1` Source Authority. Official artifacts,
-installers, manifest, and the 36-file public root remain `0.2.1`; no `0.2.2`
-artifact or publication is claimed. Because Update performs no version
-comparison, a source-built `0.2.2` `bw update` may install official `0.2.1`
-until Gate 7.
+unchanged from the closed `0.2.1` Source Authority. Gate 7 reconstructs the
+four canonical artifacts from revision
+`04b36d9ca9cc725bedeb17231339c67b5f0590ea`, publishes the manifest last,
+and closes the exact 44-file public root. The current installers and
+`bw update` now select official `0.2.2`; Update still performs no version
+comparison.
 
 ## Published Backwriter 0.2.1 observation reuse
 
@@ -256,21 +256,21 @@ authority. The distinct `0.2.2` Anddress-first one-shot Edit is implemented.
 Raw output other than completed one-shot View and further
 Session behavior remain deferred under the
 [CLI V1 authority](../architecture/backwriter-cli-v1.md). The published
-`0.2.1` Core/Runtime and CLI behavior remains frozen; no collection wire, raw
+`0.2.2` Core/Runtime and CLI behavior remains frozen; no collection wire, raw
 Edit transport, or Session machine output is implied by the new contract.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`; the
 GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.1` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.2` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses
 `aarch64-apple-darwin` at minimum 11.0 and `x86_64-apple-darwin` at minimum
 10.12. Windows uses `x86_64-pc-windows-gnu` and canonical `bw.exe`. Their
 artifacts, manual-verification checksum sidecars, expanded canonical manifest,
 POSIX and PowerShell installers, and publication are complete from Source
-Authority revision `4a1b06fb375bfd906a6f27de4de15a8febfe08ec`. The installer verifies the
+Authority revision `04b36d9ca9cc725bedeb17231339c67b5f0590ea`. The installer verifies the
 manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/bw`
 with a same-directory rename, without changing `PATH` or shell startup files.
 Fresh installation prints the installed version and replacement prints the
@@ -285,21 +285,21 @@ macOS and Windows support are based on static cross-build verification without
 native runtime-test or native CMD claims. Linux arm64 remains unsupported, and
 no universal host compatibility is claimed. The public beta.1, beta.2, and
 beta.3 files remain unchanged and immutable. The complete stable `0.1.0`,
-`0.2.0`, and current `0.2.1` version directories are immutable, the full
-planned matrix is complete, and the `0.2.1` release is closed; any later
+`0.2.0`, `0.2.1`, and current `0.2.2` version directories are immutable, the full
+planned matrix is complete, and the `0.2.2` release is closed; any later
 platform or version requires separate Owner authority. Tags, GitHub Releases,
 crates.io publication, and GitHub distribution
 remain outside the completed publication.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.1`; the sole canonical executable and external Adapter command are `bw`.
+`0.2.2`; the sole canonical executable and external Adapter command are `bw`.
 There is no current `backwriter` binary, alias, or wrapper. Product prose
 continues to use Backwriter, and persisted Core wire/private-path and
-distribution artifact/domain contracts keep their existing names. `0.2.1`
-publication is closed: the exact 36-file public tree retains all 24 prior
+distribution artifact/domain contracts keep their existing names. `0.2.2`
+publication is closed: the exact 44-file public tree retains all 32 prior
 versioned files and `install.cmd`, while the current installers and manifest
-select `0.2.1` and `bw update` delegates to that official installer. The
-installers accept only the exact closed `0.2.0` and current `0.2.1` manifests;
-stable `0.1.0` and beta.3 acceptance is retired.
+select `0.2.2` and `bw update` delegates to that official installer. The
+installers accept only the exact closed `0.2.1` and current `0.2.2` manifests;
+`0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired.
 
 ## Published 0.2.0 authority
 

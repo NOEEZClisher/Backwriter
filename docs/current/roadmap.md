@@ -1,6 +1,6 @@
 # Backwriter Roadmap
 
-## Active: 0.2.2 source-ready; publication pending
+## Completed: 0.2.2 Anddress-first editing and distribution
 
 Gates 1–6 close authority, its minimum implementation, the no-addition
 transport decision, user/AI surface alignment, consumer separation,
@@ -51,10 +51,12 @@ transport, or compatibility path is added. The
 records Gate 6's automated exact JSON Search-to-one-shot Edit CRLF control and
 complete 243-test GNU/musl integration matrix. Source readiness is GO: Cargo and
 `bw version` are `0.2.2`, while Core, Runtime, Anddress v4, toolchain, and
-dependencies remain unchanged. Server artifacts, installers, manifest, and the
-36-file public distribution remain closed `0.2.1` and require separate Gate 7
-authority. Until then, source-built `bw update` may install official `0.2.1`
-because it intentionally performs no version comparison.
+dependencies remain unchanged. Gate 7 reconstructs the exact four-target
+artifacts from Source Authority revision
+`04b36d9ca9cc725bedeb17231339c67b5f0590ea`, publishes the manifest last,
+and closes the 44-file public distribution. The current installer and
+`bw update` select official `0.2.2`; Update intentionally performs no version
+comparison.
 
 ## Completed: 0.2.1 current-observation reuse and release
 
@@ -417,7 +419,7 @@ Session behavior remain deferred Adapter decisions; CLI syntax creates no Core
 workflow or wire authority. Version and Update are Adapter-owned standalone
 utilities outside Core. Explicit Update invokes the canonical installer;
 background and automatic update remain deferred.
-The published `0.2.1` Core/Runtime and CLI surface is frozen after its recorded
+The published `0.2.2` Core/Runtime and CLI surface is frozen after its recorded
 phase gates; Adapter collection/raw-Edit transport and Session machine output
 remain separate Owner decisions.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
@@ -425,9 +427,9 @@ The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 The target choice and direct build verification are complete. The external
 operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.1` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.2` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
-`4a1b06fb375bfd906a6f27de4de15a8febfe08ec`. Linux uses
+`04b36d9ca9cc725bedeb17231339c67b5f0590ea`. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
 and `x86_64-apple-darwin` at minimum 10.12. Windows uses
 `x86_64-pc-windows-gnu` and canonical `bw.exe`. Archives, checksum sidecars,
@@ -445,13 +447,13 @@ installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
 Windows build and installer verification make no native-runtime or native-CMD
 claim.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.1`; the sole canonical executable and external Adapter command are `bw`.
+`0.2.2`; the sole canonical executable and external Adapter command are `bw`.
 The public beta.1, beta.2, and beta.3 files remain unchanged immutable
 prior artifacts. The complete stable `0.1.0` Linux/macOS/Windows version
 directory is immutable, the planned matrix is complete, and the stable release
-is closed. The complete `0.2.0` and `0.2.1` version directories are likewise
-immutable; the current installers and manifest select `0.2.1` in the exact
-36-file public tree.
+is closed. The complete `0.2.0`, `0.2.1`, and `0.2.2` version directories are
+likewise immutable; the current installers and manifest select `0.2.2` in the
+exact 44-file public tree.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a target registry,
@@ -479,7 +481,7 @@ repository-local authority.
 The Linux/WSL x86_64, macOS arm64/x86_64, Windows PowerShell x86_64, and
 Windows CMD stable `0.1.0` publication is complete. At that milestone, the
 installers and manifest selected `0.1.0`; its complete version directory remains
-immutable. Current installers and the manifest select the closed `0.2.1`
+immutable. Current installers and the manifest select the closed `0.2.2`
 distribution recorded below.
 Existing public `0.1.0-beta.1`, `0.1.0-beta.2`, and `0.1.0-beta.3` files remain
 unchanged and immutable. Explicit `bw update` is complete, while background or
@@ -523,3 +525,25 @@ installer 35, publisher 52, and CMD 12 regressions passed. macOS and Windows
 received static build verification only and were not executed natively. Tags,
 GitHub Releases, crates.io, cache purge, and new platform support remain outside
 this closure.
+
+## Completed: 0.2.2 distribution
+
+The existing builders reproduced the four canonical artifacts from Source
+Authority revision `04b36d9ca9cc725bedeb17231339c67b5f0590ea`, and the
+generator reproduced the exact 876-byte manifest with SHA-256
+`c2e55c9617db5a30fc5320d00e70d547ed9720bacbeac7e0a3cbec33b2fb079d`.
+The version-specific publisher added eight immutable `0.2.2` files, replaced
+the POSIX and PowerShell installers, and published the manifest last without
+changing the 32 prior versioned files or `install.cmd`. An idempotent rerun
+reused the complete 44-file tree without metadata change.
+
+All 44 loopback and public HTTPS GET/HEAD endpoints, root and unknown-path 404
+boundaries, task-local fresh installation, actual public `0.2.1` update, and
+installed Help, Version, JSON Search-to-one-shot Edit, View, Check, raw Session
+Apply, and duplicate-drift Safe Reject probes passed. Origin and cloudflared
+process identity, restarts, listener, unit/YAML, credential metadata, tunnel,
+DNS, and actual user HOME state remained unchanged. GNU and musl each passed
+243 tests; Origin 13, installer 37, publisher 53, and CMD 12 regressions passed.
+macOS and Windows received static build verification only and were not executed
+natively. Tags, GitHub Releases, crates.io, cache purge, and new platform
+support remain outside this closure.
