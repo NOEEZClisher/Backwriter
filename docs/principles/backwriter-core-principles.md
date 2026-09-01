@@ -12,6 +12,8 @@ proof, and Phase 5 adds Apply precondition reuse and prospective-after proof
 replacement coupled to existing Anchor reflection. Phase 6 closes path-exact
 invalidation, authority isolation, matching anchored View reuse, and guarded
 drift semantics without adding a watcher or supported race.
+The unimplemented `0.2.2` target adds only the general Adapter contraction in
+Principle 16; it changes no current Core, Runtime, v4, or release meaning.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash and length only while its
@@ -88,3 +90,9 @@ drift semantics without adding a watcher or supported race.
 15. **Edit values stay inert.** Edit values neither search nor retain current
     state. Apply is their only execution boundary and must enforce the ordinary
     Anddress source-state precondition before publication.
+16. **General Adapter editing contracts existing primitives.** The planned
+    `0.2.2` one-shot form accepts an encoded v4 Anddress and new Content, then
+    privately composes decode, View, `Edit::Replace`, and Apply. Only Line body
+    replacement uses View's current terminator; File and Paragraph remain exact
+    Content. This hides optional caller bookkeeping without adding a Core
+    workflow, target finder, state machine, relocation, retry, or error alias.

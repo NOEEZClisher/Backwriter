@@ -20,6 +20,34 @@ installation, and explicit public `0.2.0` update are closed. The evidence
 tracker is
 [Backwriter 0.2.1 current-observation reuse](../tasks/2026-08-30-backwriter-0.2.1-current-observation-reuse.md).
 
+## Active Backwriter 0.2.2 Anddress-first editing authority
+
+`0.2.2` is an unimplemented and unpublished target. Phase 1 closes only its
+general editing authority: one Adapter operation accepts an encoded v4
+Anddress and new Content, then privately reuses v4 decode, Runtime View,
+target-specific Content normalization, existing `Edit::Replace`, Runtime
+Apply, and the existing CLI status/error writers. Caller-visible View, Check,
+binding, index, and Core Edit construction are not prerequisites.
+
+File and Paragraph use exact replacement Content under the existing NUL rule.
+Line accepts body Content without NUL, CR, or LF and preserves the current
+None/LF/CR/CRLF terminator obtained by the private View. Mutation between View
+and Apply is rejected by Apply's existing exact source-state precondition.
+There is no Check prerequisite, relocation, context matching, retry, merge,
+history, fallback, new Runtime seam, or `NotCurrent` Apply alias. V4 wire,
+hash, length, kind, range, byte-identical no-op, publication, Anchor reflection,
+and Host proof/invalidation meanings are unchanged.
+
+The public raw Core `Edit`/`Position`/Apply surface remains consumed by Runtime
+and direct Edit/Apply/Anchor regressions. Implemented Session Edit bindings,
+index rejection, and `apply` remain end-to-end consumers. They are retained as
+advanced/raw surfaces pending the later consumer-separation gate, without a
+compatibility layer. The ordered work is tracked in
+[Backwriter 0.2.2 Anddress-first editing](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md).
+Cargo, `bw version`, Rust behavior, tests, and the official distribution remain
+the closed `0.2.1`; no `0.2.2` implementation, readiness, artifact, or
+publication is claimed.
+
 ## Published Backwriter 0.2.1 observation reuse
 
 The `0.2.1` observation-reuse target is published and closed. Phase
@@ -188,13 +216,13 @@ provenance, automatic Data storage,
 registry, persistence, or retained Core state beyond existing Anchor continuity.
 One-shot Data and Anchor remain intentionally unsupported because their
 DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
-batch Check, Edit, and Apply await collection or Edit transport schema
-authority. Raw output other than completed one-shot View and further Session
-behavior remain deferred under the [CLI V1 authority](../architecture/backwriter-cli-v1.md).
-The published `0.2.1` Core/Runtime and CLI surface is frozen. The current source
-has completed the v4 value/wire hard cutover. Further
-Adapter work still requires owner authority for
-collection/Edit transport or Session machine output.
+batch Check, and raw Edit/Apply transport still await collection or transport
+authority. The `0.2.2` Anddress-first one-shot Edit contract is closed but
+unimplemented. Raw output other than completed one-shot View and further
+Session behavior remain deferred under the
+[CLI V1 authority](../architecture/backwriter-cli-v1.md). The published
+`0.2.1` Core/Runtime and CLI behavior remains frozen; no collection wire, raw
+Edit transport, or Session machine output is implied by the new contract.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`; the
 GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned

@@ -1,5 +1,32 @@
 # Verification
 
+## 0.2.2 Anddress-first editing Phase 1 authority
+
+Phase 1 is documentation-only. Production Rust, Cargo files, CLI behavior, and
+all existing regressions remain byte-identical to the closed `0.2.1` source.
+This phase reuses the recorded passing 236-test GNU-host evidence rather than
+rerunning unchanged Rust tests. The ordered implementation and verification
+work belongs to the
+[0.2.2 tracker](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md).
+
+The next implementation gate must prove one-shot File and Paragraph exact
+replacement and Line body replacement with None, LF, CR, and CRLF preservation.
+It must cover empty and Unicode Content; NUL/CR/LF Line rejection before Apply;
+strict v4 decode; missing, unavailable, stale, and mutation-between-View-and-
+Apply safe rejection through existing errors; byte-identical no-op; confirmed
+publication; uncertain publication; live Anchor reflection/fail-closure; and
+both Untrusted and optional Host proof/invalidation paths.
+
+Structural review must show one existing Runtime opened for private View then
+Apply; only `Edit::Replace`; the original decoded Anddress as Apply target; no
+Check call; no new Runtime seam, engine, state machine, retained observation,
+relocation, context match, retry, merge, history, fallback, v4 schema, error
+alias, or compatibility layer. CLI regressions must fix the exact `OK` plus LF
+success, stderr-only usage/execution failures, exit `0`/`1`/`2`, no partial
+success output, and rejection of JSON/raw/extra operands. Raw Core
+Edit/Position/Apply, Session Edit bindings/index rules, all 236 existing Rust
+tests, Cargo `0.2.1`, and `Backwriter 0.2.1` remain unchanged controls.
+
 ## 0.2.1 observation-reuse and release closure
 
 The `0.2.1` target is published and closed. Phase 2 adds the Host Runtime

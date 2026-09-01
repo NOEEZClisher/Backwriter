@@ -1,5 +1,33 @@
 # Backwriter Roadmap
 
+## Active: 0.2.2 Anddress-first editing
+
+Phase 1 closes authority only. The canonical general editing Adapter operation
+accepts an encoded v4 Anddress and new Content without making caller-visible
+View, Check, binding, index, or Core Edit construction mandatory. Its next
+minimum implementation is existing-path composition: strict v4 decode, one
+private Runtime View, only target-required Content normalization, existing
+`Edit::Replace`, Runtime Apply, and existing CLI status/error writers.
+
+File and Paragraph use exact Content under the existing NUL rule. Line accepts
+body Content without NUL, CR, or LF and appends exactly the current
+None/LF/CR/CRLF terminator returned by View. Apply remains the only currentness
+and publication boundary, including safe rejection of mutation after View,
+broad `Unavailable`, byte-identical no-op, publication uncertainty, Anchor
+reflection, and optional Host proof transitions. No Check prerequisite,
+relocation, context matching, retry, merge, history, fallback, new Runtime
+seam, v4 change, or compatibility layer is planned.
+
+Raw Core Edit/Position/Apply and Session `let ... = edit ...`/`apply` remain
+advanced surfaces because Runtime, CLI, and direct Edit/Apply/Anchor regressions
+consume them. Their later separation requires the ordered consumer reaudit, not
+preemptive removal or aliasing. The
+[seven-gate tracker](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md)
+orders implementation, conditional transport/machine-output work, surface
+alignment and comparison, raw-consumer separation, full readiness/version
+decision, and separately authorized server publication. Cargo, `bw version`,
+behavior, and public distribution remain `0.2.1` until those gates close.
+
 ## Completed: 0.2.1 current-observation reuse and release
 
 `0.2.1` is a published, closed performance release governed by the
@@ -354,15 +382,16 @@ commands transfer exact Session-value clones to/from Core `DataStore` without
 automatic storage or persistence. It directly reuses Core validation and public
 Runtime seams. One-shot Data and Anchor remain intentionally unsupported because
 their DataStore and live-handle contracts require Session lifetime. One-shot
-Pick, batch Check, Edit, and Apply await collection or Edit transport schema
-authority. Raw output other than completed one-shot View and further Session
-behavior remain deferred Adapter decisions; CLI syntax creates no Core workflow
-or wire authority. Version and Update are Adapter-owned standalone utilities
-outside Core. Explicit Update invokes the canonical installer; background and
-automatic update remain deferred.
+Pick, batch Check, and raw Edit/Apply transport await collection or transport
+authority. The `0.2.2` Anddress-first one-shot Edit contract is closed but
+unimplemented. Raw output other than completed one-shot View and further
+Session behavior remain deferred Adapter decisions; CLI syntax creates no Core
+workflow or wire authority. Version and Update are Adapter-owned standalone
+utilities outside Core. Explicit Update invokes the canonical installer;
+background and automatic update remain deferred.
 The published `0.2.1` Core/Runtime and CLI surface is frozen after its recorded
-phase gates; Adapter collection/Edit transport and Session machine output remain
-separate Owner decisions.
+phase gates; Adapter collection/raw-Edit transport and Session machine output
+remain separate Owner decisions.
 The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 `x86_64-unknown-linux-gnu` remains the local development and test-host target.
 The target choice and direct build verification are complete. The external

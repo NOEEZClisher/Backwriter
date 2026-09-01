@@ -5,6 +5,8 @@ executable's standalone Version and Update operations, one-shot human and JSON
 Search/View/Check, raw View, Session Pick, batch Check, Anchor, Edit, Apply,
 result-binding, and Data modes only. This document follows the Core active
 documents in the authority-reading order.
+The `0.2.2` one-shot Anddress-first Edit contract below is closed Adapter
+authority with no implementation yet.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -46,9 +48,10 @@ Standalone `version` and `update` are Adapter-owned executable operations, not
 Core capabilities or Session commands.
 One-shot Data and Anchor are intentionally unsupported because their DataStore
 and live-handle contracts require Session lifetime. One-shot Pick, batch Check,
-Edit, and Apply await collection or Edit transport schema authority. Raw output
-other than one-shot View, all other capabilities, and further Session behavior
-are deferred and rejected rather than silently accepted.
+and raw Edit/Apply transport remain deferred. The `0.2.2` Anddress-first
+one-shot Edit form has closed Adapter authority but is not implemented. Raw
+output other than one-shot View, all other capabilities, and further Session
+behavior are deferred and rejected rather than silently accepted.
 
 The intended expression roles remain:
 
@@ -297,6 +300,51 @@ An inconsistent report/filtered combination is an execution error before either
 writer emits output. The writer keeps no JSON `Value`, cloned `CheckOutcome`, or
 result collection. The human Check projection is unchanged.
 
+## Closed 0.2.2 one-shot Anddress-first Edit (implementation pending)
+
+The exact planned syntax is:
+
+```text
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+    edit anddress <encoded-v4-Anddress> <content>
+```
+
+This is the canonical general editing form. It accepts one host argv Content
+value and no output selection. Search or Pick may provide the encoded v4
+Anddress to a caller, but the CLI requires no caller-visible View, Check,
+Session binding, index, or Core Edit value. It opens one ordinary Untrusted
+Runtime, reuses the existing strict v4 decoder, privately calls Runtime View,
+constructs one existing `Edit::Replace`, and calls Runtime Apply on that same
+Runtime. It adds no request type, result type, Core wire, Runtime seam, retained
+state, or automatic capability handoff.
+
+For File and Paragraph, `<content>` is the exact replacement string and retains
+the existing NUL rejection. For Line, it is body-only Content and any NUL, CR,
+or LF is a usage error. The Adapter appends exactly the current None, LF, CR,
+or CRLF terminator reported by the private View. It performs no other escape
+decoding, trimming, normalization, separator insertion, or target conversion.
+
+Success writes exactly `OK` followed by one LF through the existing Session
+status writer and exits `0`. CLI grammar, v4 decode/validation other than
+resource exhaustion, and invalid Content are usage errors: the existing usage
+reporter writes `error: <message>`, one blank line, the complete usage text, and
+one final LF to stderr, then exits `2`. Target-specific Content rejection uses
+the existing `Edit input is invalid` message. Decoder resource exhaustion,
+Runtime View or Apply failure, and stdout failure are execution errors: the
+existing execution reporter writes exactly `error: <message>` plus LF to stderr
+and exits `1`. Existing View/Apply error text and Apply variants are retained,
+including `current source is unavailable` and `source replacement result is
+uncertain`; mutation that leaves a nonmatching source state between the private
+View and Apply reports the former broad `Unavailable`, never a new
+`NotCurrent`. No success bytes are written before Apply succeeds.
+
+Byte-identical no-op, publication uncertainty, Anchor reflection, and optional
+Host proof/invalidation semantics remain owned by existing Runtime Apply. The
+implemented raw Session Edit/Apply form below remains an advanced surface and
+is not an alias or prerequisite for this command. JSON, raw output, batch Edit,
+stdin/file content transport, retry, merge, relocation, and automatic re-search
+are not part of this closed form.
+
 ## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 
 The Session starts with:
@@ -429,8 +477,9 @@ The following are intentionally outside the completed initial slice:
 
 - One-shot Data and Anchor, which require the Session-owned DataStore or live
   handle lifetime.
-- One-shot Pick, batch Check, Edit, and Apply, pending collection or Edit
-  transport schema authority.
+- One-shot Pick, batch Check, and raw Edit/Apply transport, pending collection
+  or transport authority. The closed Anddress-first one-shot Edit form above is
+  a distinct pending implementation, not raw Edit transport.
 - Raw output other than one-shot View, and any JSON form other than one-shot
   Search, View, or Check.
 
