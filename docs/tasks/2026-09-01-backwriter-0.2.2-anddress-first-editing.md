@@ -1,6 +1,6 @@
 # Backwriter 0.2.2 Anddress-First Editing
 
-Status: Gates 1–2 complete; Gates 3–7 pending. Cargo, `bw version`, source
+Status: Gates 1–3 complete; Gates 4–7 pending. Cargo, `bw version`, source
 behavior, and the published distribution remain `0.2.1`.
 
 This tracker records progress and consumer evidence only. Normative meaning
@@ -36,18 +36,31 @@ private View, target-specific Content handling, existing `Edit::Replace`,
 existing validation and Runtime Apply, then the existing status writer. CLI
 regressions cover File, Paragraph, every Line terminator, empty and Unicode
 Content, CR/LF Line rejection, malformed/stale/missing/unadmitted inputs,
-output-option rejection, exact no-op, and status/error boundaries. Existing
+literal `--json`/`--raw` Content, leading output-option and trailing
+extra-operand rejection, exact no-op, and status/error boundaries. Existing
 Apply and Anchor regressions continue to cover mutation, publication
 uncertainty, Anchor reflection, and Host proof/invalidation without Core or
 Runtime changes. The complete offline/locked suite passes 242 tests: 236
 existing controls plus six Gate 2 CLI regressions.
 
-## Gate 3 — content transport and machine output — pending if needed
+## Gate 3 — content transport and machine output — complete without addition
 
-Use the minimum existing argv and writer path first. Define any additional
-content transport or machine-oriented output only if a real consumer proves it
-necessary. Do not prebuild JSON, stdin, file, batch, or generic formatter
-abstractions.
+The existing argv and writer paths are sufficient for the current operation.
+Argv carries empty and Unicode Content, File and Paragraph CR/LF, and every
+allowed Line body; NUL remains invalid. Search `--json` provides exact v4
+Anddress objects. Edit produces no new target or result: success is exit `0`
+with `OK` and LF, while usage and execution failures retain exit `2`/`1` and
+stderr. Returning an Anddress would require an implicit re-search, and wrapping
+the operation in JSON would not refine broad `Unavailable`, publication
+uncertainty, or stdout failure after Apply. Exit `1` is not evidence that the
+source is unchanged and creates no automatic retry authority.
+
+OS argv length, shell quoting and newline portability, and process-list or
+history exposure remain real constraints. Only a reproduced consumer failure,
+measured payload requirement, or concrete security requirement may justify a
+later Owner-selected single transport. This gate reserves no syntax or
+implementation and adds no stdin, file, JSON, batch, formatter, parser, type,
+dependency, Core/Runtime seam, retry, relocation, or raw Edit transport.
 
 ## Gate 4 — README, CLI, and AI surface alignment — pending
 

@@ -133,8 +133,11 @@ after a content query. With no scope selector, content Search uses
 `--json` and `--raw` are optional mutually exclusive global output selections.
 Each appears before the capability at most once and can occur in any order among
 `--workspace` and `--admit`. `--json` is Search/View/Check-only, while `--raw`
-is one-shot View-only. Duplicate, mixed, or post-capability use is a usage
-error. Session and every other one-shot capability reject output selections.
+is one-shot View-only. Duplicate, mixed, or output-option-position use after a
+capability is a usage error. In the required one-shot Edit Content position,
+the exact strings `--json` and `--raw` are ordinary Content rather than output
+selections; a later token remains an extra-operand usage error. Session and
+every other one-shot capability reject output selections.
 
 A content query is exactly one argv value supplied by the host shell. The CLI
 has no secondary quoting or tokenization. It directly uses `AdmissionRoot`,
@@ -323,6 +326,9 @@ the existing NUL rejection. For Line, it is body-only Content and any NUL, CR,
 or LF is a usage error. The Adapter appends exactly the current None, LF, CR,
 or CRLF terminator reported by the private View. It performs no other escape
 decoding, trimming, normalization, separator insertion, or target conversion.
+The positional values `--json` and `--raw` follow those same rules exactly.
+Leading global `--json edit ...` or `--raw edit ...` remains unsupported, and
+either string after the required Content remains an extra operand.
 
 Success writes exactly `OK` followed by one LF through the existing Session
 status writer and exits `0`. CLI grammar, v4 decode/validation other than
@@ -344,6 +350,24 @@ implemented raw Session Edit/Apply form below remains an advanced surface and
 is not an alias or prerequisite for this command. JSON, raw output, batch Edit,
 stdin/file content transport, retry, merge, relocation, and automatic re-search
 are not part of this closed form.
+
+Gate 3 closes without another Content transport or machine-output form. One
+argv value already carries empty and Unicode Content, File and Paragraph CR/LF,
+and every allowed Line body; NUL is invalid by contract. Search JSON already
+provides an exact v4 Anddress object, while Edit returns no new target or result.
+Success is exit `0` plus `OK` and LF, and existing usage/execution failures are
+exit `2`/`1` with stderr. Returning an Anddress would require the forbidden
+implicit re-search, and a JSON envelope could not refine broad `Unavailable`,
+publication uncertainty, or stdout failure after Apply. Because the status
+write follows Apply, exit `1` is not evidence that source bytes are unchanged
+and must not trigger an automatic retry.
+
+The retained argv transport is constrained by operating-system argument-length
+limits, shell-specific quoting and newline portability, and possible Content
+exposure through process listings or shell history. Only a reproduced consumer
+failure, measured payload need, or concrete security requirement can reopen an
+Owner decision for one additional transport. No future syntax or implementation
+is reserved here.
 
 ## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 

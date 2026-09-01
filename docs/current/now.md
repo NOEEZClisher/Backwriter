@@ -22,8 +22,9 @@ tracker is
 
 ## Active Backwriter 0.2.2 Anddress-first editing authority
 
-`0.2.2` remains an unpublished target. Gate 1 closes its general editing
-authority and Gate 2 implements it: one Adapter operation accepts an encoded v4
+`0.2.2` remains an unpublished target. Gates 1–3 close its general editing
+authority, minimum implementation, and no-addition transport decision: one
+Adapter operation accepts an encoded v4
 Anddress and new Content, then privately reuses v4 decode, Runtime View,
 target-specific Content normalization, existing `Edit::Replace`, Runtime
 Apply, and the existing CLI status/error writers. Caller-visible View, Check,
@@ -38,6 +39,19 @@ history, fallback, new Runtime seam, or `NotCurrent` Apply alias. V4 wire,
 hash, length, kind, range, byte-identical no-op, publication, Anchor reflection,
 and Host proof/invalidation meanings are unchanged.
 
+Gate 3 adds no Content transport or Edit machine output. Existing argv carries
+empty and Unicode values, File/Paragraph CR/LF, and allowed Line bodies; literal
+`--json` and `--raw` in the Content position are exact Content. Search JSON
+already supplies exact v4 Anddress objects, Edit has no target/result to return,
+and the existing `0`/`1`/`2` status and stdout/stderr boundary remains the only
+result contract. Returning a new Anddress would be an implicit re-search, while
+JSON cannot refine broad `Unavailable`, publication uncertainty, or an output
+failure after Apply. Exit `1` therefore does not prove source preservation and
+adds no retry authority. OS argument limits, shell quoting/newline portability,
+and process-list/history exposure remain known argv constraints; only reproduced
+consumer, measured payload, or security evidence can justify a later
+Owner-selected single transport.
+
 The public raw Core `Edit`/`Position`/Apply surface remains consumed by Runtime
 and direct Edit/Apply/Anchor regressions. Implemented Session Edit bindings,
 index rejection, and `apply` remain end-to-end consumers. They are retained as
@@ -45,7 +59,7 @@ advanced/raw surfaces pending the later consumer-separation gate, without a
 compatibility layer. The ordered work is tracked in
 [Backwriter 0.2.2 Anddress-first editing](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md).
 Cargo, `bw version`, the official distribution, Core, and Runtime remain the
-closed `0.2.1`. This Gate 2 CLI implementation makes no `0.2.2`
+closed `0.2.1`. These Gates 2–3 changes make no `0.2.2`
 source-readiness, artifact, or publication claim.
 
 ## Published Backwriter 0.2.1 observation reuse

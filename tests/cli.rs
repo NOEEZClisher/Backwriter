@@ -1339,6 +1339,8 @@ fn one_shot_edit_replaces_file_and_paragraph_with_exact_content() {
             "한글\r\nsecond\n",
             "한글\r\nsecond\n",
         ),
+        ("old\n", AnddressTarget::File, "--json", "--json"),
+        ("old\n", AnddressTarget::File, "--raw", "--raw"),
         (
             "first\nline\n\nkeep\n",
             AnddressTarget::Paragraph {
@@ -1354,6 +1356,22 @@ fn one_shot_edit_replaces_file_and_paragraph_with_exact_content() {
             },
             "새 문단\r\n둘\n",
             "새 문단\r\n둘\n\nkeep\n",
+        ),
+        (
+            "first\nline\n\nkeep\n",
+            AnddressTarget::Paragraph {
+                ordinal: Natural::zero(),
+            },
+            "--json",
+            "--json\nkeep\n",
+        ),
+        (
+            "first\nline\n\nkeep\n",
+            AnddressTarget::Paragraph {
+                ordinal: Natural::zero(),
+            },
+            "--raw",
+            "--raw\nkeep\n",
         ),
     ] {
         let workspace = tempfile::tempdir().unwrap();
@@ -1391,6 +1409,8 @@ fn one_shot_edit_replaces_line_body_and_preserves_every_terminator() {
         ("old\n", "", "\n"),
         ("old\r", "β", "β\r"),
         ("old\r\n", "새 줄", "새 줄\r\n"),
+        ("old\n", "--json", "--json\n"),
+        ("old\r\n", "--raw", "--raw\r\n"),
     ] {
         let root = tempfile::tempdir().unwrap();
         write(root.path(), "coordinate.txt", "coordinate\n");
@@ -1462,8 +1482,6 @@ fn one_shot_edit_rejects_invalid_forms_flags_and_addresses_before_publication() 
         vec!["edit", "anddress", &noncanonical, "new"],
         vec!["--json", "edit", "anddress", &operand, "new"],
         vec!["--raw", "edit", "anddress", &operand, "new"],
-        vec!["edit", "anddress", &operand, "--json"],
-        vec!["edit", "anddress", &operand, "--raw"],
         vec!["edit", "anddress", &operand, "new", "--json"],
         vec!["edit", "anddress", &operand, "new", "--raw"],
     ] {
@@ -1554,6 +1572,7 @@ fn one_shot_edit_exact_noop_preserves_bytes_and_inode_and_reuses_existing_seams(
     assert!(apply < status);
     assert!(!edit.contains("run_search"));
     assert!(!edit.contains("run_check"));
+    assert!(!edit.contains("output options must precede the capability"));
     assert_eq!(source.matches("fn execute_edit").count(), 1);
 
     let core_edit = include_str!("../src/backwriter/edit.rs");

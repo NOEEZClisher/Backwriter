@@ -2,7 +2,8 @@
 
 ## Active: 0.2.2 Anddress-first editing
 
-Gates 1 and 2 close authority and its minimum implementation. The canonical
+Gates 1–3 close authority, its minimum implementation, and the no-addition
+transport decision. The canonical
 general editing Adapter operation
 accepts an encoded v4 Anddress and new Content without making caller-visible
 View, Check, binding, index, or Core Edit construction mandatory. Its
@@ -19,13 +20,23 @@ reflection, and optional Host proof transitions. No Check prerequisite,
 relocation, context matching, retry, merge, history, fallback, new Runtime
 seam, v4 change, or compatibility layer is planned.
 
+Gate 3 keeps the one argv Content operand and existing status/error writers.
+That path already carries empty and Unicode values, File/Paragraph CR/LF, and
+allowed Line bodies; Search JSON supplies exact v4 Anddress objects and Edit
+returns no target/result. A new returned address would imply re-search, while
+JSON cannot refine broad `Unavailable`, publication uncertainty, or output
+failure after Apply. OS argument limits, shell quoting/newline portability, and
+process-list/history exposure are retained constraints. A later Owner decision
+may add one transport only after reproduced consumer, measured payload, or
+security evidence. Exit `1` proves neither unchanged source nor retry safety.
+
 Raw Core Edit/Position/Apply and Session `let ... = edit ...`/`apply` remain
 advanced surfaces because Runtime, CLI, and direct Edit/Apply/Anchor regressions
 consume them. Their later separation requires the ordered consumer reaudit, not
 preemptive removal or aliasing. The
 [seven-gate tracker](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md)
-now proceeds to conditional transport/machine-output work, surface alignment
-and comparison, raw-consumer separation, full readiness/version
+now proceeds to Gate 4 surface alignment and comparison, raw-consumer
+separation, full readiness/version
 decision, and separately authorized server publication. Cargo, `bw version`,
 behavior, and public distribution remain `0.2.1` until those gates close.
 

@@ -525,11 +525,6 @@ fn execute_edit(
     }
     let encoded = required_text(&mut arguments, "edit anddress")?;
     let mut content = required_text(&mut arguments, "edit content")?;
-    if matches!(content.as_str(), "--json" | "--raw") {
-        return Err(CliError::usage(
-            "output options must precede the capability",
-        ));
-    }
     if arguments.next().is_some() {
         return Err(CliError::usage(
             "edit anddress accepts exactly one anddress and content operand",

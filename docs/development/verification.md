@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.2 Anddress-first editing Gates 1–2
+## 0.2.2 Anddress-first editing Gates 1–3
 
 Gate 1 closes authority and Gate 2 implements only the one-shot Adapter
 composition tracked in the
@@ -10,7 +10,9 @@ replacement with None, LF, CR, and CRLF preservation; empty and Unicode
 Content; CR/LF Line rejection before Apply; strict v4 decode; stale, missing,
 and unadmitted source rejection; byte-identical no-op and Unix inode
 preservation; exact `OK` plus LF success; stderr-only exit `1`/`2` failures;
-and JSON/raw/extra operand rejection without source mutation.
+literal `--json`/`--raw` File, Paragraph, and terminator-preserving Line Content;
+and leading global output-option plus trailing extra-operand rejection without
+source mutation.
 
 Structural evidence fixes one ordinary Runtime, one private View, only
 `Edit::Replace`, the original decoded Anddress as Apply target, existing Edit
@@ -23,6 +25,14 @@ and invalidation evidence. Raw Core Edit/Position/Apply, Session Edit and Apply,
 Cargo `0.2.1`, `Backwriter 0.2.1`, Core, Runtime, and the public distribution
 remain unchanged controls. The complete offline/locked GNU-host suite passes
 242 tests: 236 existing controls plus six Gate 2 CLI regressions.
+
+Gate 3's source and consumer audit closes without an additional Content
+transport, machine-output schema, parser, writer, type, dependency, or Runtime
+seam. Existing argv covers accepted Content, Search JSON carries exact v4
+Anddress objects, and the existing status/error path distinguishes success,
+usage, and execution outcomes without claiming that exit `1` preserves source
+bytes or permits retry. Documented residual constraints are OS argument limits,
+shell quoting/newline portability, and process-list/history exposure.
 
 ## 0.2.1 observation-reuse and release closure
 
