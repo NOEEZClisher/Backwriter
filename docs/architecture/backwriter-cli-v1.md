@@ -5,10 +5,10 @@ executable's standalone Version and Update operations, one-shot human and JSON
 Search/View/Check, raw View, Anddress-first one-shot Edit, Session Pick, batch
 Check, Anchor, Edit, Apply, result-binding, and Data modes only. This document follows the Core active
 documents in the authority-reading order.
-The `0.2.2` one-shot Anddress-first Edit contract below is closed and implemented
-Adapter authority in the current source checkout only. The official installer,
-Cargo package version, and `bw version` remain the closed `0.2.1` until the
-later readiness/version gate.
+The `0.2.2` one-shot Anddress-first Edit contract below is closed, implemented,
+and source-ready Adapter authority. Source Cargo and `bw version` are `0.2.2`;
+the official installer and distribution remain the closed `0.2.1` until a
+separately authorized publication gate.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -29,15 +29,16 @@ External callers invoke `bw`, which adapts to `backwriter` Core. Product prose
 uses Backwriter; persisted `artext.backwriter-*` wire values, `.artext/bw`, and
 distribution artifact/domain names are unchanged contracts.
 
-CLI V1 capability execution has two intended forms:
+CLI V1 execution has two intended forms:
 
-- One-shot invokes one capability and exits without retaining a result.
+- One-shot invokes one Adapter command and exits without retaining a result;
+  the Anddress-first Edit command contracts its named View and Apply calls.
 - The Session retains one `WorkspaceRuntime`, one explicit caller-owned
   `DataStore`, and CLI-local Search/Pick/Anddress/Edit/View/Check values plus
   non-aliasing owning Anchedress handles until EOF or `exit`.
 
 Both forms construct the existing default Runtime and therefore use Untrusted
-Mode. One-shot creates a new Runtime for its single call; Session retains one
+Mode. One-shot creates a new Runtime for its command; Session retains one
 Runtime but has no CLI syntax or implicit authority that enables the planned
 `0.2.1` Host-authoritative Mode. The Rust host seam exists, but complete writer
 coordination remains a host responsibility; the CLI defines no flag, command,
@@ -81,7 +82,7 @@ capability workflow.
 `bw version` writes exactly:
 
 ```text
-Backwriter 0.2.1
+Backwriter 0.2.2
 ```
 
 including the final LF and no other successful output.
@@ -99,6 +100,11 @@ the exact private bootstrap root, then exits so PowerShell can wait for the
 parent before replacing `bw.exe`. A Windows parent status of `0` means only that
 handoff started successfully; the child owns final installer output, final
 status, replacement, and bootstrap cleanup.
+
+The source-built `0.2.2` command has no version-comparison guard. Until Gate 7
+publishes `0.2.2`, invoking Update can therefore install the official `0.2.1`
+release. This explicit temporary boundary does not authorize a guard, retry,
+rollback, alternate installer, or publication.
 
 ## Implemented one-shot Search
 
@@ -419,7 +425,7 @@ surface, not a prerequisite or alias for ordinary Replace.
 
 | Boundary | Anddress-first one-shot Edit | Raw Session Edit/Apply |
 | --- | --- | --- |
-| Invocation count | Two processes and two one-shot capability operations when Search is needed; one Edit operation when the address is already known | One Session process; four work expressions in the compared flow, plus `exit` |
+| Invocation count | Two processes and two one-shot Adapter commands when Search is needed; one process and Edit command when the address is already known. The Edit command internally calls View and Apply | One Session process; four work expressions in the compared flow, plus `exit` |
 | Selection and Content | One opaque v4 argv object; private View; File/Paragraph exact Content or Line body-only Content | Named binding and index; optional explicit View; caller supplies the raw replacement including the exact Line terminator |
 | Pre-publication failure | Grammar, decode, or Content rejection exits `2`; Runtime View or Apply failure exits `1` | Search/Edit expression failure retains no new publication; Apply is a separate expression and publication boundary |
 | Success and output failure | Apply precedes exact `OK` plus LF; a later stdout failure exits `1` without proving unchanged source | Apply also precedes its status write; the Session retains bindings and accumulates expression status until EOF or `exit` |
@@ -445,6 +451,12 @@ validates again to defend every public Rust caller. Those checks have distinct
 consumers and are not duplicate execution paths. Gate 5 adds no raw prefix,
 rename, alias, facade, re-export, feature gate, parallel enum/executor, shim,
 one-shot Insert/Delete/Move/Copy, raw Edit transport, or Edit Data kind.
+
+Gate 6 adds one integration control without changing this execution path. It
+removes only the fixed Search JSON envelope bytes, validates the remaining
+single object as v4, and passes those exact bytes unchanged as one Edit argv.
+The source version is `0.2.2`; Core, Runtime, v4 wire, and published `0.2.1`
+behavior remain unchanged.
 
 ## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 

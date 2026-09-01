@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.2 Anddress-first editing Gates 1–5
+## 0.2.2 Anddress-first editing Gates 1–6
 
 Gate 1 closes authority and Gate 2 implements only the one-shot Adapter
 composition tracked in the
@@ -38,7 +38,8 @@ Gate 4 uses one task-local workspace whose sole source is the exact Line
 `retry_budget = 3` plus CRLF. JSON Search returned one exact 311-byte v4 object;
 passing those object bytes unchanged to one-shot Edit with body
 `retry_budget = 5` exited `0`, wrote exactly `OK` plus LF, preserved CRLF, and
-used two processes and two one-shot capability operations including Search.
+used two processes and two one-shot Adapter commands. The Edit command itself
+privately invoked View and Apply.
 A separate stale reuse control exited `1` with the existing Unavailable error
 and preserved the already-edited bytes. The raw comparison used one Session
 process with Search binding, optional View, indexed Replace Edit binding,
@@ -77,6 +78,26 @@ public Apply revalidation, exact source assertions, borrowed Apply structure,
 and direct Apply/Anchor regressions remain distinct controls. The complete
 offline/locked GNU-host suite remains 242 tests. Automated JSON
 Search-to-one-shot Edit end-to-end coverage is intentionally Gate 6 input.
+
+Gate 6 adds that one independent regression without a helper, parser, or second
+wire path. It verifies the exact single-found `bw.cli.search.v1` prefix and
+suffix, removes only those fixed bytes, decodes the remaining original object
+as v4, passes its unchanged UTF-8 bytes as one Edit argv, and proves exact
+`retry_budget = 3\r\n` to `retry_budget = 5\r\n` replacement with exit `0`,
+empty stderr, and `OK` plus LF. Existing no-op, stale reuse, and terminator
+regressions remain the unique controls for those meanings.
+
+The complete GNU and musl suites each pass 243 tests. V4 KATs,
+Search/View/Check/Apply semantics, Correct `1`/Safe Reject `6`/Wrong Apply `0`,
+raw Session's five Edit variants and four Positions, binding/index,
+clone/reuse, separate Apply, every one-shot target/terminator, and exact
+`0`/`1`/`2` output boundaries remain intact. Compared with Source Authority
+`4a1b06fb375bfd906a6f27de4de15a8febfe08ec`, Core, Runtime, Anddress v4,
+toolchain, and dependency inputs are byte-identical, and the Adapter and Runtime
+retain one Edit executor each. Source Cargo and `bw version` advance to
+`0.2.2`; official `0.2.1` artifacts, installers, manifest, public tree, and
+service remain unchanged. A source-built `0.2.2` Update may install official
+`0.2.1` because the command has no version comparison; Gate 7 owns publication.
 
 ## 0.2.1 observation-reuse and release closure
 
@@ -543,9 +564,10 @@ Before staging, verify the diff and empty index, confirm repository-root
 Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
-The repository source package and closed public release are `0.2.1`; the source
-release build must print exactly `Backwriter 0.2.1` plus LF. Source verification
-remains distinct from the separately executed operations publication. Prior
+The repository source package is source-ready unpublished `0.2.2`; the source
+release build must print exactly `Backwriter 0.2.2` plus LF. The closed public
+release, installers, and manifest remain `0.2.1`. Source verification remains
+distinct from the separately authorized Gate 7 publication. Prior
 `0.2.0`, `0.1.0`, and beta versioned files remain immutable. The closed `0.2.1`
 source suite passed 236 GNU-host and 236 musl Rust tests; the closed `0.2.0`
 source suite passed 203 GNU-host Rust tests, and the historical `0.1.0` source
@@ -571,6 +593,9 @@ Line targets, CR/LF/CRLF/no-EOL byte ranges, Unicode and JSON escaping, result
 order, repeated Line content, global-option placement, rejected duplicate/late
 or non-Search JSON, and a structural audit that excludes a JSON Value or cloned
 result collection in the production writer.
+The Gate 6 integration control removes only the fixed single-found envelope,
+validates the original embedded v4 bytes, passes them unchanged to one-shot
+Edit, and verifies exact CRLF-preserving source output.
 One-shot View JSON regressions cover exact compact envelope key order for File,
 Paragraph, and Line; related v4 File/Paragraph object re-decoding; every Line
 terminator including a separator Line's `paragraph:null`; Unicode and JSON

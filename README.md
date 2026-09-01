@@ -51,7 +51,7 @@ bw version
 The current source build prints exactly:
 
 ```text
-Backwriter 0.2.1
+Backwriter 0.2.2
 ```
 
 ### Update
@@ -68,15 +68,20 @@ background updater or compare release versions. The installer accepts only the
 exact immutable `0.2.0` manifest and current `0.2.1` manifest; stable `0.1.0`
 and beta.3 acceptance is retired.
 
-The product is Backwriter. The published Cargo package and
-library crate are `backwriter` at `0.2.1`; the sole canonical executable and
+Until `0.2.2` publication is separately authorized, running `bw update` from a
+source-built `0.2.2` executable can install the official `0.2.1` release. This
+is the explicit Gate 7 boundary; the command does not compare versions or add a
+version guard.
+
+The product is Backwriter. The source Cargo package and
+library crate are `backwriter` at `0.2.2`; the sole canonical executable and
 external Adapter command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
 official installer remains separate and selects the closed public `0.2.1`
 distribution.
 
 The official installers still select `0.2.1` and do not contain one-shot Edit.
-This source checkout contains only an unpublished `0.2.2` Gates 1–4 slice;
-Cargo and `bw version` remain `0.2.1` until Gate 6. The canonical `0.2.1`
+This source checkout is the source-ready, unpublished `0.2.2` Gates 1–6
+closure; Cargo and `bw version` are `0.2.2`. The canonical `0.2.1`
 artifacts retain Source Authority revision
 `4a1b06fb375bfd906a6f27de4de15a8febfe08ec`; the later documentation-only
 closure commit does not change that manifest revision.
@@ -108,7 +113,8 @@ Raw Session is the advanced composition surface for Insert/Delete/Move/Copy,
 Position, Anchor/Data lifetime, explicit bindings, and separate Apply. It is
 not a prerequisite or alias for ordinary Replace. On the same single-Line CRLF
 fixture, JSON Search followed by one-shot Edit uses two processes and two
-one-shot capability operations. A raw Session can instead use one process with
+one-shot Adapter commands; the Edit command privately invokes View and Apply.
+A raw Session can instead use one process with
 four work expressions—Search binding, optional View, indexed raw Replace Edit
 binding, and Apply—plus `exit`; its caller must carry the binding and index,
 escape the exact terminator, and publish separately. Both paths produce the

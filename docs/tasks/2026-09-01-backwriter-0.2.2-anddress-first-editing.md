@@ -1,15 +1,16 @@
 # Backwriter 0.2.2 Anddress-First Editing
 
-Status: Gates 1–5 complete; Gates 6–7 pending. Cargo, `bw version`, and the
-published distribution remain `0.2.1`; the current checkout's implemented
-`0.2.2` slice remains unpublished and is not source-ready.
+Status: Gates 1–6 complete; Gate 7 pending. Cargo and `bw version` are
+source-ready unpublished `0.2.2`; the published distribution remains the
+closed `0.2.1`.
 
 This tracker records progress and consumer evidence only. Normative meaning
 belongs to the active [Protocol](../architecture/backwriter-text-coordination-protocol.md),
 [address model](../architecture/rebuildable-structural-addressing.md),
 [principles](../principles/backwriter-core-principles.md), and
 [CLI authority](../architecture/backwriter-cli-v1.md). The Gate 2 CLI slice is
-implemented; `0.2.2` is not source-ready, released, or published by this task.
+implemented and Gate 6 closes source readiness; `0.2.2` is not released or
+published by this task.
 
 ## Gate 1 — authority and consumer inventory — complete
 
@@ -69,15 +70,16 @@ README and CLI authority now present JSON Search followed by exact opaque-v4
 one-shot Edit as the default Replace flow. Human Search rows are not address
 input, address fields remain opaque, View/Pick are optional selection aids,
 Check is not required, and a successful old address is not reused. Exit `1`
-does not authorize retry or prove unchanged source. The official installer,
-Cargo version, and `bw version` remain the closed `0.2.1`; only this checkout
-contains the unpublished Edit slice.
+does not authorize retry or prove unchanged source. At Gate 4, the official
+installer, Cargo version, and `bw version` remained the closed `0.2.1`; only
+the checkout contained the unpublished Edit slice.
 
-The same sole-Line `retry_budget = 3` plus CRLF fixture produced this evidence:
+The same sole-Line `retry_budget = 3` plus CRLF fixture produced this evidence
+at Gate 4:
 
 | Evidence | Anddress-first one-shot | Raw Session |
 | --- | --- | --- |
-| Process and operation accounting | Two processes and two one-shot capability operations when Search is needed; one Edit operation if the address is already known | One `bw shell` process; four work expressions plus one `exit` control expression |
+| Process and command accounting | Two processes and two one-shot Adapter commands when Search is needed; one process and Edit command if the address is already known. The Edit command internally invokes View and Apply | One `bw shell` process; four work expressions plus one `exit` control expression |
 | Selection | Exact 311-byte v4 object transferred unchanged from the JSON `anddresses` array | Search binding plus index; optional View confirms the terminator |
 | Replacement responsibility | Adapter accepts body `retry_budget = 5` and preserves CRLF privately | Caller supplies `retry_budget = 5\r\n`, binds raw Replace Edit, then invokes Apply separately |
 | Success | Exit `0`, exact `OK` plus LF, final CRLF bytes | Exit `0`, Search/View output then exact `OK` plus LF, byte-identical final CRLF bytes |
@@ -114,11 +116,30 @@ parallel enum/executor, shim, one-shot non-Replace operation, raw Edit transport
 or Edit `DataKind` is introduced. Automated JSON Search-to-one-shot Edit
 end-to-end coverage is Gate 6 input rather than part of this audit.
 
-## Gate 6 — full integration and 0.2.2 readiness/version decision — pending
+## Gate 6 — full integration and 0.2.2 readiness/version decision — complete
 
-Run the complete semantic and integration matrix, confirm v4 and existing
-0.2.1 behavior are unchanged, then make the separate source-readiness and
-version decision. Phase 1 does not change Cargo or `bw version`.
+One independent CLI E2E writes `retry_budget = 3\r\n`, runs exact-source JSON
+Line Search, verifies the exact single-found `bw.cli.search.v1` envelope, and
+removes only its fixed prefix and suffix. It decodes the remaining original
+bytes as a valid v4 Anddress, passes those same UTF-8 bytes unchanged as one
+Edit argv, and proves exit `0`, exact `OK` plus LF, empty stderr, and final
+`retry_budget = 5\r\n`. It adds no parser, helper, re-encoding, reordered JSON,
+or duplicate no-op/stale/terminator control.
+
+The full GNU and musl suites each pass 243 tests. The integration matrix keeps
+v4 KATs, Search/View/Check/Apply semantics, Correct `1`/Safe Reject `6`/Wrong
+Apply `0`, raw Session's five Edit variants and four Positions, binding/index,
+clone/reuse, separate Apply, File/Paragraph exact replacement, Line
+None/LF/CR/CRLF preservation, and exact success/usage/runtime boundaries.
+Compared with `4a1b06fb375bfd906a6f27de4de15a8febfe08ec`, Core, Runtime,
+Anddress v4, toolchain, and dependencies are byte-identical; Adapter and Runtime
+retain one Edit executor each.
+
+The decision is GO. Root Cargo and `bw version` advance to source-ready
+unpublished `0.2.2`. Official artifacts, installers, manifest, exact 36-file
+public root, and service remain the closed `0.2.1`. Because Update deliberately
+performs no version comparison, source-built `0.2.2` `bw update` may install
+official `0.2.1` until the separately authorized Gate 7 publication.
 
 ## Gate 7 — artifact and publication — pending separate server approval
 

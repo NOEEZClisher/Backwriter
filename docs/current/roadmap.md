@@ -1,9 +1,10 @@
 # Backwriter Roadmap
 
-## Active: 0.2.2 Anddress-first editing
+## Active: 0.2.2 source-ready; publication pending
 
-Gates 1–5 close authority, its minimum implementation, the no-addition
-transport decision, user/AI surface alignment, and consumer separation. The canonical
+Gates 1–6 close authority, its minimum implementation, the no-addition
+transport decision, user/AI surface alignment, consumer separation,
+integration, and source-version decision. The canonical
 general editing Adapter operation
 accepts an encoded v4 Anddress and new Content without making caller-visible
 View, Check, binding, index, or Core Edit construction mandatory. Its
@@ -32,8 +33,9 @@ security evidence. Exit `1` proves neither unchanged source nor retry safety.
 
 Gate 4 documents JSON Search to exact opaque-v4 one-shot Edit as the default
 Replace flow and records its equality with the raw Session path on one CRLF
-Line. The canonical comparison uses two processes and two one-shot capability
-operations; the raw comparison uses one Session process, four work expressions,
+Line. The canonical comparison uses two processes and two one-shot Adapter
+commands; the Edit command internally invokes View and Apply. The raw comparison
+uses one Session process, four work expressions,
 and `exit`, with caller-owned binding, index, escaping, terminator, and separate
 Apply. It claims no timing advantage and adds no wrapper, schema, transport, or
 dependency.
@@ -46,10 +48,13 @@ five Session operations, all four positions, explicit clone/reuse, borrowed
 Apply, and Data rejection are distinct consumers. No type, wrapper, alias,
 transport, or compatibility path is added. The
 [seven-gate tracker](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md)
-now proceeds to Gate 6 full integration and the readiness/version decision,
-including an automated JSON Search-to-one-shot Edit end-to-end control. Server
-publication remains separately authorized. Cargo, `bw version`,
-and public distribution remain `0.2.1` until those gates close.
+records Gate 6's automated exact JSON Search-to-one-shot Edit CRLF control and
+complete 243-test GNU/musl integration matrix. Source readiness is GO: Cargo and
+`bw version` are `0.2.2`, while Core, Runtime, Anddress v4, toolchain, and
+dependencies remain unchanged. Server artifacts, installers, manifest, and the
+36-file public distribution remain closed `0.2.1` and require separate Gate 7
+authority. Until then, source-built `bw update` may install official `0.2.1`
+because it intentionally performs no version comparison.
 
 ## Completed: 0.2.1 current-observation reuse and release
 

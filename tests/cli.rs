@@ -486,7 +486,7 @@ fn canonical_binary_help_and_default_workspace_search() {
 
     let version = run(root.path(), &["version"]);
     assert!(version.status.success());
-    assert_eq!(version.stdout, b"Backwriter 0.2.1\n");
+    assert_eq!(version.stdout, b"Backwriter 0.2.2\n");
     assert!(version.stderr.is_empty());
 }
 
@@ -919,6 +919,50 @@ fn one_shot_search_json_keeps_large_result_output_streamed() {
     assert!(output.stderr.is_empty());
     let document: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(document["anddresses"].as_array().unwrap().len(), 4_097);
+}
+
+#[test]
+fn one_shot_search_json_exact_object_drives_crlf_line_edit() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "retry_budget = 3\r\n");
+
+    let search = run(
+        root.path(),
+        &[
+            "--json",
+            "search",
+            "line",
+            "retry_budget = 3",
+            "--source",
+            "note.txt",
+        ],
+    );
+    assert_eq!(search.status.code(), Some(0));
+    assert!(search.stderr.is_empty());
+
+    let encoded = search
+        .stdout
+        .strip_prefix(b"{\"schema\":\"bw.cli.search.v1\",\"outcome\":\"found\",\"anddresses\":[")
+        .and_then(|value| value.strip_suffix(b"]}\n"))
+        .expect("exact single-found Search envelope");
+    let input = Anddress::decode(encoded).unwrap();
+    assert_eq!(input.target(), PublicAnddressTarget::Line);
+    assert_eq!(input.logical_path(), "note.txt");
+    assert_eq!(input.source_byte_length(), 18);
+    assert_eq!((input.byte_start(), input.byte_end()), (0, 18));
+
+    let encoded = std::str::from_utf8(encoded).unwrap();
+    let edit = run(
+        root.path(),
+        &["edit", "anddress", encoded, "retry_budget = 5"],
+    );
+    assert_eq!(edit.status.code(), Some(0));
+    assert_eq!(edit.stdout, b"OK\n");
+    assert!(edit.stderr.is_empty());
+    assert_eq!(
+        fs::read(root.path().join("note.txt")).unwrap(),
+        b"retry_budget = 5\r\n"
+    );
 }
 
 #[test]

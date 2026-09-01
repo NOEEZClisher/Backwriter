@@ -1,13 +1,13 @@
 # Backwriter Protocol
 
 Status: normative current-only Core/Runtime contract. The closed public `0.1.0`
-release remains immutable v3 evidence. Current published `0.2.1` and the prior
-closed public `0.2.0` release use the hard-cutover v4 value/wire in all
-production callers.
+release remains immutable v3 evidence. Source-ready unpublished `0.2.2`,
+published `0.2.1`, and the prior closed public `0.2.0` release use the
+hard-cutover v4 value/wire in all production callers.
 The call-local target-specific Search observation and direct View, Check,
 Apply, and Anchor consumers are complete; Phase 7B verifies source readiness.
-The `0.2.2` Anddress-first general editing Adapter authority and its minimum
-one-shot implementation below are closed; its version decision remains pending.
+The `0.2.2` Anddress-first general editing Adapter authority, minimum one-shot
+implementation, integration, and source-version decision below are closed.
 
 ## 0.2.0 current-observation authority
 
@@ -951,6 +951,16 @@ public, supported, and non-deprecated. The separation creates no raw prefix,
 rename, alias, facade, re-export, feature gate, parallel enum or executor,
 compatibility shim, one-shot Insert/Delete/Move/Copy, raw Edit transport, or
 Edit `DataKind`.
+
+Gate 6 closes integration and source readiness without changing this authority.
+One exact CRLF fixture passes the JSON Search object's original encoded v4
+bytes directly to one-shot Edit; that command privately performs View and Apply
+and preserves the terminator. The complete v4 KAT, Search/View/Check/Apply,
+Correct `1`/Safe Reject `6`/Wrong Apply `0`, raw Session, target-specific
+one-shot Edit, and exit/output matrices remain unchanged. Source Cargo and
+`bw version` are `0.2.2`; official artifacts, installers, manifest, and public
+root remain the closed `0.2.1` release. Source-built `bw update` performs no
+version comparison and may install that official `0.2.1` until Gate 7.
 
 ## Implemented 0.1.0 Edit V1 public authority
 

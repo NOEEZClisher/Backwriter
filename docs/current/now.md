@@ -2,9 +2,9 @@
 
 ## Version boundary
 
-The closed public `0.1.0` release remains immutable v3 evidence. Current
-published `0.2.1` Rust, Cargo, tests, CLI, and distribution use the hard-cutover
-Anddress v4 API
+The closed public `0.1.0` release remains immutable v3 evidence. Source-ready
+unpublished `0.2.2` Rust, Cargo, tests, and CLI plus the published `0.2.1`
+distribution use the hard-cutover Anddress v4 API
 and wire. Phases 3–7 implement and verify SHA-256 source identity, exact byte length,
 target kind, `[start,end)` range, target-specific Search observation, direct
 View/Check consumption, and direct Apply/Anchor consumers without a v3
@@ -22,9 +22,10 @@ tracker is
 
 ## Active Backwriter 0.2.2 Anddress-first editing authority
 
-`0.2.2` remains an unpublished target. Gates 1–5 close its general editing
-authority, minimum implementation, no-addition transport decision, user/AI
-surface alignment, and consumer separation: one
+`0.2.2` is source-ready and remains unpublished. Gates 1–6 close its general
+editing authority, minimum implementation, no-addition transport decision,
+user/AI surface alignment, consumer separation, integration, and version
+decision: one
 Adapter operation accepts an encoded v4
 Anddress and new Content, then privately reuses v4 decode, Runtime View,
 target-specific Content normalization, existing `Edit::Replace`, Runtime
@@ -57,8 +58,8 @@ Gate 4 makes JSON Search followed by exact opaque-v4 one-shot Edit the default
 documented Replace flow. Human Search rows are not Edit input; callers do not
 interpret or rewrite address fields, do not reuse the old address after
 success, and do not automatically retry exit `1`. The exact single-Line CRLF
-fixture proves two one-shot processes and operations produce the same final
-bytes as one raw Session process with Search binding, optional View, indexed
+fixture proves two one-shot processes and Adapter commands produce the same
+final bytes as one raw Session process with Search binding, optional View, indexed
 raw Replace Edit binding, separate Apply, and `exit`. The raw surface remains
 the advanced lifetime/composition path, with no timing claim or new tool,
 wrapper, transport, or schema.
@@ -73,9 +74,14 @@ type, layer, alias, prefix, facade, transport, or Edit `DataKind`; external Rust
 consumers are not inferred absent from repository-local references. The ordered
 work is tracked in
 [Backwriter 0.2.2 Anddress-first editing](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md).
-Cargo, `bw version`, the official distribution, Core, and Runtime remain the
-closed `0.2.1`. These Gates 1–5 changes make no `0.2.2`
-source-readiness, artifact, or publication claim.
+Gate 6 passes the complete 243-test GNU and musl semantic matrix and one exact
+JSON Search-to-one-shot Edit CRLF E2E. Source Cargo and `bw version` are now
+`0.2.2`, while Core, Runtime, Anddress v4, toolchain, and dependencies remain
+unchanged from the closed `0.2.1` Source Authority. Official artifacts,
+installers, manifest, and the 36-file public root remain `0.2.1`; no `0.2.2`
+artifact or publication is claimed. Because Update performs no version
+comparison, a source-built `0.2.2` `bw update` may install official `0.2.1`
+until Gate 7.
 
 ## Published Backwriter 0.2.1 observation reuse
 
