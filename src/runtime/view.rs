@@ -59,11 +59,7 @@ pub(super) fn execute(
     projection: AnddressTarget,
 ) -> Result<ViewOutcome, ViewError> {
     validate_request(input, projection)?;
-    if is_backwriter_spill(input.logical_path())
-        || input.workspace_coordinate() != runtime.workspace_coordinate
-    {
-        return Err(ViewError::Unavailable);
-    }
+    validate_runtime_input(runtime, input)?;
     match runtime.match_current_proof(input) {
         CurrentProofMatch::Missing => {
             let mut file = runtime
@@ -74,6 +70,160 @@ pub(super) fn execute(
         CurrentProofMatch::Mismatched => Err(ViewError::Unavailable),
         CurrentProofMatch::Matching => execute_trusted(runtime, input, projection),
     }
+}
+
+pub(super) fn execute_batch(
+    runtime: &WorkspaceRuntime,
+    inputs: &[Anddress],
+    projection: AnddressTarget,
+) -> Result<Vec<ViewOutcome>, ViewError> {
+    for input in inputs {
+        validate_request(input, projection)?;
+    }
+    for input in inputs {
+        validate_runtime_input(runtime, input)?;
+    }
+    if inputs.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut order = indices(inputs.len()).map_err(|_| ViewError::Unavailable)?;
+    order.sort_unstable_by(|left, right| {
+        super::compare_source_keys(&inputs[*left], &inputs[*right]).then_with(|| left.cmp(right))
+    });
+    let mut outcomes = Vec::new();
+    outcomes
+        .try_reserve_exact(inputs.len())
+        .map_err(|_| ViewError::Unavailable)?;
+    outcomes.resize_with(inputs.len(), || None);
+
+    let mut start = 0;
+    while start < order.len() {
+        let end = batch_group_end(inputs, &order, start);
+        execute_batch_group(
+            runtime,
+            inputs,
+            &order[start..end],
+            projection,
+            &mut outcomes,
+        )?;
+        start = end;
+    }
+    finish_batch(outcomes)
+}
+
+fn validate_runtime_input(runtime: &WorkspaceRuntime, input: &Anddress) -> Result<(), ViewError> {
+    if is_backwriter_spill(input.logical_path())
+        || input.workspace_coordinate() != runtime.workspace_coordinate
+        || runtime.selected_root(input.logical_path()).is_err()
+    {
+        return Err(ViewError::Unavailable);
+    }
+    Ok(())
+}
+
+fn batch_group_end(inputs: &[Anddress], order: &[usize], start: usize) -> usize {
+    let first = &inputs[order[start]];
+    let mut end = start + 1;
+    while end < order.len() && super::same_source_key(first, &inputs[order[end]]) {
+        end += 1;
+    }
+    end
+}
+
+fn execute_batch_group(
+    runtime: &WorkspaceRuntime,
+    inputs: &[Anddress],
+    group: &[usize],
+    projection: AnddressTarget,
+    outcomes: &mut [Option<ViewOutcome>],
+) -> Result<(), ViewError> {
+    let path = inputs[group[0]].logical_path();
+    match runtime.select_current_proof(path) {
+        Some(proof) => {
+            if group.iter().any(|&index| {
+                !super::source_state_matches(&proof.hash, proof.byte_length, &inputs[index])
+            }) {
+                return Err(ViewError::Unavailable);
+            }
+            execute_trusted_batch(runtime, inputs, group, projection, outcomes)
+        }
+        None => {
+            let mut file = runtime
+                .open_admitted_source(path)
+                .map_err(|_| ViewError::Unavailable)?;
+            observe_direct_batch(&mut file, inputs, group, projection, outcomes)
+                .map_err(|_| ViewError::Unavailable)
+        }
+    }
+}
+
+fn observe_direct_batch(
+    reader: &mut impl Read,
+    inputs: &[Anddress],
+    group: &[usize],
+    projection: AnddressTarget,
+    outcomes: &mut [Option<ViewOutcome>],
+) -> Result<(), SourceScanError> {
+    let mut captures = Vec::new();
+    captures
+        .try_reserve_exact(group.len())
+        .map_err(|_| SourceScanError::Resource)?;
+    for &index in group {
+        captures.push((index, DirectViewProjection::new(&inputs[index], projection)));
+    }
+    let state = observe_source(reader, |bytes, chunk_start| {
+        for (_, capture) in &mut captures {
+            capture.push(bytes, chunk_start)?;
+        }
+        Ok(())
+    })?;
+    if group.iter().any(|&index| {
+        !super::source_state_matches(state.hash.as_bytes(), state.byte_length, &inputs[index])
+    }) {
+        return Err(SourceScanError::InvalidSource);
+    }
+    for (index, capture) in captures {
+        outcomes[index] = Some(capture.finish(state.byte_length)?);
+    }
+    Ok(())
+}
+
+fn execute_trusted_batch(
+    runtime: &WorkspaceRuntime,
+    inputs: &[Anddress],
+    group: &[usize],
+    projection: AnddressTarget,
+    outcomes: &mut [Option<ViewOutcome>],
+) -> Result<(), ViewError> {
+    let path = inputs[group[0]].logical_path();
+    let result = runtime
+        .open_admitted_source(path)
+        .map_err(|_| TrustedViewError::Source)
+        .and_then(|mut file| {
+            for &index in group {
+                outcomes[index] = Some(observe_trusted(&mut file, &inputs[index], projection)?);
+            }
+            Ok(())
+        });
+    if matches!(
+        result,
+        Err(TrustedViewError::Source | TrustedViewError::Resource)
+    ) {
+        runtime.invalidate_current_proof(path);
+    }
+    result.map_err(|_| ViewError::Unavailable)
+}
+
+fn finish_batch(outcomes: Vec<Option<ViewOutcome>>) -> Result<Vec<ViewOutcome>, ViewError> {
+    let mut finished = Vec::new();
+    finished
+        .try_reserve_exact(outcomes.len())
+        .map_err(|_| ViewError::Unavailable)?;
+    for outcome in outcomes {
+        finished.push(outcome.ok_or(ViewError::Unavailable)?);
+    }
+    Ok(finished)
 }
 
 pub(super) fn execute_trusted(
@@ -1001,11 +1151,154 @@ mod tests {
     }
 
     #[test]
+    fn direct_batch_feeds_every_projection_from_one_forward_observation() {
+        let bytes = "α\n \t\r\nlast".as_bytes();
+        let inputs = vec![
+            address(bytes, AnddressTarget::Line, 0, 3),
+            address(bytes, AnddressTarget::Line, 3, 7),
+            address(bytes, AnddressTarget::Line, 0, 3),
+            address(bytes, AnddressTarget::Line, 7, 11),
+        ];
+        let group = [0, 1, 2, 3];
+        let mut outcomes = Vec::new();
+        outcomes.resize_with(inputs.len(), || None);
+        let mut source = OneByteReader {
+            bytes,
+            cursor: 0,
+            fail_at: None,
+            ended: false,
+        };
+
+        observe_direct_batch(
+            &mut source,
+            &inputs,
+            &group,
+            AnddressTarget::Line,
+            &mut outcomes,
+        )
+        .unwrap();
+
+        assert!(source.ended);
+        assert!(matches!(
+            outcomes[0],
+            Some(ViewOutcome::Line {
+                ref content,
+                terminator: LineTerminator::Lf,
+                paragraph: Some(_),
+                ..
+            }) if content == "α"
+        ));
+        assert!(matches!(
+            outcomes[1],
+            Some(ViewOutcome::Line {
+                ref content,
+                terminator: LineTerminator::Crlf,
+                paragraph: None,
+                ..
+            }) if content == " \t"
+        ));
+        assert_eq!(outcomes[0], outcomes[2]);
+        assert!(matches!(
+            outcomes[3],
+            Some(ViewOutcome::Line {
+                ref content,
+                terminator: LineTerminator::None,
+                paragraph: Some(_),
+                ..
+            }) if content == "last"
+        ));
+    }
+
+    #[test]
+    fn direct_batch_keeps_every_output_provisional_through_late_failure() {
+        let inputs = vec![
+            address(b"one\nlate", AnddressTarget::Line, 0, 4),
+            address(b"one\nlate", AnddressTarget::Line, 4, 8),
+        ];
+        let group = [0, 1];
+        for (bytes, fail_at, expected) in [
+            (b"one\nlate".as_slice(), Some(4), SourceScanError::Read),
+            (
+                b"one\n\xff".as_slice(),
+                None,
+                SourceScanError::InvalidSource,
+            ),
+            (b"one\n\0x".as_slice(), None, SourceScanError::InvalidSource),
+            (
+                b"two\nlate".as_slice(),
+                None,
+                SourceScanError::InvalidSource,
+            ),
+        ] {
+            let mut outcomes = Vec::new();
+            outcomes.resize_with(inputs.len(), || None);
+            let mut source = OneByteReader {
+                bytes,
+                cursor: 0,
+                fail_at,
+                ended: false,
+            };
+
+            assert_eq!(
+                observe_direct_batch(
+                    &mut source,
+                    &inputs,
+                    &group,
+                    AnddressTarget::Line,
+                    &mut outcomes,
+                ),
+                Err(expected)
+            );
+            assert!(outcomes.iter().all(Option::is_none));
+        }
+    }
+
+    #[test]
     fn ordinary_view_uses_only_the_direct_observation_path() {
         let production = include_str!("view.rs")
             .split("#[cfg(test)]")
             .next()
             .unwrap();
+        let batch = production
+            .split("pub(super) fn execute_batch")
+            .nth(1)
+            .unwrap()
+            .split("fn validate_runtime_input")
+            .next()
+            .unwrap();
+        assert!(
+            batch.find("validate_request").unwrap() < batch.find("validate_runtime_input").unwrap()
+        );
+        assert!(batch.contains("execute_batch_group("));
+        assert!(!batch.contains("execute(runtime"));
+        let batch_group = production
+            .split("fn execute_batch_group")
+            .nth(1)
+            .unwrap()
+            .split("fn observe_direct_batch")
+            .next()
+            .unwrap();
+        assert_eq!(batch_group.matches("select_current_proof(").count(), 1);
+        assert_eq!(batch_group.matches("open_admitted_source(").count(), 1);
+        let direct_batch = production
+            .split("fn observe_direct_batch")
+            .nth(1)
+            .unwrap()
+            .split("fn execute_trusted_batch")
+            .next()
+            .unwrap();
+        assert_eq!(direct_batch.matches("observe_source(").count(), 1);
+        assert!(direct_batch.contains("DirectViewProjection::new"));
+        let trusted_batch = production
+            .split("fn execute_trusted_batch")
+            .nth(1)
+            .unwrap()
+            .split("fn finish_batch")
+            .next()
+            .unwrap();
+        assert_eq!(trusted_batch.matches("open_admitted_source(").count(), 1);
+        assert_eq!(trusted_batch.matches("observe_trusted(").count(), 1);
+        assert!(trusted_batch.contains("invalidate_current_proof"));
         let direct = production.split("fn observe_direct").nth(1).unwrap();
         for forbidden in ["scan_source(", "SourceEvent", "ExactTargetTracker"] {
             assert!(!direct.contains(forbidden));
@@ -1444,6 +1737,15 @@ mod tests {
             .unwrap();
         assert_eq!(
             runtime.view(&resource, resource.target()),
+            Err(ViewError::Unavailable)
+        );
+        runtime
+            .install_search_proofs(vec![
+                CurrentProof::new("resource.txt", "d".repeat(64), usize::MAX).unwrap(),
+            ])
+            .unwrap();
+        assert_eq!(
+            runtime.view_batch(&[cut.clone(), resource], AnddressTarget::File),
             Err(ViewError::Unavailable)
         );
         let proofs = runtime.current_proofs.lock().unwrap();

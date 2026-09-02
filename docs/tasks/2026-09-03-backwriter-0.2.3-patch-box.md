@@ -1,6 +1,6 @@
 # Backwriter 0.2.3 Patch Box
 
-Status: Gates 1–3 complete. Gates 4–8 are pending and require their own scoped
+Status: Gates 1–4 complete. Gates 5–8 are pending and require their own scoped
 authorization.
 
 This tracker records order, evidence, and unresolved implementation choices.
@@ -10,7 +10,7 @@ Normative meaning belongs to the active
 [principles](../principles/backwriter-core-principles.md), and
 [CLI authority](../architecture/backwriter-cli-v1.md). The published `0.2.2`
 source, Cargo and CLI version, artifacts, installers, exact 44-file public
-tree, and service remain the closed baseline through Gate 2.
+tree, and service remain the closed baseline through Gate 4.
 
 ## Goal and exclusions
 
@@ -63,9 +63,10 @@ or Edit inputs.
 | Existing surface | Direct production consumers | Unique evidence and constraint |
 | --- | --- | --- |
 | `WorkspaceRuntime::view(&Anddress, AnddressTarget)` | Public Rust callers, one-shot View, Session View, and one-shot Edit's private terminator lookup | Ordinary View owns exact-state validation and one accepted current observation; existing Adapter consumers request self projection |
+| `WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)` | Public Rust callers only; no Adapter or Anchor batch consumes it | Ordered borrowed inputs use one projection, retain order and duplicates, and return all outcomes or none after one direct observation per Untrusted/proof-miss group or one trusted handle per matching Host group |
 | `WorkspaceRuntime::view_anchored(&Anchedress, AnddressTarget)` | Session anchored View and public Anchor callers | It shares the same projection machinery while retaining Anchor liveness, fail-closure, and Host-proof semantics |
 | `ViewOutcome` | Human/raw/JSON writers, Session bindings, `DataStore`, ordinary and anchored callers | Target variants now own their projected current Anddress and exact Content; Line retains File and optional Paragraph relations, Paragraph retains File, and `RelationAbsent` represents only a missing Line-to-Paragraph relation |
-| Runtime View target projection | Ordinary, trusted, and anchored paths capture the requested self-or-ancestor target and related Paragraph boundaries | Gate 3 exposes one explicit projection without a finder or generic graph. Gate 4 must group by source instead of looping over the public single call |
+| Runtime View target projection | Ordinary, trusted, anchored, and batch paths capture the requested self-or-ancestor target and related Paragraph boundaries | Gate 3 exposes one explicit projection without a finder or generic graph. Gate 4 groups exact source keys and feeds the existing projection machinery instead of looping over the public single call |
 
 The only allowed relation matrix is Line to Line, Paragraph, or File;
 Paragraph to Paragraph or File; and File to File. Downward projection, implicit
@@ -135,16 +136,29 @@ observation objects, post-Search, and speculative compatibility layers.
   human/raw/JSON bytes are unchanged. Gate 3 adds no batch loop, CLI projection
   syntax, Search, relocation, cache, retry, state, dependency, or v4 change.
 
-## Gate 4 — ordered batch View — pending
+## Gate 4 — ordered batch View — complete
 
-- Accept an ordered collection and one requested projection. Preserve input
-  order and duplicates exactly and publish no partial result.
-- Validate source-less input and relation errors before I/O. Group admissible
-  inputs by coordinate and logical path while preserving output order.
-- Observe each logical source once and satisfy every same-source projection
-  from that observation. Do not call the public single View once per item.
-- Cover mixed source order, duplicates, same-source distinct ranges, stale and
-  unavailable members, allocation failure, and all-or-nothing output.
+- `WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)` accepts one
+  ordered borrowed collection and one projection. Empty input is an I/O-free
+  empty success; nonempty success restores exact input order, duplicates, and
+  per-item `RelationAbsent` outcomes.
+- Every input runs source-less v4 and relation validation in input order before
+  complete coordinate, spill, and admission preflight or I/O. Inputs then sort
+  only as indices by workspace coordinate and logical path; provisional output
+  slots restore caller order and remain private until every group succeeds.
+- An Untrusted or Host-proof-miss group opens one source and feeds all existing
+  `DirectViewProjection` captures from one `observe_source` call. A matching
+  Host group selects its proof once, checks every member before I/O, opens one
+  handle, and reuses `observe_trusted`; mismatch preserves the proof, while
+  matching source/resource failure applies the single-View invalidation rule.
+- Check and View share only the source-key comparator. There is no generic
+  batch framework, public single-View loop, Anchor batch, CLI/Session/Data
+  surface, cache, retry, compatibility path, dependency, or v4 change.
+- Regression covers empty/single/duplicate, A/B/A, distinct and overlapping
+  ranges, all six upward projections and three downward rejections,
+  `RelationAbsent`, stale/foreign/spill/unadmitted/missing/symlink/UTF-8/NUL/
+  late-read/resource fail-closure, Host hit/miss/mismatch/invalidation parity,
+  every terminator, Unicode, raw ranges, and scratch boundaries.
 
 ## Gate 5 — Edit receipt and fresh current Anddress — pending
 

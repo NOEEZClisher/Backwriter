@@ -339,8 +339,8 @@ operation, and fixes the guarded mutation and both-mode drift boundaries above.
 
 ## In-progress 0.2.3 Patch Box information surface
 
-Gates 1 through 3 close meaning, order, Search observation metadata, and native
-single View projection; Cargo, `bw version`, and the published release remain
+Gates 1 through 4 close meaning, order, Search observation metadata, native
+single View projection, and ordered batch View; Cargo, `bw version`, and the published release remain
 `0.2.2`. Patch Box is an
 AI-facing information-surface patch over the current engine, not a
 Search-performance, source-scaling, or File-View-memory project. Its intended
@@ -381,6 +381,7 @@ The implemented public seams are:
 
 ```rust
 WorkspaceRuntime::view(&Anddress, AnddressTarget) -> Result<ViewOutcome, ViewError>
+WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget) -> Result<Vec<ViewOutcome>, ViewError>
 WorkspaceRuntime::view_anchored(&mut self, &Anchedress, AnddressTarget) -> Result<ViewOutcome, ViewError>
 ```
 
@@ -394,11 +395,21 @@ Their existing related File and optional Paragraph values remain. When a
 Line-to-Paragraph request names a separator Line or a raw-valid nonstructural
 Line with no containing current Paragraph, it succeeds as
 `ViewOutcome::RelationAbsent`; this is not `Unavailable` or `InvalidInput`.
-Single projection is complete before batch. Batch applies one requested projection
-to an ordered input collection, preserves input order and duplicates, and is
-all-or-nothing. Its implementation must group admissible inputs by logical
-source and reuse one current observation per source; it must not implement a
-batch by repeatedly calling single View.
+Batch applies one requested projection to an ordered borrowed input collection,
+preserves input order and duplicates, and is all-or-nothing. Empty input returns
+an empty vector without source access. Every source-less v4 and relation check
+runs in input order before any Runtime preflight or I/O; coordinate, spill, and
+admission preflight then covers the complete collection. Inputs are grouped by
+workspace coordinate and logical path without changing returned order. An
+Untrusted or Host-proof-miss group opens one retained source handle and feeds
+every target projection from one direct observation. A matching Host-proof
+group selects the proof once, opens one source handle, and applies the existing
+trusted range and Paragraph scanner to every member. Any validation,
+allocation, open, read, UTF-8/NUL, source-state, range, or resource failure
+discards all provisional outcomes. A proof mismatch occurs before I/O and
+preserves that proof; a matching trusted source or resource failure invalidates
+it under the existing single-View rule. Batch does not call public single View,
+create a generic batch framework, or add an Anchor batch seam.
 
 A successful one-shot Replace receipt describes only the just-confirmed
 current state. For a changed File it contains the fresh resulting File
@@ -466,6 +477,7 @@ continuity, survival, or history.
 The implemented `0.2.0` Runtime execution seams are
 `WorkspaceRuntime::search(&SearchRequest)`,
 `WorkspaceRuntime::view(&Anddress, AnddressTarget)`,
+`WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`,
 `WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
 `check_pick(PickOutcome)`. Across calls, Search, View, Pick, Check, and Apply
@@ -713,13 +725,18 @@ relation enum. Pick does not read text or call Runtime to replace them.
 
 ## Implemented 0.2.0 View behavior
 
-View V1 has one `&Anddress` input, one requested existing target kind, and the implemented
-`WorkspaceRuntime::view(&Anddress, AnddressTarget)` seam. Its admitted capability-relative
-no-follow one-read access and File/Paragraph/Line text projection shape remain
-reusable. Its former v2 evidence-based construction is rejected; successful
-related results use v4 source identity and ranges. View stays current-only,
-result/history-stateless, non-mutating, and without arbitrary range, plural, descendant,
-or partial behavior.
+View V1 has one single-input seam and one ordered borrowed-collection seam,
+each with one requested existing target kind:
+`WorkspaceRuntime::view(&Anddress, AnddressTarget)` and
+`WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)`. Its admitted
+capability-relative no-follow access and File/Paragraph/Line text projection
+shape remain reusable. Its former v2 evidence-based construction is rejected;
+successful related results use v4 source identity and ranges. View stays
+current-only, result/history-stateless, non-mutating, and without arbitrary
+range, descendant, or partial behavior. Batch preserves order and duplicates,
+groups by exact source key, and makes one accepted direct observation per
+Untrusted or Host-proof-miss logical source rather than invoking single View
+for every item. Matching Host groups reuse one handle and the trusted scanner.
 
 View first performs source-less v4 validation and then validates the allowed
 projection relation before any I/O. It preserves the existing
@@ -727,7 +744,9 @@ projection relation before any I/O. It preserves the existing
 version, another invalid source-less v4 input, or a downward projection returns
 the corresponding first two errors. After that validation, every
 coordinate, admission, open, read, UTF-8/NUL, source-state, range-text,
-or resource failure returns `Unavailable`. View adds no public evidence,
+or resource failure returns `Unavailable`. Batch performs all source-less and
+relation validation before Runtime preflight or I/O and publishes no partial
+vector. View adds no public evidence,
 registry, cache, retry, second read, error, or type.
 
 `ViewOutcome::{File, Paragraph, Line}` now includes an `anddress` member for

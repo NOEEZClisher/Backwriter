@@ -167,6 +167,22 @@ fn source_state_matches(hash: &[u8], byte_length: usize, input: &Anddress) -> bo
     hash == input.source_state_hash().as_bytes() && byte_length == input.source_byte_length()
 }
 
+fn compare_source_keys(left: &Anddress, right: &Anddress) -> std::cmp::Ordering {
+    left.workspace_coordinate()
+        .as_bytes()
+        .cmp(right.workspace_coordinate().as_bytes())
+        .then_with(|| {
+            left.logical_path()
+                .as_bytes()
+                .cmp(right.logical_path().as_bytes())
+        })
+}
+
+fn same_source_key(left: &Anddress, right: &Anddress) -> bool {
+    left.workspace_coordinate() == right.workspace_coordinate()
+        && left.logical_path() == right.logical_path()
+}
+
 struct CurrentProof {
     logical_path: String,
     hash: String,
@@ -331,6 +347,15 @@ impl WorkspaceRuntime {
         projection: AnddressTarget,
     ) -> Result<ViewOutcome, ViewError> {
         view::execute(self, anddress, projection)
+    }
+
+    /// Projects an ordered Anddress collection with per-source observation reuse.
+    pub fn view_batch(
+        &self,
+        anddresses: &[Anddress],
+        projection: AnddressTarget,
+    ) -> Result<Vec<ViewOutcome>, ViewError> {
+        view::execute_batch(self, anddresses, projection)
     }
 
     /// Applies one caller-owned Edit to one current admitted logical source.

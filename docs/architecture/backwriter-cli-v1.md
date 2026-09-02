@@ -472,7 +472,7 @@ publication changed only the official distribution boundary to `0.2.2`.
 
 ## In-progress 0.2.3 Patch Box Adapter direction
 
-Gates 1 through 3 keep one-shot Search, Session Search, stored Search values,
+Gates 1 through 4 keep one-shot Search, Session Search, stored Search values,
 Check, Pick operands, public Rust callers, and single View consumers coherent
 through the native occurrence carrier and projection-aware View result. Human Search now has one Search-specific writer with current Line
 positions; Pick retains the separate raw-Anddress address-row writer and its
@@ -488,12 +488,13 @@ may request Line, Paragraph, or File; Paragraph may request Paragraph or File;
 File may request File. Existing one-shot and Session `view anddress`, anchored
 View, and one-shot Edit pass the input kind as self projection, so their syntax
 and human/raw/`bw.cli.view.v1` bytes are unchanged. No Adapter syntax exposes
-upward projection in Gate 3. A later batch uses one projection for an
-ordered collection, retains duplicates, and publishes no partial output. It
-must reuse one observation for all inputs from one source instead of invoking
-the existing single command repeatedly. Exact request and output spellings are
-closed only in their implementation gates; Phase 1 adds no placeholder parser,
-wrapper, DTO, or schema.
+upward projection in Gate 3. Gate 4 adds the public native
+`WorkspaceRuntime::view_batch` seam for one projection over an ordered
+collection. It retains duplicates, publishes no partial output, and reuses one
+direct observation for all inputs from one source instead of invoking public
+single View repeatedly. It adds no CLI, Session, Data, or Anchor surface; any
+Adapter request and output spelling remains a Gate 6 decision. No placeholder
+parser, wrapper, DTO, or schema is present.
 
 Future one-shot Replace output includes a fresh current Anddress for changed
 File and Line results, and includes one for a changed Paragraph only under the

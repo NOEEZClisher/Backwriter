@@ -81,7 +81,7 @@ Edit/Position/Apply is the exact low-level primitive, Session `let ... = edit
 one-shot Anddress-first Edit is the canonical Replace contraction. None is
 internal, deprecated, renamed, aliased, or wrapped by that separation.
 
-`0.2.3` Patch Box Gates 1 through 3 are complete in source. Gate 1 closes
+`0.2.3` Patch Box Gates 1 through 4 are complete in source. Gate 1 closes
 authority and the consumer matrix. Gate 2 carries each Search result as one
 `SearchOccurrence` containing its exact v4 Anddress and same-observation
 descriptive position: a one-based Line number, a one-based inclusive Paragraph
@@ -96,9 +96,14 @@ single View to one explicit self-or-ancestor target projection and returns the
 projected current v4 Anddress with exact Content from the same accepted
 observation. A Line without a containing Paragraph returns the normal
 `RelationAbsent` outcome. Existing CLI View consumers request self projection,
-so their grammar and output bytes are unchanged. Cargo, CLI version, artifacts,
-and publication remain closed `0.2.2`. Later gates may add only ordered batch
-View and the one-shot Replace receipt. The ordered
+so their grammar and output bytes are unchanged. Gate 4 adds ordered,
+duplicate-preserving, all-or-nothing native batch View. It validates every
+input and relation before I/O, groups by workspace coordinate and logical path,
+and uses one source handle and one accepted direct observation per source group;
+matching Host proof groups reuse the existing trusted range scanner on one
+handle. Cargo, CLI version, artifacts, and publication remain closed `0.2.2`.
+Later gates may add only the one-shot Replace receipt and its Adapter output.
+The ordered
 gates and consumer evidence are tracked in
 [Backwriter 0.2.3 Patch Box](docs/tasks/2026-09-03-backwriter-0.2.3-patch-box.md).
 
@@ -307,15 +312,22 @@ are preserved evidence, never current authority.
   display, mutation, proposal, Apply, or retry claim. Search Found values may
   be caller input, but Pick does not interpret SearchOutcome, text, preview, or
   adapter payload.
-- **View V1** has an implementation. Its Runtime seam is
+- **View V1** has an implementation. Its Runtime seams are
   `WorkspaceRuntime::view(&Anddress, AnddressTarget) -> Result<ViewOutcome,
-  ViewError>`; the input is exactly one Anddress plus one requested existing
-  target kind, without a wrapper, collection, arbitrary range, or selector.
+  ViewError>` and `WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)
+  -> Result<Vec<ViewOutcome>, ViewError>`. The single form accepts exactly one
+  Anddress; the batch form accepts an ordered borrowed collection. Both use one
+  requested existing target kind, without a wrapper, arbitrary range, or
+  selector.
   Line may project to Line, Paragraph, or File; Paragraph to Paragraph or File;
   File only to File. Downward requests are `InvalidInput` before source I/O.
   A successful target outcome contains its projected current v4 Anddress and
   exact Content; Line-to-Paragraph without a containing current Paragraph is
-  the normal `ViewOutcome::RelationAbsent` result. It has no query, ranking,
+  the normal `ViewOutcome::RelationAbsent` result. Batch preserves order,
+  duplicates, and per-item outcomes, returns all results or none, and groups
+  inputs so each Untrusted or Host-proof-miss source has one accepted direct
+  observation; matching Host groups reuse one handle and trusted scanner. It has no
+  query, ranking,
   mutation, display, adapter payload, or
   retained source/result/relation state, registry, cache, history, snapshot, or
   lease. Pick may supply the input, but View neither calls Pick nor proves Pick

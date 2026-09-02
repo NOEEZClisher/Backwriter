@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.3 Patch Box Gates 1–3
+## 0.2.3 Patch Box Gates 1–4
 
 Gate 1 records the direct Search, View, Edit, Check, Data, Session, Pick, and
 writer consumers. Gate 2 implements only the Search observation carrier and
@@ -60,6 +60,27 @@ second View parser or executor.
 
 The complete offline/locked GNU-host suite now passes 247 tests: the 245 Gate 2
 controls plus two public Gate 3 projection and pre-I/O validation regressions.
+
+Gate 4 adds the public ordered batch seam without changing single View,
+anchored View, or Adapter execution. Empty, single, duplicate, mixed A/B/A,
+same-source distinct and overlapping ranges, all six allowed projections, the
+three downward relations, `RelationAbsent`, Unicode, separators, every Line
+terminator, no-EOL, raw ranges, and the 8,191/8,192/8,193-byte boundaries are
+covered. Returned outcomes preserve exact input order and multiplicity.
+
+Every source-less input and requested relation is validated in input order
+before complete coordinate, spill, and admission preflight or source I/O.
+Stale state, foreign coordinate, spill, unadmitted and missing paths, symlinks,
+invalid UTF-8, NUL, late read failure, and Resource failure return no partial
+vector. Structural regression fixes one source-key group pass, one open and
+one direct observer per group, no public single-View loop, and fallible
+allocation for indices, captures, provisional slots, and final output.
+
+Host regressions cover A/B/A proof groups, trusted/direct output parity,
+proof-miss fallback, mismatch before I/O with proof preservation, one matching
+group handle, and existing source/resource invalidation. The complete
+offline/locked GNU-host suite passes 253 tests: the 247 Gate 3 controls plus
+two private observer/all-or-nothing tests and four public batch regressions.
 
 ## 0.2.2 Anddress-first editing Gates 1–6
 

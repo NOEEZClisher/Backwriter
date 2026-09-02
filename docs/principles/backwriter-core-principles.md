@@ -16,9 +16,9 @@ The `0.2.2` Gates 1–6 add only the general Adapter contraction in Principle 16
 and its integration evidence; Gate 7 separately closes publication. They
 change no Core, Runtime, or v4 meaning.
 The in-progress `0.2.3` Patch Box is governed by Principle 17. Gates 1 through
-3 close its authority, same-observation Search position carrier, and explicit
-single self-or-ancestor View projection while leaving v4 identity and
-currentness unchanged.
+4 close its authority, same-observation Search position carrier, explicit
+single self-or-ancestor View projection, and ordered all-or-nothing batch View
+while leaving v4 identity and currentness unchanged.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash and length only while its
@@ -103,8 +103,11 @@ currentness unchanged.
     workflow, target finder, state machine, relocation, retry, or error alias.
 17. **Information surfaces do not become identity or history.** Search may
     describe a hit's current Line position from the same source observation,
-    View may project only from a caller-held target to itself or an ancestor,
+    View may project only from caller-held targets to themselves or ancestors,
     and a confirmed Apply may expose a fresh address for its exact resulting
-    current state. Descriptive positions are not selectors or v4 fields;
-    projection is not discovery; and a receipt creates no predecessor,
-    successor, persistence, retry, watcher, or relocation authority.
+    current state. Ordered batch View groups exact source keys only to reuse one
+    direct source observation, then restores input order and duplicates; it
+    creates neither cross-target relation state nor partial results.
+    Descriptive positions are not selectors or v4 fields; projection is not
+    discovery; and a receipt creates no predecessor, successor, persistence,
+    retry, watcher, or relocation authority.

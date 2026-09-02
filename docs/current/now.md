@@ -2,14 +2,18 @@
 
 ## In-progress 0.2.3 Patch Box
 
-Gates 1 through 3 close authority, the consumer matrix, Search observation
-metadata, and native single View projection for the `0.2.3` Patch Box. It is an AI-facing information-surface
+Gates 1 through 4 close authority, the consumer matrix, Search observation
+metadata, native single View projection, and ordered batch View for the `0.2.3`
+Patch Box. It is an AI-facing information-surface
 patch, not an engine-performance project. Search now returns ordered
 `SearchOccurrence` values that pair each exact opaque v4 Anddress with its
 same-observation descriptive position. Single View now accepts one existing
 `AnddressTarget` projection and returns the projected current v4 Anddress plus
-exact Content from the same accepted observation. Later gates cover ordered batch,
-one-shot Replace, and reuse of a returned fresh
+exact Content from the same accepted observation. Batch View preserves caller
+order and duplicates, returns all outcomes or none, and groups inputs so each
+Untrusted or Host-proof-miss source is opened once and directly observed once.
+Later gates cover
+one-shot Replace and reuse of a returned fresh
 current Anddress when the published result has one.
 
 Line Search metadata is the current one-based Line number. Paragraph Search
@@ -32,9 +36,13 @@ is `InvalidInput` before source I/O; implicit Search and relocation are
 excluded. File, Paragraph, and Line outcomes include the projected current v4
 Anddress and exact target Content. A Line-to-Paragraph request with no exact
 containing current Paragraph returns the normal `RelationAbsent` outcome. The
-single form precedes an input-order- and duplicate-preserving, all-or-nothing
-batch using one current observation per logical source rather than repeated
-single View execution.
+batch seam is `WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget) ->
+Result<Vec<ViewOutcome>, ViewError>`. It validates the complete collection
+before I/O, restores exact input order and multiplicity after source grouping,
+and uses one direct observation per source for Untrusted and Host-proof-miss
+execution. A matching Host proof is selected once per source and serves every
+member through one handle and the existing trusted scanner. Empty input is an
+I/O-free empty success; any later failure discards every provisional outcome.
 
 A successful one-shot Replace receipt describes only the just-published
 current state. It is not history, lineage, or proof about an external writer.
@@ -45,8 +53,8 @@ is conditional on a syntax and EOF/UTF-8/NUL/newline/failure contract that
 cannot collide with literal `--stdin` Content.
 
 The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
-records the completed carrier and single-projection migration plus remaining
-batch and Edit-output choices.
+records the completed carrier, single-projection, and batch migration plus the
+remaining Edit-output choices.
 Cargo, `bw version`, README, artifacts, installers, server, services, tunnel,
 DNS, public root, and the exact 44-file official distribution remain closed
 `0.2.2`.

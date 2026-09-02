@@ -4,13 +4,13 @@
 
 The [eight-gate Patch Box tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
 orders an AI-facing information-surface patch without reopening the engine,
-v4 identity, currentness, or the closed `0.2.2` release. Gates 1 through 3 close
+v4 identity, currentness, or the closed `0.2.2` release. Gates 1 through 4 close
 authority, the consumer matrix, same-observation Search position metadata, and
-native single upward View projection. The remaining gates add, in order,
-ordered all-or-nothing batch View with per-source observation reuse, one-shot Edit
-receipts and fresh current addresses, Adapter output plus a conditional stdin
-decision, an integrated Dummy E2E/readiness gate, and separately authorized
-artifact/publication work.
+native single upward View projection plus ordered all-or-nothing batch View
+with per-source observation reuse. The remaining gates add, in order, one-shot
+Edit receipts and fresh current addresses, Adapter output plus a conditional
+stdin decision, an integrated Dummy E2E/readiness gate, and separately
+authorized artifact/publication work.
 
 The target flow is Search result information plus an opaque v4 Anddress,
 optional caller-selected View projection, one-shot Replace, and reuse of the
@@ -38,6 +38,19 @@ current Paragraph returns `RelationAbsent`. Downward requests fail as
 and Data consumers retain self projection and byte-identical output. There is
 no request DTO, second executor, finder, graph, cache, retry, or compatibility
 signature.
+
+Gate 4 adds
+`WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget) ->
+Result<Vec<ViewOutcome>, ViewError>` without an Adapter command or Anchor batch.
+It validates every source-less input and projection relation before Runtime
+preflight or I/O, then groups by coordinate and logical path. Empty input is an
+I/O-free empty success. Untrusted and Host-proof-miss groups open and directly
+observe each source once; matching Host groups select one proof and reuse one
+handle with the existing trusted range scanner. Original order, duplicates,
+and `RelationAbsent` outcomes are restored exactly, while any validation,
+allocation, source, or resource failure discards the entire provisional result.
+No generic batch layer, repeated public single View, cache, retry, or v4 change
+is introduced.
 
 ## Completed: 0.2.2 Anddress-first editing and distribution
 

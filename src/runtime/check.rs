@@ -98,7 +98,9 @@ fn execute_prevalidated_batch<T: CheckedValue>(
     inputs: Vec<T>,
 ) -> Result<CheckOutcome<Vec<T>>, CheckError> {
     let mut order = indices(inputs.len())?;
-    order.sort_unstable_by(|left, right| compare_groups(&inputs[*left], &inputs[*right]));
+    order.sort_unstable_by(|left, right| {
+        super::compare_source_keys(inputs[*left].anddress(), inputs[*right].anddress())
+    });
     let mut statuses = Vec::new();
     statuses
         .try_reserve_exact(inputs.len())
@@ -140,30 +142,10 @@ fn indices(length: usize) -> Result<Vec<usize>, CheckError> {
     Ok(result)
 }
 
-fn compare_groups<T: CheckedValue>(left: &T, right: &T) -> std::cmp::Ordering {
-    let left = left.anddress();
-    let right = right.anddress();
-    left.workspace_coordinate()
-        .as_bytes()
-        .cmp(right.workspace_coordinate().as_bytes())
-        .then_with(|| {
-            left.logical_path()
-                .as_bytes()
-                .cmp(right.logical_path().as_bytes())
-        })
-}
-
-fn same_group<T: CheckedValue>(left: &T, right: &T) -> bool {
-    let left = left.anddress();
-    let right = right.anddress();
-    left.workspace_coordinate() == right.workspace_coordinate()
-        && left.logical_path() == right.logical_path()
-}
-
 fn group_end<T: CheckedValue>(inputs: &[T], order: &[usize], start: usize) -> usize {
-    let first = &inputs[order[start]];
+    let first = inputs[order[start]].anddress();
     let mut end = start + 1;
-    while end < order.len() && same_group(first, &inputs[order[end]]) {
+    while end < order.len() && super::same_source_key(first, inputs[order[end]].anddress()) {
         end += 1;
     }
     end

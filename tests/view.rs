@@ -213,6 +213,466 @@ fn view_projects_all_six_upward_relations_from_one_current_observation() {
 }
 
 #[test]
+fn view_batch_preserves_empty_single_duplicate_and_mixed_source_order() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source_a = b"one\r\ntwo\n \t\r\nlast\r";
+    let source_b = "β\none".as_bytes();
+    fs::write(root.join("a.txt"), source_a).unwrap();
+    fs::write(root.join("b.txt"), source_b).unwrap();
+    let workspace = runtime(&root);
+    let coordinate = coordinate(&workspace);
+    let file_a = address(
+        coordinate.clone(),
+        "a.txt",
+        source_a,
+        AnddressTarget::File,
+        0,
+        source_a.len(),
+    );
+    let paragraph_a = address(
+        coordinate.clone(),
+        "a.txt",
+        source_a,
+        AnddressTarget::Paragraph,
+        0,
+        9,
+    );
+    let line_a = address(
+        coordinate.clone(),
+        "a.txt",
+        source_a,
+        AnddressTarget::Line,
+        5,
+        9,
+    );
+    let file_b = address(
+        coordinate.clone(),
+        "b.txt",
+        source_b,
+        AnddressTarget::File,
+        0,
+        source_b.len(),
+    );
+    let line_b = address(coordinate, "b.txt", source_b, AnddressTarget::Line, 0, 3);
+
+    assert_eq!(
+        workspace.view_batch(&[], AnddressTarget::File),
+        Ok(Vec::new())
+    );
+    assert_eq!(
+        workspace.view_batch(std::slice::from_ref(&line_a), AnddressTarget::Line),
+        Ok(vec![ViewOutcome::Line {
+            anddress: line_a.clone(),
+            content: "two".to_owned(),
+            terminator: LineTerminator::Lf,
+            file: file_a.clone(),
+            paragraph: Some(paragraph_a.clone()),
+        }])
+    );
+
+    let output_a = ViewOutcome::File {
+        anddress: file_a.clone(),
+        text: String::from_utf8(source_a.to_vec()).unwrap(),
+    };
+    let output_b = ViewOutcome::File {
+        anddress: file_b,
+        text: String::from_utf8(source_b.to_vec()).unwrap(),
+    };
+    assert_eq!(
+        workspace.view_batch(
+            &[line_a.clone(), line_b, line_a, paragraph_a, file_a,],
+            AnddressTarget::File,
+        ),
+        Ok(vec![
+            output_a.clone(),
+            output_b,
+            output_a.clone(),
+            output_a.clone(),
+            output_a,
+        ])
+    );
+}
+
+#[test]
+fn view_batch_preserves_relations_terminators_unicode_and_raw_ranges() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source = "α\nβ\rγ\r\n \t\nlast".as_bytes();
+    fs::write(root.join("coordinate.txt"), b"one").unwrap();
+    fs::write(root.join("note.txt"), source).unwrap();
+    let workspace = runtime(&root);
+    let coordinate = coordinate(&workspace);
+    let file = address(
+        coordinate.clone(),
+        "note.txt",
+        source,
+        AnddressTarget::File,
+        0,
+        source.len(),
+    );
+    let paragraph = address(
+        coordinate.clone(),
+        "note.txt",
+        source,
+        AnddressTarget::Paragraph,
+        0,
+        10,
+    );
+    let last_paragraph = address(
+        coordinate.clone(),
+        "note.txt",
+        source,
+        AnddressTarget::Paragraph,
+        13,
+        17,
+    );
+    let lines = [
+        address(
+            coordinate.clone(),
+            "note.txt",
+            source,
+            AnddressTarget::Line,
+            0,
+            3,
+        ),
+        address(
+            coordinate.clone(),
+            "note.txt",
+            source,
+            AnddressTarget::Line,
+            3,
+            6,
+        ),
+        address(
+            coordinate.clone(),
+            "note.txt",
+            source,
+            AnddressTarget::Line,
+            6,
+            10,
+        ),
+        address(
+            coordinate.clone(),
+            "note.txt",
+            source,
+            AnddressTarget::Line,
+            10,
+            13,
+        ),
+        address(
+            coordinate.clone(),
+            "note.txt",
+            source,
+            AnddressTarget::Line,
+            13,
+            17,
+        ),
+    ];
+    let raw = address(coordinate, "note.txt", source, AnddressTarget::Line, 3, 8);
+
+    let line_outcomes = workspace.view_batch(&lines, AnddressTarget::Line).unwrap();
+    assert_eq!(line_outcomes.len(), 5);
+    for (outcome, content, terminator, related) in [
+        (&line_outcomes[0], "α", LineTerminator::Lf, Some(&paragraph)),
+        (&line_outcomes[1], "β", LineTerminator::Cr, Some(&paragraph)),
+        (
+            &line_outcomes[2],
+            "γ",
+            LineTerminator::Crlf,
+            Some(&paragraph),
+        ),
+        (&line_outcomes[3], " \t", LineTerminator::Lf, None),
+        (
+            &line_outcomes[4],
+            "last",
+            LineTerminator::None,
+            Some(&last_paragraph),
+        ),
+    ] {
+        assert!(matches!(
+            outcome,
+            ViewOutcome::Line {
+                content: actual,
+                terminator: actual_terminator,
+                file: actual_file,
+                paragraph: actual_paragraph,
+                ..
+            } if actual == content
+                && *actual_terminator == terminator
+                && actual_file == &file
+                && actual_paragraph.as_ref() == related
+        ));
+    }
+
+    let paragraph_output = ViewOutcome::Paragraph {
+        anddress: paragraph.clone(),
+        text: "α\nβ\rγ\r\n".to_owned(),
+        file: file.clone(),
+    };
+    assert_eq!(
+        workspace.view_batch(
+            &[
+                paragraph.clone(),
+                lines[0].clone(),
+                lines[3].clone(),
+                raw,
+                lines[4].clone(),
+                lines[0].clone(),
+            ],
+            AnddressTarget::Paragraph,
+        ),
+        Ok(vec![
+            paragraph_output.clone(),
+            paragraph_output.clone(),
+            ViewOutcome::RelationAbsent,
+            ViewOutcome::RelationAbsent,
+            ViewOutcome::Paragraph {
+                anddress: last_paragraph,
+                text: "last".to_owned(),
+                file,
+            },
+            paragraph_output,
+        ])
+    );
+}
+
+#[test]
+fn view_batch_preflights_relations_and_fails_all_for_unavailable_members() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("a.txt"), b"one\n").unwrap();
+    let workspace = runtime(&root);
+    let coordinate = coordinate(&workspace);
+    let current = address(
+        coordinate.clone(),
+        "a.txt",
+        b"one\n",
+        AnddressTarget::File,
+        0,
+        4,
+    );
+    let paragraph = address(
+        coordinate.clone(),
+        "a.txt",
+        b"one\n",
+        AnddressTarget::Paragraph,
+        0,
+        4,
+    );
+    let line = address(
+        coordinate.clone(),
+        "a.txt",
+        b"one\n",
+        AnddressTarget::Line,
+        0,
+        4,
+    );
+
+    fs::write(root.join("b.txt"), b"new\n").unwrap();
+    fs::write(root.join("invalid.txt"), b"\xff").unwrap();
+    fs::write(root.join("zero.txt"), b"x\0").unwrap();
+    let unavailable = [
+        address(
+            coordinate.clone(),
+            "b.txt",
+            b"old\n",
+            AnddressTarget::File,
+            0,
+            4,
+        ),
+        address(
+            coordinate.clone(),
+            "invalid.txt",
+            b"\xff",
+            AnddressTarget::File,
+            0,
+            1,
+        ),
+        address(
+            coordinate.clone(),
+            "zero.txt",
+            b"x\0",
+            AnddressTarget::File,
+            0,
+            2,
+        ),
+        address(
+            coordinate.clone(),
+            "missing.txt",
+            b"missing",
+            AnddressTarget::File,
+            0,
+            7,
+        ),
+        address(
+            "b".repeat(64),
+            "foreign.txt",
+            b"x",
+            AnddressTarget::File,
+            0,
+            1,
+        ),
+        address(
+            coordinate.clone(),
+            ".artext/bw/private.txt",
+            b"x",
+            AnddressTarget::File,
+            0,
+            1,
+        ),
+    ];
+    for bad in unavailable {
+        assert_eq!(
+            workspace.view_batch(&[current.clone(), bad], AnddressTarget::File),
+            Err(ViewError::Unavailable)
+        );
+    }
+
+    fs::create_dir_all(root.join("docs")).unwrap();
+    fs::write(root.join("docs/note.txt"), b"one\n").unwrap();
+    fs::write(root.join("outside.txt"), b"one\n").unwrap();
+    let admitted = runtime_with_admission(&root, "docs");
+    let admitted_file = address(
+        coordinate.clone(),
+        "docs/note.txt",
+        b"one\n",
+        AnddressTarget::File,
+        0,
+        4,
+    );
+    let unadmitted_file = address(
+        coordinate.clone(),
+        "outside.txt",
+        b"one\n",
+        AnddressTarget::File,
+        0,
+        4,
+    );
+    assert_eq!(
+        admitted.view_batch(&[admitted_file, unadmitted_file], AnddressTarget::File),
+        Err(ViewError::Unavailable)
+    );
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::symlink;
+
+        let outside = fixture.path().join("outside.txt");
+        fs::write(&outside, b"one\n").unwrap();
+        symlink(&outside, root.join("linked.txt")).unwrap();
+        let linked = address(
+            coordinate.clone(),
+            "linked.txt",
+            b"one\n",
+            AnddressTarget::File,
+            0,
+            4,
+        );
+        assert_eq!(
+            workspace.view_batch(&[current.clone(), linked], AnddressTarget::File),
+            Err(ViewError::Unavailable)
+        );
+    }
+
+    fs::remove_file(root.join("a.txt")).unwrap();
+    for (inputs, projection) in [
+        (
+            vec![paragraph.clone(), current.clone()],
+            AnddressTarget::Paragraph,
+        ),
+        (vec![line.clone(), current], AnddressTarget::Line),
+        (vec![line, paragraph], AnddressTarget::Line),
+    ] {
+        assert_eq!(
+            workspace.view_batch(&inputs, projection),
+            Err(ViewError::InvalidInput)
+        );
+    }
+}
+
+#[test]
+fn host_view_batch_reuses_and_invalidates_proof_per_source_group() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    let source_a = b"one\n";
+    let source_b = b"one\r\n";
+    fs::write(root.join("a.txt"), source_a).unwrap();
+    fs::write(root.join("b.txt"), source_b).unwrap();
+    let coordinate = coordinate(&runtime(&root));
+    let line_a = address(
+        coordinate.clone(),
+        "a.txt",
+        source_a,
+        AnddressTarget::Line,
+        0,
+        source_a.len(),
+    );
+    let line_b = address(
+        coordinate.clone(),
+        "b.txt",
+        source_b,
+        AnddressTarget::Line,
+        0,
+        source_b.len(),
+    );
+    let inputs = [line_a.clone(), line_b.clone(), line_a.clone()];
+    let mut host = host_runtime(&root);
+    let request = SearchRequest::new(
+        SearchQuery::new("one").unwrap(),
+        SearchScope::all_admitted(),
+        SearchTarget::Line,
+    );
+    assert!(matches!(
+        host.search(&request),
+        Ok(SearchOutcome::Found { occurrences }) if occurrences.len() == 2
+    ));
+
+    let trusted = host.view_batch(&inputs, AnddressTarget::Line).unwrap();
+    let direct = runtime(&root)
+        .view_batch(&inputs, AnddressTarget::Line)
+        .unwrap();
+    assert_eq!(trusted, direct);
+    assert_eq!(trusted[0], trusted[2]);
+
+    let stale_a = address(coordinate, "a.txt", b"two\n", AnddressTarget::Line, 0, 4);
+    let parked_a = root.join("parked-a");
+    fs::rename(root.join("a.txt"), &parked_a).unwrap();
+    assert_eq!(
+        host.view_batch(&[line_a.clone(), stale_a], AnddressTarget::Line),
+        Err(ViewError::Unavailable)
+    );
+    assert_eq!(
+        host.check(line_a.clone()).unwrap().filtered,
+        Some(line_a.clone())
+    );
+    fs::rename(&parked_a, root.join("a.txt")).unwrap();
+
+    let parked_b = root.join("parked-b");
+    fs::rename(root.join("b.txt"), &parked_b).unwrap();
+    assert_eq!(
+        host.view_batch(&[line_b.clone(), line_b.clone()], AnddressTarget::Line,),
+        Err(ViewError::Unavailable)
+    );
+    assert_eq!(host.check(line_b.clone()).unwrap().filtered, None);
+    fs::rename(&parked_b, root.join("b.txt")).unwrap();
+    assert_eq!(
+        host.check(line_a.clone()).unwrap().filtered,
+        Some(line_a.clone())
+    );
+
+    host.invalidate_source("a.txt").unwrap();
+    assert_eq!(
+        host.view_batch(&[line_a.clone(), line_a.clone()], AnddressTarget::Line,),
+        runtime(&root).view_batch(&[line_a.clone(), line_a], AnddressTarget::Line)
+    );
+}
+
+#[test]
 fn view_rejects_downward_requests_before_io_and_returns_relation_absent() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
@@ -715,6 +1175,17 @@ fn view_preserves_ranges_at_every_source_scratch_boundary() {
                     && anddress.byte_end() == source.len()
                     && text.as_bytes() == source
         ));
+        for projection in [
+            AnddressTarget::Line,
+            AnddressTarget::Paragraph,
+            AnddressTarget::File,
+        ] {
+            let outputs = workspace
+                .view_batch(&[input.clone(), input.clone()], projection)
+                .unwrap();
+            assert_eq!(outputs.len(), 2);
+            assert_eq!(outputs[0], outputs[1]);
+        }
     }
 }
 
