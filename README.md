@@ -7,7 +7,7 @@ addresses without turning source history or editor state into Core identity.
 The Core capability inventory is Search, View, Pick, Anchor, Check, Edit,
 Apply, and Data. The repository currently provides their Rust Core/Runtime
 surfaces and the canonical `bw` executable's one-shot human and JSON
-Search/View/Check, raw View, Anddress-first one-shot Edit, Session Pick, batch
+Search/View/Check/Edit, raw View, Anddress-first one-shot Edit, Session Pick, batch
 Check, Anchor, Edit, Apply, result-binding, explicit Data modes, and
 Adapter-owned Version and Update.
 
@@ -79,6 +79,10 @@ The source checkout and closed official distribution are `0.2.2`; Cargo and
 `bw version` are also `0.2.2`. The canonical artifacts retain Source Authority
 revision `04b36d9ca9cc725bedeb17231339c67b5f0590ea`; the later
 documentation-only closure commit does not change that manifest provenance.
+The source checkout additionally contains unpublished `0.2.3` Patch Box Gates
+1–6, including Search positions, View projection/batching, native Edit receipts,
+and the receipt output documented below. None is present in the official
+`0.2.2` artifacts yet.
 
 ## Anddress-first editing
 
@@ -96,12 +100,24 @@ replacement. Line Content is body-only, rejects NUL, CR, and LF, and preserves
 the current None, LF, CR, or CRLF terminator. View or Pick may help a caller
 select a target; Check is not required.
 
-Success writes exactly `OK` and LF. The old Anddress must not be reused after
-an edit; explicitly Search again for a new current address. Exit `1` is neither
-a stale-only classification nor proof that source bytes are unchanged, so it
-must not trigger automatic retry. This argv transport remains subject to
-operating-system argument limits, shell-specific quoting and newline behavior,
-and possible Content exposure in process listings or shell history.
+Human success writes one exact LF-terminated receipt row. `Unchanged` is
+followed by the still-current input v4 object; `Changed` is followed by the
+fresh v4 object when the resulting File, Line, or unique Paragraph has one,
+and otherwise by `None`. With leading `--json`, the same result is the compact
+Adapter-only `bw.cli.edit.v1` object with `schema`, `outcome`, and `anddress`
+keys in that order; `anddress` is the exact v4 object or JSON `null`. Reuse only
+the address returned by the receipt. A changed Paragraph with `None` requires
+an explicit Search before later target work. Exit `1` is neither a stale-only
+classification nor proof that source bytes are unchanged, so it must not
+trigger automatic retry.
+
+Argv remains the only Content transport. Empty and Unicode Content,
+File/Paragraph CR and LF, and permitted Line bodies already travel in one argv
+value. Known OS length, shell quoting/newline, process-list, and history
+constraints are not a reproduced consumer failure, measured payload need, or
+concrete security requirement, so this slice adds no stdin syntax or reader.
+Literal `--json`, `--raw`, and `--stdin` in the Content position remain exact
+Content.
 
 Raw Session is the advanced composition surface for Insert/Delete/Move/Copy,
 Position, Anchor/Data lifetime, explicit bindings, and separate Apply. It is
@@ -124,7 +140,7 @@ sources.
 ## Current CLI scope
 
 `bw` currently implements Adapter-owned one-shot Version and Update, one-shot
-human or JSON Search, View, and Check, raw View, Anddress-first one-shot Edit,
+human or JSON Search, View, Check, and Edit, raw View, Anddress-first one-shot Edit,
 plus Session Pick, batch Check, Anchor, Edit, Apply, and Data:
 
 ```text
@@ -152,6 +168,8 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     check anddress <encoded-v4-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     edit anddress <encoded-v4-Anddress> <content>
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+    edit anddress <encoded-v4-Anddress> <content>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 ```
 
@@ -165,12 +183,13 @@ UTF-8, NUL-free source regardless of whether it is empty or contains matching
 text. Missing paths and directories return Empty; the form has no scope
 selectors or synthetic content query. View decodes a v4 Anddress and writes only
 its exact selected text. Check decodes one v4 Anddress and writes only
-`Current`, `NotCurrent`, or `Unavailable`. Search, View, and Check `--json`
+`Current`, `NotCurrent`, or `Unavailable`. Search, View, Check, and Edit `--json`
 write one compact Adapter object with exact embedded v4 Anddress objects where
 applicable; each is an Adapter schema, not a second Core wire.
 Raw View is an explicit Adapter exact-text mode that reuses the ordinary View
 projection without a Core wire or changed View meaning.
-Human output does not expose address metadata.
+Human Search, View, and Check keep their existing projections; human Edit
+receipts intentionally return the exact current v4 object when one exists.
 The Session holds one Runtime until EOF
 or `exit` and has explicit local Search, Pick, Anddress, Edit, View, and Check
 bindings plus non-aliasing Anchedress handles. It owns one explicit `DataStore`

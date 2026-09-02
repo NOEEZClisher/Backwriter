@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.3 Patch Box Gates 1–5
+## 0.2.3 Patch Box Gates 1–6
 
 Gate 1 records the direct Search, View, Edit, Check, Data, Session, Pick, and
 writer consumers. Gate 2 implements only the Search observation carrier and
@@ -105,10 +105,39 @@ Non-Replace input rejects before filesystem access. Existing stale, invalid,
 unadmitted, open/read/resource, staging collision, rename uncertainty, cleanup,
 proof invalidation, and Anchor fail-closure tests continue through the shared
 executor and return no successful receipt on error. Existing raw Apply covers
-all five operations and four positions, and CLI regressions retain exact
-one-shot and Session `OK` plus LF, exit/error streams, argv Content, and output
-option rejection. The complete offline/locked GNU-host suite passes 255 tests:
-the 253 Gate 4 controls plus two public Gate 5 receipt regressions.
+all five operations and four positions. The Gate 5 baseline had 255 tests: the
+253 Gate 4 controls plus two public receipt regressions.
+
+Gate 6 removes only the one-shot Adapter's discarded-receipt and shared `OK`
+writer call. One direct writer emits exact human `Unchanged`/`Changed` rows or
+the fixed-order `bw.cli.edit.v1` object. It calls `Anddress::encode()` once
+before creating the stdout writer and directly reuses those bytes; structural
+checks reject a JSON `Value`, reserialization, clone, result collection,
+post-Apply Search, reopen, Check, stdin reader, parallel writer, or second
+schema. Raw Session Apply continues to use the independent status writer and
+emits exact `OK` plus LF.
+
+CLI regressions cover human and JSON `Unchanged`, changed File/Line/unique
+Paragraph addresses, and changed zero/multiple-Paragraph `None`/`null`; exact
+schema/key order/final LF; embedded canonical-v4 decode and byte equality;
+every Line terminator, empty and Unicode Content; and a Search-v2 object passed
+unchanged to Edit followed by View and another Edit using only the fresh
+receipt address. Leading `--json`, rejected `--raw`, duplicate output choice,
+extra operands, and literal positional `--json`, `--raw`, and `--stdin` are
+covered. Existing stale, missing, unadmitted, Runtime resource/read, staging,
+rename-uncertain, and publication failure controls plus writer-after-Apply
+ordering establish zero success output and no receipt on Apply failure. A
+Linux `/dev/full` control proves a post-publication flush failure exits `1`
+while leaving the confirmed source publication intact and without retry.
+
+Argv remains the only Content transport. Direct empty/Unicode,
+File/Paragraph-newline, and Line-body coverage exists; argument length,
+shell/newline behavior, and process-list/history exposure supply no reproduced
+consumer failure, measured payload need, or concrete security requirement.
+Gate 6 therefore adds no `--stdin` grammar, reader, EOF state, generic content
+source, file transport, or placeholder. The complete offline/locked GNU-host
+suite passes 256 tests: the 255 Gate 5 controls plus one CLI stream-failure
+regression.
 
 ## 0.2.2 Anddress-first editing Gates 1–6
 

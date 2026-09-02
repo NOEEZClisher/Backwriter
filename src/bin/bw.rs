@@ -1,4 +1,4 @@
-//! Human and JSON Search/View/Check, one-shot Edit, and Session adapter for Backwriter CLI V1.
+//! Human and JSON Search/View/Check/Edit and Session adapter for Backwriter CLI V1.
 
 use std::{
     env,
@@ -21,7 +21,7 @@ use backwriter::{
     backwriter::{
         anchor::{Anchedress, AnchorError, AnchorOutcome},
         anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator},
-        apply::ApplyError,
+        apply::{ApplyError, EditReceipt},
         check::{CheckOutcome, CheckReport},
         data::{DataError, DataKind, DataName, DataStore, StoreError},
         edit::{Edit, EditError, Position},
@@ -35,7 +35,7 @@ use backwriter::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v4-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v4-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... edit anddress <encoded-v4-Anddress> <content>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, and Check, raw View, and Anddress-first Edit plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v4-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v4-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v4-Anddress> <content>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, Check, and Anddress-first Edit, raw View, plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 #[cfg(unix)]
 const INSTALL_SH_URL: &str = "https://backwriter.pentagration.com/install.sh";
@@ -517,8 +517,8 @@ fn execute_edit(
     admissions: Vec<AdmissionRoot>,
     output: OutputMode,
 ) -> Result<(), CliError> {
-    if output != OutputMode::Human {
-        return Err(CliError::usage("output options are unsupported for Edit"));
+    if output == OutputMode::Raw {
+        return Err(CliError::usage("--raw is supported only for View"));
     }
     let form = required_text(&mut arguments, "edit input form")?;
     if form != "anddress" {
@@ -560,10 +560,71 @@ fn execute_edit(
         content,
     };
     edit.validate().map_err(map_edit_error)?;
-    runtime
+    let receipt = runtime
         .apply_replace(&edit)
         .map_err(|error: ApplyError| CliError::execution(error.to_string()))?;
-    write_session_status("OK")
+    write_edit(receipt, output)
+}
+
+fn write_edit(receipt: EditReceipt, output: OutputMode) -> Result<(), CliError> {
+    let (human_outcome, json_outcome, anddress) = match receipt {
+        EditReceipt::Unchanged { anddress } => ("Unchanged", "unchanged", Some(anddress)),
+        EditReceipt::Changed { anddress } => ("Changed", "changed", anddress),
+    };
+    let encoded = match anddress.as_ref() {
+        Some(anddress) => Some(
+            anddress
+                .encode()
+                .map_err(|error| CliError::execution(error.to_string()))?,
+        ),
+        None => None,
+    };
+
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    match output {
+        OutputMode::Human => {
+            stdout
+                .write_all(human_outcome.as_bytes())
+                .map_err(|error| CliError::stream(error.to_string()))?;
+            stdout
+                .write_all(b"\t")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+        }
+        OutputMode::Json => {
+            stdout
+                .write_all(b"{\"schema\":\"bw.cli.edit.v1\",\"outcome\":\"")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+            stdout
+                .write_all(json_outcome.as_bytes())
+                .map_err(|error| CliError::stream(error.to_string()))?;
+            stdout
+                .write_all(b"\",\"anddress\":")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+        }
+        OutputMode::Raw => unreachable!(),
+    }
+    match encoded {
+        Some(encoded) => stdout
+            .write_all(&encoded)
+            .map_err(|error| CliError::stream(error.to_string()))?,
+        None if output == OutputMode::Human => stdout
+            .write_all(b"None")
+            .map_err(|error| CliError::stream(error.to_string()))?,
+        None => stdout
+            .write_all(b"null")
+            .map_err(|error| CliError::stream(error.to_string()))?,
+    }
+    if output == OutputMode::Json {
+        stdout
+            .write_all(b"}")
+            .map_err(|error| CliError::stream(error.to_string()))?;
+    }
+    stdout
+        .write_all(b"\n")
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
 }
 
 fn execute_view(

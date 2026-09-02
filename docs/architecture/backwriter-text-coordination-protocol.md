@@ -339,8 +339,9 @@ operation, and fixes the guarded mutation and both-mode drift boundaries above.
 
 ## In-progress 0.2.3 Patch Box information surface
 
-Gates 1 through 5 close meaning, order, Search observation metadata, native
-single View projection, ordered batch View, and the native Replace receipt;
+Gates 1 through 6 close meaning, order, Search observation metadata, native
+single View projection, ordered batch View, the native Replace receipt, and its
+one-shot Adapter projection;
 Cargo, `bw version`, and the published release remain
 `0.2.2`. Patch Box is an
 AI-facing information-surface patch over the current engine, not a
@@ -436,14 +437,21 @@ hash and length, direct range projection, publication boundary, and Anchor
 reflection plan. It must not run a CLI post-Search, reread the published
 source, guess a target, or infer relocation. The receipt creates no
 predecessor, successor, survivor, history, rollback, watcher, retry, registry,
-or persistent identity. The current one-shot Adapter discards this native
-receipt and retains exact `OK` plus LF until its output contract is separately
-closed.
+or persistent identity. The one-shot Adapter writes the receipt as one exact
+human `Unchanged`/`Changed` row or the Adapter-only `bw.cli.edit.v1` object.
+Both forms directly embed the canonical v4 object when one exists; changed
+Paragraph publication without one uses human `None` or JSON `null`. Apply
+failure writes no success bytes. Address encoding completes before the first
+write, while a later stream failure cannot undo the already determined no-op
+or publication and authorizes no retry.
 
-Existing argv Content remains supported. Stdin is only a later Adapter
-candidate. No stdin implementation is authorized until one syntax avoids any
-collision with literal `--stdin` Content and closes exact EOF, UTF-8, NUL,
-newline, resource, read-failure, and publication boundaries. Patch Box adds no
+Existing argv Content remains the only supported transport. Empty and Unicode
+Content, File/Paragraph CR/LF, and permitted Line bodies have direct argv
+coverage. OS argument and shell constraints plus process-list/history exposure
+do not constitute a reproduced consumer failure, measured payload need, or
+concrete security requirement, so Gate 6 adds no stdin grammar, reader, EOF
+state, generic content source, file transport, or placeholder. Literal
+`--stdin` in the Content position remains Content. Patch Box adds no
 Git meaning, diff, retry, compatibility layer, persistent target state, or
 performance claim.
 
@@ -660,14 +668,15 @@ remove reflection of existing live continuity.
 `DataStore` keeps its separate boundaries: it calls no capability, performs no
 automatic Store, has no latest slot, and performs no automatic update.
 
-The completed one-shot Search, View, and Check JSON projections are Adapter-only.
-Their compact envelopes identify `bw.cli.search.v2`, `bw.cli.view.v1`, and
-`bw.cli.check.v1`. Search identifies each occurrence by logical path, target
+The completed one-shot Search, View, Check, and Edit JSON projections are
+Adapter-only. Their compact envelopes identify `bw.cli.search.v2`,
+`bw.cli.view.v1`, `bw.cli.check.v1`, and `bw.cli.edit.v1`. Search identifies each occurrence by logical path, target
 kind, applicable current Line number or Paragraph Line range, and its directly
 embedded existing encoded v4 Anddress object. View embeds its related v4 File
 and optional Paragraph objects directly, and Check embeds its filtered v4
-Anddress object directly when present. They create no Core wire, value model,
-Search/View/Check state, result collection, or capability workflow. The
+Anddress object directly when present. Edit embeds the one native receipt
+address directly or uses `null`. They create no Core wire, value model,
+Search/View/Check/Edit state, result collection, or capability workflow. The
 published `0.2.2` Search v1 envelope remains immutable release evidence, not a
 production compatibility branch.
 

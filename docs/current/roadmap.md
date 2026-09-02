@@ -4,13 +4,12 @@
 
 The [eight-gate Patch Box tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
 orders an AI-facing information-surface patch without reopening the engine,
-v4 identity, currentness, or the closed `0.2.2` release. Gates 1 through 5 close
+v4 identity, currentness, or the closed `0.2.2` release. Gates 1 through 6 close
 authority, the consumer matrix, same-observation Search position metadata, and
 native single upward View projection plus ordered all-or-nothing batch View
-with per-source observation reuse, then the native Replace receipt. The
-remaining gates add Adapter output plus a conditional stdin decision, an
-integrated Dummy E2E/readiness gate, and separately authorized
-artifact/publication work.
+with per-source observation reuse, then the native Replace receipt and exact
+human/JSON Adapter projection. The remaining gates are an integrated Dummy
+E2E/readiness gate and separately authorized artifact/publication work.
 
 The target flow is Search result information plus an opaque v4 Anddress,
 optional caller-selected View projection, one-shot Replace, and reuse of the
@@ -62,9 +61,15 @@ address, or the unique resulting Paragraph address when one exists. Paragraph
 zero/multiple results are `Changed` with no address. The two seams share the
 single existing validator, staging/output path, `AfterProjector`, prospective
 after identity, Host-proof preparation, publication, and Anchor reflection.
-The one-shot Adapter discards the receipt and keeps exact `OK` plus LF until
-Gate 6; no Search, reopen, second observation, DTO, executor, or receipt state
-is added.
+Gate 6 sends the receipt to one direct writer. Human output is an exact
+`Unchanged`/`Changed` row with the canonical v4 object or `None`; JSON is the
+Adapter-only `bw.cli.edit.v1` object with that object or `null`. Encoding
+finishes before output starts, and no Search, reopen, second observation, DTO,
+executor, or receipt state is added. Argv stays the only Content transport.
+Empty/Unicode and newline-bearing permitted Content already have coverage;
+known OS/shell and process-list/history constraints do not supply a reproduced
+consumer failure, measured payload need, or concrete security requirement, so
+stdin has no grammar, reader, EOF state, or placeholder.
 
 ## Completed: 0.2.2 Anddress-first editing and distribution
 
@@ -461,8 +466,8 @@ the complete public `0.1.0-beta.3` bundle remains closed and immutable.
 
 The canonical `bw` executable implements exact `bw version`, explicit
 `bw update`, one-shot human and JSON Search,
-View, and Check plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result
-binding, and Data. JSON Search, View, and Check stream compact Adapter envelopes
+View, Check, and Edit plus raw View, Session Pick, batch Check, Anchor, Edit, Apply, result
+binding, and Data. JSON Search, View, Check, and Edit stream compact Adapter envelopes
 with exact v4 Anddress objects where applicable and create no Core wire. The
 Raw View is an exact-text Adapter projection that reuses ordinary View output
 without a Core wire or new View meaning. The Session owns one Runtime and one

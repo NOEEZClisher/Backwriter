@@ -2,7 +2,7 @@
 
 ## In-progress 0.2.3 Patch Box
 
-Gates 1 through 5 close authority, the consumer matrix, Search observation
+Gates 1 through 6 close authority, the consumer matrix, Search observation
 metadata, native single View projection, and ordered batch View for the `0.2.3`
 Patch Box. It is an AI-facing information-surface
 patch, not an engine-performance project. Search now returns ordered
@@ -13,9 +13,10 @@ exact Content from the same accepted observation. Batch View preserves caller
 order and duplicates, returns all outcomes or none, and groups inputs so each
 Untrusted or Host-proof-miss source is opened once and directly observed once.
 Gate 5 adds the Replace-only native receipt seam and reuses its returned fresh
-current Anddress when the confirmed result has one. Later gates cover Adapter
-receipt output, the conditional stdin decision, integration/readiness, and
-separately authorized publication.
+current Anddress when the confirmed result has one. Gate 6 exposes that result
+through exact human and JSON one-shot Edit output and closes stdin as a
+no-addition decision. Later gates cover integration/readiness and separately
+authorized publication.
 
 Line Search metadata is the current one-based Line number. Paragraph Search
 metadata is the current one-based inclusive start-to-end Line range. File
@@ -60,14 +61,22 @@ public calls use one executor and the same prospective-after hash, length,
 projection, prepared Host proof, publication, and Anchor plan. No successful
 receipt exists for a definite failure or `PublicationUncertain`; uncertain
 publication retains the existing same-path proof and Anchor invalidation. The
-one-shot CLI consumes `apply_replace` but discards its receipt through Gate 5,
-so its exact `OK` plus LF and error behavior remain unchanged. It performs no
-post-publication Search, reopen, or second observation. Argv Content remains
-supported; stdin remains a later conditional decision.
+one-shot CLI consumes `apply_replace` and writes its receipt directly. Human
+output is `Unchanged` or `Changed`, tab, then a canonical v4 object or `None`;
+`bw.cli.edit.v1` uses `unchanged`/`changed` and the same object or `null` in
+fixed key order. It performs no post-publication Search, reopen, or second
+observation. Apply failures write no stdout. A later output failure remains
+exit `1` after the no-op/publication decision and creates no rollback or retry.
+Argv remains the only Content transport; literal `--json`, `--raw`, and
+`--stdin` remain Content in that position. Empty/Unicode, File/Paragraph
+newline, and permitted Line-body cases have direct coverage. Known argument,
+shell, process-list, and history constraints provide no reproduced consumer
+failure, measured payload need, or concrete security requirement for adding a
+stdin reader or EOF state.
 
 The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
-records the completed carrier, View projections, and native Edit receipt plus
-the remaining Adapter-output choices.
+records the completed carrier, View projections, native Edit receipt, and
+one-shot Adapter output plus the remaining integration/release gates.
 Cargo, `bw version`, README, artifacts, installers, server, services, tunnel,
 DNS, public root, and the exact 44-file official distribution remain closed
 `0.2.2`.
@@ -296,7 +305,7 @@ implementation are complete.
 
 The repository includes the canonical `bw` CLI Adapter. Its completed
 scope includes exact `bw version`, explicit `bw update`, one-shot human and
-JSON Search, View, and Check plus raw View and Session Pick,
+JSON Search, View, Check, and Edit plus raw View and Session Pick,
 batch Check, Anchor, Edit, Apply, result binding, and explicit Data over the existing public
 Runtime seams. The Session retains one Runtime, one caller-owned `DataStore`,
 and explicit CLI-local bindings plus non-aliasing owning Anchedress handles.
@@ -305,7 +314,7 @@ CLI-parsed predicate to the existing pure Core function. Session batch Check
 passes an exact matching binding clone to `check_search` or `check_pick` and
 exposes only its report counts. Session Anchor creates an opaque Runtime-local
 handle, views it through the existing anchored seam, and invalidates only its
-logical source. One-shot Search, View, and Check JSON stream compact Adapter
+logical source. One-shot Search, View, Check, and Edit JSON stream compact Adapter
 envelopes without creating a Core wire; related or filtered values are exact
 existing v4 Anddress objects. Raw View is an explicit Adapter exact-text
 projection and creates no Core wire or new View meaning. Data transfers exact

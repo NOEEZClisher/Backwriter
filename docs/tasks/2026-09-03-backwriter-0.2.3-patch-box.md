@@ -1,6 +1,6 @@
 # Backwriter 0.2.3 Patch Box
 
-Status: Gates 1–5 complete. Gates 6–8 are pending and require their own scoped
+Status: Gates 1–6 complete. Gates 7–8 are pending and require their own scoped
 authorization.
 
 This tracker records order, evidence, and unresolved implementation choices.
@@ -10,7 +10,7 @@ Normative meaning belongs to the active
 [principles](../principles/backwriter-core-principles.md), and
 [CLI authority](../architecture/backwriter-cli-v1.md). The published `0.2.2`
 source, Cargo and CLI version, artifacts, installers, exact 44-file public
-tree, and service remain the closed baseline through Gate 4.
+tree, and service remain the closed baseline through Gate 6.
 
 ## Goal and exclusions
 
@@ -192,9 +192,9 @@ target-range projection, Host-proof preparation, publication result, and live
 Anchor reflection plan. It may not reopen the source, run Search, guess by
 content/context, or retain an old-to-new relation after return.
 
-The one-shot Adapter alone switches to `apply_replace` and discards the receipt,
-preserving exact `OK` plus LF, exits, stderr, argv Content, and output-option
-rejection through Gate 5. No binding, Data kind, JSON, stdin, request DTO,
+At Gate 5 the one-shot Adapter alone switched to `apply_replace` and temporarily
+discarded the receipt while preserving exact `OK` plus LF. Gate 6 replaces only
+that transitional status projection. No binding, Data kind, request DTO,
 parallel executor, second observation, or post-publication Search is added.
 
 Regression covers fresh File hash/length/full range with immediate View, Check,
@@ -208,20 +208,33 @@ executor, while structural checks exclude a source reopen, second observation,
 or Search. The complete GNU-host suite has 255 tests: the 253 Gate 4 controls
 plus two public receipt regressions.
 
-## Gate 6 — Adapter output and conditional stdin — pending
+## Gate 6 — Adapter output and stdin decision — complete
 
-- Define human and JSON Edit receipt output only after Gate 5 fixes the native
-  result. Stream exact embedded v4 objects without re-encoding through a JSON
-  value tree or retaining a second result collection.
-- Preserve argv Content as a supported transport and the current usage,
-  execution, stream, and publication-error boundaries.
-- Treat stdin as optional. Implement it only if a concrete consumer need
-  remains and one grammar cannot collide with literal `--stdin` argv Content.
-  Before implementation, close exact EOF, UTF-8, NUL, Line CR/LF, File and
-  Paragraph newline, empty input, read/resource failure, status, and
-  publication behavior. Otherwise record a no-addition decision.
-- Add no raw Edit transport, generic input source, retry, wrapper, dependency,
-  or automatic Search/View/Check sequence.
+- Human Edit emits exactly `Unchanged` or `Changed`, a tab, and one canonical
+  v4 object or `None`, followed by LF. `Unchanged` is the original validated
+  current target; `Changed(Some)` is the fresh result; `Changed(None)` is a
+  confirmed zero/multiple-Paragraph result.
+- Leading `--json` emits the compact `bw.cli.edit.v1` object with fixed
+  `schema`, `outcome`, and `anddress` order. The single writer encodes an
+  address once before stdout access and directly embeds those bytes; it has no
+  JSON value tree, reserialization, clone, or result collection.
+- Apply and `PublicationUncertain` errors emit zero stdout and return no
+  receipt. A write/flush failure after Apply exits `1` without undoing the
+  already confirmed publication or no-op; partial stdout is possible and no
+  retry follows.
+- Argv stays the sole Content transport. Empty/Unicode, File/Paragraph CR/LF,
+  and permitted Line bodies already have direct coverage. Known OS/shell and
+  process-list/history constraints do not provide a reproduced consumer
+  failure, measured payload need, or concrete security requirement, so no
+  stdin syntax, reader, EOF state, generic content source, file transport, or
+  placeholder is added. Positional `--json`, `--raw`, and `--stdin` remain
+  literal Content; leading `--raw` remains a usage error.
+- Regression covers both output modes and every receipt state/target shape,
+  canonical embedded-v4 equality, Search-v2 object to Edit to direct fresh
+  View/Edit reuse, all Line terminators, grammar/error streams, post-Apply
+  output failure, raw Session `OK`, and structural absence of post-Search,
+  reopen, Check, stdin, parallel writer, or schema paths. The complete
+  GNU-host suite has 256 tests.
 
 ## Gate 7 — Dummy integration and source-readiness decision — pending
 

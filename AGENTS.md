@@ -81,7 +81,7 @@ Edit/Position/Apply is the exact low-level primitive, Session `let ... = edit
 one-shot Anddress-first Edit is the canonical Replace contraction. None is
 internal, deprecated, renamed, aliased, or wrapped by that separation.
 
-`0.2.3` Patch Box Gates 1 through 5 are complete in source. Gate 1 closes
+`0.2.3` Patch Box Gates 1 through 6 are complete in source. Gate 1 closes
 authority and the consumer matrix. Gate 2 carries each Search result as one
 `SearchOccurrence` containing its exact v4 Anddress and same-observation
 descriptive position: a one-based Line number, a one-based inclusive Paragraph
@@ -104,24 +104,29 @@ matching Host proof groups reuse the existing trusted range scanner on one
 handle. Gate 5 adds `WorkspaceRuntime::apply_replace(&Edit) ->
 Result<EditReceipt, ApplyError>` for one Replace while preserving the existing
 unit-returning public Apply seam. It reuses the same executor, after projection,
-proof installation, publication, and Anchor reflection. Current one-shot Edit
-discards the receipt and retains exact `OK` plus LF; Gate 6 owns any Adapter
-receipt output. Cargo, CLI version, artifacts, and publication remain closed
-`0.2.2`.
+proof installation, publication, and Anchor reflection. Gate 6 exposes that
+receipt through one direct human/JSON writer: human output distinguishes
+`Unchanged`, `Changed` with a canonical v4 Anddress, and `Changed` with `None`;
+the Adapter-only `bw.cli.edit.v1` JSON schema carries the same distinction and
+embeds the canonical v4 object directly. Argv remains the sole Content
+transport; literal `--json`, `--raw`, and `--stdin` in the Content position are
+Content, while leading `--raw` remains unsupported. No stdin path was added
+without reproduced consumer, measured payload, or concrete security evidence.
+Cargo, CLI version, artifacts, and publication remain closed `0.2.2`.
 The ordered
 gates and consumer evidence are tracked in
 [Backwriter 0.2.3 Patch Box](docs/tasks/2026-09-03-backwriter-0.2.3-patch-box.md).
 
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,
-one-shot human and JSON Search/View/Check, raw View, Anddress-first one-shot
+one-shot human and JSON Search/View/Check/Edit, raw View, Anddress-first one-shot
 Edit, Session Pick, batch Check, Anchor, Edit, Apply, result-binding, explicit
 Data, and JSON Adapter. Version
 and Update add no Core capability, Runtime seam, wire, or workflow authority.
 Native wire,
 AI/Context/Profile, client, MCP, product integration, and external consumer
 work remain outside that cutline. Beyond the completed Session Pick, batch
-Check, Anchor, Edit, Apply, result-binding, Data, Search/View/Check JSON, raw
+Check, Anchor, Edit, Apply, result-binding, Data, Search/View/Check/Edit JSON, raw
 View, Version, Update, and `0.2.2` Anddress-first one-shot Edit slice, every
 other capability remains deferred Adapter work. `bw update` is an explicit
 user-invoked installer handoff with no version comparison. It installs or

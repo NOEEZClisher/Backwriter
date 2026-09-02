@@ -304,6 +304,57 @@ fn assert_check_json(output: Output, expected: &CheckOutcome<Option<Anddress>>, 
     }
 }
 
+fn expected_edit_output(outcome: &str, anddress: Option<&Anddress>, json: bool) -> Vec<u8> {
+    let mut output = if json {
+        format!("{{\"schema\":\"bw.cli.edit.v1\",\"outcome\":\"{outcome}\",\"anddress\":")
+            .into_bytes()
+    } else {
+        let label = if outcome == "unchanged" {
+            "Unchanged"
+        } else {
+            "Changed"
+        };
+        format!("{label}\t").into_bytes()
+    };
+    match anddress {
+        Some(anddress) => output.extend_from_slice(&anddress.encode().unwrap()),
+        None if json => output.extend_from_slice(b"null"),
+        None => output.extend_from_slice(b"None"),
+    }
+    if json {
+        output.push(b'}');
+    }
+    output.push(b'\n');
+    output
+}
+
+fn assert_edit_output(output: Output, outcome: &str, expected: Option<&Anddress>, json: bool) {
+    assert!(output.status.success(), "{}", text(output.stderr.clone()));
+    assert_eq!(output.stdout, expected_edit_output(outcome, expected, json));
+    assert!(output.stderr.is_empty());
+
+    if json {
+        let document: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(document["schema"], "bw.cli.edit.v1");
+        assert_eq!(document["outcome"], outcome);
+        match expected {
+            Some(expected) => {
+                let prefix = format!(
+                    "{{\"schema\":\"bw.cli.edit.v1\",\"outcome\":\"{outcome}\",\"anddress\":"
+                );
+                let encoded = output
+                    .stdout
+                    .strip_prefix(prefix.as_bytes())
+                    .and_then(|value| value.strip_suffix(b"}\n"))
+                    .unwrap();
+                assert_eq!(Anddress::decode(encoded).unwrap(), *expected);
+                assert_eq!(encoded, expected.encode().unwrap());
+            }
+            None => assert!(document["anddress"].is_null()),
+        }
+    }
+}
+
 fn expected_search_json(outcome: &SearchOutcome) -> Vec<u8> {
     let mut output = b"{\"schema\":\"bw.cli.search.v2\",\"outcome\":\"".to_vec();
     match outcome {
@@ -1010,14 +1061,53 @@ fn one_shot_search_json_exact_object_drives_crlf_line_edit() {
     let encoded = std::str::from_utf8(encoded).unwrap();
     let edit = run(
         root.path(),
-        &["edit", "anddress", encoded, "retry_budget = 5"],
+        &["--json", "edit", "anddress", encoded, "retry_budget = 5"],
     );
     assert_eq!(edit.status.code(), Some(0));
-    assert_eq!(edit.stdout, b"OK\n");
     assert!(edit.stderr.is_empty());
     assert_eq!(
         fs::read(root.path().join("note.txt")).unwrap(),
         b"retry_budget = 5\r\n"
+    );
+    let fresh_encoded = edit
+        .stdout
+        .strip_prefix(b"{\"schema\":\"bw.cli.edit.v1\",\"outcome\":\"changed\",\"anddress\":")
+        .and_then(|value| value.strip_suffix(b"}\n"))
+        .expect("exact changed Edit envelope");
+    let fresh = Anddress::decode(fresh_encoded).unwrap();
+    let expected = support::address(
+        input.workspace_coordinate(),
+        "note.txt",
+        b"retry_budget = 5\r\n",
+        PublicAnddressTarget::Line,
+        0,
+        18,
+    );
+    assert_eq!(fresh, expected);
+    assert_eq!(fresh_encoded, expected.encode().unwrap());
+
+    let fresh_encoded = std::str::from_utf8(fresh_encoded).unwrap();
+    let viewed = run(root.path(), &["view", "anddress", fresh_encoded]);
+    assert_eq!(viewed.status.code(), Some(0));
+    assert_eq!(viewed.stdout, b"retry_budget = 5\r\n");
+    assert!(viewed.stderr.is_empty());
+
+    let next = run(
+        root.path(),
+        &["edit", "anddress", fresh_encoded, "retry_budget = 7"],
+    );
+    let next_expected = support::address(
+        input.workspace_coordinate(),
+        "note.txt",
+        b"retry_budget = 7\r\n",
+        PublicAnddressTarget::Line,
+        0,
+        18,
+    );
+    assert_edit_output(next, "changed", Some(&next_expected), false);
+    assert_eq!(
+        fs::read(root.path().join("note.txt")).unwrap(),
+        b"retry_budget = 7\r\n"
     );
 }
 
@@ -1431,74 +1521,102 @@ fn view_rejects_anchored_and_extra_operands() {
 
 #[test]
 fn one_shot_edit_replaces_file_and_paragraph_with_exact_content() {
-    for (before, target, content, expected) in [
-        ("old\n", AnddressTarget::File, "", ""),
+    for (before, kind, content, expected, paragraph_receipt) in [
+        ("old\n", "file", "", "", false),
         (
             "old\n",
-            AnddressTarget::File,
+            "file",
             "한글\r\nsecond\n",
             "한글\r\nsecond\n",
+            false,
         ),
-        ("old\n", AnddressTarget::File, "--json", "--json"),
-        ("old\n", AnddressTarget::File, "--raw", "--raw"),
+        ("old\n", "file", "--json", "--json", false),
+        ("old\n", "file", "--raw", "--raw", false),
+        ("old\n", "file", "--stdin", "--stdin", false),
+        ("first\nline\n\nkeep\n", "paragraph", "", "\nkeep\n", false),
         (
             "first\nline\n\nkeep\n",
-            AnddressTarget::Paragraph {
-                ordinal: Natural::zero(),
-            },
-            "",
-            "\nkeep\n",
-        ),
-        (
-            "first\nline\n\nkeep\n",
-            AnddressTarget::Paragraph {
-                ordinal: Natural::zero(),
-            },
+            "paragraph",
             "새 문단\r\n둘\n",
             "새 문단\r\n둘\n\nkeep\n",
+            true,
         ),
         (
             "first\nline\n\nkeep\n",
-            AnddressTarget::Paragraph {
-                ordinal: Natural::zero(),
-            },
+            "paragraph",
             "--json",
             "--json\nkeep\n",
+            false,
         ),
         (
             "first\nline\n\nkeep\n",
-            AnddressTarget::Paragraph {
-                ordinal: Natural::zero(),
-            },
+            "paragraph",
             "--raw",
             "--raw\nkeep\n",
+            false,
+        ),
+        (
+            "first\nline\n\nkeep\n",
+            "paragraph",
+            "--stdin",
+            "--stdin\nkeep\n",
+            false,
+        ),
+        (
+            "first\nline\n\nkeep\n",
+            "paragraph",
+            "left\n\nright\n",
+            "left\n\nright\n\nkeep\n",
+            false,
         ),
     ] {
-        let workspace = tempfile::tempdir().unwrap();
-        let caller = tempfile::tempdir().unwrap();
-        write(workspace.path(), "admitted/coordinate.txt", "coordinate\n");
-        write(workspace.path(), "admitted/note.txt", before);
-        let operand = view_operand(workspace.path(), "admitted/note.txt", target);
-        let output = run(
-            caller.path(),
-            &[
+        for json in [false, true] {
+            let workspace = tempfile::tempdir().unwrap();
+            let caller = tempfile::tempdir().unwrap();
+            write(workspace.path(), "admitted/coordinate.txt", "coordinate\n");
+            write(workspace.path(), "admitted/note.txt", before);
+            let target = if kind == "file" {
+                AnddressTarget::File
+            } else {
+                AnddressTarget::Paragraph {
+                    ordinal: Natural::zero(),
+                }
+            };
+            let operand = view_operand(workspace.path(), "admitted/note.txt", target);
+            let input = Anddress::decode(operand.as_bytes()).unwrap();
+            let mut arguments = vec![
                 "--admit",
                 "admitted",
                 "--workspace",
                 workspace.path().to_str().unwrap(),
-                "edit",
-                "anddress",
-                &operand,
-                content,
-            ],
-        );
-        assert!(output.status.success(), "{}", text(output.stderr.clone()));
-        assert_eq!(output.stdout, b"OK\n");
-        assert!(output.stderr.is_empty());
-        assert_eq!(
-            fs::read(workspace.path().join("admitted/note.txt")).unwrap(),
-            expected.as_bytes()
-        );
+            ];
+            if json {
+                arguments.push("--json");
+            }
+            arguments.extend(["edit", "anddress", &operand, content]);
+            let output = run(caller.path(), &arguments);
+            let expected_anddress = if kind == "file" {
+                Some(support::file(
+                    input.workspace_coordinate(),
+                    "admitted/note.txt",
+                    expected.as_bytes(),
+                ))
+            } else if paragraph_receipt {
+                Some(support::paragraph(
+                    input.workspace_coordinate(),
+                    "admitted/note.txt",
+                    expected.as_bytes(),
+                    0,
+                ))
+            } else {
+                None
+            };
+            assert_edit_output(output, "changed", expected_anddress.as_ref(), json);
+            assert_eq!(
+                fs::read(workspace.path().join("admitted/note.txt")).unwrap(),
+                expected.as_bytes()
+            );
+        }
     }
 }
 
@@ -1511,26 +1629,39 @@ fn one_shot_edit_replaces_line_body_and_preserves_every_terminator() {
         ("old\r\n", "새 줄", "새 줄\r\n"),
         ("old\n", "--json", "--json\n"),
         ("old\r\n", "--raw", "--raw\r\n"),
+        ("old", "--stdin", "--stdin"),
     ] {
-        let root = tempfile::tempdir().unwrap();
-        write(root.path(), "coordinate.txt", "coordinate\n");
-        write(root.path(), "note.txt", before);
-        let operand = view_operand(
-            root.path(),
-            "note.txt",
-            AnddressTarget::Line {
-                ordinal: Natural::zero(),
-                exact_extent: before.to_owned(),
-            },
-        );
-        let output = run(root.path(), &["edit", "anddress", &operand, content]);
-        assert!(output.status.success(), "{}", text(output.stderr.clone()));
-        assert_eq!(output.stdout, b"OK\n");
-        assert!(output.stderr.is_empty());
-        assert_eq!(
-            fs::read(root.path().join("note.txt")).unwrap(),
-            expected.as_bytes()
-        );
+        for json in [false, true] {
+            let root = tempfile::tempdir().unwrap();
+            write(root.path(), "coordinate.txt", "coordinate\n");
+            write(root.path(), "note.txt", before);
+            let operand = view_operand(
+                root.path(),
+                "note.txt",
+                AnddressTarget::Line {
+                    ordinal: Natural::zero(),
+                    exact_extent: before.to_owned(),
+                },
+            );
+            let input = Anddress::decode(operand.as_bytes()).unwrap();
+            let arguments = if json {
+                vec!["--json", "edit", "anddress", &operand, content]
+            } else {
+                vec!["edit", "anddress", &operand, content]
+            };
+            let output = run(root.path(), &arguments);
+            let expected_anddress = support::line(
+                input.workspace_coordinate(),
+                "note.txt",
+                expected.as_bytes(),
+                0,
+            );
+            assert_edit_output(output, "changed", Some(&expected_anddress), json);
+            assert_eq!(
+                fs::read(root.path().join("note.txt")).unwrap(),
+                expected.as_bytes()
+            );
+        }
     }
 }
 
@@ -1580,10 +1711,11 @@ fn one_shot_edit_rejects_invalid_forms_flags_and_addresses_before_publication() 
         vec!["edit", "anddress", "{", "new"],
         vec!["edit", "anddress", v3, "new"],
         vec!["edit", "anddress", &noncanonical, "new"],
-        vec!["--json", "edit", "anddress", &operand, "new"],
+        vec!["--json", "--json", "edit", "anddress", &operand, "new"],
         vec!["--raw", "edit", "anddress", &operand, "new"],
         vec!["edit", "anddress", &operand, "new", "--json"],
         vec!["edit", "anddress", &operand, "new", "--raw"],
+        vec!["edit", "anddress", &operand, "new", "--stdin"],
     ] {
         assert_usage(run(root.path(), &arguments));
         assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"old\n");
@@ -1631,23 +1763,29 @@ fn one_shot_edit_maps_stale_missing_and_unadmitted_sources_to_execution_failure(
 
 #[test]
 fn one_shot_edit_exact_noop_preserves_bytes_and_inode_and_reuses_existing_seams() {
-    let root = tempfile::tempdir().unwrap();
-    write(root.path(), "coordinate.txt", "coordinate\n");
-    write(root.path(), "note.txt", "same\r\n");
-    let operand = view_operand(root.path(), "note.txt", AnddressTarget::File);
-    #[cfg(unix)]
-    let inode = fs::metadata(root.path().join("note.txt")).unwrap().ino();
+    for json in [false, true] {
+        let root = tempfile::tempdir().unwrap();
+        write(root.path(), "coordinate.txt", "coordinate\n");
+        write(root.path(), "note.txt", "same\r\n");
+        let operand = view_operand(root.path(), "note.txt", AnddressTarget::File);
+        let input = Anddress::decode(operand.as_bytes()).unwrap();
+        #[cfg(unix)]
+        let inode = fs::metadata(root.path().join("note.txt")).unwrap().ino();
 
-    let output = run(root.path(), &["edit", "anddress", &operand, "same\r\n"]);
-    assert!(output.status.success(), "{}", text(output.stderr.clone()));
-    assert_eq!(output.stdout, b"OK\n");
-    assert!(output.stderr.is_empty());
-    assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"same\r\n");
-    #[cfg(unix)]
-    assert_eq!(
-        fs::metadata(root.path().join("note.txt")).unwrap().ino(),
-        inode
-    );
+        let arguments = if json {
+            vec!["--json", "edit", "anddress", &operand, "same\r\n"]
+        } else {
+            vec!["edit", "anddress", &operand, "same\r\n"]
+        };
+        let output = run(root.path(), &arguments);
+        assert_edit_output(output, "unchanged", Some(&input), json);
+        assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"same\r\n");
+        #[cfg(unix)]
+        assert_eq!(
+            fs::metadata(root.path().join("note.txt")).unwrap().ino(),
+            inode
+        );
+    }
 
     let source = include_str!("../src/bin/bw.rs");
     let edit = source
@@ -1663,22 +1801,66 @@ fn one_shot_edit_exact_noop_preserves_bytes_and_inode_and_reuses_existing_seams(
     let construct = edit.find("Edit::Replace").unwrap();
     let validate = edit.find("edit.validate()").unwrap();
     let apply = edit.find(".apply_replace(&edit)").unwrap();
-    let status = edit.find("write_session_status(\"OK\")").unwrap();
+    let write = edit.find("write_edit(receipt, output)").unwrap();
     assert!(decode < open);
     assert!(open < view);
     assert!(view < construct);
     assert!(construct < validate);
     assert!(validate < apply);
-    assert!(apply < status);
+    assert!(apply < write);
     assert!(!edit.contains("run_search"));
     assert!(!edit.contains("run_check"));
-    assert!(!edit.contains("write_edit_json"));
+    assert_eq!(edit.matches("open_runtime").count(), 1);
+    assert!(!edit.contains("write_session_status"));
     assert!(!edit.contains("stdin"));
     assert!(!edit.contains("output options must precede the capability"));
     assert_eq!(source.matches("fn execute_edit").count(), 1);
 
+    let writer = source
+        .split_once("fn write_edit")
+        .unwrap()
+        .1
+        .split_once("fn execute_view")
+        .unwrap()
+        .0;
+    assert_eq!(writer.matches(".encode").count(), 1);
+    assert!(writer.find(".encode").unwrap() < writer.find("BufWriter::new").unwrap());
+    assert!(!writer.contains("serde_json"));
+    assert!(!writer.contains("Value"));
+    assert!(!writer.contains("collect("));
+    assert!(!writer.contains(".clone()"));
+    assert!(!writer.contains("stdin"));
+    assert!(!writer.contains("thread::"));
+    assert!(!writer.contains("spawn("));
+    assert_eq!(writer.matches("bw.cli.edit.v1").count(), 1);
+
     let core_edit = include_str!("../src/backwriter/edit.rs");
     assert!(core_edit.contains("!content.contains('\\0')"));
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn one_shot_edit_output_failure_reports_exit_one_after_publication_without_retry() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "before\n");
+    let operand = view_operand(root.path(), "note.txt", AnddressTarget::File);
+    let full = fs::OpenOptions::new()
+        .write(true)
+        .open("/dev/full")
+        .unwrap();
+
+    let output = Command::new(binary())
+        .current_dir(root.path())
+        .args(["edit", "anddress", &operand, "after\n"])
+        .stdout(Stdio::from(full))
+        .stderr(Stdio::piped())
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    assert!(text(output.stderr).starts_with("error: "));
+    assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"after\n");
 }
 
 #[test]
