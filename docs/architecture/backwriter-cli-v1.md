@@ -188,38 +188,50 @@ The sole implemented result projection is exactly:
 
 ```text
 Found <count>
-<index>\t<File|Paragraph|Line>\t<logical-path>[:<byte-start>-<byte-end>]
+<index>\tFile\t<logical-path>
+<index>\tLine\t<logical-path>:<one-based-line>
+<index>\tParagraph\t<logical-path>:<one-based-start>-<one-based-end>
 ```
 
 `Empty` is one line, `Found 0`. `Found` preserves the Core result vector's
-existing deterministic order. File rows omit the full-source range; Paragraph
-and Line rows include their exact byte range. The human projection never
-modifies an internal `SearchOutcome` or `Anddress`; it omits raw Anddress,
-workspace coordinate, source hash, and source length. Preview is not
+existing deterministic order and duplicate multiplicity. File rows have no
+position; Line and Paragraph rows use the descriptive position captured by the
+same Search observation. The Search-specific writer never modifies an internal
+`SearchOutcome`, `SearchOccurrence`, or `Anddress`; it omits raw Anddress,
+workspace coordinate, source hash, source length, and byte ranges. Pick keeps
+its separate existing raw-Anddress byte-range rows unchanged. Preview is not
 implemented.
 
 ### JSON Search projection
 
 With the global `--json` flag, Search writes exactly one compact UTF-8 JSON value
-followed by one LF. Its keys are ordered `schema`, `outcome`, and `anddresses`:
+followed by one LF. Its envelope keys are ordered `schema`, `outcome`, and
+`occurrences`:
 
 ```json
-{"schema":"bw.cli.search.v1","outcome":"empty","anddresses":[]}
+{"schema":"bw.cli.search.v2","outcome":"empty","occurrences":[]}
 ```
 
-or:
+Found items preserve this exact key order and target-specific shape:
 
-```json
-{"schema":"bw.cli.search.v1","outcome":"found","anddresses":[<exact-v4-Anddress-object>]}
+```text
+{"logicalPath":"<path>","kind":"file","anddress":<exact-v4-Anddress-object>}
+{"logicalPath":"<path>","kind":"line","line":"<decimal>","anddress":<exact-v4-Anddress-object>}
+{"logicalPath":"<path>","kind":"paragraph","lineStart":"<decimal>","lineEnd":"<decimal>","anddress":<exact-v4-Anddress-object>}
 ```
 
-The writer maps `SearchOutcome::Empty` and `Found` directly. It streams the
-existing outcome in its existing order, retaining duplicate occurrences and
-every source-state identity and exact range. Each array member is the exact v4
-`Anddress::encode()` object, not a JSON string, preview, normalized value, or
-new CLI/Core wire. It allocates neither a JSON `Value` nor a second result
-collection. Encoding resource and stdout failure are execution errors; a
-successful JSON response contains no diagnostic bytes.
+A nonempty envelope is therefore
+`{"schema":"bw.cli.search.v2","outcome":"found","occurrences":[<items>]}`.
+Line values are one-based canonical decimal strings; Paragraph start and end
+are one-based inclusive canonical decimal strings; File has no Line field. The
+writer maps `SearchOutcome::Empty` and `Found` directly and streams each
+`SearchOccurrence` in existing order, retaining duplicates. Its `anddress`
+member is the exact v4 `Anddress::encode()` object, not a JSON string, preview,
+normalized value, or new Core wire. The v2 envelope and occurrence item are CLI
+Adapter schema only. The writer allocates neither a JSON `Value` nor a second
+result collection. Encoding resource and stdout failure are execution errors;
+a successful JSON response contains no diagnostic bytes. The published `0.2.2`
+v1 schema is immutable release evidence and has no production writer branch.
 
 ## Implemented one-shot View
 
@@ -379,8 +391,8 @@ is reserved here.
 ### Gate 4 default flow and raw Session comparison
 
 The default caller flow is JSON Search followed by one-shot Edit. The caller
-selects one exact object from the Search envelope's `anddresses` array and
-passes that complete v4 object unchanged as one argv value:
+selects one occurrence from the Search envelope's `occurrences` array and
+passes that item's complete `anddress` object unchanged as one argv value:
 
 ```text
 bw --json search line "retry_budget = 3" --source note.txt
@@ -458,27 +470,18 @@ At Gate 6 the source version became `0.2.2`, while Core, Runtime, v4 wire, and
 then-published `0.2.1` behavior remained unchanged. The subsequent Gate 7
 publication changed only the official distribution boundary to `0.2.2`.
 
-## Authorized 0.2.3 Patch Box Adapter direction
+## In-progress 0.2.3 Patch Box Adapter direction
 
-Phase 1 changes no implemented syntax or output. The current human Search path
-is consumed by one-shot Search, Session Search, stored Search values, and the
-shared address-row writer also used by Pick. The current streaming JSON path is
-the public `bw.cli.search.v1` schema consumed by the documented one-shot Edit
-flow and its exact-byte, decode, order, duplicate, escaping, and large-result
-regressions. Native `SearchOutcome` is also consumed by Check, Data, Session
-binding/index resolution, Pick operands, and public Rust callers. Later work
-must preserve those native meanings and must not change Pick rows as an
-accidental effect of changing Search presentation.
-
-The minimum machine-output boundary is a hard source-level cutover to a new
-`bw.cli.search.v2` result-item projection in Gate 2, not a parallel v1 mode,
-compatibility switch, or second Search engine. Published `0.2.2`
-`bw.cli.search.v1` remains immutable release evidence. Each v2 item will expose
-logical path, target kind, the current one-based Line or inclusive Paragraph
-Line range when applicable, and the exact opaque v4 Anddress. File items omit
-Line position by default. Items retain the existing result order and every
-duplicate. Runtime must carry the descriptive metadata out of the same Search
-observation; the Adapter must not derive it by reopening Workspace Source.
+Gates 1 and 2 keep one-shot Search, Session Search, stored Search values, Check,
+Pick operands, and public Rust callers coherent through one native occurrence
+carrier. Human Search now has one Search-specific writer with current Line
+positions; Pick retains the separate raw-Anddress address-row writer and its
+byte-range output. The streaming machine path is the exact
+`bw.cli.search.v2` result-item projection above. It is a hard source-level
+cutover, not a parallel v1 mode, compatibility switch, or second Search engine.
+Published `0.2.2` `bw.cli.search.v1` remains immutable release evidence.
+Runtime carries the descriptive metadata out of the same Search observation;
+the Adapter never reopens Workspace Source to derive it.
 
 Future View syntax and output must express one caller-selected upward
 projection. Line may request Line, Paragraph, or File; Paragraph may request

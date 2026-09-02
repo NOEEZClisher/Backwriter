@@ -141,8 +141,8 @@ fn paragraph_ranges(source: &[u8]) -> Vec<(usize, usize)> {
 fn coordinate(workspace: &WorkspaceRuntime) -> String {
     let request = backwriter::backwriter::search::SearchRequest::exact_file("note.txt").unwrap();
     match workspace.search(&request).unwrap() {
-        backwriter::backwriter::search::SearchOutcome::Found { anddresses } => {
-            anddresses[0].workspace_coordinate().to_owned()
+        backwriter::backwriter::search::SearchOutcome::Found { occurrences } => {
+            occurrences[0].anddress().workspace_coordinate().to_owned()
         }
         _ => panic!("source"),
     }
@@ -387,7 +387,7 @@ fn invalidation_is_path_exact_and_does_not_read_the_source() {
         WorkspaceAdmission::new([AdmissionRoot::new("admitted").unwrap()]).unwrap(),
     )
     .unwrap();
-    let backwriter::backwriter::search::SearchOutcome::Found { mut anddresses } = named
+    let backwriter::backwriter::search::SearchOutcome::Found { mut occurrences } = named
         .search(
             &backwriter::backwriter::search::SearchRequest::exact_file("admitted/source.txt")
                 .unwrap(),
@@ -396,7 +396,7 @@ fn invalidation_is_path_exact_and_does_not_read_the_source() {
     else {
         panic!("admitted File")
     };
-    let admitted = anddresses.pop().unwrap();
+    let admitted = occurrences.pop().unwrap().into_anddress();
     let admitted_handle = match named.anchor(&admitted).unwrap() {
         AnchorOutcome::Anchored(handle) => handle,
         AnchorOutcome::AlreadyLive => panic!("admitted File Anchor"),

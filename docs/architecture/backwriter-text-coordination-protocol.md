@@ -337,28 +337,40 @@ Phase 6 makes a matching anchored View share ordinary trusted View execution,
 closes both public invalidation seams over one path-exact proof-plus-Anchor
 operation, and fixes the guarded mutation and both-mode drift boundaries above.
 
-## Authorized 0.2.3 Patch Box information surface
+## In-progress 0.2.3 Patch Box information surface
 
-Phase 1 closes meaning and order only; the production implementation and
-published release remain `0.2.2`. Patch Box is an AI-facing information-surface
-patch over the current engine, not a Search-performance, source-scaling, or
-File-View-memory project. Its intended caller flow is Search, optional View
-projection or ordered batch, one-shot Replace, and reuse of a fresh current
-Anddress when the confirmed result has one. This named flow does not make one
-capability a prerequisite of another.
+Gates 1 and 2 close meaning, order, and Search observation metadata; Cargo,
+`bw version`, and the published release remain `0.2.2`. Patch Box is an
+AI-facing information-surface patch over the current engine, not a
+Search-performance, source-scaling, or File-View-memory project. Its intended
+caller flow is Search, optional View projection or ordered batch, one-shot
+Replace, and reuse of a fresh current Anddress when the confirmed result has
+one. This named flow does not make one capability a prerequisite of another.
 
-Search may return descriptive position information produced during the same
-selected-source observation that matches and constructs the v4 Anddress. A
-Line position is its current one-based Line number. A Paragraph position is
-the current one-based inclusive range from its first Line through its last
-Line under the existing blank-Line-bounded structure; separator Lines remain
-outside Paragraphs. File results omit a Line position by default. Position
-metadata is neither v4 identity nor a locator, equality input, currentness
-proof, selector, Edit input, retained observation, or permission for an
-Adapter to reread the source. Duplicate Search occurrences and equal Anddress
-values remain present. Every Adapter result item must carry enough direct
-information to identify its logical path, target kind, applicable current
-Line position, and opaque v4 Anddress without relying on its neighbor.
+Search returns one ordered collection of `SearchOccurrence` values. Each value
+owns one exact v4 Anddress and a target-coherent optional `SearchPosition`:
+File requires `None`, Line requires a nonzero one-based `Line { line }`, and
+Paragraph requires a nonzero inclusive `Paragraph { start_line, end_line }`
+with `start_line <= end_line`. The public getters borrow the Anddress and copy
+the position; `into_anddress` transfers the owned Anddress. Construction rejects
+every mismatched target/position shape as `SearchOccurrenceError::Invalid`.
+
+Runtime computes these positions during the same selected-source observation
+that matches and constructs the v4 Anddress. Paragraph bounds follow the
+existing blank-Line-bounded structure; separator Lines remain outside
+Paragraphs, but retain their own Line number. CR, LF, CRLF, bare CR, no-EOL,
+empty-Line, and no-synthetic-EOF-Line framing remain unchanged. Checked Line
+arithmetic fails through the existing Resource-to-Unavailable boundary.
+Position metadata is neither v4 identity nor a locator, equality input,
+currentness proof, selector, Edit input, retained observation, or permission
+for an Adapter to reread the source. Duplicate Search occurrences and equal
+Anddress values remain present in their existing order.
+
+Check retains the complete occurrence for `Current` and `Unavailable`, removes
+only confirmed `NotCurrent`, and keeps raw Anddresses in its report. Data and
+Session store the occurrence carrier. Session indexing extracts the contained
+Anddress, and Pick receives only a caller-owned raw-Anddress collection; no
+Pick outcome or predicate meaning changes.
 
 View is Observe/Project from caller-held exact-state evidence, not Find. The
 only authorized projections are Line to Line, Paragraph, or File; Paragraph
@@ -608,12 +620,15 @@ remove reflection of existing live continuity.
 automatic Store, has no latest slot, and performs no automatic update.
 
 The completed one-shot Search, View, and Check JSON projections are Adapter-only.
-Their compact envelopes identify `bw.cli.search.v1`, `bw.cli.view.v1`, and
-`bw.cli.check.v1`; Search embeds each
-existing encoded v4 Anddress JSON object directly, View embeds its related v4
-File and optional Paragraph objects directly, and Check embeds its filtered v4
+Their compact envelopes identify `bw.cli.search.v2`, `bw.cli.view.v1`, and
+`bw.cli.check.v1`. Search identifies each occurrence by logical path, target
+kind, applicable current Line number or Paragraph Line range, and its directly
+embedded existing encoded v4 Anddress object. View embeds its related v4 File
+and optional Paragraph objects directly, and Check embeds its filtered v4
 Anddress object directly when present. They create no Core wire, value model,
-Search/View/Check state, result collection, or capability workflow.
+Search/View/Check state, result collection, or capability workflow. The
+published `0.2.2` Search v1 envelope remains immutable release evidence, not a
+production compatibility branch.
 
 One-shot raw View is likewise Adapter-only: it is an explicit exact-text output
 selection that reuses the existing View projection without a Core wire, state,

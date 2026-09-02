@@ -7,7 +7,7 @@ use super::{
 use crate::backwriter::anddress::{Anddress, AnddressError};
 use crate::backwriter::check::{CheckError, CheckOutcome, CheckReport};
 use crate::backwriter::pick::PickOutcome;
-use crate::backwriter::search::SearchOutcome;
+use crate::backwriter::search::{SearchOccurrence, SearchOutcome};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Currentness {
@@ -42,7 +42,7 @@ pub(super) fn check_search(
 ) -> Result<CheckOutcome<SearchOutcome>, CheckError> {
     let inputs = match input {
         SearchOutcome::Empty => Vec::new(),
-        SearchOutcome::Found { anddresses } => anddresses,
+        SearchOutcome::Found { occurrences } => occurrences,
     };
     validate_all(&inputs)?;
     let CheckOutcome { filtered, report } = execute_prevalidated_batch(runtime, inputs)?;
@@ -68,10 +68,35 @@ pub(super) fn check_pick(
     })
 }
 
-fn execute_prevalidated_batch(
+trait CheckedValue: Sized {
+    fn anddress(&self) -> &Anddress;
+    fn into_anddress(self) -> Anddress;
+}
+
+impl CheckedValue for Anddress {
+    fn anddress(&self) -> &Anddress {
+        self
+    }
+
+    fn into_anddress(self) -> Anddress {
+        self
+    }
+}
+
+impl CheckedValue for SearchOccurrence {
+    fn anddress(&self) -> &Anddress {
+        self.anddress()
+    }
+
+    fn into_anddress(self) -> Anddress {
+        self.into_anddress()
+    }
+}
+
+fn execute_prevalidated_batch<T: CheckedValue>(
     runtime: &WorkspaceRuntime,
-    inputs: Vec<Anddress>,
-) -> Result<CheckOutcome<Vec<Anddress>>, CheckError> {
+    inputs: Vec<T>,
+) -> Result<CheckOutcome<Vec<T>>, CheckError> {
     let mut order = indices(inputs.len())?;
     order.sort_unstable_by(|left, right| compare_groups(&inputs[*left], &inputs[*right]));
     let mut statuses = Vec::new();
@@ -89,9 +114,9 @@ fn execute_prevalidated_batch(
     finish(inputs, statuses)
 }
 
-fn validate_all(inputs: &[Anddress]) -> Result<(), CheckError> {
+fn validate_all<T: CheckedValue>(inputs: &[T]) -> Result<(), CheckError> {
     for input in inputs {
-        validate_one(input)?;
+        validate_one(input.anddress())?;
     }
     Ok(())
 }
@@ -115,7 +140,9 @@ fn indices(length: usize) -> Result<Vec<usize>, CheckError> {
     Ok(result)
 }
 
-fn compare_groups(left: &Anddress, right: &Anddress) -> std::cmp::Ordering {
+fn compare_groups<T: CheckedValue>(left: &T, right: &T) -> std::cmp::Ordering {
+    let left = left.anddress();
+    let right = right.anddress();
     left.workspace_coordinate()
         .as_bytes()
         .cmp(right.workspace_coordinate().as_bytes())
@@ -126,12 +153,14 @@ fn compare_groups(left: &Anddress, right: &Anddress) -> std::cmp::Ordering {
         })
 }
 
-fn same_group(left: &Anddress, right: &Anddress) -> bool {
+fn same_group<T: CheckedValue>(left: &T, right: &T) -> bool {
+    let left = left.anddress();
+    let right = right.anddress();
     left.workspace_coordinate() == right.workspace_coordinate()
         && left.logical_path() == right.logical_path()
 }
 
-fn group_end(inputs: &[Anddress], order: &[usize], start: usize) -> usize {
+fn group_end<T: CheckedValue>(inputs: &[T], order: &[usize], start: usize) -> usize {
     let first = &inputs[order[start]];
     let mut end = start + 1;
     while end < order.len() && same_group(first, &inputs[order[end]]) {
@@ -140,13 +169,13 @@ fn group_end(inputs: &[Anddress], order: &[usize], start: usize) -> usize {
     end
 }
 
-fn classify_group(
+fn classify_group<T: CheckedValue>(
     runtime: &WorkspaceRuntime,
-    inputs: &[Anddress],
+    inputs: &[T],
     group: &[usize],
     statuses: &mut [Currentness],
 ) -> Result<(), CheckError> {
-    let exemplar = &inputs[group[0]];
+    let exemplar = inputs[group[0]].anddress();
     if exemplar.workspace_coordinate() != runtime.workspace_coordinate
         || is_backwriter_spill(exemplar.logical_path())
     {
@@ -175,9 +204,9 @@ fn classify_group(
     classify_observed_source(&mut file, inputs, group, statuses)
 }
 
-fn classify_observed_source(
+fn classify_observed_source<T: CheckedValue>(
     reader: &mut impl std::io::Read,
-    inputs: &[Anddress],
+    inputs: &[T],
     group: &[usize],
     statuses: &mut [Currentness],
 ) -> Result<(), CheckError> {
@@ -200,15 +229,15 @@ fn classify_observed_source(
     }
 }
 
-fn classify_source_state(
+fn classify_source_state<T: CheckedValue>(
     hash: &[u8],
     byte_length: usize,
-    inputs: &[Anddress],
+    inputs: &[T],
     group: &[usize],
     statuses: &mut [Currentness],
 ) {
     for &index in group {
-        let input = &inputs[index];
+        let input = inputs[index].anddress();
         statuses[index] = if super::source_state_matches(hash, byte_length, input) {
             Currentness::Current
         } else {
@@ -223,10 +252,10 @@ fn set_group(statuses: &mut [Currentness], group: &[usize], status: Currentness)
     }
 }
 
-fn finish(
-    inputs: Vec<Anddress>,
+fn finish<T: CheckedValue>(
+    inputs: Vec<T>,
     statuses: Vec<Currentness>,
-) -> Result<CheckOutcome<Vec<Anddress>>, CheckError> {
+) -> Result<CheckOutcome<Vec<T>>, CheckError> {
     let (current_count, removed_count, unavailable_count) = statuses.iter().fold(
         (0_usize, 0_usize, 0_usize),
         |(current_count, removed_count, unavailable_count), status| match status {
@@ -252,9 +281,9 @@ fn finish(
             Currentness::Current => {
                 filtered.push(input);
             }
-            Currentness::NotCurrent => removed.push(input),
+            Currentness::NotCurrent => removed.push(input.into_anddress()),
             Currentness::Unavailable => {
-                unavailable.push(input.clone());
+                unavailable.push(input.anddress().clone());
                 filtered.push(input);
             }
         }
@@ -265,11 +294,11 @@ fn finish(
     })
 }
 
-fn search_outcome(anddresses: Vec<Anddress>) -> SearchOutcome {
-    if anddresses.is_empty() {
+fn search_outcome(occurrences: Vec<SearchOccurrence>) -> SearchOutcome {
+    if occurrences.is_empty() {
         SearchOutcome::Empty
     } else {
-        SearchOutcome::Found { anddresses }
+        SearchOutcome::Found { occurrences }
     }
 }
 

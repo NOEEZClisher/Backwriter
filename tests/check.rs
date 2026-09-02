@@ -5,7 +5,8 @@ use std::fs;
 use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget};
 use backwriter::backwriter::pick::PickOutcome;
 use backwriter::backwriter::search::{
-    SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
+    SearchOccurrence, SearchOutcome, SearchPosition, SearchQuery, SearchRequest, SearchScope,
+    SearchTarget,
 };
 use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
@@ -27,14 +28,14 @@ fn host_runtime(root: &std::path::Path, admission: &str) -> WorkspaceRuntime {
 }
 
 fn exact_file(runtime: &WorkspaceRuntime, path: &str) -> Anddress {
-    let SearchOutcome::Found { mut anddresses } = runtime
+    let SearchOutcome::Found { mut occurrences } = runtime
         .search(&SearchRequest::exact_file(path).unwrap())
         .unwrap()
     else {
         panic!("exact File")
     };
-    assert_eq!(anddresses.len(), 1);
-    anddresses.pop().unwrap()
+    assert_eq!(occurrences.len(), 1);
+    occurrences.pop().unwrap().into_anddress()
 }
 
 fn coordinate(runtime: &WorkspaceRuntime) -> String {
@@ -43,10 +44,22 @@ fn coordinate(runtime: &WorkspaceRuntime) -> String {
         SearchScope::all_admitted(),
         SearchTarget::File,
     );
-    let SearchOutcome::Found { anddresses } = runtime.search(&request).unwrap() else {
+    let SearchOutcome::Found { occurrences } = runtime.search(&request).unwrap() else {
         panic!("coordinate source")
     };
-    anddresses[0].workspace_coordinate().to_owned()
+    occurrences[0].anddress().workspace_coordinate().to_owned()
+}
+
+fn occurrence(anddress: Anddress, line: usize) -> SearchOccurrence {
+    let position = match anddress.target() {
+        AnddressTarget::File => None,
+        AnddressTarget::Line => Some(SearchPosition::Line { line }),
+        AnddressTarget::Paragraph => Some(SearchPosition::Paragraph {
+            start_line: line,
+            end_line: line,
+        }),
+    };
+    SearchOccurrence::new(anddress, position).unwrap()
 }
 
 #[test]
@@ -98,17 +111,25 @@ fn check_search_and_pick_preserve_order_multiplicity_and_canonical_empty() {
         current.clone(),
     ];
 
+    let search_candidates = vec![
+        occurrence(current.clone(), 1),
+        occurrence(stale.clone(), 2),
+        occurrence(unavailable.clone(), 3),
+        occurrence(current.clone(), 4),
+    ];
+    let expected_search = SearchOutcome::Found {
+        occurrences: vec![
+            search_candidates[0].clone(),
+            search_candidates[2].clone(),
+            search_candidates[3].clone(),
+        ],
+    };
     let checked = workspace
         .check_search(SearchOutcome::Found {
-            anddresses: candidates.clone(),
+            occurrences: search_candidates,
         })
         .unwrap();
-    assert_eq!(
-        checked.filtered,
-        SearchOutcome::Found {
-            anddresses: vec![current.clone(), unavailable.clone(), current.clone()]
-        }
-    );
+    assert_eq!(checked.filtered, expected_search);
     assert_eq!(checked.report.current_count(), 2);
     assert_eq!(checked.report.removed(), std::slice::from_ref(&stale));
     assert_eq!(
@@ -326,22 +347,20 @@ fn host_search_proof_drives_every_check_form_and_preserves_a_large_mixed_group()
     assert_eq!(one.report.current_count(), 1);
 
     let search_inputs = vec![
-        stale_hash.clone(),
-        current_line.clone(),
-        stale_length.clone(),
-        current_file.clone(),
+        occurrence(stale_hash.clone(), 1),
+        occurrence(current_line.clone(), 2),
+        occurrence(stale_length.clone(), 3),
+        occurrence(current_file.clone(), 4),
     ];
+    let expected_search = SearchOutcome::Found {
+        occurrences: vec![search_inputs[1].clone(), search_inputs[3].clone()],
+    };
     let checked = host
         .check_search(SearchOutcome::Found {
-            anddresses: search_inputs,
+            occurrences: search_inputs,
         })
         .unwrap();
-    assert_eq!(
-        checked.filtered,
-        SearchOutcome::Found {
-            anddresses: vec![current_line.clone(), current_file.clone()]
-        }
-    );
+    assert_eq!(checked.filtered, expected_search);
     assert_eq!(
         checked.report.removed(),
         &[stale_hash.clone(), stale_length.clone()]

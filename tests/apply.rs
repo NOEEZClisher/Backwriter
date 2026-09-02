@@ -40,7 +40,9 @@ fn exact_file(runtime: &WorkspaceRuntime, path: &str) -> Anddress {
         .search(&SearchRequest::exact_file(path).unwrap())
         .unwrap()
     {
-        SearchOutcome::Found { anddresses } => anddresses.into_iter().next().unwrap(),
+        SearchOutcome::Found { occurrences } => {
+            occurrences.into_iter().next().unwrap().into_anddress()
+        }
         SearchOutcome::Empty => panic!("exact File"),
     }
 }
@@ -86,8 +88,8 @@ fn coordinate(workspace: &WorkspaceRuntime) -> TestCoordinate {
         SearchTarget::File,
     );
     match workspace.search(&request).unwrap() {
-        SearchOutcome::Found { anddresses } => TestCoordinate {
-            value: anddresses[0].workspace_coordinate().to_owned(),
+        SearchOutcome::Found { occurrences } => TestCoordinate {
+            value: occurrences[0].anddress().workspace_coordinate().to_owned(),
             root: workspace.workspace_root().to_owned(),
         },
         SearchOutcome::Empty => panic!("coordinate source"),
@@ -707,16 +709,16 @@ fn exact_file_lookup_enables_start_and_end_insert_into_empty_files() {
         ("start.txt", Position::StartOf as fn(Anddress) -> Position),
         ("end.txt", Position::EndOf as fn(Anddress) -> Position),
     ] {
-        let SearchOutcome::Found { mut anddresses } = workspace
+        let SearchOutcome::Found { mut occurrences } = workspace
             .search(&SearchRequest::exact_file(path).unwrap())
             .unwrap()
         else {
             panic!("empty File lookup")
         };
-        assert_eq!(anddresses.len(), 1);
+        assert_eq!(occurrences.len(), 1);
         workspace
             .apply(&Edit::Insert {
-                position: position(anddresses.pop().unwrap()),
+                position: position(occurrences.pop().unwrap().into_anddress()),
                 content: "hello".to_owned(),
             })
             .unwrap();
@@ -778,10 +780,10 @@ fn v4_drift_matrix_has_one_correct_apply_and_no_wrong_publication_in_both_modes(
                 SearchScope::all_admitted(),
                 SearchTarget::Line,
             );
-            let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
+            let SearchOutcome::Found { occurrences } = workspace.search(&request).unwrap() else {
                 panic!("{mode} {name}: duplicate lines")
             };
-            let selected = anddresses[1].clone();
+            let selected = occurrences[1].anddress().clone();
             if !succeeds {
                 if host_mode {
                     workspace.invalidate_source("note.txt").unwrap();
@@ -846,10 +848,10 @@ fn v4_duplicate_paragraph_drift_fails_without_wrong_publication_in_both_modes() 
             SearchScope::all_admitted(),
             SearchTarget::Paragraph,
         );
-        let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
+        let SearchOutcome::Found { occurrences } = workspace.search(&request).unwrap() else {
             panic!("duplicate paragraphs")
         };
-        let selected = anddresses[1].clone();
+        let selected = occurrences[1].anddress().clone();
         let changed = b"needle\n\nheader\n\nneedle\n\nneedle\n\nfooter\n";
         if host_mode {
             workspace.invalidate_source("note.txt").unwrap();

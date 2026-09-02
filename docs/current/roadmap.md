@@ -1,16 +1,16 @@
 # Backwriter Roadmap
 
-## Planned: 0.2.3 Patch Box
+## In progress: 0.2.3 Patch Box
 
 The [eight-gate Patch Box tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
 orders an AI-facing information-surface patch without reopening the engine,
-v4 identity, currentness, or the closed `0.2.2` release. Phase 1 closes only
-authority and the current consumer matrix. The remaining gates add, in order,
-same-observation Search position metadata, single upward View projection,
-ordered all-or-nothing batch View with per-source observation reuse, one-shot
-Edit receipts and fresh current addresses, Adapter output plus a conditional
-stdin decision, an integrated Dummy E2E/readiness gate, and separately
-authorized artifact/publication work.
+v4 identity, currentness, or the closed `0.2.2` release. Gates 1 and 2 close
+authority, the consumer matrix, and same-observation Search position metadata.
+The remaining gates add, in order, single upward View projection, ordered
+all-or-nothing batch View with per-source observation reuse, one-shot Edit
+receipts and fresh current addresses, Adapter output plus a conditional stdin
+decision, an integrated Dummy E2E/readiness gate, and separately authorized
+artifact/publication work.
 
 The target flow is Search result information plus an opaque v4 Anddress,
 optional caller-selected View projection, one-shot Replace, and reuse of the
@@ -20,12 +20,13 @@ relocates. Edit receipts are current-state results, not predecessor/successor
 history. Search performance, source scaling, persistent identity, watcher,
 retry, diff, rollback, and Git behavior are outside this roadmap item.
 
-Phase 2 will make a hard Adapter machine-schema cutover from
-`bw.cli.search.v1` to a new `bw.cli.search.v2` projection; it will not retain a
-parallel v1 mode or compatibility switch. The published `0.2.2` v1 schema
-remains immutable release evidence. The exact native carrier must reuse the
-one Search observation while preserving the public Rust, Check, Data, Session,
-and Pick consumers recorded in the tracker.
+Gate 2 hard-cuts the source Adapter machine schema from `bw.cli.search.v1` to
+`bw.cli.search.v2` without a parallel v1 mode or compatibility switch. The
+published `0.2.2` v1 schema remains immutable release evidence. One native
+`SearchOccurrence` carrier reuses the existing Search observation and remains
+coherent through public Rust, Check, Data, and Session; Pick deliberately
+projects only the contained raw Anddresses and keeps its existing meaning and
+human byte-range rows.
 
 ## Completed: 0.2.2 Anddress-first editing and distribution
 

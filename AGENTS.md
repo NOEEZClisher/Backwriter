@@ -81,15 +81,20 @@ Edit/Position/Apply is the exact low-level primitive, Session `let ... = edit
 one-shot Anddress-first Edit is the canonical Replace contraction. None is
 internal, deprecated, renamed, aliased, or wrapped by that separation.
 
-`0.2.3` Patch Box Phase 1 is documentation authority only. It plans an
-AI-facing information-surface patch over the existing engine: Search may add
-same-observation descriptive Line positions beside opaque v4 Anddresses; View
-may project only from a caller-held target to itself or an ancestor, first
-singly and then as an ordered all-or-nothing batch; and one-shot Replace may
-return only a just-published current-state receipt. None of that metadata is
-v4 identity, currentness evidence, a selector, history, relocation, or a
-second source read. The phase adds no Rust, CLI, Cargo, version, artifact, or
-publication change. The ordered gates and consumer evidence are tracked in
+`0.2.3` Patch Box Gates 1 and 2 are complete in source. Gate 1 closes authority
+and the consumer matrix. Gate 2 carries each Search result as one
+`SearchOccurrence` containing its exact v4 Anddress and same-observation
+descriptive position: a one-based Line number, a one-based inclusive Paragraph
+Line range, or no position for File. Check preserves this metadata while its
+report remains raw-Anddress evidence; Data and Session retain the occurrence
+carrier, while Pick continues to consume and return raw Anddresses. Human
+Search displays current Line positions, and machine Search hard-cuts to the
+Adapter-only `bw.cli.search.v2` occurrence projection; there is no production
+v1 branch. None of that metadata is v4 identity, currentness evidence, a
+selector, history, relocation, or a second source read. Cargo, CLI version,
+artifacts, and publication remain closed `0.2.2`. Later gates may add only the
+authorized upward View projections and one-shot Replace receipt. The ordered
+gates and consumer evidence are tracked in
 [Backwriter 0.2.3 Patch Box](docs/tasks/2026-09-03-backwriter-0.2.3-patch-box.md).
 
 The repository cutline ends at public Rust Core, required Runtime, and the
@@ -237,6 +242,9 @@ are preserved evidence, never current authority.
 - Search's live scan, matching, ordering, all-or-nothing behavior, and
   no-fixed-limit contract remain valid. It constructs v4 values directly from
   the current coordinate, logical path, one-read SHA-256/length, kind, and range.
+  Each result is one `SearchOccurrence`; its optional `SearchPosition` is
+  descriptive output calculated by the same Line framing pass and is not an
+  Anddress field or matching/currentness input.
   Search owns no registry, persistent identity, mutation lifecycle, or result
   store.
 - In the v4 target, Search remains the only target finder. It computes the

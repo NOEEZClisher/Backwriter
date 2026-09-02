@@ -15,7 +15,8 @@ drift semantics without adding a watcher or supported race.
 The `0.2.2` Gates 1–6 add only the general Adapter contraction in Principle 16
 and its integration evidence; Gate 7 separately closes publication. They
 change no Core, Runtime, or v4 meaning.
-The planned `0.2.3` Patch Box is governed by Principle 17 and likewise leaves
+The in-progress `0.2.3` Patch Box is governed by Principle 17. Gates 1 and 2
+close its authority and same-observation Search position carrier while leaving
 v4 identity and currentness unchanged.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.

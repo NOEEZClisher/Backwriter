@@ -3,11 +3,11 @@
 use std::cmp::Ordering;
 
 use crate::backwriter::anddress::{
-    Anddress, AnddressTarget, LineBodyClass, construct_anddress, construct_source_identity,
+    AnddressTarget, LineBodyClass, construct_anddress, construct_source_identity,
 };
 use crate::backwriter::search::{
-    LiteralMatcher, MatchTier, PreparedLiteral, SearchError, SearchOutcome, SearchRequest,
-    SearchRequestKind, SearchScope, SearchScopeEntry, SearchTarget,
+    LiteralMatcher, MatchTier, PreparedLiteral, SearchError, SearchOccurrence, SearchOutcome,
+    SearchPosition, SearchRequest, SearchRequestKind, SearchScope, SearchScopeEntry, SearchTarget,
 };
 use crate::safe_path::{
     ClassifiedChild, classify_child, directory_names, open_directory, open_regular,
@@ -60,11 +60,11 @@ fn execute_content(
     executor.execute()?;
     executor.full_line_results.sort_unstable_by(compare_bucket);
     executor.substring_results.sort_unstable_by(compare_bucket);
-    let anddresses = join_result_buckets(executor.full_line_results, executor.substring_results)?;
-    let outcome = if anddresses.is_empty() {
+    let occurrences = join_result_buckets(executor.full_line_results, executor.substring_results)?;
+    let outcome = if occurrences.is_empty() {
         SearchOutcome::Empty
     } else {
-        SearchOutcome::Found { anddresses }
+        SearchOutcome::Found { occurrences }
     };
     runtime.install_search_proofs(executor.proofs)?;
     Ok(outcome)
@@ -105,11 +105,12 @@ fn execute_exact_file(
     .map_err(|_| SearchError::Unavailable)?;
     let anddress = construct_anddress(&source, AnddressTarget::File, 0, state.byte_length)
         .map_err(|_| SearchError::Unavailable)?;
-    let mut anddresses = Vec::new();
-    anddresses
+    let occurrence = SearchOccurrence::new(anddress, None).map_err(|_| SearchError::Unavailable)?;
+    let mut occurrences = Vec::new();
+    occurrences
         .try_reserve_exact(1)
         .map_err(|_| SearchError::Unavailable)?;
-    anddresses.push(anddress);
+    occurrences.push(occurrence);
     let proof = CurrentProof::new(logical_path, state.hash, state.byte_length)?;
     let mut proofs = Vec::new();
     proofs
@@ -117,7 +118,7 @@ fn execute_exact_file(
         .map_err(|_| SearchError::Unavailable)?;
     proofs.push(proof);
     runtime.install_search_proofs(proofs)?;
-    Ok(SearchOutcome::Found { anddresses })
+    Ok(SearchOutcome::Found { occurrences })
 }
 
 struct SearchExecutor<'a> {
@@ -125,8 +126,8 @@ struct SearchExecutor<'a> {
     scope: &'a SearchScope,
     target: SearchTarget,
     literal: PreparedLiteral<'a>,
-    full_line_results: Vec<Anddress>,
-    substring_results: Vec<Anddress>,
+    full_line_results: Vec<SearchOccurrence>,
+    substring_results: Vec<SearchOccurrence>,
     proofs: Vec<CurrentProof>,
 }
 
@@ -341,6 +342,8 @@ struct ParagraphState {
     best_tier: Option<MatchTier>,
     byte_start: usize,
     byte_end: usize,
+    start_line: usize,
+    end_line: usize,
 }
 
 struct ProvisionalTarget {
@@ -348,6 +351,7 @@ struct ProvisionalTarget {
     target: AnddressTarget,
     byte_start: usize,
     byte_end: usize,
+    position: SearchPosition,
 }
 
 struct FileProjection<'a> {
@@ -362,6 +366,7 @@ struct LineProjection<'a> {
     line_start: usize,
     line_content_length: usize,
     line_started: bool,
+    line_number: usize,
     pending_cr: bool,
     provisional: Vec<ProvisionalTarget>,
 }
@@ -370,6 +375,7 @@ struct ParagraphProjection<'a> {
     matcher: LiteralMatcher<'a>,
     line_start: usize,
     line_started: bool,
+    line_number: usize,
     pending_cr: bool,
     body_class: LineBodyClass,
     paragraph: Option<ParagraphState>,
@@ -387,8 +393,8 @@ fn scan_open_source(
     logical_path: &str,
     literal: &PreparedLiteral<'_>,
     target: SearchTarget,
-    full_line_results: &mut Vec<Anddress>,
-    substring_results: &mut Vec<Anddress>,
+    full_line_results: &mut Vec<SearchOccurrence>,
+    substring_results: &mut Vec<SearchOccurrence>,
 ) -> Result<CurrentObservation, SearchError> {
     let (state, outcome) = match target {
         SearchTarget::File => {
@@ -428,27 +434,30 @@ fn scan_open_source(
     )
     .map_err(|_| SearchError::Unavailable)?;
     match outcome {
-        ProjectionOutcome::File(Some(tier)) => push_result(
-            full_line_results,
-            substring_results,
-            tier,
-            construct_anddress(&source, AnddressTarget::File, 0, state.byte_length)
-                .map_err(|_| SearchError::Unavailable)?,
-        )?,
+        ProjectionOutcome::File(Some(tier)) => {
+            let anddress = construct_anddress(&source, AnddressTarget::File, 0, state.byte_length)
+                .map_err(|_| SearchError::Unavailable)?;
+            let occurrence =
+                SearchOccurrence::new(anddress, None).map_err(|_| SearchError::Unavailable)?;
+            push_result(full_line_results, substring_results, tier, occurrence)?;
+        }
         ProjectionOutcome::File(None) => {}
         ProjectionOutcome::Targets(provisional) => {
             for provisional in provisional {
+                let anddress = construct_anddress(
+                    &source,
+                    provisional.target,
+                    provisional.byte_start,
+                    provisional.byte_end,
+                )
+                .map_err(|_| SearchError::Unavailable)?;
+                let occurrence = SearchOccurrence::new(anddress, Some(provisional.position))
+                    .map_err(|_| SearchError::Unavailable)?;
                 push_result(
                     full_line_results,
                     substring_results,
                     provisional.tier,
-                    construct_anddress(
-                        &source,
-                        provisional.target,
-                        provisional.byte_start,
-                        provisional.byte_end,
-                    )
-                    .map_err(|_| SearchError::Unavailable)?,
+                    occurrence,
                 )?;
             }
         }
@@ -528,6 +537,7 @@ impl<'a> LineProjection<'a> {
             line_start: 0,
             line_content_length: 0,
             line_started: false,
+            line_number: 0,
             pending_cr: false,
             provisional: Vec::new(),
         }
@@ -548,7 +558,7 @@ impl<'a> LineProjection<'a> {
                 }
                 self.finish_line(byte_start)?;
             }
-            self.begin_line(byte_start);
+            self.begin_line(byte_start)?;
 
             let remaining = &bytes[cursor..];
             let span_length = if self.matcher.found() {
@@ -598,13 +608,18 @@ impl<'a> LineProjection<'a> {
         Ok(())
     }
 
-    fn begin_line(&mut self, byte_start: usize) {
+    fn begin_line(&mut self, byte_start: usize) -> Result<(), SourceScanError> {
         if !self.line_started {
             self.line_started = true;
             self.line_start = byte_start;
             self.line_content_length = 0;
+            self.line_number = self
+                .line_number
+                .checked_add(1)
+                .ok_or(SourceScanError::Resource)?;
             self.matcher.reset();
         }
+        Ok(())
     }
 
     fn finish_line(&mut self, byte_end: usize) -> Result<(), SourceScanError> {
@@ -615,6 +630,9 @@ impl<'a> LineProjection<'a> {
                 AnddressTarget::Line,
                 self.line_start,
                 byte_end,
+                SearchPosition::Line {
+                    line: self.line_number,
+                },
             )?;
         }
         self.line_started = false;
@@ -637,6 +655,7 @@ impl<'a> ParagraphProjection<'a> {
             matcher: literal.matcher(),
             line_start: 0,
             line_started: false,
+            line_number: 0,
             pending_cr: false,
             body_class: LineBodyClass::Empty,
             paragraph: None,
@@ -656,7 +675,7 @@ impl<'a> ParagraphProjection<'a> {
                 }
                 self.finish_line(byte_start)?;
             }
-            self.begin_line(byte_start);
+            self.begin_line(byte_start)?;
             match byte {
                 b'\r' => self.pending_cr = true,
                 b'\n' => {
@@ -682,12 +701,17 @@ impl<'a> ParagraphProjection<'a> {
         self.close_paragraph()
     }
 
-    fn begin_line(&mut self, byte_start: usize) {
+    fn begin_line(&mut self, byte_start: usize) -> Result<(), SourceScanError> {
         if !self.line_started {
             self.line_started = true;
             self.line_start = byte_start;
+            self.line_number = self
+                .line_number
+                .checked_add(1)
+                .ok_or(SourceScanError::Resource)?;
             self.matcher.reset();
         }
+        Ok(())
     }
 
     fn finish_line(&mut self, byte_end: usize) -> Result<(), SourceScanError> {
@@ -697,8 +721,11 @@ impl<'a> ParagraphProjection<'a> {
                 best_tier: None,
                 byte_start: self.line_start,
                 byte_end,
+                start_line: self.line_number,
+                end_line: self.line_number,
             });
             paragraph.byte_end = byte_end;
+            paragraph.end_line = self.line_number;
             if let Some(tier) = tier {
                 prefer_tier(&mut paragraph.best_tier, tier);
             }
@@ -721,6 +748,10 @@ impl<'a> ParagraphProjection<'a> {
                 AnddressTarget::Paragraph,
                 paragraph.byte_start,
                 paragraph.byte_end,
+                SearchPosition::Paragraph {
+                    start_line: paragraph.start_line,
+                    end_line: paragraph.end_line,
+                },
             )?;
         }
         Ok(())
@@ -739,6 +770,7 @@ fn push_provisional(
     target: AnddressTarget,
     byte_start: usize,
     byte_end: usize,
+    position: SearchPosition,
 ) -> Result<(), SourceScanError> {
     provisional
         .try_reserve(1)
@@ -748,15 +780,16 @@ fn push_provisional(
         target,
         byte_start,
         byte_end,
+        position,
     });
     Ok(())
 }
 
 fn push_result(
-    full_line_results: &mut Vec<Anddress>,
-    substring_results: &mut Vec<Anddress>,
+    full_line_results: &mut Vec<SearchOccurrence>,
+    substring_results: &mut Vec<SearchOccurrence>,
     tier: MatchTier,
-    anddress: Anddress,
+    occurrence: SearchOccurrence,
 ) -> Result<(), SearchError> {
     let bucket = match tier {
         MatchTier::FullLine => full_line_results,
@@ -765,7 +798,7 @@ fn push_result(
     bucket
         .try_reserve(1)
         .map_err(|_| SearchError::Unavailable)?;
-    bucket.push(anddress);
+    bucket.push(occurrence);
     Ok(())
 }
 
@@ -804,9 +837,9 @@ fn child_path(parent: &str, name: &str) -> Result<String, SearchError> {
 }
 
 fn join_result_buckets(
-    mut full_line_results: Vec<Anddress>,
-    mut substring_results: Vec<Anddress>,
-) -> Result<Vec<Anddress>, SearchError> {
+    mut full_line_results: Vec<SearchOccurrence>,
+    mut substring_results: Vec<SearchOccurrence>,
+) -> Result<Vec<SearchOccurrence>, SearchError> {
     if full_line_results.is_empty() {
         return Ok(substring_results);
     }
@@ -820,12 +853,17 @@ fn join_result_buckets(
     Ok(full_line_results)
 }
 
-fn compare_bucket(left: &Anddress, right: &Anddress) -> Ordering {
-    left.logical_path()
+fn compare_bucket(left: &SearchOccurrence, right: &SearchOccurrence) -> Ordering {
+    left.anddress()
+        .logical_path()
         .as_bytes()
-        .cmp(right.logical_path().as_bytes())
-        .then_with(|| left.byte_start().cmp(&right.byte_start()))
-        .then_with(|| left.byte_end().cmp(&right.byte_end()))
+        .cmp(right.anddress().logical_path().as_bytes())
+        .then_with(|| {
+            left.anddress()
+                .byte_start()
+                .cmp(&right.anddress().byte_start())
+        })
+        .then_with(|| left.anddress().byte_end().cmp(&right.anddress().byte_end()))
 }
 
 #[cfg(test)]
@@ -838,7 +876,7 @@ mod tests {
     use crate::{
         backwriter::{
             anchor::AnchorOutcome,
-            anddress::AnddressTarget,
+            anddress::{Anddress, AnddressTarget},
             edit::{Edit, Position},
             search::{SearchQuery, SearchRequest, SearchScope, SearchScopeEntry, SearchTarget},
             view::ViewOutcome,
@@ -880,14 +918,14 @@ mod tests {
     }
 
     fn exact_file(runtime: &WorkspaceRuntime, path: &str) -> Anddress {
-        let SearchOutcome::Found { mut anddresses } = runtime
+        let SearchOutcome::Found { mut occurrences } = runtime
             .search(&SearchRequest::exact_file(path).unwrap())
             .unwrap()
         else {
             panic!("exact File")
         };
-        assert_eq!(anddresses.len(), 1);
-        anddresses.pop().unwrap()
+        assert_eq!(occurrences.len(), 1);
+        occurrences.pop().unwrap().into_anddress()
     }
 
     struct FixtureReader<'a> {
@@ -940,6 +978,26 @@ mod tests {
         fail_after: Option<usize>,
         max_chunk: usize,
     ) -> Result<(Vec<Anddress>, Vec<Anddress>), SearchError> {
+        let (full, substring) =
+            project_occurrences_chunked(bytes, query, target, fail_after, max_chunk)?;
+        Ok((
+            full.into_iter()
+                .map(SearchOccurrence::into_anddress)
+                .collect(),
+            substring
+                .into_iter()
+                .map(SearchOccurrence::into_anddress)
+                .collect(),
+        ))
+    }
+
+    fn project_occurrences_chunked(
+        bytes: &[u8],
+        query: &str,
+        target: SearchTarget,
+        fail_after: Option<usize>,
+        max_chunk: usize,
+    ) -> Result<(Vec<SearchOccurrence>, Vec<SearchOccurrence>), SearchError> {
         let query = SearchQuery::new(query).unwrap();
         let literal = PreparedLiteral::new(&query)?;
         let mut reader = FixtureReader {
@@ -1150,6 +1208,108 @@ mod tests {
     }
 
     #[test]
+    fn occurrence_positions_share_line_framing_and_scratch_boundaries() {
+        let source = "\nα\rneedle\r\n \t\rneedle";
+        let (lines, substring) =
+            project_occurrences_chunked(source.as_bytes(), "needle", SearchTarget::Line, None, 1)
+                .unwrap();
+        assert!(substring.is_empty());
+        assert_eq!(
+            lines
+                .iter()
+                .map(SearchOccurrence::position)
+                .collect::<Vec<_>>(),
+            vec![
+                Some(SearchPosition::Line { line: 3 }),
+                Some(SearchPosition::Line { line: 5 }),
+            ]
+        );
+
+        let (paragraphs, substring) = project_occurrences_chunked(
+            source.as_bytes(),
+            "needle",
+            SearchTarget::Paragraph,
+            None,
+            1,
+        )
+        .unwrap();
+        assert!(substring.is_empty());
+        assert_eq!(
+            paragraphs
+                .iter()
+                .map(SearchOccurrence::position)
+                .collect::<Vec<_>>(),
+            vec![
+                Some(SearchPosition::Paragraph {
+                    start_line: 2,
+                    end_line: 3,
+                }),
+                Some(SearchPosition::Paragraph {
+                    start_line: 5,
+                    end_line: 5,
+                }),
+            ]
+        );
+
+        let (separator, substring) = project_occurrences_chunked(
+            source.as_bytes(),
+            " \t",
+            SearchTarget::Line,
+            None,
+            READ_BUFFER_SIZE,
+        )
+        .unwrap();
+        assert!(substring.is_empty());
+        assert_eq!(
+            separator[0].position(),
+            Some(SearchPosition::Line { line: 4 })
+        );
+
+        let (terminal, substring) =
+            project_occurrences_chunked(b"needle\r\n", "needle", SearchTarget::Line, None, 1)
+                .unwrap();
+        assert!(substring.is_empty());
+        assert_eq!(terminal.len(), 1);
+        assert_eq!(
+            terminal[0].position(),
+            Some(SearchPosition::Line { line: 1 })
+        );
+
+        for byte_start in [READ_BUFFER_SIZE - 1, READ_BUFFER_SIZE, READ_BUFFER_SIZE + 1] {
+            let mut boundary = vec![b'x'; byte_start - 1];
+            boundary.extend_from_slice(b"\nneedle");
+            let (lines, substring) = project_occurrences_chunked(
+                &boundary,
+                "needle",
+                SearchTarget::Line,
+                None,
+                READ_BUFFER_SIZE,
+            )
+            .unwrap();
+            assert!(substring.is_empty());
+            assert_eq!(lines[0].anddress().byte_start(), byte_start);
+            assert_eq!(lines[0].position(), Some(SearchPosition::Line { line: 2 }));
+
+            let (paragraphs, substring) = project_occurrences_chunked(
+                &boundary,
+                "needle",
+                SearchTarget::Paragraph,
+                None,
+                READ_BUFFER_SIZE,
+            )
+            .unwrap();
+            assert!(substring.is_empty());
+            assert_eq!(
+                paragraphs[0].position(),
+                Some(SearchPosition::Paragraph {
+                    start_line: 1,
+                    end_line: 2,
+                })
+            );
+        }
+    }
+
+    #[test]
     fn exact_file_uses_one_observation_without_search_framing() {
         for bytes in [b"".as_slice(), b"one\r\ntwo\n".as_slice()] {
             let mut reader = FixtureReader {
@@ -1233,6 +1393,15 @@ mod tests {
         assert_eq!(projection.provisional.len(), 1);
         assert_eq!(
             projection.push(b"xx", usize::MAX),
+            Err(SourceScanError::Resource)
+        );
+        let mut line_count = LineProjection::new(&literal);
+        line_count.line_number = usize::MAX;
+        assert_eq!(line_count.begin_line(0), Err(SourceScanError::Resource));
+        let mut paragraph_count = ParagraphProjection::new(&literal);
+        paragraph_count.line_number = usize::MAX;
+        assert_eq!(
+            paragraph_count.begin_line(0),
             Err(SourceScanError::Resource)
         );
 

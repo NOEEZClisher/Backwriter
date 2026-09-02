@@ -27,7 +27,8 @@ use backwriter::{
         edit::{Edit, EditError, Position},
         pick::{PickError, PickOutcome, PickPredicate, PickTargetKind, pick},
         search::{
-            SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchScopeEntry, SearchTarget,
+            SearchOccurrence, SearchOutcome, SearchPosition, SearchQuery, SearchRequest,
+            SearchScope, SearchScopeEntry, SearchTarget,
         },
         view::ViewOutcome,
     },
@@ -453,7 +454,7 @@ fn execute_search(
     let runtime = open_runtime(workspace, admissions)?;
     let outcome = run_search(&runtime, request)?;
     match output {
-        OutputMode::Human => write_human(&outcome),
+        OutputMode::Human => write_search(&outcome),
         OutputMode::Json => write_search_json(&outcome),
         OutputMode::Raw => unreachable!(),
     }
@@ -712,38 +713,93 @@ fn required_token<'a>(
         .ok_or_else(|| CliError::usage(format!("{context} requires a value")))
 }
 
-fn write_human(outcome: &SearchOutcome) -> Result<(), CliError> {
-    let anddresses = match outcome {
-        SearchOutcome::Empty => &[] as &[Anddress],
-        SearchOutcome::Found { anddresses } => anddresses,
+fn write_search(outcome: &SearchOutcome) -> Result<(), CliError> {
+    let occurrences = match outcome {
+        SearchOutcome::Empty => &[] as &[SearchOccurrence],
+        SearchOutcome::Found { occurrences } => occurrences,
     };
-    write_address_rows("Found", anddresses)
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    let result = (|| -> io::Result<()> {
+        writeln!(stdout, "Found {}", occurrences.len())?;
+        for (index, occurrence) in occurrences.iter().enumerate() {
+            let anddress = occurrence.anddress();
+            match occurrence.position() {
+                None => writeln!(stdout, "{index}\tFile\t{}", anddress.logical_path())?,
+                Some(SearchPosition::Line { line }) => {
+                    writeln!(stdout, "{index}\tLine\t{}:{line}", anddress.logical_path())?
+                }
+                Some(SearchPosition::Paragraph {
+                    start_line,
+                    end_line,
+                }) => writeln!(
+                    stdout,
+                    "{index}\tParagraph\t{}:{start_line}-{end_line}",
+                    anddress.logical_path()
+                )?,
+            }
+        }
+        Ok(())
+    })();
+    result.map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
 }
 
 fn write_search_json(outcome: &SearchOutcome) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
     stdout
-        .write_all(b"{\"schema\":\"bw.cli.search.v1\",\"outcome\":\"")
+        .write_all(b"{\"schema\":\"bw.cli.search.v2\",\"outcome\":\"")
         .map_err(|error| CliError::stream(error.to_string()))?;
     match outcome {
         SearchOutcome::Empty => stdout
-            .write_all(b"empty\",\"anddresses\":[]}")
+            .write_all(b"empty\",\"occurrences\":[]}")
             .map_err(|error| CliError::stream(error.to_string()))?,
-        SearchOutcome::Found { anddresses } => {
+        SearchOutcome::Found { occurrences } => {
             stdout
-                .write_all(b"found\",\"anddresses\":[")
+                .write_all(b"found\",\"occurrences\":[")
                 .map_err(|error| CliError::stream(error.to_string()))?;
-            for (index, anddress) in anddresses.iter().enumerate() {
+            for (index, occurrence) in occurrences.iter().enumerate() {
                 if index != 0 {
                     stdout
                         .write_all(b",")
                         .map_err(|error| CliError::stream(error.to_string()))?;
                 }
+                let anddress = occurrence.anddress();
+                stdout
+                    .write_all(b"{\"logicalPath\":")
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                serde_json::to_writer(&mut stdout, anddress.logical_path())
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                match occurrence.position() {
+                    None => stdout
+                        .write_all(b",\"kind\":\"file\"")
+                        .map_err(|error| CliError::stream(error.to_string()))?,
+                    Some(SearchPosition::Line { line }) => write!(
+                        stdout,
+                        ",\"kind\":\"line\",\"line\":\"{line}\""
+                    )
+                    .map_err(|error| CliError::stream(error.to_string()))?,
+                    Some(SearchPosition::Paragraph {
+                        start_line,
+                        end_line,
+                    }) => write!(
+                        stdout,
+                        ",\"kind\":\"paragraph\",\"lineStart\":\"{start_line}\",\"lineEnd\":\"{end_line}\""
+                    )
+                    .map_err(|error| CliError::stream(error.to_string()))?,
+                }
+                stdout
+                    .write_all(b",\"anddress\":")
+                    .map_err(|error| CliError::stream(error.to_string()))?;
                 let encoded = anddress
                     .encode()
                     .map_err(|error| CliError::execution(error.to_string()))?;
                 stdout
                     .write_all(&encoded)
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                stdout
+                    .write_all(b"}")
                     .map_err(|error| CliError::stream(error.to_string()))?;
             }
             stdout
@@ -1078,7 +1134,7 @@ fn execute_session_command(
     match tokens[0].as_str() {
         "search" => {
             let outcome = run_search(runtime, parse_search(&tokens[1..])?)?;
-            write_human(&outcome)?;
+            write_search(&outcome)?;
             Ok(SessionControl::Continue)
         }
         "pick" => {
@@ -1244,7 +1300,7 @@ fn execute_let(
     }
     let value = if right_hand_side == "search" {
         let outcome = run_search(runtime, parse_search(&tokens[4..])?)?;
-        write_human(&outcome)?;
+        write_search(&outcome)?;
         SessionValue::Search(outcome)
     } else if right_hand_side == "pick" {
         let outcome = run_pick(bindings, &tokens[4..])?;
@@ -1453,7 +1509,7 @@ fn data_get(data: &DataStore, kind: &str, name: &str) -> Result<SessionValue, Cl
 fn write_data_value(value: &SessionValue) -> Result<(), CliError> {
     match value {
         SessionValue::Anddress(anddress) => write_data_anddress(anddress),
-        SessionValue::Search(outcome) => write_human(outcome),
+        SessionValue::Search(outcome) => write_search(outcome),
         SessionValue::Pick(outcome) => write_pick(outcome),
         SessionValue::View(outcome) => write_view(outcome),
         SessionValue::CheckAnddress(outcome) => write_check(outcome),
@@ -1608,8 +1664,19 @@ fn resolve_pick_candidates(
         | Some(SessionValue::Pick(PickOutcome::Empty)) => {
             return Ok(Vec::new());
         }
-        Some(SessionValue::Search(SearchOutcome::Found { anddresses }))
-        | Some(SessionValue::Pick(PickOutcome::Selected { anddresses })) => anddresses,
+        Some(SessionValue::Search(SearchOutcome::Found { occurrences })) => {
+            let mut candidates = Vec::new();
+            candidates
+                .try_reserve_exact(occurrences.len())
+                .map_err(|_| CliError::execution("Pick candidate allocation failed"))?;
+            candidates.extend(
+                occurrences
+                    .iter()
+                    .map(|occurrence| occurrence.anddress().clone()),
+            );
+            return Ok(candidates);
+        }
+        Some(SessionValue::Pick(PickOutcome::Selected { anddresses })) => anddresses,
         Some(SessionValue::Anddress(_)) => {
             return Err(CliError::usage(format!(
                 "Pick candidates require a Search or Pick binding: {name}"
@@ -2184,9 +2251,9 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
     validate_binding_name(name)?;
     let index = parse_session_index(&reference[open + 1..reference.len() - 1])?;
     match binding(bindings, name) {
-        Some(SessionValue::Search(SearchOutcome::Found { anddresses })) => anddresses
+        Some(SessionValue::Search(SearchOutcome::Found { occurrences })) => occurrences
             .get(index)
-            .cloned()
+            .map(|occurrence| occurrence.anddress().clone())
             .ok_or_else(|| CliError::usage(format!("binding index is out of range: {name}"))),
         Some(SessionValue::Search(SearchOutcome::Empty)) => {
             Err(CliError::usage(format!("Search binding is empty: {name}")))

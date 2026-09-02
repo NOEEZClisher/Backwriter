@@ -2,8 +2,8 @@ use std::fs;
 
 use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget};
 use backwriter::backwriter::search::{
-    SearchError, SearchInputError, SearchOutcome, SearchQuery, SearchRequest, SearchScope,
-    SearchScopeEntry, SearchTarget,
+    SearchError, SearchInputError, SearchOccurrence, SearchOccurrenceError, SearchOutcome,
+    SearchPosition, SearchQuery, SearchRequest, SearchScope, SearchScopeEntry, SearchTarget,
 };
 use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
@@ -33,7 +33,10 @@ fn found(runtime: &WorkspaceRuntime, query: &str, target: SearchTarget) -> Vec<A
         ))
         .unwrap()
     {
-        SearchOutcome::Found { anddresses } => anddresses,
+        SearchOutcome::Found { occurrences } => occurrences
+            .into_iter()
+            .map(|occurrence| occurrence.into_anddress())
+            .collect(),
         SearchOutcome::Empty => Vec::new(),
     }
 }
@@ -49,11 +52,64 @@ fn exact_file(runtime: &WorkspaceRuntime, logical_path: &str) -> SearchOutcome {
 }
 
 fn exact_file_address(runtime: &WorkspaceRuntime, logical_path: &str) -> Anddress {
-    let SearchOutcome::Found { mut anddresses } = exact_file(runtime, logical_path) else {
+    let SearchOutcome::Found { mut occurrences } = exact_file(runtime, logical_path) else {
         panic!("exact File")
     };
-    assert_eq!(anddresses.len(), 1);
-    anddresses.pop().unwrap()
+    assert_eq!(occurrences.len(), 1);
+    occurrences.pop().unwrap().into_anddress()
+}
+
+#[test]
+fn public_occurrences_validate_position_kind_and_preserve_ownership() {
+    let workspace = "a".repeat(64);
+    let hash = "b".repeat(64);
+    let address = |target| Anddress::new(&workspace, "note.txt", &hash, 4, target, 0, 4).unwrap();
+    let file = address(AnddressTarget::File);
+    let paragraph = address(AnddressTarget::Paragraph);
+    let line = address(AnddressTarget::Line);
+
+    let file_occurrence = SearchOccurrence::new(file.clone(), None).unwrap();
+    assert_eq!(file_occurrence.anddress(), &file);
+    assert_eq!(file_occurrence.position(), None);
+    assert_eq!(file_occurrence.clone().into_anddress(), file);
+    assert_eq!(file_occurrence.clone(), file_occurrence);
+
+    let paragraph_position = Some(SearchPosition::Paragraph {
+        start_line: 2,
+        end_line: 4,
+    });
+    let paragraph_occurrence =
+        SearchOccurrence::new(paragraph.clone(), paragraph_position).unwrap();
+    assert_eq!(paragraph_occurrence.position(), paragraph_position);
+    assert_eq!(paragraph_occurrence.into_anddress(), paragraph);
+
+    let line_position = Some(SearchPosition::Line { line: 3 });
+    let line_occurrence = SearchOccurrence::new(line.clone(), line_position).unwrap();
+    assert_eq!(line_occurrence.position(), line_position);
+    assert_eq!(line_occurrence.into_anddress(), line.clone());
+
+    for invalid in [
+        SearchOccurrence::new(file.clone(), line_position),
+        SearchOccurrence::new(paragraph.clone(), None),
+        SearchOccurrence::new(
+            paragraph.clone(),
+            Some(SearchPosition::Paragraph {
+                start_line: 4,
+                end_line: 3,
+            }),
+        ),
+        SearchOccurrence::new(
+            paragraph,
+            Some(SearchPosition::Paragraph {
+                start_line: 0,
+                end_line: 1,
+            }),
+        ),
+        SearchOccurrence::new(line.clone(), None),
+        SearchOccurrence::new(line, Some(SearchPosition::Line { line: 0 })),
+    ] {
+        assert_eq!(invalid, Err(SearchOccurrenceError::Invalid));
+    }
 }
 
 #[test]
@@ -141,24 +197,29 @@ fn exact_file_lookup_is_content_independent_and_integrates_with_check() {
     let workspace = runtime(&root);
 
     let empty = exact_file(&workspace, "empty.txt");
-    let SearchOutcome::Found { anddresses } = &empty else {
+    let SearchOutcome::Found { occurrences } = &empty else {
         panic!("empty File lookup")
     };
-    assert_eq!(anddresses.len(), 1);
-    assert_eq!(anddresses[0].logical_path(), "empty.txt");
-    assert_eq!(anddresses[0].target(), AnddressTarget::File);
+    assert_eq!(occurrences.len(), 1);
+    assert_eq!(occurrences[0].anddress().logical_path(), "empty.txt");
+    assert_eq!(occurrences[0].anddress().target(), AnddressTarget::File);
     assert_eq!(
-        (anddresses[0].byte_start(), anddresses[0].byte_end()),
+        (
+            occurrences[0].anddress().byte_start(),
+            occurrences[0].anddress().byte_end()
+        ),
         (0, 0)
     );
+    assert_eq!(occurrences[0].position(), None);
 
     let nonempty = exact_file(&workspace, "nonempty.txt");
-    let SearchOutcome::Found { anddresses } = &nonempty else {
+    let SearchOutcome::Found { occurrences } = &nonempty else {
         panic!("nonempty File lookup")
     };
-    assert_eq!(anddresses.len(), 1);
-    assert_eq!(anddresses[0].logical_path(), "nonempty.txt");
-    assert_eq!(anddresses[0].target(), AnddressTarget::File);
+    assert_eq!(occurrences.len(), 1);
+    assert_eq!(occurrences[0].anddress().logical_path(), "nonempty.txt");
+    assert_eq!(occurrences[0].anddress().target(), AnddressTarget::File);
+    assert_eq!(occurrences[0].position(), None);
 
     assert_eq!(exact_file(&workspace, "missing.txt"), SearchOutcome::Empty);
     assert_eq!(exact_file(&workspace, "directory"), SearchOutcome::Empty);
@@ -172,8 +233,9 @@ fn exact_file_lookup_is_content_independent_and_integrates_with_check() {
     assert_eq!(checked.report.checked_count(), 1);
     assert!(matches!(
         checked.filtered,
-        SearchOutcome::Found { ref anddresses }
-            if anddresses.len() == 1 && anddresses[0].logical_path() == "empty.txt"
+        SearchOutcome::Found { ref occurrences }
+            if occurrences.len() == 1
+                && occurrences[0].anddress().logical_path() == "empty.txt"
     ));
 }
 
@@ -218,22 +280,22 @@ fn exact_file_lookup_reuses_path_admission_and_source_safety() {
     let right = exact_file(&workspace, "b/same.txt");
     let (
         SearchOutcome::Found {
-            anddresses: left_addresses,
+            occurrences: left_occurrences,
         },
         SearchOutcome::Found {
-            anddresses: right_addresses,
+            occurrences: right_occurrences,
         },
     ) = (&left, &right)
     else {
         panic!("named admission File lookup")
     };
-    assert_eq!(left_addresses.len(), 1);
-    assert_eq!(right_addresses.len(), 1);
-    assert_eq!(left_addresses[0].logical_path(), "a/same.txt");
-    assert_eq!(right_addresses[0].logical_path(), "b/same.txt");
+    assert_eq!(left_occurrences.len(), 1);
+    assert_eq!(right_occurrences.len(), 1);
+    assert_eq!(left_occurrences[0].anddress().logical_path(), "a/same.txt");
+    assert_eq!(right_occurrences[0].anddress().logical_path(), "b/same.txt");
     assert_eq!(
-        left_addresses[0].workspace_coordinate(),
-        right_addresses[0].workspace_coordinate()
+        left_occurrences[0].anddress().workspace_coordinate(),
+        right_occurrences[0].anddress().workspace_coordinate()
     );
     assert_eq!(
         workspace.search(&SearchRequest::exact_file("outside.txt").unwrap()),
@@ -581,16 +643,16 @@ fn search_rejects_invalid_query_and_scope_before_access_and_keeps_canonical_scop
     ])
     .unwrap();
     assert_eq!(scope, sorted_scope);
-    let SearchOutcome::Found { anddresses } = runtime(&root)
+    let SearchOutcome::Found { occurrences } = runtime(&root)
         .search(&request("needle", scope, SearchTarget::Line))
         .unwrap()
     else {
         panic!("canonical selected results")
     };
     assert_eq!(
-        anddresses
+        occurrences
             .iter()
-            .map(|value| value.logical_path())
+            .map(|value| value.anddress().logical_path())
             .collect::<Vec<_>>(),
         vec!["a.txt", "z.txt"]
     );
@@ -674,13 +736,13 @@ fn search_has_no_fixed_query_path_scope_depth_or_result_limit() {
         entries.push(SearchScopeEntry::source(path).unwrap());
     }
     let scope = SearchScope::only(entries).unwrap();
-    let SearchOutcome::Found { anddresses } = runtime(&root)
+    let SearchOutcome::Found { occurrences } = runtime(&root)
         .search(&request("needle", scope, SearchTarget::Line))
         .unwrap()
     else {
         panic!("scoped results")
     };
-    assert_eq!(anddresses.len(), 257);
+    assert_eq!(occurrences.len(), 257);
     let mut nested = root.clone();
     let mut logical_path = String::new();
     for index in 0..64 {
@@ -703,13 +765,13 @@ fn search_has_no_fixed_query_path_scope_depth_or_result_limit() {
     );
     fs::write(root.join("many.txt"), "many\n".repeat(4097)).unwrap();
     let scope = SearchScope::only([SearchScopeEntry::source("many.txt").unwrap()]).unwrap();
-    let SearchOutcome::Found { anddresses } = runtime(&root)
+    let SearchOutcome::Found { occurrences } = runtime(&root)
         .search(&request("many", scope, SearchTarget::Line))
         .unwrap()
     else {
         panic!("many results")
     };
-    assert_eq!(anddresses.len(), 4097);
+    assert_eq!(occurrences.len(), 4097);
 }
 
 #[cfg(unix)]
@@ -746,11 +808,11 @@ fn search_rejects_symlinks_and_keeps_hard_links_as_distinct_logical_paths() {
         SearchOutcome::Empty
     );
     for path in ["hard.txt", "source.txt"] {
-        let SearchOutcome::Found { anddresses } = exact_file(&runtime(&root), path) else {
+        let SearchOutcome::Found { occurrences } = exact_file(&runtime(&root), path) else {
             panic!("hard-link logical File lookup")
         };
-        assert_eq!(anddresses.len(), 1);
-        assert_eq!(anddresses[0].logical_path(), path);
-        assert_eq!(anddresses[0].target(), AnddressTarget::File);
+        assert_eq!(occurrences.len(), 1);
+        assert_eq!(occurrences[0].anddress().logical_path(), path);
+        assert_eq!(occurrences[0].anddress().target(), AnddressTarget::File);
     }
 }

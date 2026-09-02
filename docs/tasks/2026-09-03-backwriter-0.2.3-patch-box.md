@@ -1,7 +1,7 @@
 # Backwriter 0.2.3 Patch Box
 
-Status: Phase 1 authority and consumer inventory complete. Gates 2–8 are
-pending and require their own scoped authorization.
+Status: Gates 1–2 complete. Gates 3–8 are pending and require their own scoped
+authorization.
 
 This tracker records order, evidence, and unresolved implementation choices.
 Normative meaning belongs to the active
@@ -10,7 +10,7 @@ Normative meaning belongs to the active
 [principles](../principles/backwriter-core-principles.md), and
 [CLI authority](../architecture/backwriter-cli-v1.md). The published `0.2.2`
 source, Cargo and CLI version, artifacts, installers, exact 44-file public
-tree, and service remain the closed baseline throughout Phase 1.
+tree, and service remain the closed baseline through Gate 2.
 
 ## Goal and exclusions
 
@@ -39,18 +39,17 @@ persistent identity, registry, and retained observation state.
 | Existing surface | Direct production consumers | Unique evidence and constraint |
 | --- | --- | --- |
 | `WorkspaceRuntime::search(&SearchRequest) -> Result<SearchOutcome, SearchError>` | Public Rust callers and CLI `run_search`; Runtime Check also consumes caller-provided `SearchOutcome` by value | Integration tests exercise content targets, exact File, traversal, currentness, and external-crate-style construction. Repository search cannot prove external Rust consumers absent |
-| `SearchOutcome::{Empty, Found { anddresses: Vec<Anddress> }}` | Check deconstructs and reconstructs it; `DataStore` stores and returns it; Session stores, clones, indexes, checks, picks, and writes it | Order, duplicate multiplicity, equality, Clone/Eq, Data ownership, and Check filtering are public native meanings and cannot be changed accidentally for Adapter metadata |
-| Human `write_human` / `write_address_rows` | One-shot Search, Session Search, Search binding display, and stored Search display; Pick also shares `write_address_rows` | Current rows show index, kind, path, and byte range. A Search presentation change must not silently change Pick output |
-| Streaming `write_search_json` / `bw.cli.search.v1` | Documented JSON Search-to-one-shot Edit flow and machine-output tests | Exact key order, embedded v4 objects, result order, duplicates, escaping, no whole-result clone, and error streams are a closed `0.2.2` contract |
+| `SearchOutcome::{Empty, Found { occurrences: Vec<SearchOccurrence> }}` | Check filters and reconstructs complete occurrences; `DataStore` stores and returns it; Session stores, clones, indexes, checks, projects Pick candidates, and writes it | Each item owns its exact v4 Anddress and target-coherent optional `SearchPosition`; order, duplicate multiplicity, equality, Clone/Eq, Data ownership, and metadata-preserving Check filtering are public native meanings |
+| Human `write_search` and raw-Anddress `write_address_rows` | One-shot Search, Session Search, Search binding display, and stored Search display use the former; Pick uses the latter | Search rows show current Line positions. Pick rows retain exact byte ranges and are not an accidental Search presentation consumer |
+| Streaming `write_search_json` / `bw.cli.search.v2` | Documented JSON Search-to-one-shot Edit flow and machine-output tests | Exact envelope and item key order, position shape, embedded v4 objects, result order, duplicates, escaping, no whole-result clone, and error streams are current source contracts; v1 is immutable `0.2.2` release evidence only |
 | Runtime provisional target projection | Content Search constructs target ranges while the sole selected-source observer hashes and frames the source | This is the only permitted producer for Line numbers and Paragraph Line ranges; an Adapter reread or second Search projection engine is forbidden |
 
-The minimum machine boundary for Gate 2 is a hard source-level cutover from
-`bw.cli.search.v1` to `bw.cli.search.v2`. There will be no simultaneous v1
-mode, compatibility flag, dual writer, or second Search engine. The published
-`0.2.2` v1 schema remains immutable release evidence. Gate 2 must select the
-smallest native metadata carrier that leaves native Search, Check, Data,
-Session, Pick, and public Rust meanings coherent; it must not wrap unchanged
-old results in a parallel observation subsystem.
+Gate 2 hard-cuts the source-level machine boundary from `bw.cli.search.v1` to
+`bw.cli.search.v2`. There is no simultaneous v1 mode, compatibility flag, dual
+writer, or second Search engine. The published `0.2.2` v1 schema remains
+immutable release evidence. The selected native carrier keeps Search, Check,
+Data, Session, Pick, and public Rust meanings coherent without wrapping old
+results in a parallel observation subsystem.
 
 Every v2 result item is self-identifying: logical path, target kind, current
 one-based Line number or Paragraph inclusive Line range when applicable, and
@@ -90,21 +89,29 @@ single Search observation, existing View projection machinery, and Apply's
 prospective-after path, and forbid parallel engines, generic projectors,
 observation objects, post-Search, and speculative compatibility layers.
 
-## Gate 2 — Search observation metadata — pending
+## Gate 2 — Search observation metadata — complete
 
-- Produce Line current one-based Line number and Paragraph current one-based
-  inclusive start–end Line range during the existing selected-source Search
-  observation. Preserve every existing CR, LF, CRLF, no-EOL, empty Line, and
-  separator/Paragraph rule. File has no default Line-position field.
-- Carry the metadata with each occurrence through deterministic ordering and
-  duplicate retention. It must never enter v4 construction, equality,
-  currentness, Search selection, or Edit input.
-- Implement the one new `bw.cli.search.v2` item projection as a hard source
-  cutover. Do not preserve a runtime v1 branch or add a compatibility switch.
-  Keep the current human, Session, Pick, Check, and Data consumers coherent;
-  change only the outputs whose contract is explicitly closed in this gate.
-- Prove zero additional source opens/reads for position calculation and retain
-  the current streamed-output and no-second-result-collection properties.
+- `SearchOccurrence` owns one exact v4 Anddress and optional
+  `SearchPosition`. File requires no position, Line requires a nonzero one-based
+  Line, and Paragraph requires a nonzero inclusive ordered Line range. Its
+  constructor, borrowed getters, Clone/Eq, and consuming Anddress conversion are
+  the only new public carrier surface.
+- Line and Paragraph projections increment checked Line state inside the
+  existing selected-source scan. They preserve CR, LF, CRLF, bare CR, no-EOL,
+  empty and separator Lines, Unicode, no synthetic EOF Line, literal tiers,
+  ordering, and duplicate multiplicity. Arithmetic failure follows the existing
+  Resource-to-Unavailable path.
+- Check preserves occurrence metadata for Current and Unavailable results while
+  reports remain raw Anddresses. Data and Session retain the carrier; Session
+  indexing and Pick candidate projection extract only its Anddress. PickOutcome
+  and Pick human rows are unchanged.
+- Machine Search hard-cuts to `bw.cli.search.v2`: envelope keys are `schema`,
+  `outcome`, `occurrences`; each item is logical path, kind, applicable decimal
+  Line field or Paragraph range, then directly streamed exact v4 `anddress`.
+  Human Search uses path-only File, `path:line`, and `path:start-end` through one
+  Search writer. No v1 production branch, JSON value tree, result clone, second
+  result collection, source reopen, extra read, second hash pass, cache, or
+  retained observation was added.
 
 ## Gate 3 — single View projection — pending
 

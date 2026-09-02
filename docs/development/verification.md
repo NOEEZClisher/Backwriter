@@ -1,41 +1,42 @@
 # Verification
 
-## 0.2.3 Patch Box Phase 1 authority audit
+## 0.2.3 Patch Box Gates 1–2
 
-Phase 1 is documentation-only. Production reference audit establishes these
-current consumers before later code gates:
+Gate 1 records the direct Search, View, Edit, Check, Data, Session, Pick, and
+writer consumers. Gate 2 implements only the Search observation carrier and
+its two Adapter projections:
 
-- `SearchOutcome::Found { anddresses: Vec<Anddress> }` is returned by
-  `WorkspaceRuntime::search`, consumed directly by Check, caller-owned Data,
-  Session binding/index resolution, one-shot and Session writers, and public
-  Rust callers. Search's runtime projection already derives Line and Paragraph
-  ranges during the sole selected-source observation.
-- Human Search uses `write_human` and the shared `write_address_rows`; Pick
-  and Data reuse the latter path. JSON Search uses the distinct streaming
-  `write_search_json` and the exact public `bw.cli.search.v1` envelope.
-- Ordinary and anchored View share `ViewOutcome`; one-shot, Session, Data, and
-  Anchor callers consume its current File/Paragraph/Line related-address
-  fields. A later batch must not loop over the single public call and reread a
-  source for each target.
-- One-shot Edit privately composes View, `Edit::Replace`, and Apply. Runtime
-  Apply's existing prospective-after projector, exact after hash/length,
-  direct ranges, publication boundary, and live-Anchor reflection are the
-  reusable evidence path for a receipt. Search is not part of Edit execution.
+- `SearchOutcome::Found { occurrences: Vec<SearchOccurrence> }` owns one exact
+  v4 Anddress and target-coherent optional `SearchPosition` per result. Public
+  validation covers File/None, nonzero Line, ordered nonzero Paragraph bounds,
+  Clone/Eq, borrowing, and ownership transfer.
+- Runtime increments checked one-based Line state inside the existing Line and
+  Paragraph framing projections. CR, LF, CRLF, bare CR, no-EOL, empty and
+  separator Lines, Unicode, no synthetic EOF Line, and 8,191/8,192/8,193-byte
+  scratch boundaries are exercised. No additional source open, read, hash pass,
+  whole-source retention, observation object, or parallel result vector exists.
+- Check filters complete occurrences while keeping report evidence as raw
+  Anddresses. Data and Session store the carrier; Session indexing extracts the
+  contained Anddress; Pick alone receives an explicit raw-Anddress collection
+  and retains its established outcome and byte-range display.
+- One-shot and Session human Search share `write_search`: File is path-only,
+  Line is `path:line`, and Paragraph is `path:start-end`. The streaming JSON
+  writer emits exact `bw.cli.search.v2` occurrence items and directly embeds
+  `Anddress::encode()` output without a JSON value tree, result clone, or second
+  collection. Empty/Found, all target kinds, position fields, key order,
+  duplicate/order retention, escaping, large results, and Search-to-Edit v4
+  extraction are byte-exact regressions.
 
-No audited path is dead: each retained public Rust, raw Session, writer, Check,
-Data, or Anchor path has a direct caller and behavioral regression. Phase 1
-therefore deletes no production code and creates no parallel engine, generic
-projector, observation object, compatibility output mode, or post-publication
-Search. Phase 2 is authorized to replace the source-level one-shot JSON Search
-schema with `bw.cli.search.v2`; `bw.cli.search.v1` remains only immutable
-published `0.2.2` evidence rather than a simultaneous compatibility mode.
+Late selected-source failure continues to discard every provisional occurrence
+and position. Existing literal tiers, ordering, multiplicity, v4 KAT,
+currentness, and single-observation controls remain unchanged. Production has
+no v1 writer or compatibility branch; `bw.cli.search.v1` remains only immutable
+published `0.2.2` evidence. Cargo, CLI version, README, toolchain, server, the
+official 44-file public tree, and services remain unchanged.
 
-The Phase 1 verification reuses the already closed 243-test `0.2.2` result
-because Rust, Cargo, tests, README, and toolchain inputs are byte-identical to
-the parent. It additionally requires offline locked metadata, active-document
-link/fence/conflict-marker checks, exact allowed paths, an empty index before
-commit, no `.artext` or tracked output, and unchanged server, public 44-file
-tree, and services.
+The complete offline/locked GNU-host suite passes 245 tests: the 243 inherited
+controls plus one Runtime position/framing boundary test and one public
+occurrence validation/ownership test.
 
 ## 0.2.2 Anddress-first editing Gates 1–6
 
@@ -655,15 +656,15 @@ View regressions cover v4 decode, File/Paragraph/Line exact bytes,
 None/LF/CR/CRLF terminators, large no-EOL output, stale source-state/range and
 unadmitted source closure, plus one-shot anchored/extra-operand
 rejection.
-One-shot Search JSON regressions cover exact compact envelope key order, Empty
-and Found mapping, exact v4 object embedding and re-decoding, File/Paragraph/
-Line targets, CR/LF/CRLF/no-EOL byte ranges, Unicode and JSON escaping, result
-order, repeated Line content, global-option placement, rejected duplicate/late
-or non-Search JSON, and a structural audit that excludes a JSON Value or cloned
-result collection in the production writer.
-The Gate 6 integration control removes only the fixed single-found envelope,
-validates the original embedded v4 bytes, passes them unchanged to one-shot
-Edit, and verifies exact CRLF-preserving source output.
+One-shot Search JSON regressions cover the exact compact v2 envelope and item
+key order, Empty and Found mapping, exact v4 object embedding and re-decoding,
+File/Paragraph/Line position shapes, CR/LF/CRLF/bare-CR/no-EOL framing, Unicode
+and JSON escaping, result order, repeated Line content, global-option placement,
+rejected duplicate/late or non-Search JSON, and a structural audit that excludes
+a JSON Value or cloned result collection in the production writer.
+The Search-to-Edit integration control removes only the fixed single-occurrence
+v2 wrapper, validates the original embedded v4 bytes, passes them unchanged to
+one-shot Edit, and verifies exact CRLF-preserving source output.
 One-shot View JSON regressions cover exact compact envelope key order for File,
 Paragraph, and Line; related v4 File/Paragraph object re-decoding; every Line
 terminator including a separator Line's `paragraph:null`; Unicode and JSON

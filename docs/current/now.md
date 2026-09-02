@@ -1,22 +1,26 @@
 # Backwriter Current State
 
-## Authorized 0.2.3 Patch Box authority
+## In-progress 0.2.3 Patch Box
 
-Phase 1 closes documentation authority and an eight-gate implementation order
-for the `0.2.3` Patch Box. It is an AI-facing information-surface patch, not an
-engine-performance project. The intended contraction is Search with
-same-observation descriptive positions and opaque v4 Anddresses, caller-chosen
-View projection or ordered batch, one-shot Replace, and reuse of a returned
-fresh current Anddress when the published result has one.
+Gates 1 and 2 close authority, the consumer matrix, and Search observation
+metadata for the `0.2.3` Patch Box. It is an AI-facing information-surface
+patch, not an engine-performance project. Search now returns ordered
+`SearchOccurrence` values that pair each exact opaque v4 Anddress with its
+same-observation descriptive position. Later gates cover caller-chosen View
+projection or ordered batch, one-shot Replace, and reuse of a returned fresh
+current Anddress when the published result has one.
 
 Line Search metadata is the current one-based Line number. Paragraph Search
 metadata is the current one-based inclusive start-to-end Line range. File
-Search omits Line position by default. This information is produced while
-Search already observes the source; it is not an Anddress field, identity,
-currentness evidence, selector, or permission for a CLI reread. Equal hits and
-duplicate results remain present and each projected item must remain
-self-identifying by logical path, target kind, descriptive position when
-applicable, and opaque v4 Anddress.
+Search has no position. This information is produced while Search already
+frames and hashes the source; it adds no open, read, hash pass, retained source,
+or Adapter reread. It is not an Anddress field, identity, currentness evidence,
+selector, or Edit input. Equal hits and duplicate results remain present.
+Machine Search is the Adapter-only `bw.cli.search.v2` occurrence envelope;
+every item is self-identifying by logical path, target kind, applicable decimal
+Line position, and exact embedded v4 Anddress. Human Search uses `path:line` for
+Line, `path:start-end` for Paragraph, and path alone for File. Pick retains its
+raw-Anddress byte-range rows unchanged.
 
 View remains Observe/Project, never Find. A caller-held Line may project to
 Line, Paragraph, or File; a Paragraph to Paragraph or File; and a File only to
@@ -34,10 +38,10 @@ is conditional on a syntax and EOF/UTF-8/NUL/newline/failure contract that
 cannot collide with literal `--stdin` Content.
 
 The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
-records the consumer matrix and remaining API/output choices. No Rust, Cargo,
-test, README, CLI, version, artifact, installer, server, service, tunnel, DNS,
-or public-root state changes in Phase 1. Cargo, `bw version`, and the exact
-44-file official distribution remain closed `0.2.2`.
+records the completed carrier migration and remaining API/output choices.
+Cargo, `bw version`, README, artifacts, installers, server, services, tunnel,
+DNS, public root, and the exact 44-file official distribution remain closed
+`0.2.2`.
 
 ## Version boundary
 
