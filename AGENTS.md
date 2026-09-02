@@ -81,7 +81,7 @@ Edit/Position/Apply is the exact low-level primitive, Session `let ... = edit
 one-shot Anddress-first Edit is the canonical Replace contraction. None is
 internal, deprecated, renamed, aliased, or wrapped by that separation.
 
-`0.2.3` Patch Box Gates 1 through 4 are complete in source. Gate 1 closes
+`0.2.3` Patch Box Gates 1 through 5 are complete in source. Gate 1 closes
 authority and the consumer matrix. Gate 2 carries each Search result as one
 `SearchOccurrence` containing its exact v4 Anddress and same-observation
 descriptive position: a one-based Line number, a one-based inclusive Paragraph
@@ -101,8 +101,13 @@ duplicate-preserving, all-or-nothing native batch View. It validates every
 input and relation before I/O, groups by workspace coordinate and logical path,
 and uses one source handle and one accepted direct observation per source group;
 matching Host proof groups reuse the existing trusted range scanner on one
-handle. Cargo, CLI version, artifacts, and publication remain closed `0.2.2`.
-Later gates may add only the one-shot Replace receipt and its Adapter output.
+handle. Gate 5 adds `WorkspaceRuntime::apply_replace(&Edit) ->
+Result<EditReceipt, ApplyError>` for one Replace while preserving the existing
+unit-returning public Apply seam. It reuses the same executor, after projection,
+proof installation, publication, and Anchor reflection. Current one-shot Edit
+discards the receipt and retains exact `OK` plus LF; Gate 6 owns any Adapter
+receipt output. Cargo, CLI version, artifacts, and publication remain closed
+`0.2.2`.
 The ordered
 gates and consumer evidence are tracked in
 [Backwriter 0.2.3 Patch Box](docs/tasks/2026-09-03-backwriter-0.2.3-patch-box.md).
@@ -273,7 +278,12 @@ are preserved evidence, never current authority.
   single-source Edit Runtime implementation is complete; it creates no registry, retry,
   watcher, or automatic creation of a new `Anchedress` or `AnchorOutcome`;
   existing live Anchor continuity is reflected by direct range/provenance
-  projection under the Protocol. Check V1
+  projection under the Protocol. The Patch Box companion
+  `WorkspaceRuntime::apply_replace` accepts only `Edit::Replace` and returns an
+  `EditReceipt`: exact no-op returns the validated input, while confirmed
+  change returns the fresh same-kind target when direct after projection has
+  one. It shares the existing executor and changes neither raw Apply nor
+  Session Apply. Check V1
   semantic/API/type/report authority and
   Rust implementation are complete; Data V1 semantic/public API/type/error
   authority and Rust implementation are complete; Edit V1 semantic/public
@@ -335,7 +345,7 @@ are preserved evidence, never current authority.
 - View's admitted no-follow one-read access checks v4 coordinate/path,
   source-state hash/length, and exact range, constructing related results from
   the same read.
-- Plural input, arbitrary ranges, descendants, and partial behavior are post-V1 owner
+- Arbitrary range selection, descendants, and partial behavior are post-V1 owner
   decisions. View does not classify input state; Check does not change View.
 - **Check V1** has closed semantic/API/type/report authority and a stateless
   result/history contract. Default execution remains the `0.2.0` observation
@@ -359,8 +369,10 @@ are preserved evidence, never current authority.
 
 - The implemented Runtime execution seams are
   `WorkspaceRuntime::search(&SearchRequest)`,
-  `WorkspaceRuntime::view(&Anddress, AnddressTarget)`, and
-  `WorkspaceRuntime::apply(&mut self, &Edit)`,
+  `WorkspaceRuntime::view(&Anddress, AnddressTarget)`,
+  `WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)`,
+  `WorkspaceRuntime::apply(&mut self, &Edit)`, and
+  `WorkspaceRuntime::apply_replace(&mut self, &Edit)`,
   `WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
   `check_pick(PickOutcome)`.
   `WorkspaceRuntime::open_host_authoritative` explicitly selects Host mode;

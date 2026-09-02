@@ -4,13 +4,13 @@
 
 The [eight-gate Patch Box tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
 orders an AI-facing information-surface patch without reopening the engine,
-v4 identity, currentness, or the closed `0.2.2` release. Gates 1 through 4 close
+v4 identity, currentness, or the closed `0.2.2` release. Gates 1 through 5 close
 authority, the consumer matrix, same-observation Search position metadata, and
 native single upward View projection plus ordered all-or-nothing batch View
-with per-source observation reuse. The remaining gates add, in order, one-shot
-Edit receipts and fresh current addresses, Adapter output plus a conditional
-stdin decision, an integrated Dummy E2E/readiness gate, and separately
-authorized artifact/publication work.
+with per-source observation reuse, then the native Replace receipt. The
+remaining gates add Adapter output plus a conditional stdin decision, an
+integrated Dummy E2E/readiness gate, and separately authorized
+artifact/publication work.
 
 The target flow is Search result information plus an opaque v4 Anddress,
 optional caller-selected View projection, one-shot Replace, and reuse of the
@@ -51,6 +51,20 @@ and `RelationAbsent` outcomes are restored exactly, while any validation,
 allocation, source, or resource failure discards the entire provisional result.
 No generic batch layer, repeated public single View, cache, retry, or v4 change
 is introduced.
+
+Gate 5 preserves `WorkspaceRuntime::apply(&Edit) -> Result<(), ApplyError>` for
+external Rust and raw Session, and adds only
+`WorkspaceRuntime::apply_replace(&Edit) -> Result<EditReceipt, ApplyError>`.
+The latter rejects non-Replace input before source I/O. Exact no-op returns
+`Unchanged` with the validated input Anddress; confirmed publication returns
+`Changed` with a fresh File address, a fresh exact terminator-preserving Line
+address, or the unique resulting Paragraph address when one exists. Paragraph
+zero/multiple results are `Changed` with no address. The two seams share the
+single existing validator, staging/output path, `AfterProjector`, prospective
+after identity, Host-proof preparation, publication, and Anchor reflection.
+The one-shot Adapter discards the receipt and keeps exact `OK` plus LF until
+Gate 6; no Search, reopen, second observation, DTO, executor, or receipt state
+is added.
 
 ## Completed: 0.2.2 Anddress-first editing and distribution
 

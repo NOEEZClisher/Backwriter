@@ -16,9 +16,10 @@ The `0.2.2` Gates 1–6 add only the general Adapter contraction in Principle 16
 and its integration evidence; Gate 7 separately closes publication. They
 change no Core, Runtime, or v4 meaning.
 The in-progress `0.2.3` Patch Box is governed by Principle 17. Gates 1 through
-4 close its authority, same-observation Search position carrier, explicit
+5 close its authority, same-observation Search position carrier, explicit
 single self-or-ancestor View projection, and ordered all-or-nothing batch View
-while leaving v4 identity and currentness unchanged.
+plus the Replace-only native receipt while leaving v4 identity and currentness
+unchanged.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash and length only while its

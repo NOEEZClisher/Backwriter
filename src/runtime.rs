@@ -22,7 +22,7 @@ use thiserror::Error;
 
 use crate::backwriter::anchor::{Anchedress, AnchorError, AnchorOutcome};
 use crate::backwriter::anddress::{Anddress, AnddressTarget};
-use crate::backwriter::apply::ApplyError;
+use crate::backwriter::apply::{ApplyError, EditReceipt};
 use crate::backwriter::check::{CheckError, CheckOutcome};
 use crate::backwriter::edit::Edit;
 use crate::backwriter::pick::PickOutcome;
@@ -360,7 +360,15 @@ impl WorkspaceRuntime {
 
     /// Applies one caller-owned Edit to one current admitted logical source.
     pub fn apply(&mut self, edit: &Edit) -> Result<(), ApplyError> {
-        apply::execute(self, edit)
+        apply::execute(self, edit, None).map(drop)
+    }
+
+    /// Applies one Replace and returns its exact current-state result.
+    pub fn apply_replace(&mut self, edit: &Edit) -> Result<EditReceipt, ApplyError> {
+        let Edit::Replace { target, .. } = edit else {
+            return Err(ApplyError::InvalidInput);
+        };
+        apply::execute(self, edit, Some(target))?.ok_or(ApplyError::Unavailable)
     }
 
     pub fn anchor(&mut self, anddress: &Anddress) -> Result<AnchorOutcome, AnchorError> {

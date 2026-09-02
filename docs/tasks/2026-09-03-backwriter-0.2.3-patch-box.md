@@ -1,6 +1,6 @@
 # Backwriter 0.2.3 Patch Box
 
-Status: Gates 1–4 complete. Gates 5–8 are pending and require their own scoped
+Status: Gates 1–5 complete. Gates 6–8 are pending and require their own scoped
 authorization.
 
 This tracker records order, evidence, and unresolved implementation choices.
@@ -160,9 +160,9 @@ observation objects, post-Search, and speculative compatibility layers.
   late-read/resource fail-closure, Host hit/miss/mismatch/invalidation parity,
   every terminator, Unicode, raw ranges, and scratch boundaries.
 
-## Gate 5 — Edit receipt and fresh current Anddress — pending
+## Gate 5 — Edit receipt and fresh current Anddress — complete
 
-Gate 5 must close exact native result and error ownership before Adapter output:
+Gate 5 closes exact native result and error ownership before Adapter output:
 
 - File changed publication yields a fresh File Anddress for the prospective
   after hash, exact length, and full range.
@@ -177,14 +177,36 @@ Gate 5 must close exact native result and error ownership before Adapter output:
 - Definite prepublication failure returns the existing error and no receipt.
   `PublicationUncertain` returns that error and no receipt or fresh address.
 - A confirmed changed publication with no fresh Paragraph target remains
-  distinguishable from no-op and failure. Exact variant names, ownership, and
-  whether raw public Apply also exposes the receipt are implementation-gate
-  decisions that must be closed before code changes.
+  distinguishable from no-op and failure.
 
-Construction must reuse the completed prospective-after hash/length,
+The selected native surface is
+`WorkspaceRuntime::apply_replace(&Edit) -> Result<EditReceipt, ApplyError>` with
+`EditReceipt::Unchanged { anddress }` and
+`EditReceipt::Changed { anddress: Option<Anddress> }`. It accepts only Replace;
+another Edit is `InvalidInput` before source I/O. Existing
+`WorkspaceRuntime::apply(&Edit) -> Result<(), ApplyError>` remains unchanged for
+external Rust and raw Session. Both methods call one executor.
+
+Construction reuses the completed prospective-after hash/length,
 target-range projection, Host-proof preparation, publication result, and live
 Anchor reflection plan. It may not reopen the source, run Search, guess by
 content/context, or retain an old-to-new relation after return.
+
+The one-shot Adapter alone switches to `apply_replace` and discards the receipt,
+preserving exact `OK` plus LF, exits, stderr, argv Content, and output-option
+rejection through Gate 5. No binding, Data kind, JSON, stdin, request DTO,
+parallel executor, second observation, or post-publication Search is added.
+
+Regression covers fresh File hash/length/full range with immediate View, Check,
+and a following Replace; Line None/LF/CR/CRLF, Unicode, empty body, and empty
+no-EOL exact ranges; and Paragraph zero/one/multiple results. Direct and
+assembled no-op preserve the exact input, bytes, inode, Host proof, and Anchor.
+Receipt and reflected Anchor use the same prospective-after identity. Existing
+stale, invalid, unadmitted, open/read/resource, staging, rename uncertainty,
+cleanup, proof, and Anchor failure controls remain owned by the shared
+executor, while structural checks exclude a source reopen, second observation,
+or Search. The complete GNU-host suite has 255 tests: the 253 Gate 4 controls
+plus two public receipt regressions.
 
 ## Gate 6 — Adapter output and conditional stdin — pending
 

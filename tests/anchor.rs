@@ -6,7 +6,7 @@ use backwriter::{
     backwriter::{
         anchor::{AnchorError, AnchorOutcome},
         anddress::{Anddress, AnddressTarget as PublicAnddressTarget},
-        apply::ApplyError,
+        apply::{ApplyError, EditReceipt},
         edit::{Edit, Position},
         view::{ViewError, ViewOutcome},
     },
@@ -594,15 +594,29 @@ fn apply_replacement_uses_only_the_source_target_for_containing_provenance() {
         AnchorOutcome::Anchored(handle) => handle,
         AnchorOutcome::AlreadyLive => panic!("paragraph"),
     };
-    workspace
-        .apply(&Edit::Replace {
+    let fresh_b = support::address(
+        paragraph.workspace_coordinate(),
+        "note.txt",
+        b"a\nB\n",
+        PublicAnddressTarget::Line,
+        2,
+        4,
+    );
+    assert_eq!(
+        workspace.apply_replace(&Edit::Replace {
             target: b,
             content: "B\n".to_owned(),
+        }),
+        Ok(EditReceipt::Changed {
+            anddress: Some(fresh_b.clone())
         })
-        .unwrap();
+    );
     assert!(matches!(
         workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph { text, .. }) if text == "a\nB\n"
+        Ok(ViewOutcome::Paragraph { anddress, text, .. })
+            if text == "a\nB\n"
+                && anddress.source_state_hash() == fresh_b.source_state_hash()
+                && anddress.source_byte_length() == fresh_b.source_byte_length()
     ));
 
     let split = current(

@@ -2,7 +2,7 @@
 
 ## In-progress 0.2.3 Patch Box
 
-Gates 1 through 4 close authority, the consumer matrix, Search observation
+Gates 1 through 5 close authority, the consumer matrix, Search observation
 metadata, native single View projection, and ordered batch View for the `0.2.3`
 Patch Box. It is an AI-facing information-surface
 patch, not an engine-performance project. Search now returns ordered
@@ -12,9 +12,10 @@ same-observation descriptive position. Single View now accepts one existing
 exact Content from the same accepted observation. Batch View preserves caller
 order and duplicates, returns all outcomes or none, and groups inputs so each
 Untrusted or Host-proof-miss source is opened once and directly observed once.
-Later gates cover
-one-shot Replace and reuse of a returned fresh
-current Anddress when the published result has one.
+Gate 5 adds the Replace-only native receipt seam and reuses its returned fresh
+current Anddress when the confirmed result has one. Later gates cover Adapter
+receipt output, the conditional stdin decision, integration/readiness, and
+separately authorized publication.
 
 Line Search metadata is the current one-based Line number. Paragraph Search
 metadata is the current one-based inclusive start-to-end Line range. File
@@ -44,17 +45,29 @@ execution. A matching Host proof is selected once per source and serves every
 member through one handle and the existing trusted scanner. Empty input is an
 I/O-free empty success; any later failure discards every provisional outcome.
 
-A successful one-shot Replace receipt describes only the just-published
-current state. It is not history, lineage, or proof about an external writer.
-The implementation must reuse Apply's prospective-after hash, length, direct
-range projection, and existing Anchor reflection rather than post-Search or
-context guessing. Argv Content remains supported. A possible stdin transport
-is conditional on a syntax and EOF/UTF-8/NUL/newline/failure contract that
-cannot collide with literal `--stdin` Content.
+`WorkspaceRuntime::apply_replace(&Edit) -> Result<EditReceipt, ApplyError>`
+accepts only `Edit::Replace`; every other Edit is `InvalidInput` before source
+I/O. `Unchanged { anddress }` returns the validated input after either no-op
+path without publication. `Changed { anddress }` follows confirmed publication:
+File always has a fresh full-range address, a terminator-preserving Line has
+its exact fresh range, and Paragraph has an address only when direct after
+projection produces exactly one Paragraph. Zero or multiple Paragraphs remain
+successful as `Changed { anddress: None }`.
+
+The original `WorkspaceRuntime::apply(&Edit) -> Result<(), ApplyError>` remains
+the external Rust and raw Session five-operation/four-position seam. Both
+public calls use one executor and the same prospective-after hash, length,
+projection, prepared Host proof, publication, and Anchor plan. No successful
+receipt exists for a definite failure or `PublicationUncertain`; uncertain
+publication retains the existing same-path proof and Anchor invalidation. The
+one-shot CLI consumes `apply_replace` but discards its receipt through Gate 5,
+so its exact `OK` plus LF and error behavior remain unchanged. It performs no
+post-publication Search, reopen, or second observation. Argv Content remains
+supported; stdin remains a later conditional decision.
 
 The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
-records the completed carrier, single-projection, and batch migration plus the
-remaining Edit-output choices.
+records the completed carrier, View projections, and native Edit receipt plus
+the remaining Adapter-output choices.
 Cargo, `bw version`, README, artifacts, installers, server, services, tunnel,
 DNS, public root, and the exact 44-file official distribution remain closed
 `0.2.2`.

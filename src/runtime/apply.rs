@@ -1,6 +1,9 @@
 //! Runtime-owned bounded-memory Apply preparation and one-shot publication.
 
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::{
+    io::{Read, Seek, SeekFrom, Write},
+    sync::Arc,
+};
 
 use cap_fs_ext::{
     FollowSymlinks, OpenOptionsFollowExt, OpenOptionsMaybeDirExt, OpenOptionsSyncExt,
@@ -10,10 +13,10 @@ use cap_std::fs::{Dir, File, OpenOptions};
 use cap_std::fs::{Permissions, PermissionsExt};
 
 use crate::backwriter::anddress::{
-    Anddress, AnddressTarget, construct_anddress, construct_source_identity,
+    Anddress, AnddressTarget, SourceIdentity, construct_anddress, construct_source_identity,
 };
 use crate::backwriter::{
-    apply::ApplyError,
+    apply::{ApplyError, EditReceipt},
     edit::{Edit, EditError, Position},
 };
 use crate::hash::transcript_hex;
@@ -505,15 +508,9 @@ fn reflection_plan(
     runtime: &WorkspaceRuntime,
     path: &str,
     state: &CurrentObservation,
+    source: &Arc<SourceIdentity>,
     candidates: Vec<Option<(usize, usize)>>,
 ) -> Result<Vec<AnchorPlanEntry>, ApplyError> {
-    let source = construct_source_identity(
-        &runtime.workspace_coordinate,
-        path,
-        &state.hash,
-        state.byte_length,
-    )
-    .map_err(|_| ApplyError::Unavailable)?;
     let mut plan = Vec::new();
     plan.try_reserve_exact(runtime.anchors.len())
         .map_err(|_| ApplyError::Unavailable)?;
@@ -523,7 +520,7 @@ fn reflection_plan(
             plan.push(AnchorPlanEntry::Preserve);
         } else if binding.anddress.target() == AnddressTarget::File {
             plan.push(AnchorPlanEntry::Rebind {
-                anddress: construct_anddress(&source, AnddressTarget::File, 0, state.byte_length)
+                anddress: construct_anddress(source, AnddressTarget::File, 0, state.byte_length)
                     .map_err(|_| ApplyError::Unavailable)?,
                 collides: false,
             });
@@ -531,7 +528,7 @@ fn reflection_plan(
             match candidates.next().expect("same-path candidate is prepared") {
                 Some((byte_start, byte_end)) => plan.push(AnchorPlanEntry::Rebind {
                     anddress: construct_anddress(
-                        &source,
+                        source,
                         binding.anddress.target(),
                         byte_start,
                         byte_end,
@@ -546,6 +543,31 @@ fn reflection_plan(
     debug_assert!(candidates.next().is_none());
     mark_anchor_collisions(&mut plan);
     Ok(plan)
+}
+
+fn changed_receipt(
+    target: &Anddress,
+    source: &Arc<SourceIdentity>,
+    projected_range: Option<(usize, usize)>,
+    edit: &Edit,
+    geometry: Geometry,
+    after_length: usize,
+) -> Result<EditReceipt, ApplyError> {
+    let range = match target.target() {
+        AnddressTarget::File => Some((0, after_length)),
+        AnddressTarget::Paragraph => projected_range,
+        AnddressTarget::Line => projected_range.or_else(|| match edit {
+            Edit::Replace { content, .. } if content.is_empty() => {
+                geometry.target.map(|(start, _)| (start, start))
+            }
+            _ => None,
+        }),
+    };
+    let anddress = range
+        .map(|(start, end)| construct_anddress(source, target.target(), start, end))
+        .transpose()
+        .map_err(|_| ApplyError::Unavailable)?;
+    Ok(EditReceipt::Changed { anddress })
 }
 
 fn stage_source(
@@ -567,7 +589,11 @@ fn stage_source_trusted(
     })
 }
 
-pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(), ApplyError> {
+pub(super) fn execute(
+    runtime: &mut WorkspaceRuntime,
+    edit: &Edit,
+    receipt_target: Option<&Anddress>,
+) -> Result<Option<EditReceipt>, ApplyError> {
     let (first, second) = operands(edit);
     edit.validate().map_err(map_edit_error)?;
     if second.is_some_and(|second| !same_coordinate_path(first, second)) {
@@ -589,7 +615,7 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
     }
 
     runtime.prune_dead_anchors();
-    let bindings = same_path_bindings(runtime, first.logical_path())?;
+    let mut bindings = same_path_bindings(runtime, first.logical_path())?;
     if proof.is_some_and(|proof| {
         bindings
             .iter()
@@ -663,9 +689,23 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
     let geometry = Geometry::new(edit, before_length)?;
     if geometry.direct_noop(edit) {
         staging.remove()?;
-        return Ok(());
+        return Ok(receipt_target.map(|target| EditReceipt::Unchanged {
+            anddress: target.clone(),
+        }));
     }
 
+    let receipt_projection =
+        receipt_target.is_some_and(|target| target.target() != AnddressTarget::File);
+    if receipt_projection {
+        bindings
+            .try_reserve(1)
+            .map_err(|_| ApplyError::Unavailable)?;
+        bindings.push(
+            receipt_target
+                .expect("non-File receipt target is present")
+                .clone(),
+        );
+    }
     let projector = AfterProjector::new(&bindings, edit)?;
     let temporary = Temporary::create(
         &parent,
@@ -677,14 +717,20 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
     let CompletedOutput {
         mut temporary,
         observation: after,
-        candidates,
+        mut candidates,
         identical,
     } = output.finish()?;
     if identical {
         temporary.remove()?;
         staging.remove()?;
-        return Ok(());
+        return Ok(receipt_target.map(|target| EditReceipt::Unchanged {
+            anddress: target.clone(),
+        }));
     }
+
+    let receipt_range = receipt_projection
+        .then(|| candidates.pop().expect("receipt projection is last"))
+        .flatten();
 
     #[cfg(unix)]
     let source_mode = source
@@ -693,8 +739,33 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
         .permissions()
         .mode()
         & 0o777;
-    let plan = reflection_plan(runtime, first.logical_path(), &after, candidates)?;
     let after_length = after.byte_length;
+    let after_source = construct_source_identity(
+        &runtime.workspace_coordinate,
+        first.logical_path(),
+        &after.hash,
+        after_length,
+    )
+    .map_err(|_| ApplyError::Unavailable)?;
+    let receipt = receipt_target
+        .map(|target| {
+            changed_receipt(
+                target,
+                &after_source,
+                receipt_range,
+                edit,
+                geometry,
+                after_length,
+            )
+        })
+        .transpose()?;
+    let plan = reflection_plan(
+        runtime,
+        first.logical_path(),
+        &after,
+        &after_source,
+        candidates,
+    )?;
     let next_proof = runtime.prepare_current_proof_installation(
         first.logical_path(),
         after.hash,
@@ -713,7 +784,8 @@ pub(super) fn execute(runtime: &mut WorkspaceRuntime, edit: &Edit) -> Result<(),
             source_mode,
             temporary,
         ),
-    )
+    )?;
+    Ok(receipt)
 }
 
 fn map_edit_error(error: EditError) -> ApplyError {
@@ -1236,6 +1308,7 @@ mod apply_tests {
                         target: target.clone(),
                         content: "changed".to_owned(),
                     },
+                    Some(&target),
                 ),
                 Err(ApplyError::Unavailable)
             );

@@ -339,8 +339,9 @@ operation, and fixes the guarded mutation and both-mode drift boundaries above.
 
 ## In-progress 0.2.3 Patch Box information surface
 
-Gates 1 through 4 close meaning, order, Search observation metadata, native
-single View projection, and ordered batch View; Cargo, `bw version`, and the published release remain
+Gates 1 through 5 close meaning, order, Search observation metadata, native
+single View projection, ordered batch View, and the native Replace receipt;
+Cargo, `bw version`, and the published release remain
 `0.2.2`. Patch Box is an
 AI-facing information-surface patch over the current engine, not a
 Search-performance, source-scaling, or File-View-memory project. Its intended
@@ -412,23 +413,32 @@ it under the existing single-View rule. Batch does not call public single View,
 create a generic batch framework, or add an Anchor batch seam.
 
 A successful one-shot Replace receipt describes only the just-confirmed
-current state. For a changed File it contains the fresh resulting File
-Anddress. For a changed Line it contains the fresh resulting Line Anddress
-for the exact terminator-preserving replacement. For a changed Paragraph it
-may contain a fresh Paragraph Anddress only when the replacement result is
-exactly one Paragraph; successful publication may otherwise have no fresh
-target. A byte-identical no-op leaves the validated input Anddress current.
-Prepublication failure and `PublicationUncertain` produce no successful
-receipt or fresh address. The later result type and Adapter encoding must make
-no-op, changed-with-address, changed-without-address, uncertain publication,
-and failure unambiguous without weakening existing Apply errors.
+current state. Its native seam is:
 
-Fresh-result construction must reuse Apply's already computed prospective-after
+```rust
+WorkspaceRuntime::apply_replace(&mut self, &Edit) -> Result<EditReceipt, ApplyError>
+EditReceipt::{Unchanged { anddress: Anddress }, Changed { anddress: Option<Anddress> }}
+```
+
+Only `Edit::Replace` is accepted; another Edit returns `InvalidInput` before
+source I/O. For a changed File, `Changed` contains the fresh resulting File
+Anddress. For a changed Line, it contains the fresh resulting Line Anddress
+for the exact terminator-preserving replacement. For a changed Paragraph it
+contains a fresh Paragraph Anddress only when the replacement result is
+exactly one Paragraph; zero or multiple resulting Paragraphs are successful
+`Changed { anddress: None }`, and Content is not restricted to force one.
+Direct and assembled byte-identical no-op return `Unchanged` with the validated
+input Anddress without publication. Prepublication failure and
+`PublicationUncertain` produce no successful receipt or fresh address.
+
+Fresh-result construction reuses Apply's already computed prospective-after
 hash and length, direct range projection, publication boundary, and Anchor
 reflection plan. It must not run a CLI post-Search, reread the published
 source, guess a target, or infer relocation. The receipt creates no
 predecessor, successor, survivor, history, rollback, watcher, retry, registry,
-or persistent identity.
+or persistent identity. The current one-shot Adapter discards this native
+receipt and retains exact `OK` plus LF until its output contract is separately
+closed.
 
 Existing argv Content remains supported. Stdin is only a later Adapter
 candidate. No stdin implementation is authorized until one syntax avoids any
@@ -1164,8 +1174,10 @@ WorkspaceRuntime::apply(&mut self, &Edit) -> Result<(), ApplyError>
 ApplyError::{UnsupportedVersion, InvalidInput, Unavailable, PublicationUncertain}
 ```
 
-There is no request, outcome, additional error, trait, batch type, or anchored
-Apply seam. One call handles exactly one Edit in exactly one logical
+Patch Box Gate 5 adds the Replace-only `apply_replace` companion and
+`EditReceipt` defined above without changing this exact unit-returning seam or
+its errors. Both call the same executor. There is no request, additional error,
+trait, batch type, or anchored Apply seam. One call handles exactly one Edit in exactly one logical
 source; ordering, batch behavior, transactions, and multi-source atomicity
 remain deferred.
 

@@ -6,7 +6,7 @@ use std::os::unix::fs::{MetadataExt, PermissionsExt};
 
 use backwriter::backwriter::anchor::AnchorOutcome;
 use backwriter::backwriter::anddress::{Anddress, AnddressTarget as PublicAnddressTarget};
-use backwriter::backwriter::apply::ApplyError;
+use backwriter::backwriter::apply::{ApplyError, EditReceipt};
 use backwriter::backwriter::edit::{Edit, Position};
 use backwriter::backwriter::search::{
     SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
@@ -187,10 +187,13 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
     let apply = include_str!("../src/runtime/apply.rs");
 
     assert_eq!(runtime.matches("pub fn apply(").count(), 1);
+    assert_eq!(runtime.matches("pub fn apply_replace(").count(), 1);
     assert!(runtime.contains("edit: &Edit"));
     assert!(!runtime.contains("apply_edit"));
     assert!(!runtime.contains("apply_anchored"));
     assert_eq!(apply.matches(".open_admitted_source(").count(), 1);
+    assert_eq!(apply.matches("pub(super) fn execute(").count(), 1);
+    assert_eq!(apply.matches("construct_source_identity(").count(), 1);
     assert_eq!(apply.matches("observe_source(source").count(), 1);
     assert_eq!(apply.matches("stage_source(&mut source").count(), 1);
     let trusted = apply
@@ -239,12 +242,18 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
     let proof_selection = execute.find("select_current_proof").unwrap();
     let source_open = execute.find("open_admitted_source").unwrap();
     let prepared_proof = execute.find("prepare_current_proof_installation").unwrap();
+    let receipt = execute.find("changed_receipt(").unwrap();
+    let reflection = execute.find("reflection_plan(").unwrap();
     let publication = execute.rfind("publish(").unwrap();
     assert!(validation < proof_selection);
     assert!(proof_selection < source_open);
+    assert!(receipt < reflection);
+    assert!(reflection < prepared_proof);
     assert!(prepared_proof < publication);
+    assert!(publication < execute.rfind("Ok(receipt)").unwrap());
     assert!(!execute[..validation].contains("invalidate_current_proof"));
     assert!(!execute.contains("current_proofs.lock"));
+    assert!(!execute.contains("search("));
 
     let source_scan = include_str!("../src/runtime/source_scan.rs");
     let exact_validation = source_scan
@@ -269,13 +278,16 @@ fn host_apply_reuses_and_replaces_current_proof_across_publications() {
         AnchorOutcome::AlreadyLive => panic!("File Anchor"),
     };
 
-    workspace
-        .apply(&Edit::Replace {
+    let second = support::file(first.workspace_coordinate(), "note.txt", b"two\n");
+    assert_eq!(
+        workspace.apply_replace(&Edit::Replace {
             target: first.clone(),
             content: "two\n".to_owned(),
+        }),
+        Ok(EditReceipt::Changed {
+            anddress: Some(second.clone())
         })
-        .unwrap();
-    let second = support::file(first.workspace_coordinate(), "note.txt", b"two\n");
+    );
     assert_eq!(workspace.check(first.clone()).unwrap().filtered, None);
     assert_eq!(
         workspace.check(second.clone()).unwrap().filtered,
@@ -301,13 +313,22 @@ fn host_apply_reuses_and_replaces_current_proof_across_publications() {
     );
     fs::rename(&parked, root.join("note.txt")).unwrap();
 
-    workspace
-        .apply(&Edit::Replace {
+    let third = support::file(first.workspace_coordinate(), "note.txt", b"three\n");
+    assert_eq!(
+        workspace.apply_replace(&Edit::Replace {
             target: second.clone(),
             content: "three\n".to_owned(),
+        }),
+        Ok(EditReceipt::Changed {
+            anddress: Some(third.clone())
         })
-        .unwrap();
+    );
     assert_eq!(fs::read(root.join("note.txt")).unwrap(), b"three\n");
+    assert_eq!(workspace.check(second.clone()).unwrap().filtered, None);
+    assert_eq!(
+        workspace.check(third.clone()).unwrap().filtered,
+        Some(third)
+    );
     assert_eq!(
         workspace.apply(&Edit::Replace {
             target: first,
@@ -338,18 +359,39 @@ fn host_apply_direct_and_identical_noops_preserve_proof_anchor_inode_and_bytes()
     };
     let inode = fs::metadata(&source_path).unwrap().ino();
 
+    let empty_range = support::address(
+        file.workspace_coordinate(),
+        "note.txt",
+        b"same\n",
+        PublicAnddressTarget::Line,
+        0,
+        0,
+    );
+    assert_eq!(
+        workspace.apply_replace(&Edit::Replace {
+            target: empty_range.clone(),
+            content: String::new(),
+        }),
+        Ok(EditReceipt::Unchanged {
+            anddress: empty_range
+        })
+    );
+
     workspace
         .apply(&Edit::Insert {
             position: Position::StartOf(file.clone()),
             content: String::new(),
         })
         .unwrap();
-    workspace
-        .apply(&Edit::Replace {
+    assert_eq!(
+        workspace.apply_replace(&Edit::Replace {
             target: file.clone(),
             content: "same\n".to_owned(),
+        }),
+        Ok(EditReceipt::Unchanged {
+            anddress: file.clone()
         })
-        .unwrap();
+    );
 
     assert_eq!(fs::read(&source_path).unwrap(), b"same\n");
     assert_eq!(fs::metadata(&source_path).unwrap().ino(), inode);
@@ -362,6 +404,147 @@ fn host_apply_direct_and_identical_noops_preserve_proof_anchor_inode_and_bytes()
     assert_eq!(workspace.check(file.clone()).unwrap().filtered, Some(file));
     fs::rename(&parked, &source_path).unwrap();
     assert_no_apply_temp(&root);
+}
+
+#[test]
+fn apply_replace_returns_exact_line_and_paragraph_results() {
+    for (before, content, after) in [
+        ("old", "new", "new"),
+        ("old", "", ""),
+        ("old\n", "\n", "\n"),
+        ("old\r", "β\r", "β\r"),
+        ("old\r\n", "새 줄\r\n", "새 줄\r\n"),
+    ] {
+        let fixture = tempdir().unwrap();
+        let root = fixture.path();
+        let prefix = "prefix\n";
+        let before_source = format!("{prefix}{before}");
+        let after_source = format!("{prefix}{after}");
+        fs::write(root.join("note.txt"), &before_source).unwrap();
+        let mut workspace = runtime(root);
+        let file = exact_file(&workspace, "note.txt");
+        let target = support::address(
+            file.workspace_coordinate(),
+            "note.txt",
+            before_source.as_bytes(),
+            PublicAnddressTarget::Line,
+            prefix.len(),
+            prefix.len() + before.len(),
+        );
+        let fresh = support::address(
+            file.workspace_coordinate(),
+            "note.txt",
+            after_source.as_bytes(),
+            PublicAnddressTarget::Line,
+            prefix.len(),
+            prefix.len() + after.len(),
+        );
+        assert_eq!(
+            workspace.apply_replace(&Edit::Replace {
+                target,
+                content: content.to_owned(),
+            }),
+            Ok(EditReceipt::Changed {
+                anddress: Some(fresh.clone())
+            })
+        );
+        assert_eq!(
+            fs::read(root.join("note.txt")).unwrap(),
+            after_source.as_bytes()
+        );
+        assert_eq!(
+            workspace.check(fresh.clone()).unwrap().filtered,
+            Some(fresh.clone())
+        );
+        assert!(matches!(
+            workspace.view(&fresh, PublicAnddressTarget::Line),
+            Ok(ViewOutcome::Line { anddress, .. }) if anddress == fresh
+        ));
+        assert_no_apply_temp(root);
+    }
+
+    for (content, after, expected_range) in [
+        ("\n", "\n\nkeep\n", None),
+        ("new\n", "new\n\nkeep\n", Some((0, 4))),
+        ("a\n\nb\n", "a\n\nb\n\nkeep\n", None),
+    ] {
+        let fixture = tempdir().unwrap();
+        let root = fixture.path();
+        let before = b"old\n\nkeep\n";
+        fs::write(root.join("note.txt"), before).unwrap();
+        let mut workspace = runtime(root);
+        let file = exact_file(&workspace, "note.txt");
+        let target = support::address(
+            file.workspace_coordinate(),
+            "note.txt",
+            before,
+            PublicAnddressTarget::Paragraph,
+            0,
+            4,
+        );
+        let expected = expected_range.map(|(start, end)| {
+            support::address(
+                file.workspace_coordinate(),
+                "note.txt",
+                after.as_bytes(),
+                PublicAnddressTarget::Paragraph,
+                start,
+                end,
+            )
+        });
+        assert_eq!(
+            workspace.apply_replace(&Edit::Replace {
+                target,
+                content: content.to_owned(),
+            }),
+            Ok(EditReceipt::Changed { anddress: expected })
+        );
+        assert_eq!(fs::read(root.join("note.txt")).unwrap(), after.as_bytes());
+        assert_no_apply_temp(root);
+    }
+}
+
+#[test]
+fn apply_replace_rejects_every_non_replace_before_source_access() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path();
+    fs::write(root.join("note.txt"), b"line\n").unwrap();
+    let mut workspace = runtime(root);
+    let file = exact_file(&workspace, "note.txt");
+    let line = support::address(
+        file.workspace_coordinate(),
+        "note.txt",
+        b"line\n",
+        PublicAnddressTarget::Line,
+        0,
+        5,
+    );
+    fs::remove_file(root.join("note.txt")).unwrap();
+
+    for edit in [
+        Edit::Insert {
+            position: Position::Before(line.clone()),
+            content: "x".to_owned(),
+        },
+        Edit::Delete {
+            target: line.clone(),
+        },
+        Edit::Move {
+            target: line.clone(),
+            position: Position::After(line.clone()),
+        },
+        Edit::Copy {
+            target: line.clone(),
+            position: Position::After(line.clone()),
+        },
+    ] {
+        assert_eq!(
+            workspace.apply_replace(&edit),
+            Err(ApplyError::InvalidInput)
+        );
+    }
+    assert!(!root.join("note.txt").exists());
+    assert_no_apply_temp(root);
 }
 
 #[test]
@@ -382,7 +565,7 @@ fn host_apply_proof_mismatch_rejects_before_source_io_and_preserves_state() {
     fs::rename(&source_path, &parked).unwrap();
 
     assert_eq!(
-        workspace.apply(&Edit::Replace {
+        workspace.apply_replace(&Edit::Replace {
             target: stale,
             content: "wrong\n".to_owned(),
         }),
@@ -424,7 +607,7 @@ fn host_apply_trusted_short_and_invalid_source_fail_close_proof_and_anchor() {
         fs::write(&source_path, mutated).unwrap();
 
         assert_eq!(
-            workspace.apply(&Edit::Replace {
+            workspace.apply_replace(&Edit::Replace {
                 target: current.clone(),
                 content: "wrong\n".to_owned(),
             }),
@@ -613,7 +796,7 @@ fn host_apply_open_failure_removes_only_proof_and_preserves_anchor() {
     // must remove only the proof because no mutation evidence was observed.
     fs::rename(&source_path, &parked).unwrap();
     assert_eq!(
-        workspace.apply(&Edit::Replace {
+        workspace.apply_replace(&Edit::Replace {
             target: current.clone(),
             content: "wrong\n".to_owned(),
         }),
@@ -1064,7 +1247,7 @@ fn apply_rejects_late_invalid_source_before_publication_or_empty_insert() {
         source.extend_from_slice(invalid_tail);
         fs::write(root.join("note.txt"), &source).unwrap();
         assert_eq!(
-            workspace.apply(&Edit::Replace {
+            workspace.apply_replace(&Edit::Replace {
                 target: file.clone(),
                 content: "published".to_owned(),
             }),
@@ -1096,7 +1279,7 @@ fn apply_replace_preserves_logical_path_and_rejects_unavailable_sources() {
     let coordinate = coordinate(&workspace);
 
     workspace
-        .apply(&Edit::Replace {
+        .apply_replace(&Edit::Replace {
             target: address(coordinate.clone(), "a.txt", AnddressTarget::File),
             content: "replaced".to_owned(),
         })
@@ -1106,7 +1289,7 @@ fn apply_replace_preserves_logical_path_and_rejects_unavailable_sources() {
 
     for path in [".artext/bw/private.txt", "missing.txt", "directory"] {
         assert_eq!(
-            workspace.apply(&Edit::Replace {
+            workspace.apply_replace(&Edit::Replace {
                 target: address(coordinate.clone(), path, AnddressTarget::File),
                 content: "new".to_owned(),
             }),
@@ -1135,7 +1318,7 @@ fn apply_replace_rejects_a_replaced_symlink_without_publication() {
     symlink(&outside, &source).unwrap();
 
     assert_eq!(
-        workspace.apply(&Edit::Replace {
+        workspace.apply_replace(&Edit::Replace {
             target: input,
             content: "new".to_owned(),
         }),

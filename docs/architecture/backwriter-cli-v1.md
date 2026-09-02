@@ -336,9 +336,10 @@ value and no output selection. Search or Pick may provide the encoded v4
 Anddress to a caller, but the CLI requires no caller-visible View, Check,
 Session binding, index, or Core Edit value. It opens one ordinary Untrusted
 Runtime, reuses the existing strict v4 decoder, privately calls Runtime View,
-constructs one existing `Edit::Replace`, and calls Runtime Apply on that same
-Runtime. It adds no request type, result type, Core wire, Runtime seam, retained
-state, or automatic capability handoff.
+constructs one existing `Edit::Replace`, and calls Runtime's Replace-only
+receipt seam on that same Runtime. Through Patch Box Gate 5 it discards that
+native result and retains the existing status output. It adds no request type,
+Core wire, retained state, or automatic capability handoff.
 
 For File and Paragraph, `<content>` is the exact replacement string and retains
 the existing NUL rejection. For Line, it is body-only Content and any NUL, CR,
@@ -373,11 +374,11 @@ are not part of this closed form.
 Gate 3 closes without another Content transport or machine-output form. One
 argv value already carries empty and Unicode Content, File and Paragraph CR/LF,
 and every allowed Line body; NUL is invalid by contract. Search JSON already
-provides an exact v4 Anddress object, while Edit returns no new target or result.
-Success is exit `0` plus `OK` and LF, and existing usage/execution failures are
-exit `2`/`1` with stderr. Returning an Anddress would require the forbidden
-implicit re-search, and a JSON envelope could not refine broad `Unavailable`,
-publication uncertainty, or stdout failure after Apply. Because the status
+provides an exact v4 Anddress object, while the Adapter returns no new target or
+result through Patch Box Gate 5. Success is exit `0` plus `OK` and LF, and
+existing usage/execution failures are exit `2`/`1` with stderr. The new native
+receipt derives its address from Apply's prospective-after projection without
+an implicit re-search, but Gate 6 owns any Adapter exposure. Because the status
 write follows Apply, exit `1` is not evidence that source bytes are unchanged
 and must not trigger an automatic retry.
 
@@ -472,7 +473,7 @@ publication changed only the official distribution boundary to `0.2.2`.
 
 ## In-progress 0.2.3 Patch Box Adapter direction
 
-Gates 1 through 4 keep one-shot Search, Session Search, stored Search values,
+Gates 1 through 5 keep one-shot Search, Session Search, stored Search values,
 Check, Pick operands, public Rust callers, and single View consumers coherent
 through the native occurrence carrier and projection-aware View result. Human Search now has one Search-specific writer with current Line
 positions; Pick retains the separate raw-Anddress address-row writer and its
@@ -496,11 +497,11 @@ single View repeatedly. It adds no CLI, Session, Data, or Anchor surface; any
 Adapter request and output spelling remains a Gate 6 decision. No placeholder
 parser, wrapper, DTO, or schema is present.
 
-Future one-shot Replace output includes a fresh current Anddress for changed
+The Gate 5 native one-shot Replace result includes a fresh current Anddress for changed
 File and Line results, and includes one for a changed Paragraph only under the
 Protocol's unique-result rule. The address comes only from the successful
 Apply result described by the Protocol. The Adapter must not invoke
-Search after publication. Gate 5 closes the native result and Gate 6 closes
+Search after publication. Gate 6 closes
 its human or machine projection, including the distinction among no-op,
 changed with a fresh target, changed without one, prepublication failure, and
 uncertain publication. Until then, the implemented `OK` output remains the

@@ -69,8 +69,8 @@ The in-progress `0.2.3` Patch Box does not change this algebra or wire. Gate 2
 attaches a current one-based Line number or Paragraph inclusive Line range to
 each applicable Search occurrence from that same observation; File has no
 position. This is descriptive information, not an Anddress field, locator,
-equality input, currentness proof, or selector. A future fresh Anddress in a
-successful Edit receipt will name only the exact resulting current state
+equality input, currentness proof, or selector. A fresh Anddress in a
+successful Gate 5 Edit receipt names only the exact resulting current state
 already described by v4. It adds no predecessor, successor, survivor,
 relocation, or publication-history relation to the input address.
 

@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.3 Patch Box Gates 1–4
+## 0.2.3 Patch Box Gates 1–5
 
 Gate 1 records the direct Search, View, Edit, Check, Data, Session, Pick, and
 writer consumers. Gate 2 implements only the Search observation carrier and
@@ -81,6 +81,34 @@ proof-miss fallback, mismatch before I/O with proof preservation, one matching
 group handle, and existing source/resource invalidation. The complete
 offline/locked GNU-host suite passes 253 tests: the 247 Gate 3 controls plus
 two private observer/all-or-nothing tests and four public batch regressions.
+
+Gate 5 adds `EditReceipt::{Unchanged, Changed}` and the Replace-only
+`WorkspaceRuntime::apply_replace` seam while keeping the unit-returning public
+`apply` and raw Session unchanged. Structural regression fixes one internal
+executor, one admitted source open and observation, one prospective-after
+source identity, receipt preparation before the existing Anchor plan and Host
+proof, and successful receipt return only after confirmed publication. It
+excludes Search, source reopen, second observation, request DTO, parallel
+executor, binding, Data kind, JSON, and stdin.
+
+Changed File coverage checks exact prospective hash, length, full range,
+immediate View and Check, old-address rejection, and a following Replace with
+the returned address. Line coverage checks exact None/LF/CR/CRLF results,
+Unicode, empty body, empty no-EOL output, and current zero/nonzero ranges.
+Paragraph coverage fixes zero, one, and multiple resulting Paragraphs as
+`Changed(None)`, `Changed(Some)`, and `Changed(None)` without restricting
+Content. Direct zero-range and assembled byte-identical no-op return the exact
+input while preserving bytes, inode, Host proof, and live Anchor. Receipt and
+Anchor regressions compare the same installed after source identity.
+
+Non-Replace input rejects before filesystem access. Existing stale, invalid,
+unadmitted, open/read/resource, staging collision, rename uncertainty, cleanup,
+proof invalidation, and Anchor fail-closure tests continue through the shared
+executor and return no successful receipt on error. Existing raw Apply covers
+all five operations and four positions, and CLI regressions retain exact
+one-shot and Session `OK` plus LF, exit/error streams, argv Content, and output
+option rejection. The complete offline/locked GNU-host suite passes 255 tests:
+the 253 Gate 4 controls plus two public Gate 5 receipt regressions.
 
 ## 0.2.2 Anddress-first editing Gates 1–6
 

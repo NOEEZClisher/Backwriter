@@ -561,7 +561,7 @@ fn execute_edit(
     };
     edit.validate().map_err(map_edit_error)?;
     runtime
-        .apply(&edit)
+        .apply_replace(&edit)
         .map_err(|error: ApplyError| CliError::execution(error.to_string()))?;
     write_session_status("OK")
 }

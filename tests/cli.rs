@@ -1662,7 +1662,7 @@ fn one_shot_edit_exact_noop_preserves_bytes_and_inode_and_reuses_existing_seams(
     let view = edit.find("run_view(&runtime, &anddress)").unwrap();
     let construct = edit.find("Edit::Replace").unwrap();
     let validate = edit.find("edit.validate()").unwrap();
-    let apply = edit.find(".apply(&edit)").unwrap();
+    let apply = edit.find(".apply_replace(&edit)").unwrap();
     let status = edit.find("write_session_status(\"OK\")").unwrap();
     assert!(decode < open);
     assert!(open < view);
@@ -1672,6 +1672,8 @@ fn one_shot_edit_exact_noop_preserves_bytes_and_inode_and_reuses_existing_seams(
     assert!(apply < status);
     assert!(!edit.contains("run_search"));
     assert!(!edit.contains("run_check"));
+    assert!(!edit.contains("write_edit_json"));
+    assert!(!edit.contains("stdin"));
     assert!(!edit.contains("output options must precede the capability"));
     assert_eq!(source.matches("fn execute_edit").count(), 1);
 
