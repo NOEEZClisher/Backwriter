@@ -339,8 +339,9 @@ operation, and fixes the guarded mutation and both-mode drift boundaries above.
 
 ## In-progress 0.2.3 Patch Box information surface
 
-Gates 1 and 2 close meaning, order, and Search observation metadata; Cargo,
-`bw version`, and the published release remain `0.2.2`. Patch Box is an
+Gates 1 through 3 close meaning, order, Search observation metadata, and native
+single View projection; Cargo, `bw version`, and the published release remain
+`0.2.2`. Patch Box is an
 AI-facing information-surface patch over the current engine, not a
 Search-performance, source-scaling, or File-View-memory project. Its intended
 caller flow is Search, optional View projection or ordered batch, one-shot
@@ -376,7 +377,24 @@ View is Observe/Project from caller-held exact-state evidence, not Find. The
 only authorized projections are Line to Line, Paragraph, or File; Paragraph
 to Paragraph or File; and File to File. A target cannot project downward, and
 View performs no implicit Search, relocation, context matching, or discovery.
-Single projection closes before batch. Batch applies one requested projection
+The implemented public seams are:
+
+```rust
+WorkspaceRuntime::view(&Anddress, AnddressTarget) -> Result<ViewOutcome, ViewError>
+WorkspaceRuntime::view_anchored(&mut self, &Anchedress, AnddressTarget) -> Result<ViewOutcome, ViewError>
+```
+
+The requested `AnddressTarget` reuses the existing target-kind representation;
+there is no request wrapper or relation enum. Source-less v4 validation precedes
+relation validation. Unsupported input version remains `UnsupportedVersion`;
+another raw input violation or a downward relation is `InvalidInput`, and both
+precede source I/O. File, Paragraph, and Line outcomes include the projected
+current v4 Anddress plus exact Content from the same accepted observation.
+Their existing related File and optional Paragraph values remain. When a
+Line-to-Paragraph request names a separator Line or a raw-valid nonstructural
+Line with no containing current Paragraph, it succeeds as
+`ViewOutcome::RelationAbsent`; this is not `Unavailable` or `InvalidInput`.
+Single projection is complete before batch. Batch applies one requested projection
 to an ordered input collection, preserves input order and duplicates, and is
 all-or-nothing. Its implementation must group admissible inputs by logical
 source and reuse one current observation per source; it must not implement a
@@ -446,7 +464,8 @@ the exact same source bytes may reconstruct the same raw value without proving
 continuity, survival, or history.
 
 The implemented `0.2.0` Runtime execution seams are
-`WorkspaceRuntime::search(&SearchRequest)`, `WorkspaceRuntime::view(&Anddress)`,
+`WorkspaceRuntime::search(&SearchRequest)`,
+`WorkspaceRuntime::view(&Anddress, AnddressTarget)`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`,
 `WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
 `check_pick(PickOutcome)`. Across calls, Search, View, Pick, Check, and Apply
@@ -694,21 +713,30 @@ relation enum. Pick does not read text or call Runtime to replace them.
 
 ## Implemented 0.2.0 View behavior
 
-View V1 has one `&Anddress` input and the implemented
-`WorkspaceRuntime::view(&Anddress)` seam. Its admitted capability-relative
+View V1 has one `&Anddress` input, one requested existing target kind, and the implemented
+`WorkspaceRuntime::view(&Anddress, AnddressTarget)` seam. Its admitted capability-relative
 no-follow one-read access and File/Paragraph/Line text projection shape remain
 reusable. Its former v2 evidence-based construction is rejected; successful
 related results use v4 source identity and ranges. View stays current-only,
-result/history-stateless, non-mutating, and without range, plural, descendant,
+result/history-stateless, non-mutating, and without arbitrary range, plural, descendant,
 or partial behavior.
 
-View first performs source-less v4 validation before any I/O. It preserves the
-existing `UnsupportedVersion`, `InvalidInput`, and `Unavailable` errors and the
-existing `ViewOutcome` shape. Unsupported version or invalid source-less v4
-input returns the corresponding first two errors. After that validation, every
+View first performs source-less v4 validation and then validates the allowed
+projection relation before any I/O. It preserves the existing
+`UnsupportedVersion`, `InvalidInput`, and `Unavailable` errors. Unsupported
+version, another invalid source-less v4 input, or a downward projection returns
+the corresponding first two errors. After that validation, every
 coordinate, admission, open, read, UTF-8/NUL, source-state, range-text,
 or resource failure returns `Unavailable`. View adds no public evidence,
 registry, cache, retry, second read, error, or type.
+
+`ViewOutcome::{File, Paragraph, Line}` now includes an `anddress` member for
+the requested projected target. File carries full text; Paragraph carries exact
+text and its related File; Line carries exact content, terminator, related File,
+and optional containing Paragraph. Every address shares the accepted current
+workspace/path/hash/length identity and uses only its exact range. The fourth
+`RelationAbsent` outcome is valid only for Line-to-Paragraph without a
+containing current Paragraph and carries no fabricated address or Content.
 
 A File is current exactly when the input coordinate/path resolves to an
 admitted regular UTF-8, NUL-free source whose complete SHA-256 and byte length
@@ -1236,7 +1264,7 @@ Anchor has this implemented public Runtime surface exactly:
 WorkspaceRuntime::anchor(&mut self, &Anddress) -> Result<AnchorOutcome, AnchorError>
 AnchorOutcome::{Anchored(Anchedress), AlreadyLive}
 AnchorError::{UnsupportedVersion, InvalidInput, Unavailable}
-WorkspaceRuntime::view_anchored(&mut self, &Anchedress) -> Result<ViewOutcome, ViewError>
+WorkspaceRuntime::view_anchored(&mut self, &Anchedress, AnddressTarget) -> Result<ViewOutcome, ViewError>
 WorkspaceRuntime::invalidate_anchored_source(&mut self, &str) -> Result<(), AnchorError>
 ```
 
@@ -1255,8 +1283,10 @@ handle, alias, or reference count. An invalidated or dropped handle does not
 prevent a fresh anchor, and an equal tuple never revives an old handle. Anchor
 has no fixed live-handle cap; a resource failure returns `Unavailable`.
 
-`view_anchored` compares only its selected live binding with current
-resolution. In Host mode, a matching proof shares ordinary trusted View
+`view_anchored` first validates the requested self-or-ancestor relation against
+its selected live binding. It then compares only that binding with current
+resolution. Relation-absent has the same normal meaning as ordinary View. In
+Host mode, a matching proof shares ordinary trusted View
 execution, a mismatch fail-closes same-path proof and continuity before I/O,
 and a miss keeps the complete direct target observer. A stale sibling does not
 prevent that selected current binding from returning a

@@ -639,7 +639,7 @@ fn run_search(
 
 fn run_view(runtime: &WorkspaceRuntime, anddress: &Anddress) -> Result<ViewOutcome, CliError> {
     runtime
-        .view(anddress)
+        .view(anddress, anddress.target())
         .map_err(|error| CliError::execution(error.to_string()))
 }
 
@@ -864,7 +864,7 @@ fn write_view(outcome: &ViewOutcome) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
     let result = (|| -> io::Result<()> {
         match outcome {
-            ViewOutcome::File { text } | ViewOutcome::Paragraph { text, .. } => {
+            ViewOutcome::File { text, .. } | ViewOutcome::Paragraph { text, .. } => {
                 stdout.write_all(text.as_bytes())?;
             }
             ViewOutcome::Line {
@@ -880,6 +880,9 @@ fn write_view(outcome: &ViewOutcome) -> Result<(), CliError> {
                     LineTerminator::Crlf => b"\r\n",
                 })?;
             }
+            ViewOutcome::RelationAbsent => {
+                return Err(io::Error::other("requested View relation is absent"));
+            }
         }
         Ok(())
     })();
@@ -893,7 +896,7 @@ fn write_view_json(outcome: ViewOutcome) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
     let result = (|| -> Result<(), CliError> {
         match outcome {
-            ViewOutcome::File { text } => {
+            ViewOutcome::File { text, .. } => {
                 stdout
                     .write_all(b"{\"schema\":\"bw.cli.view.v1\",\"kind\":\"file\",\"text\":")
                     .map_err(|error| CliError::stream(error.to_string()))?;
@@ -903,7 +906,7 @@ fn write_view_json(outcome: ViewOutcome) -> Result<(), CliError> {
                     .write_all(b"}")
                     .map_err(|error| CliError::stream(error.to_string()))?;
             }
-            ViewOutcome::Paragraph { text, file } => {
+            ViewOutcome::Paragraph { text, file, .. } => {
                 stdout
                     .write_all(b"{\"schema\":\"bw.cli.view.v1\",\"kind\":\"paragraph\",\"text\":")
                     .map_err(|error| CliError::stream(error.to_string()))?;
@@ -927,6 +930,7 @@ fn write_view_json(outcome: ViewOutcome) -> Result<(), CliError> {
                 terminator,
                 file,
                 paragraph,
+                ..
             } => {
                 stdout
                     .write_all(b"{\"schema\":\"bw.cli.view.v1\",\"kind\":\"line\",\"content\":")
@@ -965,6 +969,9 @@ fn write_view_json(outcome: ViewOutcome) -> Result<(), CliError> {
                 stdout
                     .write_all(b"}")
                     .map_err(|error| CliError::stream(error.to_string()))?;
+            }
+            ViewOutcome::RelationAbsent => {
+                return Err(CliError::execution("requested View relation is absent"));
             }
         }
         Ok(())
@@ -1044,7 +1051,10 @@ enum SessionValue {
     Search(SearchOutcome),
     Pick(PickOutcome),
     Anddress(Anddress),
-    Anchedress(Anchedress),
+    Anchedress {
+        handle: Anchedress,
+        target: AnddressTarget,
+    },
     Edit(Edit),
     View(ViewOutcome),
     CheckAnddress(CheckOutcome<Option<Anddress>>),
@@ -1208,10 +1218,11 @@ fn execute_let(
             ));
         }
         let anddress = resolve_anddress(bindings, operand)?;
+        let target = anddress.target();
         return match runtime.anchor(&anddress).map_err(map_anchor_error)? {
             AnchorOutcome::Anchored(handle) => {
                 write_session_status("Anchored")?;
-                store_binding(bindings, name, SessionValue::Anchedress(handle))
+                store_binding(bindings, name, SessionValue::Anchedress { handle, target })
             }
             AnchorOutcome::AlreadyLive => write_session_status("AlreadyLive"),
         };
@@ -1239,9 +1250,9 @@ fn execute_let(
                         "view anchored accepts exactly one handle binding",
                     ));
                 }
-                let handle = resolve_anchedress(bindings, &tokens[5])?;
+                let (handle, target) = resolve_anchedress(bindings, &tokens[5])?;
                 runtime
-                    .view_anchored(handle)
+                    .view_anchored(handle, target)
                     .map_err(|error| CliError::execution(error.to_string()))?
             }
             _ => {
@@ -1682,7 +1693,7 @@ fn resolve_pick_candidates(
                 "Pick candidates require a Search or Pick binding: {name}"
             )));
         }
-        Some(SessionValue::Anchedress(_)) => {
+        Some(SessionValue::Anchedress { .. }) => {
             return Err(CliError::usage(format!(
                 "Pick candidates require a Search or Pick binding: {name}"
             )));
@@ -1972,12 +1983,11 @@ fn execute_session_view(
                     "view anchored accepts exactly one handle binding",
                 ));
             }
-            let handle = resolve_anchedress(bindings, &tokens[2])?;
-            write_view(
-                &runtime
-                    .view_anchored(handle)
-                    .map_err(|error| CliError::execution(error.to_string()))?,
-            )
+            let (handle, target) = resolve_anchedress(bindings, &tokens[2])?;
+            let outcome = runtime
+                .view_anchored(handle, target)
+                .map_err(|error| CliError::execution(error.to_string()))?;
+            write_view(&outcome)
         }
         _ => Err(CliError::usage(
             "view requires the anddress or anchored input form",
@@ -2168,7 +2178,7 @@ fn resolve_binding_value(
         Some(SessionValue::CheckAnddress(value)) => Ok(SessionValue::CheckAnddress(value.clone())),
         Some(SessionValue::CheckSearch(value)) => Ok(SessionValue::CheckSearch(value.clone())),
         Some(SessionValue::CheckPick(value)) => Ok(SessionValue::CheckPick(value.clone())),
-        Some(SessionValue::Anchedress(_)) => Err(CliError::usage(format!(
+        Some(SessionValue::Anchedress { .. }) => Err(CliError::usage(format!(
             "Anchedress binding cannot be cloned: {name}"
         ))),
         None => Err(CliError::usage(format!("unknown binding: {name}"))),
@@ -2178,7 +2188,7 @@ fn resolve_binding_value(
 fn resolve_anchedress<'a>(
     bindings: &'a [SessionBinding],
     token: &str,
-) -> Result<&'a Anchedress, CliError> {
+) -> Result<(&'a Anchedress, AnddressTarget), CliError> {
     let name = token
         .strip_prefix('@')
         .ok_or_else(|| CliError::usage("binding references start with @"))?;
@@ -2187,7 +2197,7 @@ fn resolve_anchedress<'a>(
     }
     validate_binding_name(name)?;
     match binding(bindings, name) {
-        Some(SessionValue::Anchedress(handle)) => Ok(handle),
+        Some(SessionValue::Anchedress { handle, target }) => Ok((handle, *target)),
         Some(_) => Err(CliError::usage(format!(
             "binding is not an Anchedress: {name}"
         ))),
@@ -2224,7 +2234,7 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
             Some(SessionValue::Pick(_)) => Err(CliError::usage(format!(
                 "Pick binding requires an index: {reference}"
             ))),
-            Some(SessionValue::Anchedress(_)) => Err(CliError::usage(format!(
+            Some(SessionValue::Anchedress { .. }) => Err(CliError::usage(format!(
                 "Anchedress binding cannot be used as an Anddress: {reference}"
             ))),
             Some(SessionValue::Edit(_)) => Err(CliError::usage(format!(
@@ -2268,7 +2278,7 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
         Some(SessionValue::Anddress(_)) => Err(CliError::usage(format!(
             "Anddress binding cannot be indexed: {name}"
         ))),
-        Some(SessionValue::Anchedress(_)) => Err(CliError::usage(format!(
+        Some(SessionValue::Anchedress { .. }) => Err(CliError::usage(format!(
             "Anchedress binding cannot be indexed: {name}"
         ))),
         Some(SessionValue::Edit(_)) => Err(CliError::usage(format!(

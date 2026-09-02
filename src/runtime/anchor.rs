@@ -2,8 +2,8 @@
 
 use crate::backwriter::{
     anchor::{Anchedress, AnchorError, AnchorOutcome},
-    anddress::{Anddress, AnddressError},
-    view::{ViewError, ViewOutcome},
+    anddress::{Anddress, AnddressError, AnddressTarget},
+    view::{ViewError, ViewOutcome, validate_projection},
 };
 use crate::source::validate_logical_path;
 
@@ -67,6 +67,7 @@ pub(super) fn anchor(
 pub(super) fn view_anchored(
     runtime: &mut WorkspaceRuntime,
     handle: &Anchedress,
+    projection: AnddressTarget,
 ) -> Result<ViewOutcome, ViewError> {
     runtime.prune_dead_anchors();
     let token = handle.weak();
@@ -78,15 +79,21 @@ pub(super) fn view_anchored(
         return Err(ViewError::Unavailable);
     };
     let input = runtime.anchors[index].anddress.clone();
+    validate_projection(input.target(), projection)?;
     match runtime.match_current_proof(&input) {
         CurrentProofMatch::Mismatched => {
             runtime.invalidate_source_state(input.logical_path());
             return Err(ViewError::Unavailable);
         }
-        CurrentProofMatch::Matching => return execute_trusted(runtime, &input),
+        CurrentProofMatch::Matching => return execute_trusted(runtime, &input, projection),
         CurrentProofMatch::Missing => {}
     }
-    let observed = match observe_current(runtime, &input, std::slice::from_ref(&input), Some(0)) {
+    let observed = match observe_current(
+        runtime,
+        &input,
+        std::slice::from_ref(&input),
+        Some((0, projection)),
+    ) {
         Ok(observed) => observed,
         Err(ObservationError::InvalidSource) => {
             runtime.invalidate_source_state(input.logical_path());
@@ -131,7 +138,7 @@ fn observe_current(
     runtime: &WorkspaceRuntime,
     input: &Anddress,
     inputs: &[Anddress],
-    capture_focus: Option<usize>,
+    capture_focus: Option<(usize, AnddressTarget)>,
 ) -> Result<AnchoredObservation, ObservationError> {
     if input.workspace_coordinate() != runtime.workspace_coordinate
         || is_backwriter_spill(input.logical_path())

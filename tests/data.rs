@@ -110,6 +110,7 @@ fn typed_store_get_pairs_accept_every_native_payload() {
         anddresses: vec![address.clone()],
     };
     let view = ViewOutcome::File {
+        anddress: address.clone(),
         text: "snapshot".to_owned(),
     };
     let (check_anddress, check_search, check_pick) = check_outcomes();
@@ -187,6 +188,7 @@ fn list_yields_only_borrowed_kind_name_pairs_without_order_authority() {
         .store_view(
             &four,
             ViewOutcome::File {
+                anddress: address("four.txt"),
                 text: String::new(),
             },
         )
@@ -247,6 +249,7 @@ fn remove_drops_only_the_selected_binding() {
     let retained = name("retained");
     let missing = name("missing");
     let retained_value = ViewOutcome::File {
+        anddress: address("retained.txt"),
         text: "keep".to_owned(),
     };
 
@@ -254,6 +257,7 @@ fn remove_drops_only_the_selected_binding() {
         .store_view(
             &removed,
             ViewOutcome::File {
+                anddress: address("removed.txt"),
                 text: "drop".to_owned(),
             },
         )
@@ -287,6 +291,7 @@ fn rename_and_remove_dispatch_each_data_kind_without_cross_kind_aliasing() {
         anddresses: vec![address("pick.txt")],
     };
     let view = ViewOutcome::File {
+        anddress: address("view.txt"),
         text: "view".to_owned(),
     };
     let (check_anddress, check_search, check_pick) = check_outcomes();
@@ -410,6 +415,7 @@ fn duplicate_view_store_returns_the_original_owned_allocation() {
     let mut store = DataStore::new();
     let entry_name = name("view");
     let stored = ViewOutcome::File {
+        anddress: address("stored.txt"),
         text: "stored".to_owned(),
     };
     store.store_view(&entry_name, stored.clone()).unwrap();
@@ -420,9 +426,15 @@ fn duplicate_view_store_returns_the_original_owned_allocation() {
     let text_capacity = text.capacity();
     assert!(text_capacity > text.len());
 
-    match store.store_view(&entry_name, ViewOutcome::File { text }) {
+    match store.store_view(
+        &entry_name,
+        ViewOutcome::File {
+            anddress: address("duplicate.txt"),
+            text,
+        },
+    ) {
         Err(StoreError::AlreadyExists {
-            value: ViewOutcome::File { text },
+            value: ViewOutcome::File { text, .. },
         }) => {
             assert_eq!(text.as_ptr(), text_pointer);
             assert_eq!(text.capacity(), text_capacity);

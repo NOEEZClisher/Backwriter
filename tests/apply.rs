@@ -282,8 +282,8 @@ fn host_apply_reuses_and_replaces_current_proof_across_publications() {
         Some(second.clone())
     );
     assert!(matches!(
-        workspace.view(&second),
-        Ok(ViewOutcome::File { text }) if text == "two\n"
+        workspace.view(&second, second.target()),
+        Ok(ViewOutcome::File { text, .. }) if text == "two\n"
     ));
     let parked_other = root.join("parked-other");
     fs::rename(root.join("other.txt"), &parked_other).unwrap();
@@ -316,8 +316,8 @@ fn host_apply_reuses_and_replaces_current_proof_across_publications() {
         Err(ApplyError::Unavailable)
     );
     assert!(matches!(
-        workspace.view_anchored(&handle),
-        Ok(ViewOutcome::File { text }) if text == "three\n"
+        workspace.view_anchored(&handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text == "three\n"
     ));
     assert_no_apply_temp(&root);
 }
@@ -354,8 +354,8 @@ fn host_apply_direct_and_identical_noops_preserve_proof_anchor_inode_and_bytes()
     assert_eq!(fs::read(&source_path).unwrap(), b"same\n");
     assert_eq!(fs::metadata(&source_path).unwrap().ino(), inode);
     assert!(matches!(
-        workspace.view_anchored(&handle),
-        Ok(ViewOutcome::File { text }) if text == "same\n"
+        workspace.view_anchored(&handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text == "same\n"
     ));
     let parked = root.join("parked");
     fs::rename(&source_path, &parked).unwrap();
@@ -391,8 +391,8 @@ fn host_apply_proof_mismatch_rejects_before_source_io_and_preserves_state() {
 
     fs::rename(&parked, &source_path).unwrap();
     assert!(matches!(
-        workspace.view_anchored(&handle),
-        Ok(ViewOutcome::File { text }) if text == "current\n"
+        workspace.view_anchored(&handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text == "current\n"
     ));
     fs::rename(&source_path, &parked).unwrap();
     assert_eq!(
@@ -432,7 +432,7 @@ fn host_apply_trusted_short_and_invalid_source_fail_close_proof_and_anchor() {
         );
         assert_eq!(fs::read(&source_path).unwrap(), mutated);
         assert_eq!(
-            workspace.view_anchored(&handle),
+            workspace.view_anchored(&handle, PublicAnddressTarget::File),
             Err(backwriter::backwriter::view::ViewError::Unavailable)
         );
         fs::remove_file(&source_path).unwrap();
@@ -510,11 +510,11 @@ fn host_invalidation_before_mutation_safe_rejects_every_stale_consumer() {
         }
 
         assert_eq!(
-            workspace.view(&stale),
+            workspace.view(&stale, stale.target()),
             Err(backwriter::backwriter::view::ViewError::Unavailable)
         );
         assert_eq!(
-            workspace.view_anchored(&handle),
+            workspace.view_anchored(&handle, PublicAnddressTarget::File),
             Err(backwriter::backwriter::view::ViewError::Unavailable),
             "{name}"
         );
@@ -588,7 +588,7 @@ fn host_apply_then_guarded_invalidation_rejects_the_old_after_proof() {
     assert_eq!(fs::read(&source_path).unwrap(), b"external\n");
     assert_eq!(workspace.check(after.clone()).unwrap().filtered, None);
     assert_eq!(
-        workspace.view_anchored(&handle),
+        workspace.view_anchored(&handle, PublicAnddressTarget::File),
         Err(backwriter::backwriter::view::ViewError::Unavailable)
     );
     assert_no_apply_temp(&root);
@@ -622,8 +622,8 @@ fn host_apply_open_failure_removes_only_proof_and_preserves_anchor() {
     assert_no_apply_temp(&root);
     fs::rename(&parked, &source_path).unwrap();
     assert!(matches!(
-        workspace.view_anchored(&handle),
-        Ok(ViewOutcome::File { text }) if text == "current\n"
+        workspace.view_anchored(&handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text == "current\n"
     ));
 
     fs::rename(&source_path, &parked).unwrap();
@@ -815,12 +815,12 @@ fn v4_drift_matrix_has_one_correct_apply_and_no_wrong_publication_in_both_modes(
 
             if succeeds {
                 assert!(
-                    matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::File { text }) if text.as_bytes() == CORRECT),
+                    matches!(workspace.view_anchored(&handle, PublicAnddressTarget::File), Ok(ViewOutcome::File { text, .. }) if text.as_bytes() == CORRECT),
                     "{mode} {name}"
                 );
             } else {
                 assert!(
-                    matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::File { text }) if text.as_bytes() == before_apply),
+                    matches!(workspace.view_anchored(&handle, PublicAnddressTarget::File), Ok(ViewOutcome::File { text, .. }) if text.as_bytes() == before_apply),
                     "{mode} {name}"
                 );
             }

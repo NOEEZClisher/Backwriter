@@ -3,7 +3,7 @@
 use std::io::{Read, Seek, SeekFrom};
 
 use crate::backwriter::anddress::{Anddress, AnddressTarget, LineTerminator, construct_anddress};
-use crate::backwriter::view::{ViewError, ViewOutcome, validate_input};
+use crate::backwriter::view::{ViewError, ViewOutcome, validate_request};
 
 use super::{
     CurrentProofMatch, WorkspaceRuntime, is_backwriter_spill,
@@ -25,11 +25,12 @@ pub(super) struct AnchoredObservation {
 pub(super) fn observe_anchored(
     reader: &mut impl Read,
     inputs: &[Anddress],
-    capture_focus: Option<usize>,
+    capture_focus: Option<(usize, AnddressTarget)>,
 ) -> Result<AnchoredObservation, ObservationError> {
     let indexes = indices(inputs.len())?;
     let mut targets = TargetProjection::new(inputs, &indexes).map_err(map_scan_error)?;
-    let mut capture = capture_focus.map(|focus| DirectViewProjection::new(&inputs[focus]));
+    let mut capture = capture_focus
+        .map(|(focus, projection)| DirectViewProjection::new(&inputs[focus], projection));
     let state = observe_source(reader, |bytes, chunk_start| {
         if let Some(capture) = capture.as_mut() {
             capture.push(bytes, chunk_start)?;
@@ -39,7 +40,7 @@ pub(super) fn observe_anchored(
     .map_err(map_scan_error)?;
     targets.finish(&state);
     let current = targets.into_current();
-    let outcome = if capture_focus.is_some_and(|focus| current[focus]) {
+    let outcome = if capture_focus.is_some_and(|(focus, _)| current[focus]) {
         Some(
             capture
                 .expect("capture focus creates a View capture")
@@ -55,8 +56,9 @@ pub(super) fn observe_anchored(
 pub(super) fn execute(
     runtime: &WorkspaceRuntime,
     input: &Anddress,
+    projection: AnddressTarget,
 ) -> Result<ViewOutcome, ViewError> {
-    validate_input(input)?;
+    validate_request(input, projection)?;
     if is_backwriter_spill(input.logical_path())
         || input.workspace_coordinate() != runtime.workspace_coordinate
     {
@@ -67,23 +69,22 @@ pub(super) fn execute(
             let mut file = runtime
                 .open_admitted_source(input.logical_path())
                 .map_err(|_| ViewError::Unavailable)?;
-            observe_direct(&mut file, input)
-                .map_err(|_| ViewError::Unavailable)?
-                .ok_or(ViewError::Unavailable)
+            observe_direct(&mut file, input, projection).map_err(|_| ViewError::Unavailable)
         }
         CurrentProofMatch::Mismatched => Err(ViewError::Unavailable),
-        CurrentProofMatch::Matching => execute_trusted(runtime, input),
+        CurrentProofMatch::Matching => execute_trusted(runtime, input, projection),
     }
 }
 
 pub(super) fn execute_trusted(
     runtime: &WorkspaceRuntime,
     input: &Anddress,
+    projection: AnddressTarget,
 ) -> Result<ViewOutcome, ViewError> {
     let outcome = runtime
         .open_admitted_source(input.logical_path())
         .map_err(|_| TrustedViewError::Source)
-        .and_then(|mut file| observe_trusted(&mut file, input));
+        .and_then(|mut file| observe_trusted(&mut file, input, projection));
     if matches!(
         outcome,
         Err(TrustedViewError::Source | TrustedViewError::Resource)
@@ -96,44 +97,57 @@ pub(super) fn execute_trusted(
 pub(super) fn observe_direct(
     reader: &mut impl Read,
     input: &Anddress,
-) -> Result<Option<ViewOutcome>, SourceScanError> {
-    let mut projection = DirectViewProjection::new(input);
+    projection: AnddressTarget,
+) -> Result<ViewOutcome, SourceScanError> {
+    let mut capture = DirectViewProjection::new(input, projection);
     let state = observe_source(reader, |bytes, chunk_start| {
-        projection.push(bytes, chunk_start)
+        capture.push(bytes, chunk_start)
     })?;
     if input.source_byte_length() != state.byte_length || input.source_state_hash() != state.hash {
-        return Ok(None);
+        return Err(SourceScanError::InvalidSource);
     }
-    projection.finish(state.byte_length).map(Some)
+    capture.finish(state.byte_length)
 }
 
 struct DirectViewProjection<'a> {
     input: &'a Anddress,
+    projection: AnddressTarget,
+    target_range: Option<(usize, usize)>,
     target: Vec<u8>,
     line_relation: Option<LineRelation>,
 }
 
 impl<'a> DirectViewProjection<'a> {
-    fn new(input: &'a Anddress) -> Self {
+    fn new(input: &'a Anddress, projection: AnddressTarget) -> Self {
+        let target_range = match (input.target(), projection) {
+            (_, AnddressTarget::File) => Some((0, input.source_byte_length())),
+            (AnddressTarget::Paragraph, AnddressTarget::Paragraph)
+            | (AnddressTarget::Line, AnddressTarget::Line) => {
+                Some((input.byte_start(), input.byte_end()))
+            }
+            (AnddressTarget::Line, AnddressTarget::Paragraph) => None,
+            _ => None,
+        };
         Self {
             input,
+            projection,
+            target_range,
             target: Vec::new(),
-            line_relation: (input.target() == AnddressTarget::Line)
-                .then(|| LineRelation::new(input.byte_start(), input.byte_end())),
+            line_relation: (input.target() == AnddressTarget::Line
+                && projection != AnddressTarget::File)
+                .then(|| {
+                    LineRelation::new(
+                        input.byte_start(),
+                        input.byte_end(),
+                        projection == AnddressTarget::Paragraph,
+                    )
+                }),
         }
     }
 
     fn push(&mut self, bytes: &[u8], chunk_start: usize) -> Result<(), SourceScanError> {
-        if self.input.target() == AnddressTarget::File {
-            append(&mut self.target, bytes)?;
-        } else {
-            append_overlap(
-                &mut self.target,
-                bytes,
-                chunk_start,
-                self.input.byte_start(),
-                self.input.byte_end(),
-            )?;
+        if let Some((start, end)) = self.target_range {
+            append_overlap(&mut self.target, bytes, chunk_start, start, end)?;
         }
         if let Some(relation) = self.line_relation.as_mut() {
             relation.push(bytes, chunk_start)?;
@@ -146,7 +160,32 @@ impl<'a> DirectViewProjection<'a> {
             relation.finish(source_byte_length);
             relation.related
         });
-        finish_outcome(self.input, self.target, related)
+        if self.projection == AnddressTarget::Paragraph
+            && self.input.target() == AnddressTarget::Line
+        {
+            return match related {
+                Some(related) => finish_outcome(
+                    self.input,
+                    self.projection,
+                    related
+                        .content
+                        .expect("Paragraph projection captures relation content"),
+                    (related.start, related.end),
+                    None,
+                ),
+                None => Ok(ViewOutcome::RelationAbsent),
+            };
+        }
+        let range = self
+            .target_range
+            .expect("every non-relational projection has a target range");
+        finish_outcome(
+            self.input,
+            self.projection,
+            self.target,
+            range,
+            related.map(|related| (related.start, related.end)),
+        )
     }
 }
 
@@ -160,14 +199,54 @@ enum TrustedViewError {
 fn observe_trusted(
     reader: &mut (impl Read + Seek),
     input: &Anddress,
+    projection: AnddressTarget,
 ) -> Result<ViewOutcome, TrustedViewError> {
-    let target = read_range(reader, input.byte_start(), input.byte_end())?;
-    let related = if input.target() == AnddressTarget::Line {
-        related_paragraph_range(reader, input, &target)?
-    } else {
-        None
-    };
-    finish_outcome(input, target, related).map_err(map_trusted_scan_error)
+    match (input.target(), projection) {
+        (_, AnddressTarget::File) => finish_outcome(
+            input,
+            projection,
+            read_range(reader, 0, input.source_byte_length())?,
+            (0, input.source_byte_length()),
+            None,
+        )
+        .map_err(map_trusted_scan_error),
+        (AnddressTarget::Paragraph, AnddressTarget::Paragraph) => finish_outcome(
+            input,
+            projection,
+            read_range(reader, input.byte_start(), input.byte_end())?,
+            (input.byte_start(), input.byte_end()),
+            None,
+        )
+        .map_err(map_trusted_scan_error),
+        (AnddressTarget::Line, AnddressTarget::Line) => {
+            let target = read_range(reader, input.byte_start(), input.byte_end())?;
+            let related = related_paragraph_range(reader, input, &target)?;
+            finish_outcome(
+                input,
+                projection,
+                target,
+                (input.byte_start(), input.byte_end()),
+                related,
+            )
+            .map_err(map_trusted_scan_error)
+        }
+        (AnddressTarget::Line, AnddressTarget::Paragraph) => {
+            let target = read_range(reader, input.byte_start(), input.byte_end())?;
+            let Some((start, end)) = related_paragraph_range(reader, input, &target)? else {
+                return Ok(ViewOutcome::RelationAbsent);
+            };
+            drop(target);
+            finish_outcome(
+                input,
+                projection,
+                read_range(reader, start, end)?,
+                (start, end),
+                None,
+            )
+            .map_err(map_trusted_scan_error)
+        }
+        _ => Err(TrustedViewError::InvalidRange),
+    }
 }
 
 fn read_range(
@@ -491,6 +570,9 @@ fn map_trusted_scan_error(error: SourceScanError) -> TrustedViewError {
 struct LineRelation {
     target_start: usize,
     target_end: usize,
+    capture_content: bool,
+    paragraph_content: Vec<u8>,
+    line_content_start: usize,
     line_start: usize,
     line_started: bool,
     pending_cr: bool,
@@ -499,14 +581,24 @@ struct LineRelation {
     paragraph_end: usize,
     selected_in_paragraph: bool,
     in_paragraph: bool,
-    related: Option<(usize, usize)>,
+    done: bool,
+    related: Option<RelatedParagraph>,
+}
+
+struct RelatedParagraph {
+    start: usize,
+    end: usize,
+    content: Option<Vec<u8>>,
 }
 
 impl LineRelation {
-    fn new(target_start: usize, target_end: usize) -> Self {
+    fn new(target_start: usize, target_end: usize, capture_content: bool) -> Self {
         Self {
             target_start,
             target_end,
+            capture_content,
+            paragraph_content: Vec::new(),
+            line_content_start: 0,
             line_start: 0,
             line_started: false,
             pending_cr: false,
@@ -515,23 +607,29 @@ impl LineRelation {
             paragraph_end: 0,
             selected_in_paragraph: false,
             in_paragraph: false,
+            done: false,
             related: None,
         }
     }
 
     fn push(&mut self, bytes: &[u8], chunk_start: usize) -> Result<(), SourceScanError> {
+        if self.done {
+            return Ok(());
+        }
         for (index, &byte) in bytes.iter().enumerate() {
             let byte_start = chunk_start
                 .checked_add(index)
                 .ok_or(SourceScanError::Resource)?;
             if self.pending_cr {
                 if byte == b'\n' {
+                    self.capture_byte(byte)?;
                     self.finish_line(byte_start.checked_add(1).ok_or(SourceScanError::Resource)?);
                     continue;
                 }
                 self.finish_line(byte_start);
             }
             self.begin_line(byte_start);
+            self.capture_byte(byte)?;
             match byte {
                 b'\r' => self.pending_cr = true,
                 b'\n' => {
@@ -554,7 +652,18 @@ impl LineRelation {
         if !self.line_started {
             self.line_started = true;
             self.line_start = byte_start;
+            self.line_content_start = self.paragraph_content.len();
         }
+    }
+
+    fn capture_byte(&mut self, byte: u8) -> Result<(), SourceScanError> {
+        if self.capture_content {
+            self.paragraph_content
+                .try_reserve(1)
+                .map_err(|_| SourceScanError::Resource)?;
+            self.paragraph_content.push(byte);
+        }
+        Ok(())
     }
 
     fn finish_line(&mut self, byte_end: usize) {
@@ -567,7 +676,14 @@ impl LineRelation {
             self.paragraph_end = byte_end;
             self.selected_in_paragraph |= selected;
         } else {
+            if self.capture_content {
+                self.paragraph_content.truncate(self.line_content_start);
+            }
             self.finish_paragraph();
+        }
+        if byte_end >= self.target_end && !self.selected_in_paragraph {
+            self.paragraph_content = Vec::new();
+            self.done = true;
         }
         self.line_started = false;
         self.pending_cr = false;
@@ -576,11 +692,20 @@ impl LineRelation {
 
     fn finish_paragraph(&mut self) {
         if !self.in_paragraph {
+            self.paragraph_content = Vec::new();
             return;
         }
         if self.selected_in_paragraph {
-            self.related = Some((self.paragraph_start, self.paragraph_end));
+            self.related = Some(RelatedParagraph {
+                start: self.paragraph_start,
+                end: self.paragraph_end,
+                content: self
+                    .capture_content
+                    .then(|| std::mem::take(&mut self.paragraph_content)),
+            });
+            self.done = true;
         }
+        self.paragraph_content = Vec::new();
         self.in_paragraph = false;
         self.selected_in_paragraph = false;
     }
@@ -628,25 +753,33 @@ fn map_scan_error(error: SourceScanError) -> ObservationError {
 
 fn finish_outcome(
     input: &Anddress,
+    projection: AnddressTarget,
     target: Vec<u8>,
+    range: (usize, usize),
     related: Option<(usize, usize)>,
 ) -> Result<ViewOutcome, SourceScanError> {
-    match input.target() {
+    let anddress = target_address(input, projection, range.0, range.1)?;
+    match projection {
         AnddressTarget::File => Ok(ViewOutcome::File {
+            anddress,
             text: String::from_utf8(target).map_err(|_| SourceScanError::InvalidSource)?,
         }),
         AnddressTarget::Paragraph => Ok(ViewOutcome::Paragraph {
+            anddress,
             text: String::from_utf8(target).map_err(|_| SourceScanError::InvalidSource)?,
             file: file_address(input)?,
         }),
         AnddressTarget::Line => {
             let (content, terminator) = line_parts(target)?;
             Ok(ViewOutcome::Line {
+                anddress,
                 content,
                 terminator,
                 file: file_address(input)?,
                 paragraph: related
-                    .map(|(start, end)| paragraph_address(input, start, end))
+                    .map(|(start, end)| {
+                        target_address(input, AnddressTarget::Paragraph, start, end)
+                    })
                     .transpose()?,
             })
         }
@@ -678,27 +811,17 @@ fn append(output: &mut Vec<u8>, bytes: &[u8]) -> Result<(), SourceScanError> {
 }
 
 fn file_address(input: &Anddress) -> Result<Anddress, SourceScanError> {
-    construct_anddress(
-        input.source_identity(),
-        AnddressTarget::File,
-        0,
-        input.source_byte_length(),
-    )
-    .map_err(|_| SourceScanError::Resource)
+    target_address(input, AnddressTarget::File, 0, input.source_byte_length())
 }
 
-fn paragraph_address(
+fn target_address(
     input: &Anddress,
+    target: AnddressTarget,
     byte_start: usize,
     byte_end: usize,
 ) -> Result<Anddress, SourceScanError> {
-    construct_anddress(
-        input.source_identity(),
-        AnddressTarget::Paragraph,
-        byte_start,
-        byte_end,
-    )
-    .map_err(|_| SourceScanError::Resource)
+    construct_anddress(input.source_identity(), target, byte_start, byte_end)
+        .map_err(|_| SourceScanError::Resource)
 }
 
 #[cfg(test)]
@@ -825,11 +948,12 @@ mod tests {
                 ended: false,
             };
 
-            let outcome = observe_direct(&mut reader, &input).unwrap().unwrap();
+            let outcome = observe_direct(&mut reader, &input, input.target()).unwrap();
 
             assert_eq!(
                 outcome,
                 ViewOutcome::Line {
+                    anddress: input,
                     content: format!("{}é", "x".repeat(target_length)),
                     terminator: LineTerminator::Crlf,
                     file: address(&bytes, AnddressTarget::File, 0, bytes.len()),
@@ -850,7 +974,7 @@ mod tests {
             ended: false,
         };
         assert_eq!(
-            observe_direct(&mut failed, &input),
+            observe_direct(&mut failed, &input, input.target()),
             Err(SourceScanError::Read)
         );
 
@@ -861,11 +985,14 @@ mod tests {
                 fail_at: None,
                 ended: false,
             };
-            assert_eq!(observe_direct(&mut changed, &input).unwrap(), None);
+            assert_eq!(
+                observe_direct(&mut changed, &input, input.target()),
+                Err(SourceScanError::InvalidSource)
+            );
             assert!(changed.ended);
         }
 
-        let mut projection = DirectViewProjection::new(&input);
+        let mut projection = DirectViewProjection::new(&input, input.target());
         projection.push(b"one\n", 0).unwrap();
         assert_eq!(
             projection.push(b"x", usize::MAX),
@@ -926,6 +1053,8 @@ mod tests {
             .unwrap();
         assert!(!trusted.contains("observe_source("));
         assert!(!trusted.contains("Sha256"));
+        assert_eq!(production.matches("fn finish_outcome(").count(), 1);
+        assert!(!production.contains("view_projected"));
         assert!(!production.contains("ReverseBytes"));
         assert!(!production.contains("ForwardBytes"));
         let relation = production
@@ -978,11 +1107,12 @@ mod tests {
         let input = address(&bytes, AnddressTarget::Line, target_start, target_end);
         let mut reader = CountingCursor::new(bytes.clone());
 
-        let outcome = observe_trusted(&mut reader, &input).unwrap();
+        let outcome = observe_trusted(&mut reader, &input, input.target()).unwrap();
 
         assert_eq!(
             outcome,
             ViewOutcome::Line {
+                anddress: input,
                 content: "한글".to_owned(),
                 terminator: LineTerminator::Crlf,
                 file: address(&bytes, AnddressTarget::File, 0, bytes.len()),
@@ -1012,7 +1142,8 @@ mod tests {
             let end = source.len();
             let input = address(source.as_bytes(), AnddressTarget::Line, start, end);
             assert!(matches!(
-                observe_trusted(&mut Cursor::new(source.as_bytes()), &input).unwrap(),
+                observe_trusted(&mut Cursor::new(source.as_bytes()), &input, input.target())
+                    .unwrap(),
                 ViewOutcome::Line {
                     content: actual,
                     terminator: actual_terminator,
@@ -1028,7 +1159,12 @@ mod tests {
         let whitespace = b"one\n \t\r\ntwo";
         let whitespace_input = address(whitespace, AnddressTarget::Line, 4, 8);
         assert!(matches!(
-            observe_trusted(&mut Cursor::new(whitespace), &whitespace_input).unwrap(),
+            observe_trusted(
+                &mut Cursor::new(whitespace),
+                &whitespace_input,
+                whitespace_input.target(),
+            )
+            .unwrap(),
             ViewOutcome::Line {
                 paragraph: None,
                 ..
@@ -1037,7 +1173,7 @@ mod tests {
         let raw = b"zero\none\r\ntwo";
         let raw_input = address(raw, AnddressTarget::Line, 2, 10);
         assert!(matches!(
-            observe_trusted(&mut Cursor::new(raw), &raw_input).unwrap(),
+            observe_trusted(&mut Cursor::new(raw), &raw_input, raw_input.target()).unwrap(),
             ViewOutcome::Line {
                 paragraph: None,
                 ..
@@ -1061,7 +1197,7 @@ mod tests {
         let input = address(&source, AnddressTarget::Line, target_start, target_end);
 
         assert!(matches!(
-            observe_trusted(&mut Cursor::new(&source), &input).unwrap(),
+            observe_trusted(&mut Cursor::new(&source), &input, input.target()).unwrap(),
             ViewOutcome::Line {
                 content,
                 terminator: LineTerminator::Lf,
@@ -1085,10 +1221,8 @@ mod tests {
         complete.extend_from_slice(b"\r\n");
         complete.extend_from_slice("끝".as_bytes());
         let input = address(&complete, AnddressTarget::Line, target_start, target_end);
-        let expected = observe_direct(&mut Cursor::new(&complete), &input)
-            .unwrap()
-            .unwrap();
-        let actual = observe_trusted(&mut Cursor::new(&complete), &input).unwrap();
+        let expected = observe_direct(&mut Cursor::new(&complete), &input, input.target()).unwrap();
+        let actual = observe_trusted(&mut Cursor::new(&complete), &input, input.target()).unwrap();
         assert_eq!(actual, expected);
         assert!(matches!(
             actual,
@@ -1108,10 +1242,10 @@ mod tests {
             target_start,
             target_end,
         );
-        let expected = observe_direct(&mut Cursor::new(bounded.as_bytes()), &input)
-            .unwrap()
-            .unwrap();
-        let actual = observe_trusted(&mut Cursor::new(bounded.as_bytes()), &input).unwrap();
+        let expected =
+            observe_direct(&mut Cursor::new(bounded.as_bytes()), &input, input.target()).unwrap();
+        let actual =
+            observe_trusted(&mut Cursor::new(bounded.as_bytes()), &input, input.target()).unwrap();
         assert_eq!(actual, expected);
         assert!(matches!(
             actual,
@@ -1125,9 +1259,9 @@ mod tests {
         for (source, start, end) in [("\t\n끝\r", 2, 6), ("끝", 0, 3)] {
             let input = address(source.as_bytes(), AnddressTarget::Line, start, end);
             assert_eq!(
-                observe_trusted(&mut Cursor::new(source.as_bytes()), &input).unwrap(),
-                observe_direct(&mut Cursor::new(source.as_bytes()), &input)
-                    .unwrap()
+                observe_trusted(&mut Cursor::new(source.as_bytes()), &input, input.target())
+                    .unwrap(),
+                observe_direct(&mut Cursor::new(source.as_bytes()), &input, input.target())
                     .unwrap()
             );
         }
@@ -1139,30 +1273,68 @@ mod tests {
         let mut boundaries: Vec<_> = source.char_indices().map(|(index, _)| index).collect();
         boundaries.push(source.len());
         for target in [AnddressTarget::Paragraph, AnddressTarget::Line] {
+            let projections: &[AnddressTarget] = match target {
+                AnddressTarget::Paragraph => &[AnddressTarget::Paragraph, AnddressTarget::File],
+                AnddressTarget::Line => &[
+                    AnddressTarget::Line,
+                    AnddressTarget::Paragraph,
+                    AnddressTarget::File,
+                ],
+                AnddressTarget::File => unreachable!(),
+            };
             for (start_index, &start) in boundaries.iter().enumerate() {
                 for &end in &boundaries[start_index..] {
                     let input = address(source.as_bytes(), target, start, end);
-                    let expected = observe_direct(&mut Cursor::new(source.as_bytes()), &input)
-                        .unwrap()
-                        .unwrap();
-                    let actual = observe_trusted(&mut Cursor::new(source.as_bytes()), &input)
+                    for &projection in projections {
+                        let expected =
+                            observe_direct(&mut Cursor::new(source.as_bytes()), &input, projection)
+                                .unwrap();
+                        let actual = observe_trusted(
+                            &mut Cursor::new(source.as_bytes()),
+                            &input,
+                            projection,
+                        )
                         .unwrap_or_else(|error| panic!("{target:?} {start}..{end}: {error:?}"));
-                    assert_eq!(actual, expected, "{target:?} {start}..{end}");
+                        assert_eq!(
+                            actual, expected,
+                            "{target:?}->{projection:?} {start}..{end}"
+                        );
+                    }
                 }
             }
         }
+
+        let file = address(source.as_bytes(), AnddressTarget::File, 0, source.len());
+        assert_eq!(
+            observe_trusted(
+                &mut Cursor::new(source.as_bytes()),
+                &file,
+                AnddressTarget::File
+            )
+            .unwrap(),
+            observe_direct(
+                &mut Cursor::new(source.as_bytes()),
+                &file,
+                AnddressTarget::File
+            )
+            .unwrap()
+        );
     }
 
     #[test]
     fn trusted_short_read_and_matching_open_failure_remove_only_matching_proof() {
         let input = address(b"one", AnddressTarget::File, 0, 3);
         assert_eq!(
-            observe_trusted(&mut Cursor::new(b"on"), &input),
+            observe_trusted(&mut Cursor::new(b"on"), &input, input.target()),
             Err(TrustedViewError::Source)
         );
         for fail_seek in [true, false] {
             assert_eq!(
-                observe_trusted(&mut FailingTrustedReader { fail_seek }, &input),
+                observe_trusted(
+                    &mut FailingTrustedReader { fail_seek },
+                    &input,
+                    input.target(),
+                ),
                 Err(TrustedViewError::Source)
             );
         }
@@ -1185,7 +1357,10 @@ mod tests {
             ])
             .unwrap();
 
-        assert_eq!(runtime.view(&input), Err(ViewError::Unavailable));
+        assert_eq!(
+            runtime.view(&input, input.target()),
+            Err(ViewError::Unavailable)
+        );
         assert_eq!(runtime.current_proofs.lock().unwrap().len(), 1);
 
         let matching = Anddress::new(
@@ -1198,7 +1373,10 @@ mod tests {
             1,
         )
         .unwrap();
-        assert_eq!(runtime.view(&matching), Err(ViewError::Unavailable));
+        assert_eq!(
+            runtime.view(&matching, matching.target()),
+            Err(ViewError::Unavailable)
+        );
         assert!(runtime.current_proofs.lock().unwrap().is_empty());
 
         std::fs::write(fixture.path().join("short.txt"), b"on").unwrap();
@@ -1217,7 +1395,10 @@ mod tests {
                 CurrentProof::new("short.txt", "c".repeat(64), 3).unwrap(),
             ])
             .unwrap();
-        assert_eq!(runtime.view(&short), Err(ViewError::Unavailable));
+        assert_eq!(
+            runtime.view(&short, short.target()),
+            Err(ViewError::Unavailable)
+        );
         assert!(runtime.current_proofs.lock().unwrap().is_empty());
 
         let unicode = "aéz".as_bytes();
@@ -1239,7 +1420,10 @@ mod tests {
                     .unwrap(),
             ])
             .unwrap();
-        assert_eq!(runtime.view(&cut), Err(ViewError::Unavailable));
+        assert_eq!(
+            runtime.view(&cut, cut.target()),
+            Err(ViewError::Unavailable)
+        );
         assert_eq!(runtime.current_proofs.lock().unwrap().len(), 1);
 
         std::fs::write(fixture.path().join("resource.txt"), b"").unwrap();
@@ -1258,7 +1442,10 @@ mod tests {
                 CurrentProof::new("resource.txt", "d".repeat(64), usize::MAX).unwrap(),
             ])
             .unwrap();
-        assert_eq!(runtime.view(&resource), Err(ViewError::Unavailable));
+        assert_eq!(
+            runtime.view(&resource, resource.target()),
+            Err(ViewError::Unavailable)
+        );
         let proofs = runtime.current_proofs.lock().unwrap();
         assert_eq!(proofs.len(), 1);
         assert_eq!(proofs[0].logical_path, "cut.txt");
@@ -1284,12 +1471,13 @@ mod tests {
         };
 
         let AnchoredObservation { current, outcome } =
-            observe_anchored(&mut reader, &inputs, Some(0)).unwrap();
+            observe_anchored(&mut reader, &inputs, Some((0, inputs[0].target()))).unwrap();
 
         assert_eq!(current, [true]);
         assert_eq!(
             outcome,
             Some(ViewOutcome::Line {
+                anddress: inputs[0].clone(),
                 content: "β".to_owned(),
                 terminator: LineTerminator::Cr,
                 file: address(bytes, AnddressTarget::File, 0, bytes.len()),
@@ -1322,7 +1510,7 @@ mod tests {
                 ended: false,
             };
             assert!(
-                matches!(observe_anchored(&mut reader, &inputs, Some(0)), Err(error) if same_error(error, expected))
+                matches!(observe_anchored(&mut reader, &inputs, Some((0, inputs[0].target()))), Err(error) if same_error(error, expected))
             );
         }
     }

@@ -472,9 +472,9 @@ publication changed only the official distribution boundary to `0.2.2`.
 
 ## In-progress 0.2.3 Patch Box Adapter direction
 
-Gates 1 and 2 keep one-shot Search, Session Search, stored Search values, Check,
-Pick operands, and public Rust callers coherent through one native occurrence
-carrier. Human Search now has one Search-specific writer with current Line
+Gates 1 through 3 keep one-shot Search, Session Search, stored Search values,
+Check, Pick operands, public Rust callers, and single View consumers coherent
+through the native occurrence carrier and projection-aware View result. Human Search now has one Search-specific writer with current Line
 positions; Pick retains the separate raw-Anddress address-row writer and its
 byte-range output. The streaming machine path is the exact
 `bw.cli.search.v2` result-item projection above. It is a hard source-level
@@ -483,9 +483,12 @@ Published `0.2.2` `bw.cli.search.v1` remains immutable release evidence.
 Runtime carries the descriptive metadata out of the same Search observation;
 the Adapter never reopens Workspace Source to derive it.
 
-Future View syntax and output must express one caller-selected upward
-projection. Line may request Line, Paragraph, or File; Paragraph may request
-Paragraph or File; File may request File. Batch uses one projection for an
+Native single View now accepts one caller-selected existing target kind. Line
+may request Line, Paragraph, or File; Paragraph may request Paragraph or File;
+File may request File. Existing one-shot and Session `view anddress`, anchored
+View, and one-shot Edit pass the input kind as self projection, so their syntax
+and human/raw/`bw.cli.view.v1` bytes are unchanged. No Adapter syntax exposes
+upward projection in Gate 3. A later batch uses one projection for an
 ordered collection, retains duplicates, and publishes no partial output. It
 must reuse one observation for all inputs from one source instead of invoking
 the existing single command repeatedly. Exact request and output spellings are

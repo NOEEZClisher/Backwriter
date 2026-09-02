@@ -1,6 +1,6 @@
 # Backwriter 0.2.3 Patch Box
 
-Status: Gates 1–2 complete. Gates 3–8 are pending and require their own scoped
+Status: Gates 1–3 complete. Gates 4–8 are pending and require their own scoped
 authorization.
 
 This tracker records order, evidence, and unresolved implementation choices.
@@ -62,10 +62,10 @@ or Edit inputs.
 
 | Existing surface | Direct production consumers | Unique evidence and constraint |
 | --- | --- | --- |
-| `WorkspaceRuntime::view(&Anddress)` | Public Rust callers, one-shot View, Session View, and one-shot Edit's private terminator lookup | Ordinary View owns exact-state validation and one accepted current observation; it remains supported rather than becoming an internal helper |
-| `WorkspaceRuntime::view_anchored(&Anchedress)` | Session anchored View and public Anchor callers | It shares current projection machinery but retains Anchor liveness, fail-closure, and Host-proof semantics |
-| `ViewOutcome` | Human/raw/JSON writers, Session bindings, `DataStore`, ordinary and anchored callers | Line already carries File and optional Paragraph Anddresses; Paragraph carries File. Those relations are reuse evidence, not yet an explicit requested projection |
-| Runtime View target projection | Ordinary, trusted, and anchored paths capture exact caller ranges and related Paragraph boundaries | Gate 3 must expose one explicit projection without a finder or generic graph. Gate 4 must group by source instead of looping over the public single call |
+| `WorkspaceRuntime::view(&Anddress, AnddressTarget)` | Public Rust callers, one-shot View, Session View, and one-shot Edit's private terminator lookup | Ordinary View owns exact-state validation and one accepted current observation; existing Adapter consumers request self projection |
+| `WorkspaceRuntime::view_anchored(&Anchedress, AnddressTarget)` | Session anchored View and public Anchor callers | It shares the same projection machinery while retaining Anchor liveness, fail-closure, and Host-proof semantics |
+| `ViewOutcome` | Human/raw/JSON writers, Session bindings, `DataStore`, ordinary and anchored callers | Target variants now own their projected current Anddress and exact Content; Line retains File and optional Paragraph relations, Paragraph retains File, and `RelationAbsent` represents only a missing Line-to-Paragraph relation |
+| Runtime View target projection | Ordinary, trusted, and anchored paths capture the requested self-or-ancestor target and related Paragraph boundaries | Gate 3 exposes one explicit projection without a finder or generic graph. Gate 4 must group by source instead of looping over the public single call |
 
 The only allowed relation matrix is Line to Line, Paragraph, or File;
 Paragraph to Paragraph or File; and File to File. Downward projection, implicit
@@ -113,18 +113,27 @@ observation objects, post-Search, and speculative compatibility layers.
   result collection, source reopen, extra read, second hash pass, cache, or
   retained observation was added.
 
-## Gate 3 — single View projection — pending
+## Gate 3 — single View projection — complete
 
-- Close the smallest public Core/Runtime request and result needed to select
-  one allowed projection from one caller-held v4 Anddress.
-- Reuse current ordinary/trusted/anchored source-state validation and target
-  projection. Return exact target Content and the projected current v4
-  Anddress from the same accepted observation.
-- Reject downward or unrelated projections before source I/O when the relation
-  is invalid. Preserve UnsupportedVersion, InvalidInput, Unavailable, Host
-  proof, Anchor, and one-read meanings without Search, relocation, or a graph.
-- Keep the existing single View form only if it remains an actual consumer;
-  contract it into the new request rather than build a parallel executor.
+- `WorkspaceRuntime::view` and `view_anchored` accept the existing
+  `AnddressTarget` as the requested projection. No request DTO, relation enum,
+  old-signature alias, facade, or second executor exists.
+- The exact allowed matrix is Line-to-Line/Paragraph/File,
+  Paragraph-to-Paragraph/File, and File-to-File. Source-less v4 validation
+  precedes relation validation; every downward request returns `InvalidInput`
+  before source I/O.
+- File, Paragraph, and Line outcomes own their projected current v4 Anddress
+  and exact Content from the accepted observation. Existing related File and
+  optional Paragraph addresses remain. A separator or raw-valid nonstructural
+  Line projected to Paragraph returns the normal `RelationAbsent` outcome.
+- One generalized `DirectViewProjection`, trusted fixed-scratch range and
+  Paragraph-boundary path, and `finish_outcome` serve ordinary, matching Host,
+  and anchored execution. `TargetProjection` remains only Anchor structural
+  validation and does not reject ordinary raw-valid ranges.
+- One-shot and Session View, anchored Session View, one-shot Edit, result
+  binding, and Data continue to consume self projection. Their grammar and
+  human/raw/JSON bytes are unchanged. Gate 3 adds no batch loop, CLI projection
+  syntax, Search, relocation, cache, retry, state, dependency, or v4 change.
 
 ## Gate 4 — ordered batch View — pending
 

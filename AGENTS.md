@@ -81,8 +81,8 @@ Edit/Position/Apply is the exact low-level primitive, Session `let ... = edit
 one-shot Anddress-first Edit is the canonical Replace contraction. None is
 internal, deprecated, renamed, aliased, or wrapped by that separation.
 
-`0.2.3` Patch Box Gates 1 and 2 are complete in source. Gate 1 closes authority
-and the consumer matrix. Gate 2 carries each Search result as one
+`0.2.3` Patch Box Gates 1 through 3 are complete in source. Gate 1 closes
+authority and the consumer matrix. Gate 2 carries each Search result as one
 `SearchOccurrence` containing its exact v4 Anddress and same-observation
 descriptive position: a one-based Line number, a one-based inclusive Paragraph
 Line range, or no position for File. Check preserves this metadata while its
@@ -91,9 +91,14 @@ carrier, while Pick continues to consume and return raw Anddresses. Human
 Search displays current Line positions, and machine Search hard-cuts to the
 Adapter-only `bw.cli.search.v2` occurrence projection; there is no production
 v1 branch. None of that metadata is v4 identity, currentness evidence, a
-selector, history, relocation, or a second source read. Cargo, CLI version,
-artifacts, and publication remain closed `0.2.2`. Later gates may add only the
-authorized upward View projections and one-shot Replace receipt. The ordered
+selector, history, relocation, or a second source read. Gate 3 hard-cuts native
+single View to one explicit self-or-ancestor target projection and returns the
+projected current v4 Anddress with exact Content from the same accepted
+observation. A Line without a containing Paragraph returns the normal
+`RelationAbsent` outcome. Existing CLI View consumers request self projection,
+so their grammar and output bytes are unchanged. Cargo, CLI version, artifacts,
+and publication remain closed `0.2.2`. Later gates may add only ordered batch
+View and the one-shot Replace receipt. The ordered
 gates and consumer evidence are tracked in
 [Backwriter 0.2.3 Patch Box](docs/tasks/2026-09-03-backwriter-0.2.3-patch-box.md).
 
@@ -303,16 +308,22 @@ are preserved evidence, never current authority.
   be caller input, but Pick does not interpret SearchOutcome, text, preview, or
   adapter payload.
 - **View V1** has an implementation. Its Runtime seam is
-  `WorkspaceRuntime::view(&Anddress) -> Result<ViewOutcome, ViewError>`; the
-  input is exactly one Anddress, without a wrapper, collection, range, or
-  selector. It has no query, ranking, mutation, display, adapter payload, or
+  `WorkspaceRuntime::view(&Anddress, AnddressTarget) -> Result<ViewOutcome,
+  ViewError>`; the input is exactly one Anddress plus one requested existing
+  target kind, without a wrapper, collection, arbitrary range, or selector.
+  Line may project to Line, Paragraph, or File; Paragraph to Paragraph or File;
+  File only to File. Downward requests are `InvalidInput` before source I/O.
+  A successful target outcome contains its projected current v4 Anddress and
+  exact Content; Line-to-Paragraph without a containing current Paragraph is
+  the normal `ViewOutcome::RelationAbsent` result. It has no query, ranking,
+  mutation, display, adapter payload, or
   retained source/result/relation state, registry, cache, history, snapshot, or
   lease. Pick may supply the input, but View neither calls Pick nor proves Pick
   provenance; explicit selection is the caller's responsibility.
 - View's admitted no-follow one-read access checks v4 coordinate/path,
   source-state hash/length, and exact range, constructing related results from
   the same read.
-- Plural input, ranges, descendants, and partial behavior are post-V1 owner
+- Plural input, arbitrary ranges, descendants, and partial behavior are post-V1 owner
   decisions. View does not classify input state; Check does not change View.
 - **Check V1** has closed semantic/API/type/report authority and a stateless
   result/history contract. Default execution remains the `0.2.0` observation
@@ -336,7 +347,7 @@ are preserved evidence, never current authority.
 
 - The implemented Runtime execution seams are
   `WorkspaceRuntime::search(&SearchRequest)`,
-  `WorkspaceRuntime::view(&Anddress)`, and
+  `WorkspaceRuntime::view(&Anddress, AnddressTarget)`, and
   `WorkspaceRuntime::apply(&mut self, &Edit)`,
   `WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
   `check_pick(PickOutcome)`.

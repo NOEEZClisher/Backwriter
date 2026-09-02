@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.3 Patch Box Gates 1–2
+## 0.2.3 Patch Box Gates 1–3
 
 Gate 1 records the direct Search, View, Edit, Check, Data, Session, Pick, and
 writer consumers. Gate 2 implements only the Search observation carrier and
@@ -37,6 +37,29 @@ official 44-file public tree, and services remain unchanged.
 The complete offline/locked GNU-host suite passes 245 tests: the 243 inherited
 controls plus one Runtime position/framing boundary test and one public
 occurrence validation/ownership test.
+
+Gate 3 changes the native single View seams to accept one existing
+`AnddressTarget` projection. Public regressions cover all six allowed
+Line-to-Line/Paragraph/File, Paragraph-to-Paragraph/File, and File-to-File
+relations; projected v4 kind/range/hash/length and exact Content; related File
+and optional Paragraph addresses; and `RelationAbsent` for separator and
+raw-valid nonstructural Line-to-Paragraph requests. File-to-Paragraph/Line and
+Paragraph-to-Line return `InvalidInput` before a missing source can be opened.
+
+The direct one-forward-observation path, matching Host trusted range path, and
+anchored path produce equal results. Scalar-aligned raw ranges exercise every
+allowed projection through direct/trusted parity. CR, LF, CRLF, bare CR,
+no-EOL, Unicode, separator relations, and 8,191/8,192/8,193-byte boundaries
+cover exact upward Content. Existing stale/hash/length/range, workspace/path,
+admission, no-follow, UTF-8/NUL, resource, proof invalidation, and Anchor
+fail-closure controls remain. CLI one-shot/Session/anchored View and one-shot
+Edit pass self projection, while Data retains the extended `ViewOutcome`; all
+existing human/raw/JSON bytes and grammar remain unchanged. Structural checks
+retain one `finish_outcome`, no `view_projected` facade, no request DTO, and no
+second View parser or executor.
+
+The complete offline/locked GNU-host suite now passes 247 tests: the 245 Gate 2
+controls plus two public Gate 3 projection and pre-I/O validation regressions.
 
 ## 0.2.2 Anddress-first editing Gates 1–6
 

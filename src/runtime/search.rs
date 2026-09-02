@@ -1556,10 +1556,13 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["other.txt"]
         );
-        assert!(host.view_anchored(&note_handle).is_err());
+        assert!(
+            host.view_anchored(&note_handle, AnddressTarget::File)
+                .is_err()
+        );
         assert!(matches!(
-            host.view_anchored(&other_handle),
-            Ok(ViewOutcome::File { text }) if text == "two\n"
+            host.view_anchored(&other_handle, AnddressTarget::File),
+            Ok(ViewOutcome::File { text, .. }) if text == "two\n"
         ));
 
         exact_file(&host, "note.txt");

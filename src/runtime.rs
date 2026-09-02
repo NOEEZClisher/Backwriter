@@ -21,7 +21,7 @@ use std::path::Component;
 use thiserror::Error;
 
 use crate::backwriter::anchor::{Anchedress, AnchorError, AnchorOutcome};
-use crate::backwriter::anddress::Anddress;
+use crate::backwriter::anddress::{Anddress, AnddressTarget};
 use crate::backwriter::apply::ApplyError;
 use crate::backwriter::check::{CheckError, CheckOutcome};
 use crate::backwriter::edit::Edit;
@@ -324,9 +324,13 @@ impl WorkspaceRuntime {
         check::check_pick(self, input)
     }
 
-    /// Reconstructs one current admitted source target without retaining state.
-    pub fn view(&self, anddress: &Anddress) -> Result<ViewOutcome, ViewError> {
-        view::execute(self, anddress)
+    /// Projects one caller-provided target upward from current admitted source.
+    pub fn view(
+        &self,
+        anddress: &Anddress,
+        projection: AnddressTarget,
+    ) -> Result<ViewOutcome, ViewError> {
+        view::execute(self, anddress, projection)
     }
 
     /// Applies one caller-owned Edit to one current admitted logical source.
@@ -338,8 +342,12 @@ impl WorkspaceRuntime {
         anchor::anchor(self, anddress)
     }
 
-    pub fn view_anchored(&mut self, anchedress: &Anchedress) -> Result<ViewOutcome, ViewError> {
-        anchor::view_anchored(self, anchedress)
+    pub fn view_anchored(
+        &mut self,
+        anchedress: &Anchedress,
+        projection: AnddressTarget,
+    ) -> Result<ViewOutcome, ViewError> {
+        anchor::view_anchored(self, anchedress, projection)
     }
 
     pub fn invalidate_anchored_source(&mut self, path: &str) -> Result<(), AnchorError> {

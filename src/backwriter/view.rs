@@ -1,25 +1,30 @@
-//! Exact current lookup for one caller-provided Anddress.
+//! Exact current self-or-ancestor projection for one caller-provided Anddress.
 
 use thiserror::Error;
 
-use crate::backwriter::anddress::{Anddress, AnddressError, LineTerminator};
+use crate::backwriter::anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ViewOutcome {
     File {
+        anddress: Anddress,
         text: String,
     },
     Paragraph {
+        anddress: Anddress,
         text: String,
         file: Anddress,
     },
     Line {
+        anddress: Anddress,
         content: String,
         terminator: LineTerminator,
         file: Anddress,
         paragraph: Option<Anddress>,
     },
+    /// The requested Line-to-Paragraph relation does not exist.
+    RelationAbsent,
 }
 #[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
 pub enum ViewError {
@@ -31,8 +36,34 @@ pub enum ViewError {
     Unavailable,
 }
 
-pub(crate) fn validate_input(anddress: &Anddress) -> Result<(), ViewError> {
-    anddress.validate().map_err(map_input_error)
+pub(crate) fn validate_request(
+    anddress: &Anddress,
+    projection: AnddressTarget,
+) -> Result<(), ViewError> {
+    anddress.validate().map_err(map_input_error)?;
+    validate_projection(anddress.target(), projection)
+}
+
+pub(crate) fn validate_projection(
+    input: AnddressTarget,
+    projection: AnddressTarget,
+) -> Result<(), ViewError> {
+    if matches!(
+        (input, projection),
+        (AnddressTarget::File, AnddressTarget::File)
+            | (
+                AnddressTarget::Paragraph,
+                AnddressTarget::Paragraph | AnddressTarget::File
+            )
+            | (
+                AnddressTarget::Line,
+                AnddressTarget::Line | AnddressTarget::Paragraph | AnddressTarget::File
+            )
+    ) {
+        Ok(())
+    } else {
+        Err(ViewError::InvalidInput)
+    }
 }
 
 fn map_input_error(error: AnddressError) -> ViewError {

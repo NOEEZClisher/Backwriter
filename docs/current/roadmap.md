@@ -4,10 +4,10 @@
 
 The [eight-gate Patch Box tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
 orders an AI-facing information-surface patch without reopening the engine,
-v4 identity, currentness, or the closed `0.2.2` release. Gates 1 and 2 close
-authority, the consumer matrix, and same-observation Search position metadata.
-The remaining gates add, in order, single upward View projection, ordered
-all-or-nothing batch View with per-source observation reuse, one-shot Edit
+v4 identity, currentness, or the closed `0.2.2` release. Gates 1 through 3 close
+authority, the consumer matrix, same-observation Search position metadata, and
+native single upward View projection. The remaining gates add, in order,
+ordered all-or-nothing batch View with per-source observation reuse, one-shot Edit
 receipts and fresh current addresses, Adapter output plus a conditional stdin
 decision, an integrated Dummy E2E/readiness gate, and separately authorized
 artifact/publication work.
@@ -27,6 +27,17 @@ published `0.2.2` v1 schema remains immutable release evidence. One native
 coherent through public Rust, Check, Data, and Session; Pick deliberately
 projects only the contained raw Anddresses and keeps its existing meaning and
 human byte-range rows.
+
+Gate 3 hard-cuts `WorkspaceRuntime::view` and `view_anchored` to one explicit
+existing `AnddressTarget` projection argument. The allowed matrix is
+Line-to-Line/Paragraph/File, Paragraph-to-Paragraph/File, and File-to-File.
+Every target result owns its projected current v4 Anddress and exact Content
+from the same accepted observation; Line-to-Paragraph without a containing
+current Paragraph returns `RelationAbsent`. Downward requests fail as
+`InvalidInput` before source I/O. Existing CLI and Session View, one-shot Edit,
+and Data consumers retain self projection and byte-identical output. There is
+no request DTO, second executor, finder, graph, cache, retry, or compatibility
+signature.
 
 ## Completed: 0.2.2 Anddress-first editing and distribution
 

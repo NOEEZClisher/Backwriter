@@ -219,16 +219,16 @@ fn host_apply_reflects_file_paragraph_and_line_from_the_installed_after_identity
         Some(after_file.clone())
     );
     assert!(matches!(
-        workspace.view_anchored(&file_handle),
-        Ok(ViewOutcome::File { text }) if text.as_bytes() == after
+        workspace.view_anchored(&file_handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text.as_bytes() == after
     ));
     assert!(matches!(
-        workspace.view_anchored(&paragraph_handle),
-        Ok(ViewOutcome::Paragraph { text, file })
+        workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph),
+        Ok(ViewOutcome::Paragraph { text, file, .. })
             if text == "one\n" && file == after_file
     ));
     assert!(matches!(
-        workspace.view_anchored(&line_handle),
+        workspace.view_anchored(&line_handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, file, paragraph: Some(related), .. })
             if content == "one" && file == after_file && related == after_paragraph
     ));
@@ -255,7 +255,7 @@ fn anchor_is_runtime_local_and_drop_allows_a_fresh_handle() {
         Ok(AnchorOutcome::AlreadyLive)
     ));
     assert!(matches!(
-        workspace.view_anchored(&handle),
+        workspace.view_anchored(&handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { .. })
     ));
     drop(handle);
@@ -297,10 +297,10 @@ fn raw_anchor_tracks_large_file_and_paragraph_without_view_capture() {
         Ok(AnchorOutcome::AlreadyLive)
     ));
     assert!(
-        matches!(workspace.view_anchored(&file_handle), Ok(ViewOutcome::File { text }) if text.len() == 40_015)
+        matches!(workspace.view_anchored(&file_handle, PublicAnddressTarget::File), Ok(ViewOutcome::File { text, .. }) if text.len() == 40_015)
     );
     assert!(
-        matches!(workspace.view_anchored(&paragraph_handle), Ok(ViewOutcome::Paragraph { text, .. }) if text.len() == 20_010)
+        matches!(workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph), Ok(ViewOutcome::Paragraph { text, .. }) if text.len() == 20_010)
     );
 }
 
@@ -371,12 +371,12 @@ fn invalidation_is_path_exact_and_does_not_read_the_source() {
     );
     fs::rename(&parked_note, fixture.path().join("note.txt")).unwrap();
     assert!(matches!(
-        workspace.view_anchored(&note_handle),
-        Ok(ViewOutcome::File { text }) if text == "one\n"
+        workspace.view_anchored(&note_handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text == "one\n"
     ));
     assert_eq!(workspace.invalidate_anchored_source("note.txt"), Ok(()));
     assert_eq!(
-        workspace.view_anchored(&note_handle),
+        workspace.view_anchored(&note_handle, PublicAnddressTarget::File),
         Err(ViewError::Unavailable)
     );
 
@@ -414,8 +414,8 @@ fn invalidation_is_path_exact_and_does_not_read_the_source() {
     );
     fs::rename(&parked_admitted, fixture.path().join("admitted/source.txt")).unwrap();
     assert!(matches!(
-        named.view_anchored(&admitted_handle),
-        Ok(ViewOutcome::File { text }) if text == "admitted\n"
+        named.view_anchored(&admitted_handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text == "admitted\n"
     ));
 }
 
@@ -448,10 +448,10 @@ fn stale_anchor_input_preserves_current_binding_and_foreign_handle_is_unavailabl
         Err(AnchorError::Unavailable)
     ));
     assert!(
-        matches!(first_runtime.view_anchored(&handle), Ok(ViewOutcome::Line { content, .. }) if content == "one")
+        matches!(first_runtime.view_anchored(&handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "one")
     );
     assert_eq!(
-        second_runtime.view_anchored(&handle),
+        second_runtime.view_anchored(&handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
 }
@@ -486,7 +486,7 @@ fn current_anchor_input_fail_closes_a_stale_same_path_binding() {
         Err(AnchorError::Unavailable)
     ));
     assert_eq!(
-        workspace.view_anchored(&handle),
+        workspace.view_anchored(&handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
 }
@@ -526,7 +526,7 @@ fn apply_reflects_moved_contained_bindings_without_anchoring_copies() {
         })
         .unwrap();
     assert!(
-        matches!(workspace.view_anchored(&contained), Ok(ViewOutcome::Line { content, .. }) if content == "one")
+        matches!(workspace.view_anchored(&contained, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "one")
     );
     drop(contained);
 
@@ -556,7 +556,7 @@ fn apply_reflects_moved_contained_bindings_without_anchoring_copies() {
         })
         .unwrap();
     assert!(
-        matches!(workspace.view_anchored(&original_handle), Ok(ViewOutcome::Line { content, .. }) if content == "b")
+        matches!(workspace.view_anchored(&original_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "b")
     );
     let copied = current(
         &workspace,
@@ -601,7 +601,7 @@ fn apply_replacement_uses_only_the_source_target_for_containing_provenance() {
         })
         .unwrap();
     assert!(matches!(
-        workspace.view_anchored(&paragraph_handle),
+        workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph),
         Ok(ViewOutcome::Paragraph { text, .. }) if text == "a\nB\n"
     ));
 
@@ -619,7 +619,7 @@ fn apply_replacement_uses_only_the_source_target_for_containing_provenance() {
         })
         .unwrap();
     assert_eq!(
-        workspace.view_anchored(&paragraph_handle),
+        workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph),
         Err(ViewError::Unavailable)
     );
 
@@ -651,7 +651,7 @@ fn apply_replacement_uses_only_the_source_target_for_containing_provenance() {
         })
         .unwrap();
     assert!(matches!(
-        workspace.view_anchored(&handle),
+        workspace.view_anchored(&handle, PublicAnddressTarget::Paragraph),
         Ok(ViewOutcome::Paragraph { text, .. }) if text == "new\n"
     ));
 }
@@ -702,11 +702,11 @@ fn paragraph_source_membership_keeps_outside_lines_independent() {
         "A\n\nb\n"
     );
     assert_eq!(
-        workspace.view_anchored(&selected_handle),
+        workspace.view_anchored(&selected_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
     assert!(matches!(
-        workspace.view_anchored(&outside_handle),
+        workspace.view_anchored(&outside_handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, .. }) if content == "b"
     ));
     assert!(matches!(
@@ -743,7 +743,7 @@ fn paragraph_source_membership_keeps_outside_lines_independent() {
         "\nb\n"
     );
     assert!(matches!(
-        workspace.view_anchored(&outside_handle),
+        workspace.view_anchored(&outside_handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, .. }) if content == "b"
     ));
     assert!(matches!(
@@ -787,7 +787,7 @@ fn copy_source_member_rebinds_a_joined_terminal_line_exactly() {
         "a\ncc"
     );
     assert!(matches!(
-        workspace.view_anchored(&handle),
+        workspace.view_anchored(&handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, terminator, .. })
             if content == "cc" && terminator == backwriter::backwriter::anddress::LineTerminator::None
     ));
@@ -842,7 +842,7 @@ fn copy_source_member_rebinds_across_after_projector_chunk_boundaries() {
             expected
         );
         assert!(matches!(
-            workspace.view_anchored(&handle),
+            workspace.view_anchored(&handle, PublicAnddressTarget::Line),
             Ok(ViewOutcome::Line { content, terminator, .. })
                 if content == expected && terminator == backwriter::backwriter::anddress::LineTerminator::None
         ));
@@ -879,8 +879,8 @@ fn apply_file_anchor_replace_preserves_the_handle_without_a_relation_pass() {
         "after\n"
     );
     assert!(matches!(
-        workspace.view_anchored(&handle),
-        Ok(ViewOutcome::File { text }) if text == "after\n"
+        workspace.view_anchored(&handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text == "after\n"
     ));
     assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
         !entry
@@ -935,15 +935,15 @@ fn file_replace_preserves_only_the_file_anchor_without_relation_scan() {
         "one\nthree\n"
     );
     assert!(matches!(
-        workspace.view_anchored(&file_handle),
-        Ok(ViewOutcome::File { text }) if text == "one\nthree\n"
+        workspace.view_anchored(&file_handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text == "one\nthree\n"
     ));
     assert_eq!(
-        workspace.view_anchored(&paragraph_handle),
+        workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph),
         Err(ViewError::Unavailable)
     );
     assert_eq!(
-        workspace.view_anchored(&line_handle),
+        workspace.view_anchored(&line_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
     assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
@@ -989,11 +989,11 @@ fn apply_position_is_geometry_and_does_not_grant_provenance() {
         })
         .unwrap();
     assert_eq!(
-        workspace.view_anchored(&paragraph_handle),
+        workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph),
         Err(ViewError::Unavailable)
     );
     assert!(matches!(
-        workspace.view_anchored(&b_handle),
+        workspace.view_anchored(&b_handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, .. }) if content == "b"
     ));
 
@@ -1030,11 +1030,11 @@ fn apply_position_is_geometry_and_does_not_grant_provenance() {
         })
         .unwrap();
     assert_eq!(
-        workspace.view_anchored(&b_handle),
+        workspace.view_anchored(&b_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
     assert!(matches!(
-        workspace.view_anchored(&c_handle),
+        workspace.view_anchored(&c_handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, .. }) if content == "c"
     ));
 }
@@ -1070,7 +1070,7 @@ fn apply_move_and_copy_keep_only_the_normalized_source_relations() {
         })
         .unwrap();
     assert!(matches!(
-        workspace.view_anchored(&b_handle),
+        workspace.view_anchored(&b_handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, .. }) if content == "b"
     ));
 
@@ -1113,10 +1113,10 @@ fn apply_move_and_copy_keep_only_the_normalized_source_relations() {
         })
         .unwrap();
     assert!(
-        matches!(workspace.view_anchored(&paragraph_handle), Ok(ViewOutcome::Paragraph { text, .. }) if text == "c\n")
+        matches!(workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph), Ok(ViewOutcome::Paragraph { text, .. }) if text == "c\n")
     );
     assert!(matches!(
-        workspace.view_anchored(&line_handle),
+        workspace.view_anchored(&line_handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, .. }) if content == "c"
     ));
 }
@@ -1174,15 +1174,15 @@ fn same_kind_line_relations_preserve_source_and_outside_anchors() {
         "b\na\nb\nc\n"
     );
     assert!(matches!(
-        workspace.view_anchored(&file_handle),
-        Ok(ViewOutcome::File { text }) if text == "b\na\nb\nc\n"
+        workspace.view_anchored(&file_handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text == "b\na\nb\nc\n"
     ));
     assert!(matches!(
-        workspace.view_anchored(&source_handle),
+        workspace.view_anchored(&source_handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, .. }) if content == "b"
     ));
     assert!(matches!(
-        workspace.view_anchored(&outside_handle),
+        workspace.view_anchored(&outside_handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, .. }) if content == "c"
     ));
     let copied = current(
@@ -1250,11 +1250,11 @@ fn same_kind_paragraph_relations_keep_copy_and_delete_dispositions() {
         "a\n\nb\na\n\nc\n"
     );
     assert!(matches!(
-        workspace.view_anchored(&source_handle),
+        workspace.view_anchored(&source_handle, PublicAnddressTarget::Paragraph),
         Ok(ViewOutcome::Paragraph { text, .. }) if text == "a\n"
     ));
     assert!(matches!(
-        workspace.view_anchored(&outside_handle),
+        workspace.view_anchored(&outside_handle, PublicAnddressTarget::Paragraph),
         Ok(ViewOutcome::Paragraph { text, .. }) if text == "c\n"
     ));
 
@@ -1290,11 +1290,11 @@ fn same_kind_paragraph_relations_keep_copy_and_delete_dispositions() {
         "\nb\n"
     );
     assert_eq!(
-        workspace.view_anchored(&target_handle),
+        workspace.view_anchored(&target_handle, PublicAnddressTarget::Paragraph),
         Err(ViewError::Unavailable)
     );
     assert!(matches!(
-        workspace.view_anchored(&outside_handle),
+        workspace.view_anchored(&outside_handle, PublicAnddressTarget::Paragraph),
         Ok(ViewOutcome::Paragraph { text, .. }) if text == "b\n"
     ));
     assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
@@ -1336,7 +1336,7 @@ fn apply_rebinds_outside_targets_and_removes_absorbed_or_split_candidates() {
         })
         .unwrap();
     assert!(
-        matches!(workspace.view_anchored(&outside_handle), Ok(ViewOutcome::Line { content, .. }) if content == "c")
+        matches!(workspace.view_anchored(&outside_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "c")
     );
 
     let fixture = tempdir().unwrap();
@@ -1366,7 +1366,7 @@ fn apply_rebinds_outside_targets_and_removes_absorbed_or_split_candidates() {
         })
         .unwrap();
     assert_eq!(
-        workspace.view_anchored(&nested_handle),
+        workspace.view_anchored(&nested_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
 
@@ -1397,7 +1397,7 @@ fn apply_rebinds_outside_targets_and_removes_absorbed_or_split_candidates() {
         })
         .unwrap();
     assert_eq!(
-        workspace.view_anchored(&container_handle),
+        workspace.view_anchored(&container_handle, PublicAnddressTarget::Paragraph),
         Err(ViewError::Unavailable)
     );
 }
@@ -1430,7 +1430,7 @@ fn apply_noop_leaves_live_anchor_continuity_unchanged() {
         "one\nb\n"
     );
     assert!(
-        matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::Line { content, .. }) if content == "b")
+        matches!(workspace.view_anchored(&handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "b")
     );
 
     let fixture = tempdir().unwrap();
@@ -1479,13 +1479,13 @@ fn apply_noop_leaves_live_anchor_continuity_unchanged() {
         source
     );
     assert!(
-        matches!(workspace.view_anchored(&file_handle), Ok(ViewOutcome::File { text }) if text == source)
+        matches!(workspace.view_anchored(&file_handle, PublicAnddressTarget::File), Ok(ViewOutcome::File { text, .. }) if text == source)
     );
     assert!(
-        matches!(workspace.view_anchored(&first_handle), Ok(ViewOutcome::Line { content, .. }) if content.len() == 8_191)
+        matches!(workspace.view_anchored(&first_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content.len() == 8_191)
     );
     assert!(
-        matches!(workspace.view_anchored(&second_handle), Ok(ViewOutcome::Line { content, .. }) if content.len() == 8_191)
+        matches!(workspace.view_anchored(&second_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content.len() == 8_191)
     );
     assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
         !entry
@@ -1542,7 +1542,7 @@ fn zero_range_apply_noops_preserve_live_anchor_continuity() {
         workspace.apply(&edit).unwrap();
         assert_eq!(fs::read(fixture.path().join("note.txt")).unwrap(), source);
         assert!(
-            matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::Line { content, .. }) if content == "b")
+            matches!(workspace.view_anchored(&handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "b")
         );
     }
 }
@@ -1581,11 +1581,11 @@ fn empty_insert_preserves_live_file_and_line_anchors_after_validation() {
         "one\nb\n"
     );
     assert!(matches!(
-        workspace.view_anchored(&file_handle),
-        Ok(ViewOutcome::File { text }) if text == "one\nb\n"
+        workspace.view_anchored(&file_handle, PublicAnddressTarget::File),
+        Ok(ViewOutcome::File { text, .. }) if text == "one\nb\n"
     ));
     assert!(matches!(
-        workspace.view_anchored(&line_handle),
+        workspace.view_anchored(&line_handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, .. }) if content == "b"
     ));
     assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
@@ -1629,7 +1629,7 @@ fn empty_insert_keeps_stale_operand_and_binding_fail_closure() {
         Err(ApplyError::Unavailable)
     );
     assert_eq!(
-        operand_workspace.view_anchored(&live_handle),
+        operand_workspace.view_anchored(&live_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
 
@@ -1661,7 +1661,7 @@ fn empty_insert_keeps_stale_operand_and_binding_fail_closure() {
         Err(ApplyError::Unavailable)
     );
     assert_eq!(
-        binding_workspace.view_anchored(&file_handle),
+        binding_workspace.view_anchored(&file_handle, PublicAnddressTarget::File),
         Err(ViewError::Unavailable)
     );
 }
@@ -1693,7 +1693,7 @@ fn apply_paragraph_boundary_noop_preserves_anchor_provenance() {
         "one\n \t\nb\n"
     );
     assert!(
-        matches!(workspace.view_anchored(&handle), Ok(ViewOutcome::Paragraph { text, .. }) if text == "b\n")
+        matches!(workspace.view_anchored(&handle, PublicAnddressTarget::Paragraph), Ok(ViewOutcome::Paragraph { text, .. }) if text == "b\n")
     );
 }
 
@@ -1732,11 +1732,11 @@ fn apply_removes_colliding_line_rebindings_after_a_join() {
         })
         .unwrap();
     assert_eq!(
-        workspace.view_anchored(&first_handle),
+        workspace.view_anchored(&first_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
     assert_eq!(
-        workspace.view_anchored(&second_handle),
+        workspace.view_anchored(&second_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
 }
@@ -1765,9 +1765,12 @@ fn raw_view_never_changes_live_anchor_continuity() {
         },
     );
 
-    assert_eq!(workspace.view(&stale), Err(ViewError::Unavailable));
+    assert_eq!(
+        workspace.view(&stale, stale.target()),
+        Err(ViewError::Unavailable)
+    );
     assert!(matches!(
-        workspace.view_anchored(&handle),
+        workspace.view_anchored(&handle, PublicAnddressTarget::Line),
         Ok(ViewOutcome::Line { content, .. }) if content == "one"
     ));
 }
@@ -1823,15 +1826,15 @@ fn anchored_view_checks_only_the_selected_binding_before_a_mismatch_fail_closes_
     fs::write(fixture.path().join("note.txt"), "changed\ntwo\n").unwrap();
 
     assert_eq!(
-        workspace.view_anchored(&second_handle),
+        workspace.view_anchored(&second_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
     assert_eq!(
-        workspace.view_anchored(&first_handle),
+        workspace.view_anchored(&first_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
     assert_eq!(
-        workspace.view_anchored(&second_handle),
+        workspace.view_anchored(&second_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
 }
@@ -1856,14 +1859,14 @@ fn host_anchored_proof_mismatch_fail_closes_before_source_access() {
     fs::rename(&source_path, &parked).unwrap();
 
     assert_eq!(
-        workspace.view_anchored(&handle),
+        workspace.view_anchored(&handle, PublicAnddressTarget::File),
         Err(ViewError::Unavailable)
     );
     assert_eq!(workspace.check(new.clone()).unwrap().filtered, None);
 
     fs::rename(&parked, &source_path).unwrap();
     assert_eq!(
-        workspace.view_anchored(&handle),
+        workspace.view_anchored(&handle, PublicAnddressTarget::File),
         Err(ViewError::Unavailable)
     );
     assert_eq!(workspace.check(new.clone()).unwrap().filtered, Some(new));
@@ -1888,12 +1891,12 @@ fn anchored_view_known_invalid_source_fail_closes_the_path() {
     fs::write(fixture.path().join("note.txt"), b"one\n\xff").unwrap();
 
     assert_eq!(
-        workspace.view_anchored(&handle),
+        workspace.view_anchored(&handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
     fs::write(fixture.path().join("note.txt"), "one\n").unwrap();
     assert_eq!(
-        workspace.view_anchored(&handle),
+        workspace.view_anchored(&handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
 }
@@ -1933,16 +1936,16 @@ fn explicit_invalidation_keeps_hard_link_paths_and_reopened_runtimes_separate() 
     };
     workspace.invalidate_anchored_source("note.txt").unwrap();
     assert_eq!(
-        workspace.view_anchored(&note_handle),
+        workspace.view_anchored(&note_handle, PublicAnddressTarget::File),
         Err(ViewError::Unavailable)
     );
     assert!(
-        matches!(workspace.view_anchored(&linked_handle), Ok(ViewOutcome::Line { content, .. }) if content == "one")
+        matches!(workspace.view_anchored(&linked_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "one")
     );
 
     let mut reopened = runtime(fixture.path());
     assert_eq!(
-        reopened.view_anchored(&linked_handle),
+        reopened.view_anchored(&linked_handle, PublicAnddressTarget::Line),
         Err(ViewError::Unavailable)
     );
 }

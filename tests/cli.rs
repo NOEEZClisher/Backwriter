@@ -393,11 +393,11 @@ fn assert_search_json(output: Output, expected: &SearchOutcome) {
 fn expected_view_json(outcome: &ViewOutcome) -> Vec<u8> {
     let mut output = b"{\"schema\":\"bw.cli.view.v1\",\"kind\":".to_vec();
     match outcome {
-        ViewOutcome::File { text } => {
+        ViewOutcome::File { text, .. } => {
             output.extend_from_slice(b"\"file\",\"text\":");
             serde_json::to_writer(&mut output, text).unwrap();
         }
-        ViewOutcome::Paragraph { text, file } => {
+        ViewOutcome::Paragraph { text, file, .. } => {
             output.extend_from_slice(b"\"paragraph\",\"text\":");
             serde_json::to_writer(&mut output, text).unwrap();
             output.extend_from_slice(b",\"file\":");
@@ -408,6 +408,7 @@ fn expected_view_json(outcome: &ViewOutcome) -> Vec<u8> {
             terminator,
             file,
             paragraph,
+            ..
         } => {
             output.extend_from_slice(b"\"line\",\"content\":");
             serde_json::to_writer(&mut output, content).unwrap();
@@ -425,6 +426,7 @@ fn expected_view_json(outcome: &ViewOutcome) -> Vec<u8> {
                 output.extend_from_slice(b"null");
             }
         }
+        ViewOutcome::RelationAbsent => panic!("CLI self-View relation exists"),
     }
     output.extend_from_slice(b"}\n");
     output
@@ -432,7 +434,7 @@ fn expected_view_json(outcome: &ViewOutcome) -> Vec<u8> {
 
 fn expected_human_view(outcome: &ViewOutcome) -> Vec<u8> {
     match outcome {
-        ViewOutcome::File { text } | ViewOutcome::Paragraph { text, .. } => {
+        ViewOutcome::File { text, .. } | ViewOutcome::Paragraph { text, .. } => {
             text.as_bytes().to_vec()
         }
         ViewOutcome::Line {
@@ -449,6 +451,7 @@ fn expected_human_view(outcome: &ViewOutcome) -> Vec<u8> {
             });
             output
         }
+        ViewOutcome::RelationAbsent => panic!("CLI self-View relation exists"),
     }
 }
 
@@ -460,11 +463,11 @@ fn assert_view_json(output: Output, expected: &ViewOutcome) {
     let document: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(document["schema"], "bw.cli.view.v1");
     match expected {
-        ViewOutcome::File { text } => {
+        ViewOutcome::File { text, .. } => {
             assert_eq!(document["kind"], "file");
             assert_eq!(document["text"], text.as_str());
         }
-        ViewOutcome::Paragraph { text, file } => {
+        ViewOutcome::Paragraph { text, file, .. } => {
             assert_eq!(document["kind"], "paragraph");
             assert_eq!(document["text"], text.as_str());
             let encoded = serde_json::to_vec(&document["file"]).unwrap();
@@ -475,6 +478,7 @@ fn assert_view_json(output: Output, expected: &ViewOutcome) {
             terminator,
             file,
             paragraph,
+            ..
         } => {
             assert_eq!(document["kind"], "line");
             assert_eq!(document["content"], content.as_str());
@@ -497,6 +501,7 @@ fn assert_view_json(output: Output, expected: &ViewOutcome) {
                 None => assert!(document["paragraph"].is_null()),
             }
         }
+        ViewOutcome::RelationAbsent => panic!("CLI self-View relation exists"),
     }
 }
 
@@ -1148,7 +1153,7 @@ fn one_shot_view_json_streams_exact_v4_objects_and_preserves_human_output() {
         )
         .unwrap();
         let input = Anddress::decode(operand.as_bytes()).unwrap();
-        let expected = workspace.view(&input).unwrap();
+        let expected = workspace.view(&input, input.target()).unwrap();
 
         assert_view_json(
             run(root.path(), &["--json", "view", "anddress", &operand]),

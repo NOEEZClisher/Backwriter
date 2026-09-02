@@ -2,12 +2,14 @@
 
 ## In-progress 0.2.3 Patch Box
 
-Gates 1 and 2 close authority, the consumer matrix, and Search observation
-metadata for the `0.2.3` Patch Box. It is an AI-facing information-surface
+Gates 1 through 3 close authority, the consumer matrix, Search observation
+metadata, and native single View projection for the `0.2.3` Patch Box. It is an AI-facing information-surface
 patch, not an engine-performance project. Search now returns ordered
 `SearchOccurrence` values that pair each exact opaque v4 Anddress with its
-same-observation descriptive position. Later gates cover caller-chosen View
-projection or ordered batch, one-shot Replace, and reuse of a returned fresh
+same-observation descriptive position. Single View now accepts one existing
+`AnddressTarget` projection and returns the projected current v4 Anddress plus
+exact Content from the same accepted observation. Later gates cover ordered batch,
+one-shot Replace, and reuse of a returned fresh
 current Anddress when the published result has one.
 
 Line Search metadata is the current one-based Line number. Paragraph Search
@@ -22,9 +24,14 @@ Line position, and exact embedded v4 Anddress. Human Search uses `path:line` for
 Line, `path:start-end` for Paragraph, and path alone for File. Pick retains its
 raw-Anddress byte-range rows unchanged.
 
-View remains Observe/Project, never Find. A caller-held Line may project to
-Line, Paragraph, or File; a Paragraph to Paragraph or File; and a File only to
-File. Downward projection, implicit Search, and relocation are excluded. The
+View remains Observe/Project, never Find. Its implemented seam is
+`WorkspaceRuntime::view(&Anddress, AnddressTarget) -> Result<ViewOutcome,
+ViewError>`. A caller-held Line may project to Line, Paragraph, or File; a
+Paragraph to Paragraph or File; and a File only to File. Downward projection
+is `InvalidInput` before source I/O; implicit Search and relocation are
+excluded. File, Paragraph, and Line outcomes include the projected current v4
+Anddress and exact target Content. A Line-to-Paragraph request with no exact
+containing current Paragraph returns the normal `RelationAbsent` outcome. The
 single form precedes an input-order- and duplicate-preserving, all-or-nothing
 batch using one current observation per logical source rather than repeated
 single View execution.
@@ -38,7 +45,8 @@ is conditional on a syntax and EOF/UTF-8/NUL/newline/failure contract that
 cannot collide with literal `--stdin` Content.
 
 The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
-records the completed carrier migration and remaining API/output choices.
+records the completed carrier and single-projection migration plus remaining
+batch and Edit-output choices.
 Cargo, `bw version`, README, artifacts, installers, server, services, tunnel,
 DNS, public root, and the exact 44-file official distribution remain closed
 `0.2.2`.
@@ -390,7 +398,8 @@ has no v3 decoder, encoder, alias, or migration layer.
 ## Implemented published 0.2.1 current-only Runtime contract
 
 The v4 Search and View implementation is current-only and stateless;
-Pick is pure and stateless over caller input. `WorkspaceRuntime::search`, `WorkspaceRuntime::view`,
+Pick is pure and stateless over caller input. `WorkspaceRuntime::search`,
+`WorkspaceRuntime::view(&Anddress, AnddressTarget)`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`, `WorkspaceRuntime::check`,
 `check_search`, `check_pick`, `anchor`, `view_anchored`, and
 `invalidate_anchored_source` are the implemented Runtime seams. Search traverses
@@ -402,12 +411,12 @@ orders the completed results, then drops that source before opening another.
 Exact File Search validates one logical path and observes that admitted regular
 source once under the same safety and text policy before returning its File
 Anddress; it performs no content matching, Line framing, or traversal.
-Ordinary View uses that common observer directly: File captures its returned
-text, Paragraph captures only its range overlap, and Line captures only its
-range before classifying a tail terminator. The same pass keeps only minimal
-Paragraph-boundary state for a Search-issued Line's optional related Paragraph;
-a valid caller-built nonstructural Line still returns exact range bytes and may
-have no related Paragraph. Check groups by coordinate/path, observes each
+Ordinary View uses that common observer directly. It captures only the requested
+self-or-ancestor File, Paragraph, or Line Content while validating the caller
+input against the same observation. Line self projection also keeps minimal
+Paragraph-boundary state for its optional related Paragraph; Line-to-Paragraph
+captures only the containing Paragraph and returns `RelationAbsent` for a
+separator or valid caller-built nonstructural Line. Check groups by coordinate/path, observes each
 eligible source once, and compares each occurrence's hash and length only.
 After a capability call returns, Runtime retains no ordinary observation,
 source, result, snapshot, lease, registry, history, or authenticity state.

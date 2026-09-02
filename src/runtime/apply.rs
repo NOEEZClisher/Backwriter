@@ -1250,8 +1250,8 @@ mod apply_tests {
             assert_eq!(proofs[0].hash, target.source_state_hash());
             drop(proofs);
             assert!(matches!(
-                runtime.view_anchored(&handle),
-                Ok(ViewOutcome::File { text }) if text == "source"
+                runtime.view_anchored(&handle, AnddressTarget::File),
+                Ok(ViewOutcome::File { text, .. }) if text == "source"
             ));
         }
     }

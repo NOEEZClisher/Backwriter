@@ -40,9 +40,11 @@ reappear without establishing history, survival, or continuity.
 
 Search is the only target finder and constructs v4 values while reading and
 hashing current source once. Ordinary View validates hash and length while
-copying the caller range; Check currentness compares only hash and length.
-Neither relocates or structurally revalidates an old target, and a valid
-caller-built nonstructural Paragraph or Line range remains consumable. Apply
+copying an allowed self-or-ancestor projection and returns that target's exact
+current v4 value; Check currentness compares only hash and length. View neither
+relocates nor searches downward. A Line-to-Paragraph request without an exact
+containing current Paragraph returns relation-absent, and a valid caller-built
+nonstructural Paragraph or Line range remains consumable. Apply
 enforces the exact v4 source-state/range precondition and patches that public
 range directly from fixed-chunk staging. It creates no private ordinal/text
 locator or relocation mapping.
