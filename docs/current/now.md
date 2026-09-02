@@ -1,8 +1,8 @@
 # Backwriter Current State
 
-## In-progress 0.2.3 Patch Box
+## Source-ready unpublished 0.2.3 Patch Box
 
-Gates 1 through 6 close authority, the consumer matrix, Search observation
+Gates 1 through 7 close authority, the consumer matrix, Search observation
 metadata, native single View projection, and ordered batch View for the `0.2.3`
 Patch Box. It is an AI-facing information-surface
 patch, not an engine-performance project. Search now returns ordered
@@ -15,8 +15,9 @@ Untrusted or Host-proof-miss source is opened once and directly observed once.
 Gate 5 adds the Replace-only native receipt seam and reuses its returned fresh
 current Anddress when the confirmed result has one. Gate 6 exposes that result
 through exact human and JSON one-shot Edit output and closes stdin as a
-no-addition decision. Later gates cover integration/readiness and separately
-authorized publication.
+no-addition decision. Gate 7 closes integrated Dummy and GNU/musl source
+readiness without changing production feature code. Gate 8 remains separately
+authorized artifact and publication work.
 
 Line Search metadata is the current one-based Line number. Paragraph Search
 metadata is the current one-based inclusive start-to-end Line range. File
@@ -76,10 +77,10 @@ stdin reader or EOF state.
 
 The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
 records the completed carrier, View projections, native Edit receipt, and
-one-shot Adapter output plus the remaining integration/release gates.
-Cargo, `bw version`, README, artifacts, installers, server, services, tunnel,
-DNS, public root, and the exact 44-file official distribution remain closed
-`0.2.2`.
+one-shot Adapter output plus integrated source-readiness evidence. Cargo and
+`bw version` are source-ready, unpublished `0.2.3`. Artifacts, installers,
+server, services, tunnel, DNS, public root, `bw update`, and the exact 44-file
+official distribution remain closed `0.2.2` until Gate 8.
 
 ## Version boundary
 

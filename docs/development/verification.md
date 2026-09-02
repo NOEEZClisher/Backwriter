@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.3 Patch Box Gates 1–6
+## 0.2.3 Patch Box Gates 1–7
 
 Gate 1 records the direct Search, View, Edit, Check, Data, Session, Pick, and
 writer consumers. Gate 2 implements only the Search observation carrier and
@@ -138,6 +138,46 @@ Gate 6 therefore adds no `--stdin` grammar, reader, EOF state, generic content
 source, file transport, or placeholder. The complete offline/locked GNU-host
 suite passes 256 tests: the 255 Gate 5 controls plus one CLI stream-failure
 regression.
+
+Gate 7 builds the published `0.2.2` Source Authority
+`04b36d9ca9cc725bedeb17231339c67b5f0590ea` and the integrated Patch Box parent
+`d3e2b2e65112e9f0f018cd29050652928e4ef412` from clean Git-object exports. On
+the exact `retry_budget = 3\r\n` fixture, A performs Search/Edit/Search/View/Edit
+and B performs Search/JSON Edit/View/JSON Edit. Both finish with exact bytes
+`retry_budget = 7\r\n` and SHA-256
+`798ba02ce45d505e56b0112210695a52931a40797aa9eb6f68d608d9c9b6173e`.
+A/B process and Adapter-command counts are `5/4`, Search `2/1`, repeated
+post-Edit Search `1/0`, JSON array indexing `2/1`, explicit View `1/1`, Edit
+internal View `2/2`, Apply `2/2`, and total Runtime capability calls `7/6`.
+Caller-visible raw Apply, mandatory Check, Wrong Apply, history, relocation,
+retry, and newline mistakes are all `0` in both flows. B uses each fresh
+receipt address directly for the following View and Edit without post-Edit
+Search.
+
+One untimed warm-up per variant precedes five order-crossed `AB`, `BA`, `AB`,
+`BA`, `AB` samples. The monotonic interval spans the first `bw` spawn through
+the final source read and excludes fixture reset. A median/p95-nearest-rank is
+`25.168625`/`25.812745` ms; B is `19.793078`/`20.982414` ms. These elapsed
+samples are diagnostic evidence, not a performance gate or general speed
+claim. The task-local driver SHA-256 is
+`18ec103d2815f52957d29e3be986f3b9e8027d3442a14bd252f60145033e410d` and its
+raw JSON evidence SHA-256 is
+`8c48cb6192621f0d7c92a6be76d432beb2c11bd134c00be008349ca01dd8243a`;
+both are removed after verification.
+
+Before and after the source-version change, offline/locked GNU and musl runs
+each pass the complete 256-test suite, all-target check, and release build.
+GNU also passes formatting and clippy with warnings denied. Release Help,
+Version, JSON Search-to-receipt-to-fresh-View/Edit, representative raw Session,
+v4 KAT/no-v3, Search order and duplicates, single/batch View all-or-none and
+one-observation behavior, all receipt states and writer failure, raw Apply,
+Host proof hit/miss/mismatch/invalidation, Anchor reflection/fail-closure, and
+the duplicate Line/Paragraph drift matrices remain green. Gate 7 therefore
+advances only the root package, root lock entry, version KAT, and active status
+documents to source-ready, unpublished `0.2.3`; production `src/**`, Core,
+Runtime, v4 wire, toolchain, and dependencies remain byte-identical to the
+Gate 6 parent. Official artifacts, installers, manifest, public root, service,
+and `bw update` remain closed `0.2.2` until Gate 8.
 
 ## 0.2.2 Anddress-first editing Gates 1–6
 
@@ -734,9 +774,10 @@ Before staging, verify the diff and empty index, confirm repository-root
 Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
-The repository source package and closed public distribution are `0.2.2`; the
-source and installed release builds print exactly `Backwriter 0.2.2` plus LF.
-The current installers and manifest select `0.2.2`; exact `0.2.1` remains the
+The repository source package and source-built command are `0.2.3`; the latter
+prints exactly `Backwriter 0.2.3` plus LF. The closed public distribution and
+installed release remain `0.2.2` and print `Backwriter 0.2.2` plus LF. The
+current installers, manifest, and Update handoff select `0.2.2`; exact `0.2.1` remains the
 only other accepted manifest. Prior `0.2.1`, `0.2.0`, `0.1.0`, and beta
 versioned files remain immutable. The closed `0.2.1`
 source suite passed 236 GNU-host and 236 musl Rust tests; the closed `0.2.0`

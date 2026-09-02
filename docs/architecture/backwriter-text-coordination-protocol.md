@@ -8,7 +8,9 @@ The call-local target-specific Search observation and direct View, Check,
 Apply, and Anchor consumers are complete; Phase 7B verifies `0.2.1` source readiness.
 The `0.2.2` Anddress-first general editing Adapter authority, minimum one-shot
 implementation, integration, source-version decision, and separate Gate 7
-publication are closed.
+publication are closed. Patch Box Gates 1–7 are source-ready, unpublished
+`0.2.3`; they change no v4 identity or currentness meaning. Official artifacts,
+installers, update target, and publication remain closed `0.2.2`.
 
 ## 0.2.0 current-observation authority
 
@@ -337,13 +339,13 @@ Phase 6 makes a matching anchored View share ordinary trusted View execution,
 closes both public invalidation seams over one path-exact proof-plus-Anchor
 operation, and fixes the guarded mutation and both-mode drift boundaries above.
 
-## In-progress 0.2.3 Patch Box information surface
+## Source-ready unpublished 0.2.3 Patch Box information surface
 
-Gates 1 through 6 close meaning, order, Search observation metadata, native
+Gates 1 through 7 close meaning, order, Search observation metadata, native
 single View projection, ordered batch View, the native Replace receipt, and its
-one-shot Adapter projection;
-Cargo, `bw version`, and the published release remain
-`0.2.2`. Patch Box is an
+one-shot Adapter projection, plus integrated Dummy and GNU/musl source
+readiness. Cargo and `bw version` are `0.2.3`; the published release and Update
+target remain `0.2.2`. Patch Box is an
 AI-facing information-surface patch over the current engine, not a
 Search-performance, source-scaling, or File-View-memory project. Its intended
 caller flow is Search, optional View projection or ordered batch, one-shot

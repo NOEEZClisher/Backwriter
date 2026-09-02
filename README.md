@@ -51,7 +51,7 @@ bw version
 The current source build prints exactly:
 
 ```text
-Backwriter 0.2.2
+Backwriter 0.2.3
 ```
 
 ### Update
@@ -70,27 +70,28 @@ exact immutable `0.2.1` manifest and current `0.2.2` manifest; `0.2.0`, stable
 version comparison and adds no version guard.
 
 The product is Backwriter. The source Cargo package and
-library crate are `backwriter` at `0.2.2`; the sole canonical executable and
+library crate are `backwriter` at `0.2.3`; the sole canonical executable and
 external Adapter command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
 official installer remains separate and selects the closed public `0.2.2`
 distribution.
 
-The source checkout and closed official distribution are `0.2.2`; Cargo and
-`bw version` are also `0.2.2`. The canonical artifacts retain Source Authority
-revision `04b36d9ca9cc725bedeb17231339c67b5f0590ea`; the later
-documentation-only closure commit does not change that manifest provenance.
-The source checkout additionally contains unpublished `0.2.3` Patch Box Gates
-1–6, including Search positions, View projection/batching, native Edit receipts,
-and the receipt output documented below. None is present in the official
-`0.2.2` artifacts yet.
+The source checkout, Cargo package, and `bw version` are source-ready,
+unpublished `0.2.3`. The closed official distribution remains `0.2.2`, and its
+canonical artifacts retain Source Authority revision
+`04b36d9ca9cc725bedeb17231339c67b5f0590ea`. Patch Box Gates 1–7 are complete
+in source, including Search positions, View projection/batching, native Edit
+receipts, exact receipt output, and integrated GNU/musl readiness evidence.
+None is present in the official `0.2.2` artifacts yet. Because Update performs
+no version comparison, a source-built `0.2.3` `bw update` currently installs
+the official `0.2.2` release.
 
 ## Anddress-first editing
 
 The default source-checkout replacement flow is:
 
 1. Run `bw --json search ...`.
-2. Select one exact v4 object from `anddresses` and pass it unchanged as one
-   argv value.
+2. Select one occurrence from `occurrences` and pass its exact embedded v4
+   `anddress` object unchanged as one argv value.
 3. Run `bw edit anddress '<opaque-v4-object>' '<new-content>'`.
 
 Human Search rows are not encoded Anddress values and cannot be Edit input.

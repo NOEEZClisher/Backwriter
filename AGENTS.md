@@ -23,7 +23,7 @@ implementation uses direct v4 ranges and provenance and is complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
 The closed public `0.1.0` release is the immutable v3 baseline. The published
-and closed `0.2.2` source, Cargo package, and official distribution, the prior
+and closed `0.2.2` release source, package, and official distribution, the prior
 closed `0.2.1` distribution, and the prior closed public `0.2.0` release use the hard-cutover
 `artext.backwriter-anddress.v4` Rust API and wire. SHA-256, exact source byte
 length, target kind, and `[start, end)` byte range are implemented identity;
@@ -81,7 +81,7 @@ Edit/Position/Apply is the exact low-level primitive, Session `let ... = edit
 one-shot Anddress-first Edit is the canonical Replace contraction. None is
 internal, deprecated, renamed, aliased, or wrapped by that separation.
 
-`0.2.3` Patch Box Gates 1 through 6 are complete in source. Gate 1 closes
+`0.2.3` Patch Box Gates 1 through 7 are complete in source. Gate 1 closes
 authority and the consumer matrix. Gate 2 carries each Search result as one
 `SearchOccurrence` containing its exact v4 Anddress and same-observation
 descriptive position: a one-based Line number, a one-based inclusive Paragraph
@@ -112,7 +112,10 @@ embeds the canonical v4 object directly. Argv remains the sole Content
 transport; literal `--json`, `--raw`, and `--stdin` in the Content position are
 Content, while leading `--raw` remains unsupported. No stdin path was added
 without reproduced consumer, measured payload, or concrete security evidence.
-Cargo, CLI version, artifacts, and publication remain closed `0.2.2`.
+Gate 7 passes the integrated A/B Dummy and complete GNU/musl semantic matrix;
+the Cargo package and `bw version` are source-ready, unpublished `0.2.3`.
+Official installers, artifacts, manifest, update target, and publication remain
+closed `0.2.2` until separately authorized Gate 8 work.
 The ordered
 gates and consumer evidence are tracked in
 [Backwriter 0.2.3 Patch Box](docs/tasks/2026-09-03-backwriter-0.2.3-patch-box.md).

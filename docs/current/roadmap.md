@@ -1,15 +1,18 @@
 # Backwriter Roadmap
 
-## In progress: 0.2.3 Patch Box
+## In progress: 0.2.3 Patch Box publication
 
 The [eight-gate Patch Box tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
 orders an AI-facing information-surface patch without reopening the engine,
-v4 identity, currentness, or the closed `0.2.2` release. Gates 1 through 6 close
+v4 identity, currentness, or the closed `0.2.2` release. Gates 1 through 7 close
 authority, the consumer matrix, same-observation Search position metadata, and
 native single upward View projection plus ordered all-or-nothing batch View
-with per-source observation reuse, then the native Replace receipt and exact
-human/JSON Adapter projection. The remaining gates are an integrated Dummy
-E2E/readiness gate and separately authorized artifact/publication work.
+with per-source observation reuse, then the native Replace receipt, exact
+human/JSON Adapter projection, integrated A/B Dummy, and GNU/musl source
+readiness. Cargo and `bw version` are source-ready, unpublished `0.2.3`; the
+only remaining gate is separately authorized artifact/publication work, while
+the official installer, artifacts, manifest, update target, and public root
+remain closed `0.2.2`.
 
 The target flow is Search result information plus an opaque v4 Anddress,
 optional caller-selected View projection, one-shot Replace, and reuse of the

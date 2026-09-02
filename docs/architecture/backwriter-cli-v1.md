@@ -6,9 +6,10 @@ Search/View/Check/Edit, raw View, Anddress-first one-shot Edit, Session Pick, ba
 Check, Anchor, Edit, Apply, result-binding, and Data modes only. This document follows the Core active
 documents in the authority-reading order.
 The `0.2.2` one-shot Anddress-first Edit execution contract remains closed and
-published Adapter authority. Patch Box Gate 6 changes only current-source human
-and JSON receipt output as defined below. Source Cargo, `bw version`, the
-official installer, and the closed distribution remain `0.2.2`.
+published Adapter authority. Patch Box Gates 1–7 are source-ready, unpublished
+`0.2.3` and include the current-source human and JSON receipt output defined
+below. The official installer, Update target, and closed distribution remain
+`0.2.2`.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -82,7 +83,7 @@ capability workflow.
 `bw version` writes exactly:
 
 ```text
-Backwriter 0.2.2
+Backwriter 0.2.3
 ```
 
 including the final LF and no other successful output.
@@ -101,8 +102,9 @@ parent before replacing `bw.exe`. A Windows parent status of `0` means only that
 handoff started successfully; the child owns final installer output, final
 status, replacement, and bootstrap cleanup.
 
-The source-built and published `0.2.2` command has no version-comparison guard.
-Invoking Update therefore installs or reinstalls the official `0.2.2` release.
+The source-built `0.2.3` command and published `0.2.2` command have no
+version-comparison guard. Invoking Update therefore installs or reinstalls the
+official `0.2.2` release, including from the unpublished `0.2.3` source build.
 This boundary does not authorize a guard, retry, rollback, alternate installer,
 or publication.
 
@@ -496,9 +498,9 @@ At Gate 6 the source version became `0.2.2`, while Core, Runtime, v4 wire, and
 then-published `0.2.1` behavior remained unchanged. The subsequent Gate 7
 publication changed only the official distribution boundary to `0.2.2`.
 
-## In-progress 0.2.3 Patch Box Adapter direction
+## Source-ready unpublished 0.2.3 Patch Box Adapter direction
 
-Gates 1 through 6 keep one-shot Search, Session Search, stored Search values,
+Gates 1 through 7 keep one-shot Search, Session Search, stored Search values,
 Check, Pick operands, public Rust callers, and single View consumers coherent
 through the native occurrence carrier and projection-aware View result. Human Search now has one Search-specific writer with current Line
 positions; Pick retains the separate raw-Anddress address-row writer and its
@@ -537,6 +539,13 @@ payload need, or concrete security requirement. Literal `--stdin` in Content
 position remains Content; there is no reader, EOF state, or reserved syntax. No
 history, diff, retry, relocation, watcher, persistent identity, performance
 claim, or automatic capability workflow is part of this Adapter direction.
+
+Gate 7 confirms the integrated source flow against published `0.2.2`: the v2
+occurrence supplies one embedded v4 object, each changed JSON Edit receipt
+supplies the next fresh object, and View plus a second Edit reuse it without a
+post-Edit Search. The source package and `bw version` are therefore `0.2.3`;
+official artifacts, installers, manifest, Update target, and publication remain
+closed `0.2.2` until Gate 8.
 
 ## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 

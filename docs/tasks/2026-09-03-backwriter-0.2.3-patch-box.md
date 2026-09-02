@@ -1,7 +1,7 @@
 # Backwriter 0.2.3 Patch Box
 
-Status: Gates 1–6 complete. Gates 7–8 are pending and require their own scoped
-authorization.
+Status: Gates 1–7 complete. Source is ready and unpublished `0.2.3`; Gate 8 is
+pending and requires its own scoped authorization.
 
 This tracker records order, evidence, and unresolved implementation choices.
 Normative meaning belongs to the active
@@ -9,8 +9,9 @@ Normative meaning belongs to the active
 [address model](../architecture/rebuildable-structural-addressing.md),
 [principles](../principles/backwriter-core-principles.md), and
 [CLI authority](../architecture/backwriter-cli-v1.md). The published `0.2.2`
-source, Cargo and CLI version, artifacts, installers, exact 44-file public
-tree, and service remain the closed baseline through Gate 6.
+artifacts, installers, exact 44-file public tree, and service remain the closed
+`0.2.2` baseline. Source Cargo and CLI version advance to unpublished `0.2.3`
+only after Gate 7 GO.
 
 ## Goal and exclusions
 
@@ -236,24 +237,104 @@ plus two public receipt regressions.
   reopen, Check, stdin, parallel writer, or schema paths. The complete
   GNU-host suite has 256 tests.
 
-## Gate 7 — Dummy integration and source-readiness decision — pending
+## Gate 7 — Dummy integration and source-readiness decision — complete
 
-- Run the same fixed Dummy fixture against the published `0.2.2` workflow and
-  the integrated candidate. Record process invocations, Backwriter capability
-  operations, repeated Search/View, JSON index bookkeeping, visible output
-  bytes, and elapsed time as separate measurements rather than interchangeable
-  counts or a broad performance claim.
-- Prove JSON Search metadata to explicit projection/batch View to one-shot Edit
-  receipt to continued use of a fresh address. Retain newline mistake `0`,
-  explicit Apply `0` for the general Adapter flow, mandatory Check `0`, Wrong
-  Apply `0`, stale fail-closure, history `0`, and relocation `0`.
-- Run the complete GNU and musl semantic matrices and verify Core/Runtime/v4,
-  raw Session, Host proof, Anchor, Apply, and failure behavior. Confirm no
-  duplicated Adapter executor or source reread path remains.
-- Make a GO/NO-GO decision before changing Cargo and `bw version`. A NO-GO
-  leaves version and readiness documents unchanged. A GO may advance source to
-  `0.2.3` while official artifacts/installers/publication remain `0.2.2` until
-  Gate 8.
+The decision is **GO**. Both variants were built from clean Git-object exports:
+A is published `0.2.2` Source Authority
+`04b36d9ca9cc725bedeb17231339c67b5f0590ea`; B is the integrated Gate 6 parent
+`d3e2b2e65112e9f0f018cd29050652928e4ef412`. The task-local fixture began as
+exact `retry_budget = 3\r\n`, SHA-256
+`ec43c761c4cd9b113208d4f99b2e912697e414e739e4c60324f4b5ae2c72a3fb`.
+Intermediate exact bytes were `retry_budget = 5\r\n`, SHA-256
+`cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf`.
+Both variants finished as exact `retry_budget = 7\r\n`, SHA-256
+`798ba02ce45d505e56b0112210695a52931a40797aa9eb6f68d608d9c9b6173e`.
+
+The first measured run recorded these exact argv and results; every command
+had exit `0` and empty stderr:
+
+```text
+A1 ["/tmp/backwriter-gate7.v8Oi4x/A/target/release/bw","--json","search","line","retry_budget = 3","--source","note.txt"]
+   stdout {"schema":"bw.cli.search.v1","outcome":"found","anddresses":[{"version":"artext.backwriter-anddress.v4","workspaceCoordinate":"ce23715f0cf945c0ed423276a62fa7f6108ba15df5e08885d523a6ab1efa52cc","logicalPath":"note.txt","sourceStateHash":"ec43c761c4cd9b113208d4f99b2e912697e414e739e4c60324f4b5ae2c72a3fb","sourceByteLength":"18","kind":"line","byteStart":"0","byteEnd":"18"}]}\n
+A2 ["/tmp/backwriter-gate7.v8Oi4x/A/target/release/bw","edit","anddress","{\"version\":\"artext.backwriter-anddress.v4\",\"workspaceCoordinate\":\"ce23715f0cf945c0ed423276a62fa7f6108ba15df5e08885d523a6ab1efa52cc\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"ec43c761c4cd9b113208d4f99b2e912697e414e739e4c60324f4b5ae2c72a3fb\",\"sourceByteLength\":\"18\",\"kind\":\"line\",\"byteStart\":\"0\",\"byteEnd\":\"18\"}","retry_budget = 5"]
+   stdout OK\n
+A3 ["/tmp/backwriter-gate7.v8Oi4x/A/target/release/bw","--json","search","line","retry_budget = 5","--source","note.txt"]
+   stdout {"schema":"bw.cli.search.v1","outcome":"found","anddresses":[{"version":"artext.backwriter-anddress.v4","workspaceCoordinate":"ce23715f0cf945c0ed423276a62fa7f6108ba15df5e08885d523a6ab1efa52cc","logicalPath":"note.txt","sourceStateHash":"cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf","sourceByteLength":"18","kind":"line","byteStart":"0","byteEnd":"18"}]}\n
+A4 ["/tmp/backwriter-gate7.v8Oi4x/A/target/release/bw","view","anddress","{\"version\":\"artext.backwriter-anddress.v4\",\"workspaceCoordinate\":\"ce23715f0cf945c0ed423276a62fa7f6108ba15df5e08885d523a6ab1efa52cc\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf\",\"sourceByteLength\":\"18\",\"kind\":\"line\",\"byteStart\":\"0\",\"byteEnd\":\"18\"}"]
+   stdout hex 72657472795f627564676574203d20350d0a
+A5 ["/tmp/backwriter-gate7.v8Oi4x/A/target/release/bw","edit","anddress","{\"version\":\"artext.backwriter-anddress.v4\",\"workspaceCoordinate\":\"ce23715f0cf945c0ed423276a62fa7f6108ba15df5e08885d523a6ab1efa52cc\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf\",\"sourceByteLength\":\"18\",\"kind\":\"line\",\"byteStart\":\"0\",\"byteEnd\":\"18\"}","retry_budget = 7"]
+   stdout OK\n
+B1 ["/tmp/backwriter-gate7.v8Oi4x/B/target/release/bw","--json","search","line","retry_budget = 3","--source","note.txt"]
+   stdout {"schema":"bw.cli.search.v2","outcome":"found","occurrences":[{"logicalPath":"note.txt","kind":"line","line":"1","anddress":{"version":"artext.backwriter-anddress.v4","workspaceCoordinate":"41bbd9d2ef13150ddd485772f8cc881421aac642c12bc9ccc88eab734e449ac1","logicalPath":"note.txt","sourceStateHash":"ec43c761c4cd9b113208d4f99b2e912697e414e739e4c60324f4b5ae2c72a3fb","sourceByteLength":"18","kind":"line","byteStart":"0","byteEnd":"18"}}]}\n
+B2 ["/tmp/backwriter-gate7.v8Oi4x/B/target/release/bw","--json","edit","anddress","{\"version\":\"artext.backwriter-anddress.v4\",\"workspaceCoordinate\":\"41bbd9d2ef13150ddd485772f8cc881421aac642c12bc9ccc88eab734e449ac1\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"ec43c761c4cd9b113208d4f99b2e912697e414e739e4c60324f4b5ae2c72a3fb\",\"sourceByteLength\":\"18\",\"kind\":\"line\",\"byteStart\":\"0\",\"byteEnd\":\"18\"}","retry_budget = 5"]
+   stdout {"schema":"bw.cli.edit.v1","outcome":"changed","anddress":{"version":"artext.backwriter-anddress.v4","workspaceCoordinate":"41bbd9d2ef13150ddd485772f8cc881421aac642c12bc9ccc88eab734e449ac1","logicalPath":"note.txt","sourceStateHash":"cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf","sourceByteLength":"18","kind":"line","byteStart":"0","byteEnd":"18"}}\n
+B3 ["/tmp/backwriter-gate7.v8Oi4x/B/target/release/bw","view","anddress","{\"version\":\"artext.backwriter-anddress.v4\",\"workspaceCoordinate\":\"41bbd9d2ef13150ddd485772f8cc881421aac642c12bc9ccc88eab734e449ac1\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf\",\"sourceByteLength\":\"18\",\"kind\":\"line\",\"byteStart\":\"0\",\"byteEnd\":\"18\"}"]
+   stdout hex 72657472795f627564676574203d20350d0a
+B4 ["/tmp/backwriter-gate7.v8Oi4x/B/target/release/bw","--json","edit","anddress","{\"version\":\"artext.backwriter-anddress.v4\",\"workspaceCoordinate\":\"41bbd9d2ef13150ddd485772f8cc881421aac642c12bc9ccc88eab734e449ac1\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf\",\"sourceByteLength\":\"18\",\"kind\":\"line\",\"byteStart\":\"0\",\"byteEnd\":\"18\"}","retry_budget = 7"]
+   stdout {"schema":"bw.cli.edit.v1","outcome":"changed","anddress":{"version":"artext.backwriter-anddress.v4","workspaceCoordinate":"41bbd9d2ef13150ddd485772f8cc881421aac642c12bc9ccc88eab734e449ac1","logicalPath":"note.txt","sourceStateHash":"798ba02ce45d505e56b0112210695a52931a40797aa9eb6f68d608d9c9b6173e","sourceByteLength":"18","kind":"line","byteStart":"0","byteEnd":"18"}}\n
+```
+
+The exact operation counts are:
+
+| Evidence | A | B |
+| --- | ---: | ---: |
+| process / Adapter commands | 5 | 4 |
+| Search | 2 | 1 |
+| repeated or post-Edit Search | 1 | 0 |
+| JSON array-index bookkeeping | 2 | 1 |
+| explicit View | 1 | 1 |
+| Edit-internal View | 2 | 2 |
+| Apply | 2 | 2 |
+| total Runtime capability calls | 7 | 6 |
+| caller-visible raw `apply` | 0 | 0 |
+| mandatory Check | 0 | 0 |
+| Wrong Apply | 0 | 0 |
+| history / relocation / retry | 0 / 0 / 0 | 0 / 0 / 0 |
+| newline mistakes | 0 | 0 |
+
+B used only the fresh receipt object for its following View and Edit, with no
+post-Edit Search. Reusing the old object remains a nonpublishing
+`Unavailable`; native receipt regressions keep `Unchanged`, `Changed(Some)`,
+and `Changed(None)` distinct. Existing Gate 2 native duplicate
+self-identification and Gate 4 native batch tests already cover Search
+occurrence to Paragraph projection/batch and one-observation grouping, so no
+second harness or duplicate regression was added.
+
+After one untimed warm-up per variant, five elapsed samples ran in crossed
+order `AB`, `BA`, `AB`, `BA`, `AB`. The monotonic interval began immediately
+before the first `bw` spawn and ended after the final source read; fixture reset
+was excluded. A samples in ns were `25812745`, `25298433`, `25168625`,
+`19043375`, `24342452` (median `25168625`, p95 nearest-rank `25812745`). B
+samples were `19793078`, `20167653`, `20982414`, `15941451`, `13804112`
+(median `19793078`, p95 nearest-rank `20982414`). They are diagnostic elapsed
+evidence only, not a performance gate or broad speed claim.
+
+The task-local driver was 11,999 bytes with SHA-256
+`18ec103d2815f52957d29e3be986f3b9e8027d3442a14bd252f60145033e410d`.
+The 68,551-byte raw JSON evidence had SHA-256
+`8c48cb6192621f0d7c92a6be76d432beb2c11bd134c00be008349ca01dd8243a`.
+Both, all exports, fixtures, and build outputs were removed after verification.
+
+Before and after the version-only change, GNU and musl each passed the full
+256-test semantic matrix, all-target check, and release build. GNU also passed
+format and clippy with warnings denied. V4 KAT/no-v3, Search metadata/order/
+duplicates, single/batch View order/all-or-none/per-source observation, all
+receipt states and output failure, raw five-Edit/four-Position Apply and
+Session, Host proof hit/miss/mismatch/invalidation, Anchor same-after
+reflection/fail-closure, and duplicate Line/Paragraph drift remained green.
+The drift regressions retain Correct `1`, Safe Reject `6`, Wrong `0` in both
+Untrusted and guarded Host modes. Production `src/**`, v4 wire, toolchain, and
+dependencies are byte-identical to the Gate 6 parent.
+
+The post-version B Dummy rerun retained process/Adapter `4`, Search `1`,
+post-Edit Search `0`, JSON indexing `1`, explicit View `1`, internal View `2`,
+Apply `2`, total Runtime capability `6`, and every zero-count invariant above;
+its final bytes and SHA-256 remained exact.
+
+Gate 7 advances only the Cargo package, root lock entry, version KAT, README,
+and active status to source-ready, unpublished `0.2.3`. `bw version` is exact
+`Backwriter 0.2.3\n`. Official artifacts, installers, manifest, public root,
+service, and Update remain closed `0.2.2` until Gate 8.
 
 ## Gate 8 — separately authorized artifact and publication — pending
 
