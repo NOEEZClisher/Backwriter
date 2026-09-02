@@ -1,5 +1,44 @@
 # Backwriter Current State
 
+## Authorized 0.2.3 Patch Box authority
+
+Phase 1 closes documentation authority and an eight-gate implementation order
+for the `0.2.3` Patch Box. It is an AI-facing information-surface patch, not an
+engine-performance project. The intended contraction is Search with
+same-observation descriptive positions and opaque v4 Anddresses, caller-chosen
+View projection or ordered batch, one-shot Replace, and reuse of a returned
+fresh current Anddress when the published result has one.
+
+Line Search metadata is the current one-based Line number. Paragraph Search
+metadata is the current one-based inclusive start-to-end Line range. File
+Search omits Line position by default. This information is produced while
+Search already observes the source; it is not an Anddress field, identity,
+currentness evidence, selector, or permission for a CLI reread. Equal hits and
+duplicate results remain present and each projected item must remain
+self-identifying by logical path, target kind, descriptive position when
+applicable, and opaque v4 Anddress.
+
+View remains Observe/Project, never Find. A caller-held Line may project to
+Line, Paragraph, or File; a Paragraph to Paragraph or File; and a File only to
+File. Downward projection, implicit Search, and relocation are excluded. The
+single form precedes an input-order- and duplicate-preserving, all-or-nothing
+batch using one current observation per logical source rather than repeated
+single View execution.
+
+A successful one-shot Replace receipt describes only the just-published
+current state. It is not history, lineage, or proof about an external writer.
+The implementation must reuse Apply's prospective-after hash, length, direct
+range projection, and existing Anchor reflection rather than post-Search or
+context guessing. Argv Content remains supported. A possible stdin transport
+is conditional on a syntax and EOF/UTF-8/NUL/newline/failure contract that
+cannot collide with literal `--stdin` Content.
+
+The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
+records the consumer matrix and remaining API/output choices. No Rust, Cargo,
+test, README, CLI, version, artifact, installer, server, service, tunnel, DNS,
+or public-root state changes in Phase 1. Cargo, `bw version`, and the exact
+44-file official distribution remain closed `0.2.2`.
+
 ## Version boundary
 
 The closed public `0.1.0` release remains immutable v3 evidence. Published

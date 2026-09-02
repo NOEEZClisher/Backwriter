@@ -337,6 +337,65 @@ Phase 6 makes a matching anchored View share ordinary trusted View execution,
 closes both public invalidation seams over one path-exact proof-plus-Anchor
 operation, and fixes the guarded mutation and both-mode drift boundaries above.
 
+## Authorized 0.2.3 Patch Box information surface
+
+Phase 1 closes meaning and order only; the production implementation and
+published release remain `0.2.2`. Patch Box is an AI-facing information-surface
+patch over the current engine, not a Search-performance, source-scaling, or
+File-View-memory project. Its intended caller flow is Search, optional View
+projection or ordered batch, one-shot Replace, and reuse of a fresh current
+Anddress when the confirmed result has one. This named flow does not make one
+capability a prerequisite of another.
+
+Search may return descriptive position information produced during the same
+selected-source observation that matches and constructs the v4 Anddress. A
+Line position is its current one-based Line number. A Paragraph position is
+the current one-based inclusive range from its first Line through its last
+Line under the existing blank-Line-bounded structure; separator Lines remain
+outside Paragraphs. File results omit a Line position by default. Position
+metadata is neither v4 identity nor a locator, equality input, currentness
+proof, selector, Edit input, retained observation, or permission for an
+Adapter to reread the source. Duplicate Search occurrences and equal Anddress
+values remain present. Every Adapter result item must carry enough direct
+information to identify its logical path, target kind, applicable current
+Line position, and opaque v4 Anddress without relying on its neighbor.
+
+View is Observe/Project from caller-held exact-state evidence, not Find. The
+only authorized projections are Line to Line, Paragraph, or File; Paragraph
+to Paragraph or File; and File to File. A target cannot project downward, and
+View performs no implicit Search, relocation, context matching, or discovery.
+Single projection closes before batch. Batch applies one requested projection
+to an ordered input collection, preserves input order and duplicates, and is
+all-or-nothing. Its implementation must group admissible inputs by logical
+source and reuse one current observation per source; it must not implement a
+batch by repeatedly calling single View.
+
+A successful one-shot Replace receipt describes only the just-confirmed
+current state. For a changed File it contains the fresh resulting File
+Anddress. For a changed Line it contains the fresh resulting Line Anddress
+for the exact terminator-preserving replacement. For a changed Paragraph it
+may contain a fresh Paragraph Anddress only when the replacement result is
+exactly one Paragraph; successful publication may otherwise have no fresh
+target. A byte-identical no-op leaves the validated input Anddress current.
+Prepublication failure and `PublicationUncertain` produce no successful
+receipt or fresh address. The later result type and Adapter encoding must make
+no-op, changed-with-address, changed-without-address, uncertain publication,
+and failure unambiguous without weakening existing Apply errors.
+
+Fresh-result construction must reuse Apply's already computed prospective-after
+hash and length, direct range projection, publication boundary, and Anchor
+reflection plan. It must not run a CLI post-Search, reread the published
+source, guess a target, or infer relocation. The receipt creates no
+predecessor, successor, survivor, history, rollback, watcher, retry, registry,
+or persistent identity.
+
+Existing argv Content remains supported. Stdin is only a later Adapter
+candidate. No stdin implementation is authorized until one syntax avoids any
+collision with literal `--stdin` Content and closes exact EOF, UTF-8, NUL,
+newline, resource, read-failure, and publication boundaries. Patch Box adds no
+Git meaning, diff, retry, compatibility layer, persistent target state, or
+performance claim.
+
 ## Current structure only
 
 Backwriter is not Git. It establishes only the File/Paragraph/Line structure of

@@ -1,5 +1,42 @@
 # Verification
 
+## 0.2.3 Patch Box Phase 1 authority audit
+
+Phase 1 is documentation-only. Production reference audit establishes these
+current consumers before later code gates:
+
+- `SearchOutcome::Found { anddresses: Vec<Anddress> }` is returned by
+  `WorkspaceRuntime::search`, consumed directly by Check, caller-owned Data,
+  Session binding/index resolution, one-shot and Session writers, and public
+  Rust callers. Search's runtime projection already derives Line and Paragraph
+  ranges during the sole selected-source observation.
+- Human Search uses `write_human` and the shared `write_address_rows`; Pick
+  and Data reuse the latter path. JSON Search uses the distinct streaming
+  `write_search_json` and the exact public `bw.cli.search.v1` envelope.
+- Ordinary and anchored View share `ViewOutcome`; one-shot, Session, Data, and
+  Anchor callers consume its current File/Paragraph/Line related-address
+  fields. A later batch must not loop over the single public call and reread a
+  source for each target.
+- One-shot Edit privately composes View, `Edit::Replace`, and Apply. Runtime
+  Apply's existing prospective-after projector, exact after hash/length,
+  direct ranges, publication boundary, and live-Anchor reflection are the
+  reusable evidence path for a receipt. Search is not part of Edit execution.
+
+No audited path is dead: each retained public Rust, raw Session, writer, Check,
+Data, or Anchor path has a direct caller and behavioral regression. Phase 1
+therefore deletes no production code and creates no parallel engine, generic
+projector, observation object, compatibility output mode, or post-publication
+Search. Phase 2 is authorized to replace the source-level one-shot JSON Search
+schema with `bw.cli.search.v2`; `bw.cli.search.v1` remains only immutable
+published `0.2.2` evidence rather than a simultaneous compatibility mode.
+
+The Phase 1 verification reuses the already closed 243-test `0.2.2` result
+because Rust, Cargo, tests, README, and toolchain inputs are byte-identical to
+the parent. It additionally requires offline locked metadata, active-document
+link/fence/conflict-marker checks, exact allowed paths, an empty index before
+commit, no `.artext` or tracked output, and unchanged server, public 44-file
+tree, and services.
+
 ## 0.2.2 Anddress-first editing Gates 1–6
 
 Gate 1 closes authority and Gate 2 implements only the one-shot Adapter

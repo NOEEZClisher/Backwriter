@@ -81,6 +81,17 @@ Edit/Position/Apply is the exact low-level primitive, Session `let ... = edit
 one-shot Anddress-first Edit is the canonical Replace contraction. None is
 internal, deprecated, renamed, aliased, or wrapped by that separation.
 
+`0.2.3` Patch Box Phase 1 is documentation authority only. It plans an
+AI-facing information-surface patch over the existing engine: Search may add
+same-observation descriptive Line positions beside opaque v4 Anddresses; View
+may project only from a caller-held target to itself or an ancestor, first
+singly and then as an ordered all-or-nothing batch; and one-shot Replace may
+return only a just-published current-state receipt. None of that metadata is
+v4 identity, currentness evidence, a selector, history, relocation, or a
+second source read. The phase adds no Rust, CLI, Cargo, version, artifact, or
+publication change. The ordered gates and consumer evidence are tracked in
+[Backwriter 0.2.3 Patch Box](docs/tasks/2026-09-03-backwriter-0.2.3-patch-box.md).
+
 The repository cutline ends at public Rust Core, required Runtime, and the
 implemented Backwriter CLI V1 Adapter-owned one-shot Version and Update,
 one-shot human and JSON Search/View/Check, raw View, Anddress-first one-shot

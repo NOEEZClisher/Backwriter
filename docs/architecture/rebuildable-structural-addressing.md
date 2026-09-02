@@ -63,6 +63,14 @@ Line body replacement may append only the terminator observed by that View.
 This creates no alternate locator, content identity, ordinal, context,
 relocation evidence, wire field, equality rule, or compatibility schema.
 
+The planned `0.2.3` Patch Box does not change this algebra or wire. A current
+one-based Line number or Paragraph inclusive Line range attached to a Search
+result is descriptive information from that Search observation, not an
+Anddress field, locator, equality input, currentness proof, or selector. A
+fresh Anddress in a successful Edit receipt names only the exact resulting
+current state already described by v4. It adds no predecessor, successor,
+survivor, relocation, or publication-history relation to the input address.
+
 The source hash is SHA-256 using the existing incremental implementation. The
 v4 wire version is `artext.backwriter-anddress.v4`. The encoder emits exactly
 this compact field order for every kind:

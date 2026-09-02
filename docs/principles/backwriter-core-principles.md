@@ -15,6 +15,8 @@ drift semantics without adding a watcher or supported race.
 The `0.2.2` Gates 1–6 add only the general Adapter contraction in Principle 16
 and its integration evidence; Gate 7 separately closes publication. They
 change no Core, Runtime, or v4 meaning.
+The planned `0.2.3` Patch Box is governed by Principle 17 and likewise leaves
+v4 identity and currentness unchanged.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash and length only while its
@@ -97,3 +99,10 @@ change no Core, Runtime, or v4 meaning.
     replacement uses View's current terminator; File and Paragraph remain exact
     Content. This hides optional caller bookkeeping without adding a Core
     workflow, target finder, state machine, relocation, retry, or error alias.
+17. **Information surfaces do not become identity or history.** Search may
+    describe a hit's current Line position from the same source observation,
+    View may project only from a caller-held target to itself or an ancestor,
+    and a confirmed Apply may expose a fresh address for its exact resulting
+    current state. Descriptive positions are not selectors or v4 fields;
+    projection is not discovery; and a receipt creates no predecessor,
+    successor, persistence, retry, watcher, or relocation authority.

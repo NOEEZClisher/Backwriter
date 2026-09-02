@@ -458,6 +458,54 @@ At Gate 6 the source version became `0.2.2`, while Core, Runtime, v4 wire, and
 then-published `0.2.1` behavior remained unchanged. The subsequent Gate 7
 publication changed only the official distribution boundary to `0.2.2`.
 
+## Authorized 0.2.3 Patch Box Adapter direction
+
+Phase 1 changes no implemented syntax or output. The current human Search path
+is consumed by one-shot Search, Session Search, stored Search values, and the
+shared address-row writer also used by Pick. The current streaming JSON path is
+the public `bw.cli.search.v1` schema consumed by the documented one-shot Edit
+flow and its exact-byte, decode, order, duplicate, escaping, and large-result
+regressions. Native `SearchOutcome` is also consumed by Check, Data, Session
+binding/index resolution, Pick operands, and public Rust callers. Later work
+must preserve those native meanings and must not change Pick rows as an
+accidental effect of changing Search presentation.
+
+The minimum machine-output boundary is a hard source-level cutover to a new
+`bw.cli.search.v2` result-item projection in Gate 2, not a parallel v1 mode,
+compatibility switch, or second Search engine. Published `0.2.2`
+`bw.cli.search.v1` remains immutable release evidence. Each v2 item will expose
+logical path, target kind, the current one-based Line or inclusive Paragraph
+Line range when applicable, and the exact opaque v4 Anddress. File items omit
+Line position by default. Items retain the existing result order and every
+duplicate. Runtime must carry the descriptive metadata out of the same Search
+observation; the Adapter must not derive it by reopening Workspace Source.
+
+Future View syntax and output must express one caller-selected upward
+projection. Line may request Line, Paragraph, or File; Paragraph may request
+Paragraph or File; File may request File. Batch uses one projection for an
+ordered collection, retains duplicates, and publishes no partial output. It
+must reuse one observation for all inputs from one source instead of invoking
+the existing single command repeatedly. Exact request and output spellings are
+closed only in their implementation gates; Phase 1 adds no placeholder parser,
+wrapper, DTO, or schema.
+
+Future one-shot Replace output includes a fresh current Anddress for changed
+File and Line results, and includes one for a changed Paragraph only under the
+Protocol's unique-result rule. The address comes only from the successful
+Apply result described by the Protocol. The Adapter must not invoke
+Search after publication. Gate 5 closes the native result and Gate 6 closes
+its human or machine projection, including the distinction among no-op,
+changed with a fresh target, changed without one, prepublication failure, and
+uncertain publication. Until then, the implemented `OK` output remains the
+`0.2.2` contract.
+
+Argv Content remains a supported exact transport. Stdin remains conditional,
+not reserved syntax: Gate 6 may implement it only after selecting a form that
+cannot reinterpret literal `--stdin` Content and defining exact EOF, UTF-8,
+NUL, newline, read/resource failure, status, and publication behavior. No
+history, diff, retry, relocation, watcher, persistent identity, performance
+claim, or automatic capability workflow is part of this Adapter direction.
+
 ## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 
 The Session starts with:
