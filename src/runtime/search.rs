@@ -1100,6 +1100,19 @@ mod tests {
         assert_eq!(exact_file.matches("observe_source(").count(), 1);
         assert!(!exact_file.contains("scan_source"));
         assert!(!exact_file.contains("SourceFramer"));
+        let source_scan = include_str!("source_scan.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let raw = source_scan
+            .split("pub(crate) fn observe_source")
+            .nth(1)
+            .unwrap()
+            .split("pub(crate) fn observe_structural")
+            .next()
+            .unwrap();
+        assert!(!raw.contains("observe_structural"));
+        assert!(!raw.contains("StructuralCursor"));
     }
 
     #[test]

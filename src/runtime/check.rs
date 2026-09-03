@@ -676,6 +676,15 @@ mod tests {
             .next()
             .unwrap();
         assert!(!source_scan.contains("fn is_current"));
+        let raw = source_scan
+            .split("pub(crate) fn observe_source")
+            .nth(1)
+            .unwrap()
+            .split("pub(crate) fn observe_structural")
+            .next()
+            .unwrap();
+        assert!(!raw.contains("observe_structural"));
+        assert!(!raw.contains("StructuralCursor"));
         let apply = include_str!("apply.rs");
         assert_eq!(apply.matches("observe_source(source").count(), 1);
         assert_eq!(apply.matches("stage_source(&mut source").count(), 1);

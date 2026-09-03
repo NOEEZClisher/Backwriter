@@ -1,9 +1,10 @@
 # Backwriter Principles
 
-The planned `0.2.5` performance recovery is governed by Principle 19 and its
+The active `0.2.5` performance recovery is governed by Principle 19 and its
 [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
-Gate 1 changes authority documents only; current source and official release
-remain closed `0.2.4`.
+Gates 1 through 3 close authority, bulk literal matching, and raw/structural
+observation; current source version and the official release remain closed
+`0.2.4`.
 
 The published and closed `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
@@ -161,3 +162,7 @@ the v5 `0.2.4` distribution governed by Principle 18.
     evidence alone may select cursor demand, shared Paragraph allocation, or
     pending chunk size; none authorizes another parser, validator, writer,
     compatibility path, state, or release.
+    The completed raw path owns UTF-8/NUL validation, SHA-256, checked length,
+    exact Line count, and chunk delivery. Only actual Line/Paragraph projection
+    composes it with the sole cursor; this specialization creates no second
+    source read or structural authority.

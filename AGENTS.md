@@ -38,9 +38,9 @@ live publication, fresh installation, and explicit public `0.2.3` update are
 complete from Source Authority revision
 `0ee4dcce14da93f925c27a04d0e79051c83fd124`.
 
-## 0.2.5 performance recovery in progress
+## 0.2.5 performance recovery — Gates 1–3 complete
 
-Gates 1 and 2 of the
+Gates 1 through 3 of the
 [performance-recovery tracker](docs/tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
 close authority and bulk literal matching. Cargo, `bw version`, artifacts,
 installers, Update, and the public distribution remain published and closed
@@ -51,9 +51,10 @@ The target preserves v5 fields, algebra, wire bytes, Search/View/Edit output,
 one `StructuralCursor`, one `AnddressIssuer`, single/batch View, fresh Edit
 receipts, source Line-count currentness, Host proof, publication, and Anchor
 fail-closure. A same-hash, same-length address with a false Line count remains
-`NotCurrent`. Gate 3 may replace unnecessary structural work only with a
-minimal same-read Line-count accumulator that owns no Paragraph or parent
-geometry and does not invoke the structural cursor.
+`NotCurrent`. The raw observer derives that count with a minimal same-read
+counter that owns no Paragraph or parent geometry and invokes no structural
+cursor. The structural observer composes the same raw state with the sole
+`StructuralCursor` only for actual Line/Paragraph geometry consumers.
 
 Strict Issuer/decode construction and public `Anddress::validate()` remain.
 Only repeated validation on a proven already typed hot path may be removed.
@@ -70,10 +71,17 @@ cursor, source validation, projection, issuance, sorting, and result buckets
 remain unchanged. Fixed sparse measurement stays below the 1.15 ceiling, so it
 does not authorize `StructuralDemand` or cursor specialization.
 
-The remaining ordered work is raw/structural observation, issuance/encoding,
-chunked pending memory, consumer contraction, fixed evidence/source readiness,
-then separately authorized release. Shared Paragraph allocation and chunk size
-require measurement. Do not introduce v6, change v5 or Adapter output, restore
+Gate 3 routes Check proof misses, ordinary/batch View, Apply before-state,
+trusted exact-length staging, and unit Apply after-state through raw
+observation. Content Search and proof-miss Anchor retain structural framing;
+Apply after-state activates it only for a non-File receipt or live non-File
+Anchor. Fixed A/B/C/D evidence passes the Check, View, 256 MiB Apply, CRLF
+Edit, and 134,217,728-short-Line boundaries without changing v5 or output.
+
+The remaining ordered work is issuance/encoding, chunked pending memory,
+consumer contraction, fixed evidence/source readiness, then separately
+authorized release. Shared Paragraph allocation and chunk size require
+measurement. Do not introduce v6, change v5 or Adapter output, restore
 retired carriers/scanners/private View, or add a parser, persistent
 state/index/registry, stdin, CLI split, history, relocation, watcher, merge,
 retry, rollback, or compatibility path.

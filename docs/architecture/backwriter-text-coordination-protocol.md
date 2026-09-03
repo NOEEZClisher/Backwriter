@@ -2,7 +2,7 @@
 
 ## 0.2.5 performance-recovery authority
 
-Gate 1 changes documentation only. Current production and the official release
+Gates 1 through 3 are complete. Current production and the official release
 remain closed `0.2.4`. The performance target preserves all public v5,
 capability, Runtime, Adapter, failure, and publication meaning under one rule:
 semantics stay unified while execution becomes specialized again.
@@ -10,10 +10,11 @@ semantics stay unified while execution becomes specialized again.
 `sourceLineCount` remains part of `SourceIdentity`, ordinary equality,
 `CurrentObservation`, Host proof, and View, Check, and Apply currentness. A
 same-hash, same-length address that claims a different Line count remains
-`NotCurrent`. Raw observation specialization must derive the exact Line count
-in its one forward read with a minimal accumulator; it may omit Paragraph,
-parent, and target geometry and must not invoke or duplicate the sole
-`StructuralCursor`.
+`NotCurrent`. Raw observation derives the exact Line count in its one forward
+read with a minimal accumulator; it omits Paragraph, parent, and target
+geometry and does not invoke or duplicate the sole `StructuralCursor`.
+Structural observation composes that same raw state with the cursor only when
+a caller consumes Line or Paragraph geometry.
 
 Safe Rust typed Anddresses remain valid by construction through strict v5
 decode or the sole crate-private Issuer. Wire decode, Issuer source/geometry
@@ -32,11 +33,12 @@ empty vector, and preserves exact KAT bytes and the existing error type. The
 CLI may reuse a scratch vector but may not duplicate the writer or retain a
 second result collection.
 
-The ordered implementation gates are bulk matching, raw/structural
-observation, issuance/encoding, chunked pending memory, and final consumer
-contraction, followed by fixed evidence/source readiness and separately
-authorized release. Conditional structural demand, cursor specialization,
-shared Paragraph allocation, and pending chunk size require measured evidence.
+Bulk matching and raw/structural observation are complete. The remaining
+ordered implementation gates are issuance/encoding, chunked pending memory,
+and final consumer contraction, followed by fixed evidence/source readiness
+and separately authorized release. Conditional structural demand, cursor
+specialization, shared Paragraph allocation, and pending chunk size require
+measured evidence.
 No gate may change v5 fields or output, add another parser or authority, or
 restore a retired carrier, relation scan, or private Edit View.
 
@@ -405,29 +407,34 @@ duplicate Paragraph drift also safe-rejects in both.
 
 ### Current execution audit
 
-The common `observe_source` path performs one forward read from one retained
+The raw `observe_source` path performs one forward read from one retained
 no-follow source handle. Its `ObservationBuilder` incrementally enforces
-UTF-8/NUL policy and computes SHA-256 and checked byte length with fixed scratch.
+UTF-8/NUL policy and computes SHA-256, checked byte length, and exact Line count
+with fixed scratch and no `StructuralCursor`. `observe_structural` composes that
+same raw builder with the sole cursor during the same read.
 The resulting `CurrentObservation` is call-local and is discarded after its
 consumer. Untrusted `WorkspaceRuntime` stores only admission/workspace state
 and live Anchor bindings.
 
 - Content and exact-File Search each observe a selected source once. Content
-  projection runs during that same read; there is no separate hash pass.
+  projection uses structural observation during that same read; exact File uses
+  raw observation. There is no separate hash pass.
 - Ordinary View opens and observes the source once while capturing the requested
   range. Anchor creation and Untrusted or proof-miss anchored View use one
   source observation with direct target projection; matching Host anchored View
   shares the ordinary trusted direct-range execution.
 - Raw, Search-outcome, and Pick-outcome Check group eligible inputs by
   coordinate and logical path. Untrusted and proof-miss groups observe each
-  eligible path once for hash and length; a Host proof hit uses copied proof
+  eligible path once for hash, length, and Line count; a Host proof hit uses copied proof
   evidence and performs no source observation. Check retains no result and does
   not mutate proof after returning.
-- Apply's single live-source observation simultaneously writes accepted before
-  bytes to staging and computes the before hash and length. Apply has no
+- Apply's single raw live-source observation simultaneously writes accepted
+  before bytes to staging and computes the before hash, length, and Line count. Apply has no
   separate pre-hash source pass. Staging readback is preparation, not a second
-  live-source observation. Prospective-after SHA-256 and length are computed
-  while output bytes are emitted, without an after-source reread. In Host mode,
+  live-source observation. Prospective-after SHA-256, length, and Line count are
+  computed while output bytes are emitted, without an after-source reread. Unit
+  Apply and File-only receipt/Anchor output remain raw; one structural
+  composition is enabled only for a non-File receipt or live non-File Anchor. In Host mode,
   Phase 5 instead uses a matching proof to omit the before hash and retains only
   the confirmed changed prospective-after proof after publication.
 - In Untrusted Mode, Search followed by View, Check, or Apply performs two full
@@ -442,7 +449,7 @@ and live Anchor bindings.
   authority.
 
 Host Search uses the same observer and projection. It moves only the completed
-logical path, SHA-256, and exact length into provisional proof records, then
+logical path, SHA-256, exact length, and exact Line count into provisional proof records, then
 installs them after the complete Search result succeeds. Phase 3 ordinary View
 uses a matching proof as specified above. Phase 4 Check classifies a matching
 path group entirely from copied hash/length evidence and retains the full

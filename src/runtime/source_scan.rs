@@ -8,6 +8,9 @@ use crate::hash::Sha256;
 use super::structural_cursor::{LineSpan, StructuralCursor, StructuralSink};
 
 pub(crate) const READ_BUFFER_SIZE: usize = 8_192;
+const BYTE_LOW_BITS: u64 = 0x7f7f_7f7f_7f7f_7f7f;
+const BYTE_ONE_BITS: u64 = 0x0101_0101_0101_0101;
+const BYTE_HIGH_BITS: u64 = 0x8080_8080_8080_8080;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum SourceScanError {
@@ -103,61 +106,197 @@ struct Utf8Validator {
     length: usize,
 }
 
-/// Incremental source-policy and exact-state accumulator shared by retained
+/// Incremental source-policy and exact-state accumulator shared by every raw
 /// source observation and generated Apply output.
 pub(crate) struct ObservationBuilder {
     utf8: Utf8Validator,
-    cursor: StructuralCursor,
     hash: Sha256,
+    byte_length: usize,
+    line_count: usize,
+    trailing_cr: bool,
+    ends_with_terminator: bool,
 }
 
 impl ObservationBuilder {
     pub(crate) fn new() -> Result<Self, SourceScanError> {
         Ok(Self {
             utf8: Utf8Validator::default(),
-            cursor: StructuralCursor::default(),
             hash: Sha256::new(),
+            byte_length: 0,
+            line_count: 0,
+            trailing_cr: false,
+            ends_with_terminator: false,
         })
     }
 
     pub(crate) fn byte_offset(&self) -> usize {
-        self.cursor.byte_offset()
+        self.byte_length
     }
 
-    pub(crate) fn push_structural(
+    pub(crate) fn push(
         &mut self,
         bytes: &[u8],
-        sink: &mut impl StructuralSink,
+        mut on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
     ) -> Result<usize, SourceScanError> {
-        if !self.utf8.push(bytes) {
+        let chunk_start = self.byte_length;
+        let byte_length = self
+            .byte_length
+            .checked_add(bytes.len())
+            .ok_or(SourceScanError::Resource)?;
+        let text = scan_text_chunk(bytes, self.trailing_cr);
+        let line_count = self
+            .line_count
+            .checked_add(text.line_breaks)
+            .ok_or(SourceScanError::Resource)?;
+        let valid = if text.ascii_without_nul && self.utf8.length == 0 {
+            true
+        } else {
+            self.utf8.push(bytes)
+        };
+        if !valid {
             return Err(SourceScanError::InvalidSource);
         }
-        let chunk_start = self.cursor.byte_offset();
         self.hash.update(bytes);
-        sink.source(bytes, chunk_start)?;
-        self.cursor.push(bytes, sink)?;
+        on_chunk(bytes, chunk_start)?;
+        self.byte_length = byte_length;
+        self.line_count = line_count;
+        if let Some(&last) = bytes.last() {
+            self.trailing_cr = last == b'\r';
+            self.ends_with_terminator = matches!(last, b'\r' | b'\n');
+        }
         Ok(chunk_start)
     }
 
-    pub(crate) fn finish_structural(
-        self,
-        sink: &mut impl StructuralSink,
-    ) -> Result<CurrentObservation, SourceScanError> {
+    pub(crate) fn finish(self) -> Result<CurrentObservation, SourceScanError> {
         if !self.utf8.finish() {
             return Err(SourceScanError::InvalidSource);
         }
-        let (byte_length, line_count) = self.cursor.finish(sink)?;
+        let line_count = if self.byte_length != 0 && !self.ends_with_terminator {
+            self.line_count
+                .checked_add(1)
+                .ok_or(SourceScanError::Resource)?
+        } else {
+            self.line_count
+        };
         Ok(CurrentObservation {
             hash: self.hash.finish().to_hex(),
-            byte_length,
+            byte_length: self.byte_length,
             line_count,
         })
     }
 }
 
-struct EmptySink;
+struct TextChunk {
+    line_breaks: usize,
+    ascii_without_nul: bool,
+}
 
-impl StructuralSink for EmptySink {}
+fn scan_text_chunk(bytes: &[u8], preceding_cr: bool) -> TextChunk {
+    let mut blocks = bytes.chunks_exact(128);
+    let mut line_breaks = 0;
+    let mut cr = 0_u64;
+    let mut non_ascii = 0_u64;
+    let mut nul = 0_u64;
+    for block in &mut blocks {
+        let mut terminator_lanes = 0_u64;
+        for chunk in block.chunks_exact(8) {
+            let word = u64::from_le_bytes(chunk.try_into().expect("fixed word chunk"));
+            let compared_cr = word ^ u64::from(b'\r').wrapping_mul(BYTE_ONE_BITS);
+            cr |= compared_cr.wrapping_sub(BYTE_ONE_BITS) & !compared_cr & BYTE_HIGH_BITS;
+            terminator_lanes += matching_byte_mask(word, b'\n') >> 7;
+            non_ascii |= word & BYTE_HIGH_BITS;
+            nul |= word.wrapping_sub(BYTE_ONE_BITS) & !word & BYTE_HIGH_BITS;
+        }
+        line_breaks += ((terminator_lanes.wrapping_mul(BYTE_ONE_BITS)) >> 56) as usize;
+    }
+    for &byte in blocks.remainder() {
+        line_breaks += usize::from(byte == b'\n');
+        cr |= u64::from(byte == b'\r');
+        non_ascii |= u64::from(byte & 0x80);
+        nul |= u64::from(byte == 0);
+    }
+    line_breaks = if cr == 0 {
+        line_breaks - usize::from(preceding_cr && bytes.first() == Some(&b'\n'))
+    } else {
+        line_break_count_with_cr(bytes, preceding_cr)
+    };
+    TextChunk {
+        line_breaks,
+        ascii_without_nul: non_ascii == 0 && nul == 0,
+    }
+}
+
+fn line_break_count_with_cr(bytes: &[u8], preceding_cr: bool) -> usize {
+    let mut line_breaks = 0;
+    let mut previous_was_cr = preceding_cr;
+    for &byte in bytes {
+        match byte {
+            b'\r' => {
+                line_breaks += 1;
+                previous_was_cr = true;
+            }
+            b'\n' => {
+                line_breaks += usize::from(!previous_was_cr);
+                previous_was_cr = false;
+            }
+            _ => previous_was_cr = false,
+        }
+    }
+    line_breaks
+}
+
+fn matching_byte_mask(word: u64, byte: u8) -> u64 {
+    let compared = word ^ u64::from(byte).wrapping_mul(BYTE_ONE_BITS);
+    !(((compared & BYTE_LOW_BITS) + BYTE_LOW_BITS) | compared | BYTE_LOW_BITS)
+}
+
+/// Composes raw observation with the sole structural cursor for callers that
+/// consume Line or Paragraph geometry.
+pub(crate) struct StructuralObservationBuilder {
+    observation: ObservationBuilder,
+    cursor: StructuralCursor,
+}
+
+impl StructuralObservationBuilder {
+    pub(crate) fn new() -> Result<Self, SourceScanError> {
+        Ok(Self {
+            observation: ObservationBuilder::new()?,
+            cursor: StructuralCursor::default(),
+        })
+    }
+
+    pub(crate) fn byte_offset(&self) -> usize {
+        debug_assert_eq!(self.observation.byte_offset(), self.cursor.byte_offset());
+        self.observation.byte_offset()
+    }
+
+    pub(crate) fn push(
+        &mut self,
+        bytes: &[u8],
+        sink: &mut impl StructuralSink,
+    ) -> Result<usize, SourceScanError> {
+        let chunk_start = self
+            .observation
+            .push(bytes, |bytes, byte_start| sink.source(bytes, byte_start))?;
+        let cursor_start = self.cursor.push(bytes, sink)?;
+        if cursor_start != chunk_start {
+            return Err(SourceScanError::InvalidSource);
+        }
+        Ok(chunk_start)
+    }
+
+    pub(crate) fn finish(
+        self,
+        sink: &mut impl StructuralSink,
+    ) -> Result<CurrentObservation, SourceScanError> {
+        let state = self.observation.finish()?;
+        let (byte_length, line_count) = self.cursor.finish(sink)?;
+        if byte_length != state.byte_length || line_count != state.line_count {
+            return Err(SourceScanError::InvalidSource);
+        }
+        Ok(state)
+    }
+}
 
 impl Utf8Validator {
     fn push(&mut self, bytes: &[u8]) -> bool {
@@ -210,15 +349,7 @@ impl Utf8Validator {
 /// only after it has passed UTF-8 and NUL validation.
 pub(crate) fn observe_source(
     reader: &mut impl Read,
-    on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
-) -> Result<CurrentObservation, SourceScanError> {
-    let mut sink = ChunkSink(on_chunk);
-    observe_structural(reader, &mut sink)
-}
-
-pub(crate) fn observe_structural(
-    reader: &mut impl Read,
-    sink: &mut impl StructuralSink,
+    mut on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
 ) -> Result<CurrentObservation, SourceScanError> {
     let mut observation = ObservationBuilder::new()?;
     let mut scratch = [0_u8; READ_BUFFER_SIZE];
@@ -227,21 +358,27 @@ pub(crate) fn observe_structural(
             .read(&mut scratch)
             .map_err(|_| SourceScanError::Read)?;
         if count == 0 {
-            return observation.finish_structural(sink);
+            return observation.finish();
         }
-        let bytes = &scratch[..count];
-        observation.push_structural(bytes, sink)?;
+        observation.push(&scratch[..count], &mut on_chunk)?;
     }
 }
 
-struct ChunkSink<F>(F);
-
-impl<F> StructuralSink for ChunkSink<F>
-where
-    F: FnMut(&[u8], usize) -> Result<(), SourceScanError>,
-{
-    fn source(&mut self, bytes: &[u8], byte_start: usize) -> Result<(), SourceScanError> {
-        (self.0)(bytes, byte_start)
+pub(crate) fn observe_structural(
+    reader: &mut impl Read,
+    sink: &mut impl StructuralSink,
+) -> Result<CurrentObservation, SourceScanError> {
+    let mut observation = StructuralObservationBuilder::new()?;
+    let mut scratch = [0_u8; READ_BUFFER_SIZE];
+    loop {
+        let count = reader
+            .read(&mut scratch)
+            .map_err(|_| SourceScanError::Read)?;
+        if count == 0 {
+            return observation.finish(sink);
+        }
+        let bytes = &scratch[..count];
+        observation.push(bytes, sink)?;
     }
 }
 
@@ -253,12 +390,11 @@ pub(crate) fn validate_source_exact(
     mut on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
 ) -> Result<(), SourceScanError> {
     let mut utf8 = Utf8Validator::default();
-    let mut cursor = StructuralCursor::default();
-    let mut sink = EmptySink;
+    let mut byte_offset = 0_usize;
     let mut scratch = [0_u8; READ_BUFFER_SIZE];
-    while cursor.byte_offset() < expected_length {
+    while byte_offset < expected_length {
         let remaining = expected_length
-            .checked_sub(cursor.byte_offset())
+            .checked_sub(byte_offset)
             .ok_or(SourceScanError::Resource)?;
         let capacity = remaining.min(scratch.len());
         let count = reader
@@ -268,11 +404,14 @@ pub(crate) fn validate_source_exact(
             return Err(SourceScanError::InvalidSource);
         }
         let bytes = &scratch[..count];
+        let next_offset = byte_offset
+            .checked_add(count)
+            .ok_or(SourceScanError::Resource)?;
         if !utf8.push(bytes) {
             return Err(SourceScanError::InvalidSource);
         }
-        let chunk_start = cursor.push(bytes, &mut sink)?;
-        on_chunk(bytes, chunk_start)?;
+        on_chunk(bytes, byte_offset)?;
+        byte_offset = next_offset;
     }
     let mut extra = [0_u8; 1];
     if reader.read(&mut extra).map_err(|_| SourceScanError::Read)? != 0 {
@@ -281,18 +420,20 @@ pub(crate) fn validate_source_exact(
     if !utf8.finish() {
         return Err(SourceScanError::InvalidSource);
     }
-    let (actual, _) = cursor.finish(&mut sink)?;
-    (actual == expected_length)
+    (byte_offset == expected_length)
         .then_some(())
         .ok_or(SourceScanError::InvalidSource)
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io::{self, Read};
+    use std::io::{self, Cursor, Read};
+
+    use crate::runtime::structural_cursor::{LineSpan, StructuralSink};
 
     use super::{
-        EmptySink, ObservationBuilder, READ_BUFFER_SIZE, SourceScanError, validate_source_exact,
+        ObservationBuilder, READ_BUFFER_SIZE, SourceScanError, StructuralObservationBuilder,
+        observe_source, observe_structural, scan_text_chunk, validate_source_exact,
     };
 
     struct CountingReader {
@@ -301,6 +442,7 @@ mod tests {
         requested: usize,
         returned: usize,
         fail_at: Option<usize>,
+        max_chunk: usize,
     }
 
     impl CountingReader {
@@ -311,7 +453,13 @@ mod tests {
                 requested: 0,
                 returned: 0,
                 fail_at: None,
+                max_chunk: usize::MAX,
             }
+        }
+
+        fn with_max_chunk(mut self, max_chunk: usize) -> Self {
+            self.max_chunk = max_chunk;
+            self
         }
     }
 
@@ -321,7 +469,10 @@ mod tests {
             if self.fail_at == Some(self.position) {
                 return Err(io::Error::other("injected read failure"));
             }
-            let count = buffer.len().min(self.bytes.len() - self.position);
+            let count = buffer
+                .len()
+                .min(self.max_chunk)
+                .min(self.bytes.len() - self.position);
             buffer[..count].copy_from_slice(&self.bytes[self.position..self.position + count]);
             self.position += count;
             self.returned += count;
@@ -395,13 +546,233 @@ mod tests {
             ),
         ] {
             let mut observation = ObservationBuilder::new().unwrap();
-            let mut sink = EmptySink;
             for chunk in chunks {
-                observation.push_structural(chunk, &mut sink).unwrap();
+                observation.push(chunk, |_, _| Ok(())).unwrap();
             }
-            let state = observation.finish_structural(&mut sink).unwrap();
+            let state = observation.finish().unwrap();
             assert_eq!(state.byte_length, expected_length);
             assert_eq!(state.line_count, expected_lines);
         }
+
+        for length in 0_u32..=10 {
+            for mut encoded in 0..3_u32.pow(length) {
+                let mut bytes = Vec::with_capacity(length as usize);
+                for _ in 0..length {
+                    bytes.push([b'x', b'\r', b'\n'][(encoded % 3) as usize]);
+                    encoded /= 3;
+                }
+                for preceding_cr in [false, true] {
+                    let mut expected = 0;
+                    let mut previous_was_cr = preceding_cr;
+                    for &byte in &bytes {
+                        match byte {
+                            b'\r' => {
+                                expected += 1;
+                                previous_was_cr = true;
+                            }
+                            b'\n' => {
+                                expected += usize::from(!previous_was_cr);
+                                previous_was_cr = false;
+                            }
+                            _ => previous_was_cr = false,
+                        }
+                    }
+                    assert_eq!(scan_text_chunk(&bytes, preceding_cr).line_breaks, expected);
+                }
+            }
+        }
+    }
+
+    #[derive(Default)]
+    struct StructuralCount {
+        source_chunks: usize,
+        lines: usize,
+        paragraphs: usize,
+    }
+
+    impl StructuralSink for StructuralCount {
+        fn source(&mut self, _bytes: &[u8], _byte_start: usize) -> Result<(), SourceScanError> {
+            self.source_chunks += 1;
+            Ok(())
+        }
+
+        fn line(&mut self, _line: LineSpan) -> Result<(), SourceScanError> {
+            self.lines += 1;
+            Ok(())
+        }
+
+        fn paragraph(
+            &mut self,
+            _paragraph: crate::backwriter::anddress::ParagraphGeometry,
+        ) -> Result<(), SourceScanError> {
+            self.paragraphs += 1;
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn raw_and_structural_observations_have_exact_state_parity() {
+        let mut edge = vec![b'x'; READ_BUFFER_SIZE - 1];
+        edge.extend_from_slice("é".as_bytes());
+        edge.extend_from_slice(b"\r\n\t \rfinal");
+        let mut cases = vec![
+            Vec::new(),
+            b"\n".to_vec(),
+            b"\r".to_vec(),
+            b"\r\n".to_vec(),
+            b"one\rtwo\nthree\r\nfour".to_vec(),
+            edge,
+        ];
+        for length in [READ_BUFFER_SIZE - 1, READ_BUFFER_SIZE, READ_BUFFER_SIZE + 1] {
+            let mut bytes = vec![b'x'; length];
+            bytes[length - 2..].copy_from_slice("é".as_bytes());
+            cases.push(bytes);
+        }
+        for bytes in cases {
+            for max_chunk in [
+                1,
+                READ_BUFFER_SIZE - 1,
+                READ_BUFFER_SIZE,
+                READ_BUFFER_SIZE + 1,
+            ] {
+                let mut raw_reader = CountingReader::new(bytes.clone()).with_max_chunk(max_chunk);
+                let mut raw_chunks = 0;
+                let raw = observe_source(&mut raw_reader, |_, _| {
+                    raw_chunks += 1;
+                    Ok(())
+                })
+                .unwrap();
+
+                let mut structural_reader =
+                    CountingReader::new(bytes.clone()).with_max_chunk(max_chunk);
+                let mut structural = StructuralCount::default();
+                let state = observe_structural(&mut structural_reader, &mut structural).unwrap();
+                assert_eq!(raw, state);
+                assert_eq!(structural.lines, state.line_count);
+                assert_eq!(structural.source_chunks, raw_chunks);
+            }
+        }
+    }
+
+    #[test]
+    fn raw_and_structural_observations_fail_closed_on_invalid_or_late_input() {
+        for bytes in [b"valid\nlate\0".to_vec(), b"valid\nlate\xff".to_vec()] {
+            let mut raw = CountingReader::new(bytes.clone()).with_max_chunk(1);
+            let mut raw_chunks = 0;
+            assert_eq!(
+                observe_source(&mut raw, |_, _| {
+                    raw_chunks += 1;
+                    Ok(())
+                }),
+                Err(SourceScanError::InvalidSource)
+            );
+            assert!(raw_chunks > 0);
+
+            let mut structural = CountingReader::new(bytes).with_max_chunk(1);
+            let mut sink = StructuralCount::default();
+            assert_eq!(
+                observe_structural(&mut structural, &mut sink),
+                Err(SourceScanError::InvalidSource)
+            );
+        }
+
+        let mut raw = CountingReader::new(b"valid late failure".to_vec()).with_max_chunk(1);
+        raw.fail_at = Some(6);
+        assert_eq!(
+            observe_source(&mut raw, |_, _| Ok(())),
+            Err(SourceScanError::Read)
+        );
+        let mut structural = CountingReader::new(b"valid late failure".to_vec()).with_max_chunk(1);
+        structural.fail_at = Some(6);
+        assert_eq!(
+            observe_structural(&mut structural, &mut StructuralCount::default()),
+            Err(SourceScanError::Read)
+        );
+
+        let mut rejected = CountingReader::new(vec![b'x'; READ_BUFFER_SIZE + 1]);
+        let mut accepted_chunks = 0;
+        assert_eq!(
+            observe_source(&mut rejected, |_, start| {
+                if start == 0 {
+                    accepted_chunks += 1;
+                    Ok(())
+                } else {
+                    Err(SourceScanError::Resource)
+                }
+            }),
+            Err(SourceScanError::Resource)
+        );
+        assert_eq!(accepted_chunks, 1);
+    }
+
+    #[test]
+    fn raw_checked_state_fails_before_callback_and_structural_cursor_is_singular() {
+        let mut callback_count = 0;
+        let mut length_overflow = ObservationBuilder::new().unwrap();
+        length_overflow.byte_length = usize::MAX;
+        assert_eq!(
+            length_overflow.push(b"x", |_, _| {
+                callback_count += 1;
+                Ok(())
+            }),
+            Err(SourceScanError::Resource)
+        );
+        assert_eq!(callback_count, 0);
+
+        let mut finish_overflow = ObservationBuilder::new().unwrap();
+        finish_overflow.line_count = usize::MAX;
+        finish_overflow
+            .push(b"x", |_, _| Ok(()))
+            .expect("the final unterminated Line owns the overflow");
+        assert_eq!(finish_overflow.finish(), Err(SourceScanError::Resource));
+
+        let mut count_overflow = ObservationBuilder::new().unwrap();
+        count_overflow.line_count = usize::MAX;
+        assert_eq!(
+            count_overflow.push(b"\n", |_, _| {
+                callback_count += 1;
+                Ok(())
+            }),
+            Err(SourceScanError::Resource)
+        );
+        assert_eq!(callback_count, 0);
+
+        let production = include_str!("source_scan.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let raw_builder = production
+            .split("pub(crate) struct ObservationBuilder")
+            .nth(1)
+            .unwrap()
+            .split("pub(crate) struct StructuralObservationBuilder")
+            .next()
+            .unwrap();
+        assert!(!raw_builder.contains("StructuralCursor"));
+        let raw_observer = production
+            .split("pub(crate) fn observe_source")
+            .nth(1)
+            .unwrap()
+            .split("pub(crate) fn observe_structural")
+            .next()
+            .unwrap();
+        assert!(!raw_observer.contains("observe_structural"));
+        assert!(!raw_observer.contains("StructuralCursor"));
+        let exact = production
+            .split("pub(crate) fn validate_source_exact")
+            .nth(1)
+            .unwrap();
+        assert!(!exact.contains("StructuralCursor"));
+        assert_eq!(production.matches("cursor: StructuralCursor,").count(), 1);
+        assert_eq!(production.matches("StructuralCursor::default()").count(), 1);
+
+        let mut empty = Cursor::new(Vec::<u8>::new());
+        assert_eq!(
+            observe_source(&mut empty, |_, _| Ok(()))
+                .unwrap()
+                .line_count,
+            0
+        );
+        assert!(StructuralObservationBuilder::new().is_ok());
     }
 }

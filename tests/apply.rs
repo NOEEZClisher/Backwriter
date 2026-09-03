@@ -180,7 +180,7 @@ fn assert_no_apply_temp(directory: &std::path::Path) {
 }
 
 #[test]
-fn apply_has_one_edit_seam_and_one_source_observation() {
+fn apply_has_one_executor_with_raw_before_and_demanded_structural_after() {
     let runtime = include_str!("../src/runtime.rs");
     let apply = include_str!("../src/runtime/apply.rs");
     let production = apply.split("#[cfg(test)]").next().unwrap();
@@ -193,9 +193,13 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
     assert_eq!(production.matches(".open_admitted_source(").count(), 1);
     assert_eq!(production.matches("pub(super) fn execute(").count(), 1);
     assert_eq!(production.matches("AnddressIssuer::new(").count(), 1);
-    assert_eq!(production.matches(".finish_structural(").count(), 1);
     assert_eq!(production.matches("observe_source(source").count(), 1);
     assert_eq!(production.matches("stage_source(&mut source").count(), 1);
+    assert!(production.contains("let needs_structural_output = receipt_projection"));
+    assert!(production.contains(".then(|| AfterProjector::new(&bindings, receipt_target, edit))"));
+    assert!(production.contains("enum OutputObservation<'bindings>"));
+    assert!(production.contains("Raw(ObservationBuilder)"));
+    assert!(production.contains("observation: StructuralObservationBuilder"));
     assert!(production.contains("binding.contains(target)"));
     assert!(production.contains("target.contains(binding)"));
     assert!(production.contains("binding.overlaps(target)"));
@@ -269,8 +273,21 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
     let exact_validation = source_scan
         .split_once("pub(crate) fn validate_source_exact")
         .map(|(_, exact)| exact)
+        .unwrap()
+        .split_once("#[cfg(test)]")
+        .map(|(exact, _)| exact)
         .unwrap();
     assert!(!exact_validation.contains("Sha256"));
+    assert!(!exact_validation.contains("StructuralCursor"));
+    let raw_observer = source_scan
+        .split_once("pub(crate) fn observe_source")
+        .map(|(_, raw)| raw)
+        .unwrap()
+        .split_once("pub(crate) fn observe_structural")
+        .map(|(raw, _)| raw)
+        .unwrap();
+    assert!(!raw_observer.contains("observe_structural"));
+    assert!(!raw_observer.contains("StructuralCursor"));
 }
 
 #[test]

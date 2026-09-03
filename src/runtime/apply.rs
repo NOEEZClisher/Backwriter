@@ -22,8 +22,8 @@ use super::{
     AnchorPlanEntry, CurrentProof, SourceProofEvidence, WorkspaceRuntime, is_backwriter_spill,
     mark_anchor_collisions,
     source_scan::{
-        CurrentObservation, ObservationBuilder, READ_BUFFER_SIZE, SourceScanError, observe_source,
-        validate_source_exact,
+        CurrentObservation, ObservationBuilder, READ_BUFFER_SIZE, SourceScanError,
+        StructuralObservationBuilder, observe_source, validate_source_exact,
     },
     structural_cursor::{LineSpan, StructuralSink},
 };
@@ -669,7 +669,13 @@ pub(super) fn execute(
 
     let receipt_projection =
         receipt_target.is_some_and(|target| target.target() != AnddressTarget::File);
-    let projector = AfterProjector::new(&bindings, receipt_target, edit)?;
+    let needs_structural_output = receipt_projection
+        || bindings
+            .iter()
+            .any(|binding| binding.target() != AnddressTarget::File);
+    let projector = needs_structural_output
+        .then(|| AfterProjector::new(&bindings, receipt_target, edit))
+        .transpose()?;
     let temporary = Temporary::create(
         &parent,
         edit_temporary_name(runtime, first.logical_path(), "after")?,
@@ -864,8 +870,7 @@ struct Output<'parent, 'bindings> {
     temporary: Option<Temporary<'parent>>,
     comparison: File,
     identical: bool,
-    observation: ObservationBuilder,
-    projector: Option<AfterProjector<'bindings>>,
+    observation: OutputObservation<'bindings>,
 }
 
 struct CompletedOutput<'parent> {
@@ -879,23 +884,19 @@ impl<'parent, 'bindings> Output<'parent, 'bindings> {
     fn new(
         temporary: Temporary<'parent>,
         comparison: File,
-        projector: AfterProjector<'bindings>,
+        projector: Option<AfterProjector<'bindings>>,
     ) -> Result<Self, ApplyError> {
         Ok(Self {
             temporary: Some(temporary),
             comparison,
             identical: true,
-            observation: ObservationBuilder::new().map_err(map_scan_error)?,
-            projector: Some(projector),
+            observation: OutputObservation::new(projector).map_err(map_scan_error)?,
         })
     }
 
     fn emit(&mut self, bytes: &[u8], emission: Emission) -> Result<(), ApplyError> {
-        let chunk_start = self.observation.byte_offset();
-        let projector = self.projector.as_mut().expect("output owns its projector");
-        projector.begin_emission(emission, chunk_start);
         self.observation
-            .push_structural(bytes, projector)
+            .push(bytes, emission)
             .map_err(map_scan_error)?;
         self.temporary
             .as_mut()
@@ -911,22 +912,68 @@ impl<'parent, 'bindings> Output<'parent, 'bindings> {
             mut comparison,
             mut identical,
             observation,
-            projector,
         } = self;
         if identical {
             identical = comparison_exhausted(&mut comparison)?;
         }
-        let mut projector = projector.expect("output owns its projector");
-        let state = observation
-            .finish_structural(&mut projector)
-            .map_err(map_scan_error)?;
-        let candidates = projector.finish()?;
+        let (state, candidates) = observation.finish()?;
         Ok(CompletedOutput {
             temporary: temporary.expect("output owns its temporary"),
             observation: state,
             candidates,
             identical,
         })
+    }
+}
+
+enum OutputObservation<'bindings> {
+    Raw(ObservationBuilder),
+    Structural {
+        observation: StructuralObservationBuilder,
+        projector: AfterProjector<'bindings>,
+    },
+}
+
+impl<'bindings> OutputObservation<'bindings> {
+    fn new(projector: Option<AfterProjector<'bindings>>) -> Result<Self, SourceScanError> {
+        match projector {
+            Some(projector) => Ok(Self::Structural {
+                observation: StructuralObservationBuilder::new()?,
+                projector,
+            }),
+            None => Ok(Self::Raw(ObservationBuilder::new()?)),
+        }
+    }
+
+    fn push(&mut self, bytes: &[u8], emission: Emission) -> Result<(), SourceScanError> {
+        match self {
+            Self::Raw(observation) => {
+                observation.push(bytes, |_, _| Ok(()))?;
+            }
+            Self::Structural {
+                observation,
+                projector,
+            } => {
+                projector.begin_emission(emission, observation.byte_offset());
+                observation.push(bytes, projector)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn finish(self) -> Result<(CurrentObservation, Vec<Option<TargetGeometry>>), ApplyError> {
+        match self {
+            Self::Raw(observation) => {
+                Ok((observation.finish().map_err(map_scan_error)?, Vec::new()))
+            }
+            Self::Structural {
+                observation,
+                mut projector,
+            } => {
+                let state = observation.finish(&mut projector).map_err(map_scan_error)?;
+                Ok((state, projector.finish()?))
+            }
+        }
     }
 }
 

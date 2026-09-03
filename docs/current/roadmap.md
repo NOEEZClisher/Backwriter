@@ -3,7 +3,7 @@
 ## Planned: 0.2.5 structural specialization and performance recovery
 
 The [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
-closes Gates 1 and 2 without changing release state. The target keeps the
+closes Gates 1 through 3 without changing release state. The target keeps the
 complete closed `0.2.4` v5 meaning and restores specialized hot paths only
 where measurement and reachability show unnecessary work.
 
@@ -12,7 +12,8 @@ where measurement and reachability show unnecessary work.
    replaces the per-byte caller loop, with fixed sparse and dense native
    evidence.
 3. Raw/structural observation — retain Line-count currentness while removing
-   `StructuralCursor` and Paragraph work from raw consumers.
+   `StructuralCursor` and Paragraph work from raw consumers — complete, with
+   fixed A/B/C/D evidence.
 4. Issuance/encoding — remove only proven typed revalidation and add one
    reusable canonical `encode_into` buffer path.
 5. Chunked pending memory — release consumed provisional Search storage and
@@ -38,11 +39,20 @@ Its 256 MiB and 1 GiB C/A median ratios are 1.1389 and 1.1392; both pass the
 1.10 target remains unmet evidence rather than hidden or redefined. The dense
 1,048,576-hit peak remains about 166 MiB for the later pending-memory gate.
 
+Gate 3 keeps one raw same-read Line counter and moves only proven geometry
+consumers onto the structural composition. Its fixed D/A medians are 1.0812
+for Untrusted Check, 1.0582/1.0501/1.0513 for unit/receipt/live-Anchor Range
+Apply, 1.0287 for CRLF Edit, and 1.0948 for short-Line density. Host Check has
+zero capability I/O and remains approximately one microsecond; View output and
+every semantic digest are exact. No cursor mode, second parser, or dependency
+is added.
+
 The fixed labels are published v4 A=`195aaa37068122097ecc04d2644642b6afcc6765`,
 closed `0.2.4` production B=`8b20987893ea5ac454c4c0a50d0c470e26b5e650`,
 release Source Authority `0ee4dcce14da93f925c27a04d0e79051c83fd124`,
-and Gate 2 candidate C based on
-`0b7fbbd9d06c0f2417374d428089232704c49b8b`. Cargo, `bw version`, official
+and Gate 2 C=`05c50802b7393a213147b8a2b52b2616b4b06bee`. Gate 3 D is that clean
+revision plus only the measured Gate 3 production/test/document delta. Cargo,
+`bw version`, official
 artifacts, Update, and the public distribution remain closed `0.2.4` until
 later gates authorize and pass their distinct boundaries.
 

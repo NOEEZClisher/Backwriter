@@ -1,12 +1,14 @@
 # Backwriter Anddress and Exact Line Model
 
-## Planned 0.2.5 encoding and currentness boundary
+## 0.2.5 encoding and currentness boundary
 
-Gate 1 preserves the complete published v5 algebra and wire. Exact source Line
-count remains a `SourceIdentity` field and currentness requirement. A typed
+Gates 1 through 3 preserve the complete published v5 algebra and wire. Exact
+source Line count remains a `SourceIdentity` field and currentness requirement. A typed
 address whose hash and byte length match but whose claimed Line count differs
-from the accepted observation or Host proof remains `NotCurrent`; performance
-work may derive that count more cheaply but may not remove or reinterpret it.
+from the accepted observation or Host proof remains `NotCurrent`. The raw
+observer now derives that count without Paragraph, parent, target geometry, or
+`StructuralCursor`; structural consumers compose the same state with the sole
+cursor in the same read.
 
 Strict decode and the sole crate-private Issuer remain the only safe
 construction boundaries, and public `validate()` remains strict. Gate 4 may

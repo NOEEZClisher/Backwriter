@@ -2,16 +2,17 @@
 
 ## 0.2.5 performance-recovery gates
 
-Gate 1 is documentation-only. Gate 2 replaces the sole literal matcher's
-per-byte Runtime caller loop with one checked segment operation while leaving
-Cargo, lockfile, README, toolchain, v5 wire, and Adapter output unchanged. The
+Gate 1 is documentation-only. Gates 2 and 3 replace the sole literal matcher's
+per-byte Runtime caller loop with one checked segment operation and move raw
+consumers without structural geometry onto a cursor-free observation path.
+Cargo, lockfile, README, toolchain, v5 wire, and Adapter output remain unchanged. The
 [tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
 fixes evidence labels, gate order, thresholds, exclusions, and the three
-authority decisions before implementation. GNU and musl each pass the complete
-258-test suite, all-target check, clippy with warnings denied, and release
-build; offline/locked metadata and tree plus rustfmt also pass.
+authority decisions before implementation. Gate 2 passed 258 tests per target;
+Gate 3 passes 261 per target plus all-target check, clippy with warnings denied,
+and release build. Offline/locked metadata and tree plus rustfmt also pass.
 
-Line count remains v5 identity and currentness evidence. Gate 3 must retain the
+Line count remains v5 identity and currentness evidence. Gate 3 retains the
 same-hash/same-length/false-Line-count `NotCurrent` control while proving that
 raw consumers use one minimal same-read Line counter and zero
 `StructuralCursor` work. Strict decode, Issuer validation, public
@@ -65,6 +66,37 @@ ratios are 1.1392/1.1315. Both pass the 1.15 ceiling but miss the 1.10 target,
 so no cursor specialization is activated. All three cells have exact count and
 semantic order equality; B/C canonical v5 digests are byte-identical. Dense C
 peak is 166,136 KiB and remains Gate 5 input, not a Gate 2 memory claim.
+
+Gate 3 uses the same A and B revisions, committed Gate 2
+C=`05c50802b7393a213147b8a2b52b2616b4b06bee`, and D as C plus the Gate 3
+candidate delta. The same CPU 0, `powersave`, tmpfs, raw clock, one warm-up,
+seven crossed samples, and nearest-rank p95 rules apply. The 256 MiB sparse
+source SHA-256 remains
+`641f7442659ee50a6c5e183fd0a95963deaa21490ac2884215639ea704614d9e`;
+the explicit density recipe is 134,217,728 copies of `x\n` with SHA-256
+`a3978b948296b92171d4b9ae213daf796b3d79e6bc40ccc6f5d3dfc03f66c2e4`.
+
+| Gate 3 cell | A/B/C/D median ms | D/A median | D/A p95 | D peak HWM KiB |
+| --- | --- | ---: | ---: | ---: |
+| Host Check | 0.001/0.001/0.001/0.001 | 0.9345 | 1.3056 | 2,600 |
+| Untrusted Check | 151.208/238.431/251.025/163.487 | 1.0812 | 1.0712 | 2,600 |
+| Host self-Line View | 154.857/68.237/68.364/69.525 | 0.4490 | 0.4465 | 264,676 |
+| Untrusted self-Line View | 531.818/270.417/267.883/199.133 | 0.3744 | 0.3939 | 264,680 |
+| unit raw-after Apply | 211.653/301.910/298.813/223.974 | 1.0582 | 1.0047 | 2,600 |
+| receipt Apply | 212.856/300.970/297.458/223.528 | 1.0501 | 1.0528 | 2,600 |
+| live-Anchor Apply | 213.208/304.552/297.168/224.142 | 1.0513 | 1.0568 | 2,600 |
+| short-Line Check | 150.146/492.255/502.830/164.386 | 1.0948 | 1.0820 | 2,592 |
+| CRLF one-shot Edit | 2.227/1.718/2.268/2.291 | 1.0287 | 1.0039 | 2,736 |
+
+Host Check has zero capability open/read/hash/cursor work by structural audit;
+the recorded process I/O includes the untimed proof-installing Search. Raw
+Check and View each use one accepted observation, while Apply before-state has
+zero cursor and after-state has at most one cursor only for a non-File receipt
+or live non-File Anchor. All semantic/source digests match; CRLF final bytes are
+SHA-256 `cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf`.
+The native and Edit CSV SHA-256 values are
+`d16c8eaf2992e6dff787bc844da7e3cdb6bb7e00813ed355018f3669b1c0b5a8`
+and `bd1446554c9c9e09c2dfbb7bc87440c988b42f86f3404d0ba2de1192829575da`.
 
 ## 0.2.4 structural-authority gates
 

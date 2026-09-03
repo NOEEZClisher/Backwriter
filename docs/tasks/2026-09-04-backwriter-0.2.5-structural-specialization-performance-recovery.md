@@ -235,12 +235,120 @@ final target to its fixed bound.
 
 ### Gate 3 — raw and structural observation
 
-Separate raw UTF-8/NUL, SHA-256, checked length, Line-count accumulation, and
-chunk delivery from the sole structural cursor. Route Check, ordinary/batch
-View, Apply-before, and trusted exact-length staging through raw observation.
-Retain structural observation only for proven geometry consumers. Measure Host
-and Untrusted Check, self-Line View, 256 MiB Range Apply, CRLF Edit, and the
-134-million-short-Line density cell.
+Gate 3 is complete. One raw `ObservationBuilder` owns UTF-8/NUL validation,
+SHA-256, checked byte length, exact Line counting, and chunk delivery. Its safe
+word-at-a-time ASCII path counts LF while detecting CR, NUL, and non-ASCII;
+CR-containing chunks use the exact scalar CR/LF/CRLF rule, and non-ASCII or
+split UTF-8 uses the existing incremental validator. The builder owns no
+Paragraph, parent geometry, or `StructuralCursor`. One
+`StructuralObservationBuilder` composes the raw state with the sole existing
+cursor in the same source read and fail-closes if their length or Line count
+differs.
+
+`observe_source` is direct raw execution and no longer delegates to structural
+observation. `validate_source_exact` uses only incremental UTF-8/NUL state,
+checked offsets, the expected length, and one growth byte. Check proof misses,
+ordinary/batch View, Apply before-state, and staging are raw. Content Search and
+proof-miss Anchor retain structural framing; exact File Search is raw. Changed
+Apply output is raw for unit Apply, File receipt, and File-only Anchor state,
+and composes one cursor only when a non-File receipt or live non-File Anchor
+needs geometry. Staging, publication, proof installation, receipts, and Anchor
+reflection otherwise keep the existing executor and order.
+
+Executable parity covers empty source, every terminator and no-EOL, all
+three-symbol `x`/CR/LF sequences through length 10, split Unicode,
+8,191/8,192/8,193-byte sources, one-byte reads, invalid UTF-8/NUL, callback and
+late read failure, and forced length/Line-count overflow. Structural audits fix
+zero cursors in the raw builder, raw observer, and exact validator, with one
+cursor field and construction in the structural builder. Existing Check
+order/duplicates, View all-or-none grouping, Apply no-op/publication/proof/
+Anchor, stale/foreign/missing/unadmitted/symlink, and blind-drift controls stay
+green. GNU and musl each pass 261 tests.
+
+#### Fixed Gate 3 evidence
+
+A is `195aaa37068122097ecc04d2644642b6afcc6765`, B is
+`8b20987893ea5ac454c4c0a50d0c470e26b5e650`, C is committed Gate 2
+`05c50802b7393a213147b8a2b52b2616b4b06bee`, and D is C plus only the Gate 3
+candidate. The host and crossed orders remain CPU 0, Linux `7.2.2-arch1-1`,
+Rust/Cargo 1.95.0, LLVM 22.1.2, `powersave`, `/tmp` tmpfs, one warm-up, seven
+samples, and `ABCD/DCBA/BCDA/CADB/DABC/ACBD/BADC`; p95 is nearest-rank maximum.
+The sparse fixture is exactly one Line of `x` followed by `needle\n` at 256
+MiB, SHA-256
+`641f7442659ee50a6c5e183fd0a95963deaa21490ac2884215639ea704614d9e`.
+With no earlier density recipe, Gate 3 fixes the authorized assumption as
+exactly 134,217,728 copies of `x\n` (256 MiB), SHA-256
+`a3978b948296b92171d4b9ae213daf796b3d79e6bc40ccc6f5d3dfc03f66c2e4`.
+
+| Cell | A/B/C/D median ms | A/B/C/D p95 ms | D/A median/p95 | A/B/C/D peak HWM KiB |
+| --- | --- | --- | --- | --- |
+| Host Check | 0.001/0.001/0.001/0.001 | 0.002/0.002/0.002/0.002 | 0.9345/1.3056 | 2,592/2,596/2,588/2,600 |
+| Untrusted Check | 151.208/238.431/251.025/163.487 | 153.535/242.097/253.234/164.473 | 1.0812/1.0712 | 2,544/2,604/2,592/2,600 |
+| Host self-Line View | 154.857/68.237/68.364/69.525 | 156.995/69.902/75.710/70.097 | 0.4490/0.4465 | 264,684/264,684/264,684/264,676 |
+| Untrusted self-Line View | 531.818/270.417/267.883/199.133 | 534.426/274.056/269.846/210.527 | 0.3744/0.3939 | 264,676/264,684/264,684/264,680 |
+| unit raw-after Apply | 211.653/301.910/298.813/223.974 | 227.078/303.846/313.524/228.144 | 1.0582/1.0047 | 2,608/2,604/2,604/2,600 |
+| receipt Apply | 212.856/300.970/297.458/223.528 | 214.117/304.085/301.059/225.422 | 1.0501/1.0528 | 2,576/2,600/2,604/2,600 |
+| live-Anchor Apply | 213.208/304.552/297.168/224.142 | 216.822/306.817/299.680/229.144 | 1.0513/1.0568 | 2,592/2,604/2,604/2,600 |
+| short-Line Check | 150.146/492.255/502.830/164.386 | 152.425/511.928/507.370/164.929 | 1.0948/1.0820 | 2,608/2,596/2,596/2,592 |
+| CRLF one-shot Edit | 2.227/1.718/2.268/2.291 | 2.360/2.341/2.362/2.369 | 1.0287/1.0039 | 2,680/2,664/2,756/2,736 |
+
+Raw elapsed samples in variant order A/B/C/D are:
+
+| Cell | A raw | B raw | C raw | D raw |
+| --- | --- | --- | --- | --- |
+| Host Check ns | 1420/1548/1481/1174/1198/1610/1227 | 1198/1409/2134/1463/1366/1694/1754 | 1229/2001/1239/1720/1189/1777/1294 | 1326/1385/2102/1327/1337/1259/1271 |
+| Untrusted Check ms | 149.133/148.427/153.535/151.208/152.275/150.345/151.499 | 235.323/238.431/238.142/239.101/238.861/242.097/235.431 | 249.864/249.916/251.025/253.234/253.086/248.841/252.534 | 160.946/162.650/164.223/164.473/163.487/161.804/163.832 |
+| Host View ms | 154.206/155.216/153.822/155.221/153.754/154.857/156.995 | 68.032/68.237/68.206/68.197/69.902/68.726/68.942 | 67.364/69.573/68.300/67.603/68.364/70.672/75.710 | 69.979/70.097/68.593/68.790/69.776/69.083/69.525 |
+| Untrusted View ms | 533.011/534.426/528.009/530.053/530.068/534.399/531.818 | 270.417/274.056/270.746/266.278/268.977/271.883/270.035 | 264.497/263.549/267.883/268.280/269.846/264.509/268.547 | 199.133/210.527/197.511/199.509/196.551/195.961/199.457 |
+| unit Apply ms | 212.488/211.355/213.682/211.653/211.114/210.712/227.078 | 301.948/301.910/300.990/297.515/303.846/299.227/303.122 | 313.524/298.815/295.272/295.952/297.543/298.813/300.808 | 223.974/222.356/223.991/223.322/222.730/224.366/228.144 |
+| receipt Apply ms | 212.856/212.213/212.861/214.117/212.061/213.032/211.369 | 304.085/301.619/299.462/300.390/300.288/304.053/300.970 | 299.289/297.458/301.059/297.119/298.994/295.606/296.656 | 223.483/222.787/222.583/223.528/224.913/225.422/223.713 |
+| Anchor Apply ms | 212.439/213.953/216.822/213.766/212.747/213.149/213.208 | 300.908/304.552/306.817/300.606/299.094/305.028/305.747 | 295.463/296.801/299.680/297.168/296.909/299.621/298.328 | 224.142/222.932/229.144/224.975/223.747/224.616/222.268 |
+| density Check ms | 151.410/152.130/150.146/148.828/149.697/149.819/152.425 | 490.440/490.750/511.928/492.255/511.458/493.689/491.956 | 507.370/502.830/505.822/498.845/502.075/506.049/499.543 | 162.678/163.896/164.640/163.896/164.929/164.450/164.386 |
+| CRLF Edit ms | 0.790/2.360/2.302/2.175/2.227/0.446/2.266 | 0.932/2.288/2.341/0.444/2.335/0.440/1.718 | 0.975/2.362/2.332/2.257/2.289/0.428/2.268 | 2.369/2.291/2.319/0.431/0.774/0.510/2.311 |
+
+Process `rchar`/`wchar` ranges are 268,449,450–268,449,456/67 for Host
+Check; 536,884,910–536,884,911/67 for Untrusted Check and both View cells;
+536,884,926–536,884,928/268,435,531 for unit/receipt Apply;
+805,320,390–805,320,395/268,435,531 for live-Anchor Apply;
+536,884,914–536,884,915/67 for density; and A 6,547/356 versus B/C/D
+6,529/540 for Edit. Host Check's process reads include the untimed Search that
+installs proof; the measured Check itself has zero open, I/O, hash, and cursor
+work by production structure. Every native semantic digest matches. All Apply
+cells end at SHA-256
+`7f8b1dfc466b6249f06cbe55c9174df2578e7754da793fded244ef5cba2a38f1`;
+View matches the sparse fixture digest. CRLF Edit exits 0, keeps stderr empty,
+preserves exact final SHA-256
+`cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf`,
+and retains each revision's exact receipt output.
+
+Fixture-generator source/binary SHA-256 values are
+`f355d73a5d5b896fc1e60bf072d03b302e4a1f63ede71b4ea147d9df90ed9aba`/
+`5dc2b1351d79ce61b0dd0bdad927ea331b412e75508bcf323c4ccdb71c5d75d0`.
+The A and B/C/D native harness source hashes are
+`495b94185052e7f11c2501cfe8929e571b25f3241ed370841a4c5916cb07afb1` and
+`803d799e93436e416402a0e1395c6893b2567ea6689b12b829ffeb8631eece7a`;
+their binaries are respectively
+`5696888d19c4f59b317338c713ef4b80a8ad0cff1aa726b2b9efed527cfb70e3`,
+`6e46ab2dba3be990dcaac8bd366cde053f9a65687d20cf65dd1d6e2b0aa1be1c`,
+`33a74ff3d761e36acb2ce7abf022041f57883e0298878e340f223e737662681d`,
+and `2cd579038f34a8683918443c6d422c2da1bf47a24ebe9e79c87961f557cf7e96`.
+The C raw-clock runner source/binary, orchestrator, and analyzer hashes are
+`7ee8e59f551b19ad715efc7781e136cd1492beade0f50e1e4d456b818620d2c6`,
+`ffa2752db8ad0670e1593b66a719ba577321046944f603fe057005c622854ac0`,
+`fc5d4b81b9ef20f558c5f84b63c7d79927fb05fb2e15e608dc8a9f18a7aa0db1`,
+and `aa48c1dc8b714154f8c9b5f2f63f45860ca5cb8cb1f698f4e8b10d71843ea7fa`.
+Native/Edit CSV hashes are
+`d16c8eaf2992e6dff787bc844da7e3cdb6bb7e00813ed355018f3669b1c0b5a8`
+and `bd1446554c9c9e09c2dfbb7bc87440c988b42f86f3404d0ba2de1192829575da`.
+
+Gate 3 is **GO**. Untrusted Check, all three Range Apply forms, density, and
+CRLF Edit pass their fixed limits. Host Check remains approximately one
+microsecond and I/O-free, and View exactness/HWM are recorded without an
+invented latency gate.
+Production is 304,463 bytes/9,166 lines: +7,194/+212 (2.42%/2.37%) over B,
+inside the three-percent direct-evidence allowance. Gate 6 still owns
+contraction to the final baseline target; Gate 3 adds no second parser,
+validator, writer, dependency, public API, or compatibility path.
 
 ### Gate 4 — issuance and encoding
 
@@ -292,7 +400,8 @@ Owner authorization. Gate 7 source readiness does not authorize Gate 8.
   terminator, fresh receipt behavior, stale-old-address rejection, and zero
   Wrong Apply.
 - Host Check proof hit has zero logical I/O, open, hash, and cursor work and
-  retains its sub-microsecond class. Untrusted Check performs one open, one
+  retains its approximately one-microsecond class. Untrusted Check performs one
+  open, one
   forward read, one UTF-8/NUL validation, one SHA-256, one byte count, and one
   Line-count accumulator per source, with zero cursor and within 10 percent of
   `0.2.3`.
@@ -338,12 +447,12 @@ Gate 1 changes documentation only. Server, public root, services, cloudflared,
 DNS, tunnel, credentials, actual HOME, artifact, release, and deployment state
 remain outside the target until separately authorized.
 
-## Gate 3 input
+## Gate 4 input
 
-Gate 3 starts from the completed segment matcher with no conditional cursor
-mode. It separates raw byte-state observation from the sole structural cursor,
-retains Line-count currentness with a minimal same-read accumulator, and routes
-only proven raw consumers away from Paragraph and parent geometry. It must
-preserve one read, UTF-8/NUL and checked-length failure boundaries, Host proof,
-publication, Anchor, and v5 wire authority while measuring the fixed Check,
-View, Range Apply, CRLF Edit, and short-Line-density cells.
+Gate 4 starts from the completed segment matcher and measured raw/structural
+split. It may remove only typed revalidation proved redundant after strict v5
+decode or the sole Issuer, and may add only the authorized reusable canonical
+`encode_into` writer. It must preserve all four v5 KAT byte sequences,
+`encode()` behavior, error priority, Adapter output, and the one-Issuer/one-
+cursor observation boundary while measuring one and million-address encoding,
+million-result CLI Search, and 200,000-file Search/View consumers.

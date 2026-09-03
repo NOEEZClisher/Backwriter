@@ -949,6 +949,20 @@ mod tests {
         }
         assert_eq!(direct.matches("observe_source(").count(), 1);
 
+        let source_scan = include_str!("source_scan.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let raw = source_scan
+            .split("pub(crate) fn observe_source")
+            .nth(1)
+            .unwrap()
+            .split("pub(crate) fn observe_structural")
+            .next()
+            .unwrap();
+        assert!(!raw.contains("observe_structural"));
+        assert!(!raw.contains("StructuralCursor"));
+
         let anchored = production
             .split("fn observe_anchored")
             .nth(1)
