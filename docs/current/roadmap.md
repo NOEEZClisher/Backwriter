@@ -3,13 +3,14 @@
 ## Planned: 0.2.5 structural specialization and performance recovery
 
 The [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
-closes Gate 1 authority without changing production or release state. The
-target keeps the complete closed `0.2.4` v5 meaning and restores specialized
-hot paths only where measurement and reachability show unnecessary work.
+closes Gates 1 and 2 without changing release state. The target keeps the
+complete closed `0.2.4` v5 meaning and restores specialized hot paths only
+where measurement and reachability show unnecessary work.
 
 1. Performance-recovery authority — complete; documentation only.
-2. Bulk literal matching — replace the per-byte caller loop with one equivalent
-   segment path and measure fixed sparse and dense native cells.
+2. Bulk literal matching — complete; one equivalent checked segment path
+   replaces the per-byte caller loop, with fixed sparse and dense native
+   evidence.
 3. Raw/structural observation — retain Line-count currentness while removing
    `StructuralCursor` and Paragraph work from raw consumers.
 4. Issuance/encoding — remove only proven typed revalidation and add one
@@ -31,12 +32,19 @@ it empty on error, and preserves exact v5 bytes; existing `encode()` delegates.
 `StructuralDemand`, cursor specialization, shared Paragraph `Arc`, and chunk
 size remain measurement-dependent rather than planned architecture.
 
+Gate 2 preserves exact count, order, tiers, v5 wire, and all-or-none behavior.
+Its 256 MiB and 1 GiB C/A median ratios are 1.1389 and 1.1392; both pass the
+1.15 ceiling, so Gate 3 proceeds without a cursor mode or second parser. The
+1.10 target remains unmet evidence rather than hidden or redefined. The dense
+1,048,576-hit peak remains about 166 MiB for the later pending-memory gate.
+
 The fixed labels are published v4 A=`195aaa37068122097ecc04d2644642b6afcc6765`,
 closed `0.2.4` production B=`8b20987893ea5ac454c4c0a50d0c470e26b5e650`,
 release Source Authority `0ee4dcce14da93f925c27a04d0e79051c83fd124`,
-and a future candidate C. Cargo, `bw version`, official artifacts, Update, and
-the public distribution remain closed `0.2.4` until later gates authorize and
-pass their distinct boundaries.
+and Gate 2 candidate C based on
+`0b7fbbd9d06c0f2417374d428089232704c49b8b`. Cargo, `bw version`, official
+artifacts, Update, and the public distribution remain closed `0.2.4` until
+later gates authorize and pass their distinct boundaries.
 
 ## Completed: 0.2.4 structural-authority hard cut and distribution
 

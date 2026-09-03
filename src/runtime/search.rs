@@ -446,10 +446,15 @@ impl StructuralSink for SearchProjection<'_> {
         _byte_start: usize,
         is_content: bool,
     ) -> Result<(), SourceScanError> {
-        if is_content {
-            for &byte in bytes {
-                self.matcher.push(byte);
-            }
+        let saturated = match self.target {
+            SearchTarget::File => self.file_tier == Some(MatchTier::FullLine),
+            SearchTarget::Paragraph => self.paragraph_tier == Some(MatchTier::FullLine),
+            SearchTarget::Line => false,
+        };
+        if is_content && !saturated {
+            self.matcher
+                .push_segment(bytes)
+                .map_err(|_| SourceScanError::Resource)?;
         }
         Ok(())
     }
@@ -796,7 +801,7 @@ mod tests {
     }
 
     #[test]
-    fn line_slice_fast_path_preserves_tiers_fallback_and_dense_candidates() {
+    fn bulk_literal_matching_preserves_tiers_fallback_and_dense_candidates() {
         let (full, substring) =
             project_chunked(b"x\nax\n", "x", SearchTarget::Line, None, 1).unwrap();
         assert_eq!(full.len(), 1);
@@ -844,10 +849,23 @@ mod tests {
     }
 
     #[test]
-    fn line_slice_fast_path_preserves_terminators_and_long_query_carry() {
+    fn bulk_literal_matching_preserves_terminators_and_long_query_carry() {
         let source = b"needle\rneedle\nneedle\r\nneedle";
-        let (full, substring) =
-            project_chunked(source, "needle", SearchTarget::Line, None, 7).unwrap();
+        let expected = project_chunked(source, "needle", SearchTarget::Line, None, 1).unwrap();
+        for max_chunk in [
+            2,
+            7,
+            READ_BUFFER_SIZE - 1,
+            READ_BUFFER_SIZE,
+            READ_BUFFER_SIZE + 1,
+            source.len(),
+        ] {
+            assert_eq!(
+                project_chunked(source, "needle", SearchTarget::Line, None, max_chunk).unwrap(),
+                expected
+            );
+        }
+        let (full, substring) = expected;
         assert!(substring.is_empty());
         assert_eq!(full.len(), 4);
         assert_eq!(
@@ -925,6 +943,20 @@ mod tests {
                 SearchTarget::Paragraph,
                 SearchTarget::Line,
             ] {
+                let expected = project_chunked(&source, "needle", target, None, 1).unwrap();
+                for max_chunk in [
+                    2,
+                    7,
+                    READ_BUFFER_SIZE - 1,
+                    READ_BUFFER_SIZE,
+                    READ_BUFFER_SIZE + 1,
+                    source.len(),
+                ] {
+                    assert_eq!(
+                        project_chunked(&source, "needle", target, None, max_chunk).unwrap(),
+                        expected
+                    );
+                }
                 let (tier, anddress) = only_result(&source, "needle", target);
                 assert_eq!(tier, MatchTier::Substring);
                 assert_eq!((anddress.byte_start(), anddress.byte_end()), (0, length));
@@ -1083,6 +1115,28 @@ mod tests {
             .unwrap();
         assert_eq!(projection.file_tier, Some(MatchTier::FullLine));
         cursor.finish(&mut projection).unwrap();
+
+        let (full, substring) = project_chunked(
+            b"needle\nignored\n\nneedle x\n",
+            "needle",
+            SearchTarget::Paragraph,
+            None,
+            1,
+        )
+        .unwrap();
+        assert_eq!(full.len(), 1);
+        assert_eq!(substring.len(), 1);
+
+        let production = include_str!("search.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let projection = production
+            .split("impl StructuralSink for SearchProjection")
+            .nth(1)
+            .unwrap();
+        assert_eq!(projection.matches(".push_segment(bytes)").count(), 1);
+        assert!(!projection.contains("for &byte in bytes"));
 
         assert_eq!(
             project(b"needle\n\xff", "needle", SearchTarget::File, None),

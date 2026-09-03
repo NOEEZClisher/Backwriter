@@ -227,24 +227,46 @@ impl LiteralMatcher<'_> {
         self.found = false;
     }
 
-    pub(crate) fn push(&mut self, byte: u8) {
+    pub(crate) fn push_segment(&mut self, bytes: &[u8]) -> Result<(), SearchError> {
+        if bytes.is_empty() {
+            return Ok(());
+        }
         if let Some(length) = self.full_line_length {
-            self.full_line_length = (length != self.literal.query.len()).then_some(length + 1);
+            let length = length
+                .checked_add(bytes.len())
+                .ok_or(SearchError::Unavailable)?;
+            self.full_line_length = (length <= self.literal.query.len()).then_some(length);
         }
-        self.push_content_byte(byte);
-    }
+        if self.found {
+            return Ok(());
+        }
 
-    pub(crate) fn push_content_byte(&mut self, byte: u8) {
-        while self.matched > 0 && byte != self.literal.query[self.matched] {
-            self.matched = self.literal.failure[self.matched - 1];
-        }
-        if byte == self.literal.query[self.matched] {
-            self.matched += 1;
-            if self.matched == self.literal.query.len() {
-                self.found = true;
+        let mut cursor = 0;
+        while cursor < bytes.len() {
+            if self.matched == 0 {
+                let Some(next) = bytes[cursor..]
+                    .iter()
+                    .position(|byte| *byte == self.literal.query[0])
+                else {
+                    return Ok(());
+                };
+                cursor += next;
+            }
+
+            let byte = bytes[cursor];
+            cursor += 1;
+            while self.matched > 0 && byte != self.literal.query[self.matched] {
                 self.matched = self.literal.failure[self.matched - 1];
             }
+            if byte == self.literal.query[self.matched] {
+                self.matched += 1;
+                if self.matched == self.literal.query.len() {
+                    self.found = true;
+                    return Ok(());
+                }
+            }
         }
+        Ok(())
     }
 
     pub(crate) fn finish(&self) -> Option<MatchTier> {
@@ -260,8 +282,30 @@ impl LiteralMatcher<'_> {
 #[cfg(test)]
 mod tests {
     use super::{
-        MatchTier, PreparedLiteral, SearchInputError, SearchQuery, SearchScope, SearchScopeEntry,
+        MatchTier, PreparedLiteral, SearchError, SearchInputError, SearchQuery, SearchScope,
+        SearchScopeEntry,
     };
+
+    fn finish_with_splits(
+        literal: &PreparedLiteral<'_>,
+        content: &[u8],
+        split_mask: usize,
+    ) -> Result<Option<MatchTier>, SearchError> {
+        let mut matcher = literal.matcher();
+        if content.is_empty() {
+            matcher.push_segment(content)?;
+        } else {
+            let mut start = 0;
+            for end in 1..=content.len() {
+                if end == content.len() || split_mask & (1 << (end - 1)) != 0 {
+                    matcher.push_segment(&content[start..end])?;
+                    start = end;
+                }
+            }
+        }
+        Ok(matcher.finish())
+    }
+
     #[test]
     fn literal_and_scope_validation_is_unbounded_and_canonical() {
         assert!(SearchQuery::new("needle").is_ok());
@@ -271,13 +315,89 @@ mod tests {
     }
 
     #[test]
-    fn full_line_eligibility_stops_at_the_query_length() {
+    fn segment_matching_matches_every_byte_partition_and_fails_closed_on_overflow() {
+        for query_length in 1..=4 {
+            for query_bits in 0..1 << query_length {
+                let query = (0..query_length)
+                    .map(|index| {
+                        if query_bits & (1 << index) == 0 {
+                            'a'
+                        } else {
+                            'b'
+                        }
+                    })
+                    .collect::<String>();
+                let query = SearchQuery::new(query).unwrap();
+                let literal = PreparedLiteral::new(&query).unwrap();
+                for content_length in 0..=6 {
+                    for content_bits in 0..1 << content_length {
+                        let content = (0..content_length)
+                            .map(|index| {
+                                if content_bits & (1 << index) == 0 {
+                                    b'a'
+                                } else {
+                                    b'b'
+                                }
+                            })
+                            .collect::<Vec<_>>();
+                        let byte_at_a_time = if content.is_empty() {
+                            0
+                        } else {
+                            (1 << (content.len() - 1)) - 1
+                        };
+                        let expected = finish_with_splits(&literal, &content, byte_at_a_time);
+                        assert_eq!(finish_with_splits(&literal, &content, 0), expected);
+                        for split_mask in 0..1 << content.len().saturating_sub(1) {
+                            assert_eq!(
+                                finish_with_splits(&literal, &content, split_mask),
+                                expected
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        for (content, query, expected) in [
+            ("zzzz", "needle", None),
+            ("zzzn", "n", Some(MatchTier::Substring)),
+            ("x", "x", Some(MatchTier::FullLine)),
+            ("abab", "abab", Some(MatchTier::FullLine)),
+            ("ababa", "abab", Some(MatchTier::Substring)),
+            ("prefix needle", "needle", Some(MatchTier::Substring)),
+            ("needle suffix", "needle", Some(MatchTier::Substring)),
+        ] {
+            let query = SearchQuery::new(query).unwrap();
+            let literal = PreparedLiteral::new(&query).unwrap();
+            for split in 0..=content.len() {
+                let mut matcher = literal.matcher();
+                matcher.push_segment(&content.as_bytes()[..split]).unwrap();
+                matcher.push_segment(&content.as_bytes()[split..]).unwrap();
+                assert_eq!(matcher.finish(), expected);
+            }
+        }
+
+        let content = "prefix é🦀 needle suffix";
+        let query = SearchQuery::new("é🦀").unwrap();
+        let literal = PreparedLiteral::new(&query).unwrap();
+        for split in 0..=content.len() {
+            let mut matcher = literal.matcher();
+            matcher.push_segment(&content.as_bytes()[..split]).unwrap();
+            matcher.push_segment(&content.as_bytes()[split..]).unwrap();
+            assert_eq!(matcher.finish(), Some(MatchTier::Substring));
+        }
+
         let query = SearchQuery::new("needle").unwrap();
         let literal = PreparedLiteral::new(&query).unwrap();
         let mut matcher = literal.matcher();
-        for byte in b"needle longer" {
-            matcher.push(*byte);
-        }
+        matcher.push_segment(b"nee").unwrap();
+        matcher.push_segment(b"dle").unwrap();
+        matcher.push_segment(&vec![b'x'; 65_536]).unwrap();
         assert_eq!(matcher.finish(), Some(MatchTier::Substring));
+
+        let mut overflow = literal.matcher();
+        overflow.full_line_length = Some(usize::MAX);
+        assert_eq!(overflow.push_segment(b"x"), Err(SearchError::Unavailable));
+        assert_eq!(overflow.finish(), None);
     }
 }

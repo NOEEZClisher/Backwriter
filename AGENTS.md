@@ -38,14 +38,14 @@ live publication, fresh installation, and explicit public `0.2.3` update are
 complete from Source Authority revision
 `0ee4dcce14da93f925c27a04d0e79051c83fd124`.
 
-## Planned 0.2.5 performance recovery
+## 0.2.5 performance recovery in progress
 
-Gate 1 of the
+Gates 1 and 2 of the
 [performance-recovery tracker](docs/tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
-closes documentation authority only. Cargo, `bw version`, source behavior,
-artifacts, installers, Update, and the public distribution remain published and
-closed `0.2.4`. The governing rule is: semantics stay unified; execution
-becomes specialized again.
+close authority and bulk literal matching. Cargo, `bw version`, artifacts,
+installers, Update, and the public distribution remain published and closed
+`0.2.4`. The governing rule is: semantics stay unified; execution becomes
+specialized again.
 
 The target preserves v5 fields, algebra, wire bytes, Search/View/Edit output,
 one `StructuralCursor`, one `AnddressIssuer`, single/batch View, fresh Edit
@@ -63,14 +63,20 @@ the destination, checks and fallibly reserves complete capacity before writing,
 leaves length zero on error, and emits the exact existing canonical v5 bytes on
 success. Existing `encode()` remains and delegates to it.
 
-The ordered work is authority, bulk literal matching, raw/structural
-observation, issuance/encoding, chunked pending memory, consumer contraction,
-fixed evidence/source readiness, then separately authorized release. Conditional
-cursor demand, shared Paragraph allocation, and chunk size require measurement;
-they are not Gate 1 implementation choices. Do not introduce v6, change v5 or
-Adapter output, restore retired carriers/scanners/private View, or add a parser,
-persistent state/index/registry, stdin, CLI split, history, relocation, watcher,
-merge, retry, rollback, or compatibility path.
+Gate 2 replaces the sole matcher's byte-at-a-time Runtime caller with checked
+segment matching, preserves KMP partial state across chunks, and stops matcher
+work after a Line, Paragraph, or File has its best tier. The sole structural
+cursor, source validation, projection, issuance, sorting, and result buckets
+remain unchanged. Fixed sparse measurement stays below the 1.15 ceiling, so it
+does not authorize `StructuralDemand` or cursor specialization.
+
+The remaining ordered work is raw/structural observation, issuance/encoding,
+chunked pending memory, consumer contraction, fixed evidence/source readiness,
+then separately authorized release. Shared Paragraph allocation and chunk size
+require measurement. Do not introduce v6, change v5 or Adapter output, restore
+retired carriers/scanners/private View, or add a parser, persistent
+state/index/registry, stdin, CLI split, history, relocation, watcher, merge,
+retry, rollback, or compatibility path.
 
 ## Published and closed 0.2.4 structural-authority target
 

@@ -1,18 +1,29 @@
 # Backwriter Current State
 
-## Planned 0.2.5 performance recovery — Gate 1 authority complete
+## 0.2.5 performance recovery — Gates 1–2 complete
 
-Gate 1 is documentation-only authority under the
+Gates 1 and 2 are complete under the
 [performance-recovery tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
-Implementation has not started. Cargo, `bw version`, source behavior,
-artifacts, installers, Update, and the official distribution remain published
-and closed `0.2.4`.
+Gate 2 adds one checked segment operation to the existing literal matcher and
+deletes the Runtime per-byte caller loop. Cargo, `bw version`, artifacts,
+installers, Update, and the official distribution remain published and closed
+`0.2.4`.
 
 The governing rule is **semantics stay unified; execution becomes specialized
 again**. V5 fields, algebra, canonical bytes, capability and Adapter outputs,
 one structural cursor, one Issuer, single/batch View, receipts, Host proof,
 publication, and Anchor behavior remain fixed. The performance target may
 remove only capability work that has no consumer.
+
+The matcher accounts for complete-Line length in one checked addition, skips
+segments without the query's first byte, carries a partial KMP match across
+chunks, and stops matching after a hit. File and Paragraph stop matcher work
+after `FullLine` while the common cursor still validates and frames all source
+bytes. Exhaustive partition tests and fixed native A/B/C measurements preserve
+count, order, v5 bytes, tiers, terminators, UTF-8/NUL, and fail-all behavior.
+The 256 MiB and 1 GiB C/A median ratios are 1.1389 and 1.1392, below the 1.15
+ceiling but above the 1.10 target. This does not activate conditional cursor
+specialization. Dense peak remains about 166 MiB and belongs to Gate 5.
 
 Gate 1 resolves three planning questions. First, exact source Line count stays
 in v5 identity, observations, Host proof, and currentness. Same-hash,
@@ -25,12 +36,13 @@ allocation-reusing `Anddress::encode_into(&mut Vec<u8>)` while retaining
 `encode()` as a delegating surface and preserving every v5 KAT and Adapter
 byte.
 
-The ordered gates are bulk literal matching, raw/structural observation,
-issuance/encoding, chunked pending memory, consumer contraction, fixed
-evidence/source readiness, and a separately authorized release. No Gate 1
-decision fixes `StructuralDemand`, cursor specialization, shared Paragraph
-allocation, or chunk size. The production baseline remains 297,269 bytes and
-8,954 lines, and the closed GNU and musl evidence remains 258 tests each.
+The remaining gates are raw/structural observation, issuance/encoding, chunked
+pending memory, consumer contraction, fixed evidence/source readiness, and a
+separately authorized release. No completed gate fixes `StructuralDemand`,
+cursor specialization, shared Paragraph allocation, or chunk size. Gate 2
+production is 298,222 bytes and 8,981 lines, a measured 953-byte/27-line
+increase over the 297,269-byte/8,954-line baseline. GNU and musl each pass all
+258 tests.
 
 ## Published and closed 0.2.4 structural authority
 

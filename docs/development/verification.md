@@ -2,13 +2,14 @@
 
 ## 0.2.5 performance-recovery gates
 
-Gate 1 is documentation-only. It preserves the closed `0.2.4` production
-baseline of 297,269 bytes/8,954 lines and reuses the closed GNU and musl
-258-test evidence because Rust, Cargo, lockfile, tests, README, and toolchain
-are byte-identical. The
+Gate 1 is documentation-only. Gate 2 replaces the sole literal matcher's
+per-byte Runtime caller loop with one checked segment operation while leaving
+Cargo, lockfile, README, toolchain, v5 wire, and Adapter output unchanged. The
 [tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
 fixes evidence labels, gate order, thresholds, exclusions, and the three
-authority decisions before implementation.
+authority decisions before implementation. GNU and musl each pass the complete
+258-test suite, all-target check, clippy with warnings denied, and release
+build; offline/locked metadata and tree plus rustfmt also pass.
 
 Line count remains v5 identity and currentness evidence. Gate 3 must retain the
 same-hash/same-length/false-Line-count `NotCurrent` control while proving that
@@ -45,6 +46,25 @@ exact KAT/output/order and Correct 1 / Safe Reject 6 / Wrong Apply 0; and final
 production no larger than 297,269 bytes/8,954 lines unless growth up to 3
 percent has direct evidence. Any duplicate parser, validator, or writer is a
 hard NO-GO. Native and CLI Search measurements remain separate.
+
+Gate 2 exhaustively compares every binary query through length four and content
+through length six across byte-at-a-time, every segment partition, and whole
+segments. Explicit cases cover missing and terminal first bytes, one-byte and
+overlapping literals, carried KMP partials, Unicode splits, exact/substring
+tiers, long suffixes, CR/LF/CRLF/no-EOL, and 8,191/8,192/8,193-byte boundaries
+for File, Paragraph, and Line. Checked length overflow fails closed. Structural
+tests confirm one matcher segment call and no per-byte caller loop; File and
+Paragraph `FullLine` saturation does not weaken late UTF-8/NUL/read failure.
+
+The fixed native harness uses A=`195aaa37068122097ecc04d2644642b6afcc6765`,
+B=`8b20987893ea5ac454c4c0a50d0c470e26b5e650`, and the Gate 2 candidate from
+base `0b7fbbd9d06c0f2417374d428089232704c49b8b`. On CPU 0 with the existing
+`powersave` governor, tmpfs fixtures, `CLOCK_MONOTONIC_RAW`, one warm-up, and
+seven crossed runs, 256 MiB C/A median/p95 ratios are 1.1389/1.0722 and 1 GiB
+ratios are 1.1392/1.1315. Both pass the 1.15 ceiling but miss the 1.10 target,
+so no cursor specialization is activated. All three cells have exact count and
+semantic order equality; B/C canonical v5 digests are byte-identical. Dense C
+peak is 166,136 KiB and remains Gate 5 input, not a Gate 2 memory claim.
 
 ## 0.2.4 structural-authority gates
 
