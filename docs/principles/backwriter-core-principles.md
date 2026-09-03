@@ -1,13 +1,13 @@
 # Backwriter Principles
 
-The source-ready, unpublished `0.2.4` target is governed by Principle 18 and its
+The published and closed `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
 Gates 2–7 hard-cut current source to v5, install the sole Issuer and shared
 complete-source structural cursor, contract Search results and View, and remove
 one-shot Edit's private View, then confirm source-state-only Check and direct v5
 consumers before integrated source readiness. Cargo and `bw version` are
-unpublished `0.2.4`; the closed `0.2.3` v4 release and distribution remain
-unchanged until Gate 8.
+`0.2.4`; Gate 8 publishes and closes the matching four-target v5 distribution
+while preserving `0.2.3` as immutable v4 release evidence.
 
 The closed public `0.1.0` release remains immutable v3 evidence. Published and
 closed `0.2.3`, the prior published `0.2.2` and `0.2.1`, and the prior closed public
@@ -30,7 +30,8 @@ Gates 1 through 8 close its authority, same-observation Search position carrier,
 single self-or-ancestor View projection, and ordered all-or-nothing batch View
 plus the Replace-only native receipt and its direct human/JSON Adapter
 projection, integrated Dummy, GNU/musl readiness, and release publication while
-leaving v4 identity and currentness unchanged. Official release state is `0.2.3`.
+leaving v4 identity and currentness unchanged. Official release state is now
+the v5 `0.2.4` distribution governed by Principle 18.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash, length, and Line count only while its

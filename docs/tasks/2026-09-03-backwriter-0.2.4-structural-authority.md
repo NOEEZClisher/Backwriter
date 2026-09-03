@@ -1,9 +1,9 @@
 # Backwriter 0.2.4 Structural Authority
 
-Status: Gates 1–7 complete; source-readiness is GO. The source accepts and
-emits only v5, and Cargo plus `bw version` are unpublished `0.2.4`. The
-published closed `0.2.3` artifacts, installers, manifest, Update target, and
-distribution remain unchanged.
+Status: Gates 1–8 complete; `0.2.4` is published and closed. Source, Cargo,
+`bw version`, four-target artifacts, installers, manifest, Update target, and
+the exact 60-file public distribution are aligned at v5 `0.2.4`. Published
+`0.2.3` remains immutable v4 release evidence.
 
 ## Objective and boundary
 
@@ -437,19 +437,50 @@ with the same final source SHA. Production `src/**` is byte-identical to Gate 6,
 297,269 bytes/8,954 lines versus Gate 1's 302,614/9,155. No unexplained
 whole-source read, duplicate result retention, memory, or code-size growth is
 present. Gate 7 therefore advances only Cargo, the root lock entry, version
-KAT, and active status to source-ready unpublished `0.2.4`. Gate 8 remains the
+KAT, and active status to source-ready `0.2.4`. Gate 8 remains the
 only artifact, installer, manifest, Update, publication, and release authority.
 
-## Gate 8 — artifacts and publication
+## Gate 8 — artifacts and publication — complete
 
-Gate 8 requires separate Owner authority. It may reconstruct artifacts,
-manifest, installers, update handoff, and publication only from an accepted
-Gate 7 Source Authority. Phase 1 and Gates 2–7 authorize no artifact, tag,
-release, service, tunnel, DNS, HOME, or live public-root mutation.
+Owner-authorized Gate 8 reconstructs artifacts and the manifest only from Gate
+7 Source Authority `0ee4dcce14da93f925c27a04d0e79051c83fd124`. The canonical
+outputs are:
 
-Acceptance and fail-closure must be specified from the exact release inputs at
-that time. Existing closed `0.2.3` artifacts and 52-file public tree remain
-immutable throughout earlier gates.
+| Artifact | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `backwriter-0.2.4-linux-x86_64.tar.gz` | 438,200 | `b7771618f47a827e7d331cddbc4f57789f0f1296fd0768740c3dc12e9cfc9577` |
+| `backwriter-0.2.4-macos-aarch64.tar.gz` | 336,527 | `1ff09abaaf97b9cc513716a18fe8d7e8d444a54f3452f458d7083b050ed0cf78` |
+| `backwriter-0.2.4-macos-x86_64.tar.gz` | 372,309 | `87021af3ed5cbad7c41f6647f99f0ce95ff51a6b539d80c53c17cdf95cc7ed4e` |
+| `backwriter-0.2.4-windows-x86_64.zip` | 847,733 | `c1442b7c53dfec1403e42f1d4e3c5bb3923001a59569ec0115fda4abb8e1a584` |
+
+The canonical manifest is 876 bytes with SHA-256
+`64db11f3851b9d490c1135877fc975e841bbe231153073b7e5397fc008cfde6e`.
+The macOS UUIDs are `E7F1A491-BD15-87CB-B043-E7521FFB2526` for arm64 and
+`E3868F30-6F57-8F63-80FE-9BC78CA94C5C` for x86_64. macOS and Windows receive
+static cross-build verification only; no native runtime, PowerShell, or CMD
+execution is claimed.
+
+The dedicated publisher installs the eight `0.2.4` versioned files, replaces
+the POSIX and PowerShell installers, and publishes the manifest last. The first
+live run produces the exact 60-file tree; the second reuses all 60 files with
+bytes, inode, mode, owner, size, mtime, and ctime unchanged. The earlier 48
+versioned files and `install.cmd` preserve their complete snapshot state.
+Loopback and public HTTPS each pass 60 GET and 60 HEAD checks plus root and
+unknown-path GET/HEAD 404 checks. Fresh installation, `0.2.3` Update, and
+`0.2.4` reinstall install the exact Linux archive member and print the exact
+Installed/Updated `0.2.4` rows. Search v2/v5, View v2 single/batch, Edit receipt
+reuse, CRLF, stale nonpublication, Check, raw Session Apply, and duplicate-drift
+Safe Reject smoke pass.
+
+GNU and musl each pass 258 tests plus offline/locked metadata, dependency tree,
+format, all-target check, clippy with warnings denied, and release build.
+Installer, publisher, CMD static, and Origin regressions pass 41, 56, 12, and
+13 cases. Publication changes no source, service, listener, Cloudflare unit or
+YAML, DNS, tunnel, connector, credential, actual HOME, tag, GitHub Release,
+crates.io state, or cache policy.
+
+The existing closed `0.2.3` artifacts and its predecessor public-tree state
+remain immutable release evidence.
 
 ## Fixed exclusions
 

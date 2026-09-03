@@ -1,15 +1,16 @@
 # Backwriter Roadmap
 
-## Source-ready: 0.2.4 structural-authority hard cut
+## Completed: 0.2.4 structural-authority hard cut and distribution
 
 The [0.2.4 tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
 defines eight ordered gates. Gates 1–7 close authority, the consumer baseline,
 v5 algebra, canonical wire, sole Issuer, complete-source structural cursor,
 direct Search result collection, geometry-driven exact-range View, and
 View-free Edit/Apply/Anchor projection, source-state-only Check, direct v5
-consumer contraction, and integrated source-readiness. Cargo and `bw version`
-are unpublished `0.2.4`; `0.2.3` remains the published immutable v4 release,
-installer, manifest, and Update target.
+consumer contraction, and integrated source-readiness. Gate 8 reconstructs and
+publishes the pinned four-target release manifest-last, verifies the 60-file
+tree and idempotent reuse, and aligns Cargo, `bw version`, installers,
+manifest, Update target, and official distribution at `0.2.4`.
 
 1. Authority and consumer baseline — complete.
 2. v5 algebra, exact wire, and sole Anddress Issuer — complete.
@@ -19,7 +20,7 @@ installer, manifest, and Update target.
 6. Check migration, remaining duplication removal, and code contraction — complete.
 7. semantic, AI-workflow, performance, and memory evidence followed by a
    separate `0.2.4` source-readiness GO/NO-GO — complete, GO.
-8. artifacts, installers, and publication under separate release authority.
+8. artifacts, installers, manifest-last publication, and release closure — complete.
 
 The target removes parallel structural bookkeeping rather than layering over
 it. `SourceIdentity` owns source Line count; File, Paragraph, and Line carry
@@ -48,9 +49,11 @@ drift. Later Adapter
 contraction, stdin, and `bw.rs` splitting are decided only by their owning
 gates. Gate 7 preserves production `src/**`, passes 258 tests on GNU and musl,
 and closes fixed A/V5/B Search, View, Edit, and AI-workflow evidence without an
-unexplained source read, memory, or code-size regression.
+unexplained source read, memory, or code-size regression. Gate 8 publishes the
+eight `0.2.4` versioned files, replaces only the two installers and manifest,
+and reuses all 60 files unchanged on a second publisher run.
 History, relocation, registry,
-watcher, retry, merge, rollback, and publication before Gate 8 remain excluded.
+watcher, retry, merge, rollback, and additional publication remain excluded.
 
 ## Completed: 0.2.3 Patch Box and distribution
 
@@ -553,9 +556,9 @@ The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 The target choice and direct build verification are complete. The external
 operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.3` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.4` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
-`195aaa37068122097ecc04d2644642b6afcc6765`. Linux uses
+`0ee4dcce14da93f925c27a04d0e79051c83fd124`. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
 and `x86_64-apple-darwin` at minimum 10.12. Windows uses
 `x86_64-pc-windows-gnu` and canonical `bw.exe`. Archives, checksum sidecars,
@@ -573,13 +576,13 @@ installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
 Windows build and installer verification make no native-runtime or native-CMD
 claim.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.3`; the sole canonical executable and external Adapter command are `bw`.
+`0.2.4`; the sole canonical executable and external Adapter command are `bw`.
 The public beta.1, beta.2, and beta.3 files remain unchanged immutable
 prior artifacts. The complete stable `0.1.0` Linux/macOS/Windows version
 directory is immutable, the planned matrix is complete, and the stable release
-is closed. The complete `0.2.0`, `0.2.1`, `0.2.2`, and `0.2.3` version directories are
-likewise immutable; the current installers and manifest select `0.2.3` in the
-exact 52-file public tree.
+is closed. The complete `0.2.0`, `0.2.1`, `0.2.2`, `0.2.3`, and `0.2.4`
+version directories are likewise immutable; the current installers and
+manifest select `0.2.4` in the exact 60-file public tree.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a target registry,

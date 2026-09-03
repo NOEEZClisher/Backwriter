@@ -1,13 +1,12 @@
 # Backwriter Anddress and Exact Line Model
 
-## Source-ready 0.2.4 v5 target algebra
+## Published and closed 0.2.4 v5 target algebra
 
 The source is hard-cut to `artext.backwriter-anddress.v5`. Published and closed
 `0.2.3` remains immutable v4 release evidence; current decode returns
 `UnsupportedVersion` for v4 and v3 and has no compatibility alias, wrapper, or
-parallel execution path. Gate 7 makes Cargo and `bw version` unpublished
-source-ready `0.2.4`; the official distribution remains closed v4 `0.2.3`
-until Gate 8.
+parallel execution path. Gate 7 makes Cargo and `bw version` source-ready
+`0.2.4`; Gate 8 publishes and closes the matching v5 four-target distribution.
 
 Every v5 target shares one exact `SourceIdentity`:
 
@@ -84,11 +83,10 @@ half-open File-Line ranges; Line numbers are one-based. A downward projection
 returns `Invalid`; Line-to-Paragraph for a File-parent Line is valid but
 returns `None`.
 
-Status: implemented and Gate 7 source-ready v5 raw-address, Search, View,
-Check, Edit/Apply, Anchor, and direct-consumer authority.
-Published and closed `0.2.3`, the
-prior published `0.2.2` and `0.2.1`, and the prior closed public `0.2.0` production release
-implement the v4 algebra and hard cutover below. The closed public `0.1.0` v3
+Status: implemented, published, and closed v5 raw-address, Search, View,
+Check, Edit/Apply, Anchor, and direct-consumer authority in `0.2.4`.
+Published and closed `0.2.3`, `0.2.2`, `0.2.1`, and `0.2.0` implement the v4
+algebra and hard cutover below. The closed public `0.1.0` v3
 algebra is preserved later in this document only as immutable release evidence;
 it is not accepted by current production code. The published and closed
 `0.2.3` Patch Box leaves this v4 algebra and wire byte-identical.

@@ -14,7 +14,7 @@ are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. Current source
-is source-ready through Gate 7 with the v5 Anddress algebra, wire, shared
+is published and closed through Gate 8 with the v5 Anddress algebra, wire, shared
 structural cursor, direct Search result collection, geometry-driven
 single/batch View, and View-free one-shot Edit, with source-state-only Check
 classification. Their direct View source-state/range projection,
@@ -27,29 +27,30 @@ implementation uses direct v5 ranges and provenance and is complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
 The closed public `0.1.0` release is the immutable v3 baseline. The published
-and closed `0.2.3` release source, package, and official distribution, the prior
-closed `0.2.2` and `0.2.1` distributions, and the prior closed public `0.2.0` release use the hard-cutover
+and closed `0.2.4` release source, package, and official distribution use the
+hard-cutover `artext.backwriter-anddress.v5` Rust API and wire. The prior closed
+`0.2.3`, `0.2.2`, `0.2.1`, and `0.2.0` distributions use the hard-cutover
 `artext.backwriter-anddress.v4` Rust API and wire. SHA-256, exact source byte
 length, target kind, and `[start, end)` byte range are implemented identity;
 v3 remains only in Git history and immutable `0.1.0` release evidence. The
-canonical four-target `0.2.3` artifacts, manifest, installers, exact 52-file
-live publication, fresh installation, and explicit public `0.2.2` update are
+canonical four-target `0.2.4` artifacts, manifest, installers, exact 60-file
+live publication, fresh installation, and explicit public `0.2.3` update are
 complete from Source Authority revision
-`195aaa37068122097ecc04d2644642b6afcc6765`.
+`0ee4dcce14da93f925c27a04d0e79051c83fd124`.
 
-## Source-ready unpublished 0.2.4 structural-authority target
+## Published and closed 0.2.4 structural-authority target
 
 The published `0.2.3` source, v4 API/wire, artifacts, installers, and public
-tree are closed immutable evidence. `0.2.4` is a source-ready, unpublished
-target governed by the [structural-authority tracker](docs/tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
+tree remain closed immutable evidence. `0.2.4` is published and closed under the
+[structural-authority tracker](docs/tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
 Gates 1–7 close authority, v5 algebra/wire, the sole Issuer, the shared
 structural cursor, Search result contraction, exact-range View, and Edit/Apply/
 Anchor migration without a private Edit View, plus Check and remaining consumer
 contraction, and integrated semantic, AI-workflow, and fixed A/V5/B evidence.
-Cargo and `bw version` are `0.2.4`; artifacts, installers, the Update target,
-and the published distribution remain closed `0.2.3` v4 evidence until Gate 8
-is separately accepted. Because Update has no version comparison, a
-source-built `0.2.4` command can install official `0.2.3`.
+Gate 8 reconstructs the four canonical artifacts, publishes the eight new
+versioned files followed by both installers and the manifest last, and closes
+the exact 60-file distribution. Cargo, `bw version`, artifacts, installers,
+the Update target, and the published distribution are aligned at `0.2.4`.
 
 The target is a hard cut to `artext.backwriter-anddress.v5`, never a v4
 compatibility decoder, alias, wrapper, or parallel Runtime path. Its shared
@@ -193,8 +194,8 @@ Check, Anchor, Edit, Apply, result-binding, Data, Search/View/Check/Edit JSON, r
 View, Version, Update, and `0.2.3` Patch Box Adapter slice, every
 other capability remains deferred Adapter work. `bw update` is an explicit
 user-invoked installer handoff with no version comparison. It installs or
-reinstalls the current official `0.2.3` release through installers that accept
-only the exact closed `0.2.2` and current `0.2.3` manifests; it
+reinstalls the current official `0.2.4` release through installers that accept
+only the exact closed `0.2.3` and current `0.2.4` manifests; it
 creates no daemon, background updater, retry authority, or version-comparison
 engine.
 

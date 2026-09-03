@@ -7,8 +7,9 @@ install the sole Issuer and complete-source structural cursor, and contract
 Search results to direct Anddresses and View to geometry-driven exact-range
 projection, remove one-shot Edit's private View, and close source-state-only
 Check plus direct v5 consumer contraction, then close integrated source
-readiness. Cargo and `bw version` are unpublished `0.2.4`; the closed `0.2.3`
-distribution, installers, manifest, and Update target remain unchanged. Exact File, Paragraph, text-Line, and
+readiness. Gate 8 publishes and closes Cargo, `bw version`, the four-target
+distribution, installers, manifest, and Update target at `0.2.4`; the closed
+`0.2.3` distribution remains immutable v4 evidence. Exact File, Paragraph, text-Line, and
 File-child-Line KATs; strict v4/v3 rejection; source/geometry mutation and
 overflow fail-closure; algebra; shared source identity; every terminator and
 body class; source Line counting; Runtime Search geometry; Apply receipt/Anchor
@@ -56,8 +57,8 @@ all-or-none contracts. Gate evidence is cumulative:
 - Gate 7: complete GNU/musl semantics, blind-duplicate Correct 1 / Safe Reject
   6 / Wrong Apply 0, AI workflow evidence, sparse/one-million-hit/200,000-file
   memory measurements, and an explicit source-readiness GO/NO-GO.
-- Gate 8: artifacts, installers, update, publication, and release closure only
-  under separate authority.
+- Gate 8: pinned artifacts, installers, Update, manifest-last publication,
+  idempotent reuse, endpoint/install smoke, and release closure — complete.
 
 Wall-clock results are evidence, not a semantic gate. No gate may infer
 history, relocation, registry, watcher, retry, merge, rollback, or publication
@@ -226,8 +227,25 @@ matrix remains Correct 1 / Safe Reject 6 / Wrong Apply 0. Production `src/**`
 is byte-identical to Gate 6, so its recorded 297,269-byte/8,954-line measure
 remains below Gate 1's 302,614 bytes/9,155 lines. Gate 7 is therefore GO and
 advances only the package/root lock version, version KAT, and active status to
-source-ready unpublished `0.2.4`. Official artifacts, installers, manifest,
-Update target, and the 52-file public root remain closed `0.2.3` until Gate 8.
+source-ready `0.2.4`.
+
+Gate 8 reconstructs the exact Linux x86_64, macOS arm64/x86_64, and Windows
+x86_64 artifacts from Source Authority
+`0ee4dcce14da93f925c27a04d0e79051c83fd124`; the canonical 876-byte manifest
+has SHA-256 `64db11f3851b9d490c1135877fc975e841bbe231153073b7e5397fc008cfde6e`.
+The exact publisher installs eight versioned files, replaces `install.sh` and
+`install.ps1`, and replaces the manifest last. Its second live execution reuses
+all 60 files without changing bytes, inode, mode, owner, size, mtime, or ctime;
+the prior 48 versioned files and `install.cmd` remain unchanged. Loopback and
+public HTTPS each pass 60 GET and 60 HEAD checks plus root/unknown 404 checks
+with exact bytes, length, MIME, cache policy, and zero HEAD bodies. Isolated
+fresh install, public `0.2.3` Update, and `0.2.4` reinstall select the exact
+Linux archive member. GNU and musl each pass 258 tests; installer, publisher,
+CMD static, and Origin regressions pass 41, 56, 12, and 13 cases. Static
+macOS/Windows verification is retained without a native runtime, PowerShell,
+or CMD execution claim. Origin and cloudflared process identity, restart count,
+listener, unit, YAML, DNS, tunnel, connector, and credential metadata remain
+unchanged.
 
 ## 0.2.3 Patch Box Gates 1–8
 
@@ -1037,10 +1055,10 @@ Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
 The repository source package, source-built command, closed public
-distribution, and installed release are `0.2.3`; the command prints exactly
-`Backwriter 0.2.3` plus LF. The current installers, manifest, and Update handoff
-select `0.2.3`; exact `0.2.2` remains the only other accepted manifest. Prior
-`0.2.2`, `0.2.1`, `0.2.0`, `0.1.0`, and beta
+distribution, and installed release are `0.2.4`; the command prints exactly
+`Backwriter 0.2.4` plus LF. The current installers, manifest, and Update handoff
+select `0.2.4`; exact `0.2.3` remains the only other accepted manifest. Prior
+`0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, `0.1.0`, and beta
 versioned files remain immutable. The closed `0.2.1`
 source suite passed 236 GNU-host and 236 musl Rust tests; the closed `0.2.0`
 source suite passed 203 GNU-host Rust tests, and the historical `0.1.0` source

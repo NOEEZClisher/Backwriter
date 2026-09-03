@@ -1,13 +1,14 @@
 # Backwriter Protocol
 
-## 0.2.4 source-ready structural authority through Gate 7
+## Published and closed 0.2.4 structural authority
 
 Gate 2 hard-cuts the source to `artext.backwriter-anddress.v5`. Published and
 closed `0.2.3` remains immutable v4 release evidence. Current decode rejects v4
 and v3 as unsupported; there is no compatibility alias, wrapper, parallel
 schema, or parallel Runtime path. Gate 7 makes Cargo and `bw version`
-source-ready, unpublished `0.2.4`; official artifacts, installers, manifest,
-Update target, and publication remain closed `0.2.3`.
+source-ready `0.2.4`; Gate 8 publishes the matching four-target artifacts,
+installers, manifest, Update target, and exact 60-file distribution and closes
+the release at `0.2.4`.
 
 One source state is `SourceIdentity`: Runtime workspace coordinate, observed
 logical path, complete-source SHA-256, exact byte length, and exact Line count.
@@ -69,22 +70,24 @@ Gate 7 changes no Core, Runtime, wire, capability, or Adapter semantics. Fixed
 clean A/V5/B measurements and complete GNU/musl suites pass, including exact
 Search counts/order/multiplicity, View projections, every Line terminator,
 fresh Edit receipts, Host proof, Anchor, and blind-drift fail-closure. It
-therefore advances only source version authority; Gate 8 remains the separate
-distribution boundary.
+therefore advances only source version authority. Gate 8 separately rebuilds
+the pinned artifacts, publishes eight versioned files followed by the two
+installers and manifest last, verifies an idempotent rerun, and changes no Core,
+Runtime, capability, or Adapter meaning.
 No history, relocation, registry, watcher, retry, merge, rollback, or implicit
 capability order is created.
 
 Status: normative current-only Core/Runtime contract. The closed public `0.1.0`
-release remains immutable v3 evidence. Published and closed `0.2.3`, the prior
-published `0.2.2` and `0.2.1`, and the prior closed public `0.2.0` release use the
-hard-cutover v4 value/wire in all production callers.
+release remains immutable v3 evidence. Published and closed `0.2.4` uses the
+hard-cutover v5 value/wire in all production callers. Published and closed
+`0.2.3`, `0.2.2`, `0.2.1`, and `0.2.0` remain immutable v4 release evidence.
 The call-local target-specific Search observation and direct View, Check,
 Apply, and Anchor consumers are complete; Phase 7B verifies `0.2.1` source readiness.
 The `0.2.2` Anddress-first general editing Adapter authority, minimum one-shot
 implementation, integration, source-version decision, and separate Gate 7
 publication are closed. Patch Box Gates 1–8 are published and closed `0.2.3`;
 they change no v4 identity or currentness meaning. Official artifacts,
-installers, update target, and publication are aligned at `0.2.3`.
+installers, update target, and publication are aligned at `0.2.4`.
 
 ## 0.2.0 current-observation authority
 
