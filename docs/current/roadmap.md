@@ -123,13 +123,13 @@ Apply, and Data rejection are distinct consumers. No type, wrapper, alias,
 transport, or compatibility path is added. The
 [seven-gate tracker](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md)
 records Gate 6's automated exact JSON Search-to-one-shot Edit CRLF control and
-complete 243-test GNU/musl integration matrix. Source readiness is GO: Cargo and
-`bw version` are `0.2.2`, while Core, Runtime, Anddress v4, toolchain, and
-dependencies remain unchanged. Gate 7 reconstructs the exact four-target
-artifacts from Source Authority revision
+complete 243-test GNU/musl integration matrix. Source readiness was GO: at Gate
+6, Cargo and `bw version` became `0.2.2`, while Core, Runtime, Anddress v4,
+toolchain, and dependencies remain unchanged. Gate 7 reconstructs the exact
+four-target artifacts from Source Authority revision
 `04b36d9ca9cc725bedeb17231339c67b5f0590ea`, publishes the manifest last,
-and closes the 44-file public distribution. The current installer and
-`bw update` select official `0.2.2`; Update intentionally performs no version
+and closes the 44-file public distribution. At that closure, the installer and
+`bw update` selected official `0.2.2`; Update intentionally performs no version
 comparison.
 
 ## Completed: 0.2.1 current-observation reuse and release
@@ -555,8 +555,8 @@ repository-local authority.
 The Linux/WSL x86_64, macOS arm64/x86_64, Windows PowerShell x86_64, and
 Windows CMD stable `0.1.0` publication is complete. At that milestone, the
 installers and manifest selected `0.1.0`; its complete version directory remains
-immutable. Current installers and the manifest select the closed `0.2.2`
-distribution recorded below.
+immutable. At the later `0.2.2` closure recorded below, the installers and
+manifest selected that distribution.
 Existing public `0.1.0-beta.1`, `0.1.0-beta.2`, and `0.1.0-beta.3` files remain
 unchanged and immutable. Explicit `bw update` is complete, while background or
 automatic update remains deferred. Linux arm64, later versions, tags, GitHub

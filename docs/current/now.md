@@ -158,13 +158,13 @@ consumers are not inferred absent from repository-local references. The ordered
 work is tracked in
 [Backwriter 0.2.2 Anddress-first editing](../tasks/2026-09-01-backwriter-0.2.2-anddress-first-editing.md).
 Gate 6 passes the complete 243-test GNU and musl semantic matrix and one exact
-JSON Search-to-one-shot Edit CRLF E2E. Source Cargo and `bw version` are now
-`0.2.2`, while Core, Runtime, Anddress v4, toolchain, and dependencies remain
-unchanged from the closed `0.2.1` Source Authority. Gate 7 reconstructs the
-four canonical artifacts from revision
+JSON Search-to-one-shot Edit CRLF E2E. At Gate 6, Source Cargo and `bw version`
+became `0.2.2`, while Core, Runtime, Anddress v4, toolchain, and dependencies
+remain unchanged from the closed `0.2.1` Source Authority. Gate 7 reconstructs
+the four canonical artifacts from revision
 `04b36d9ca9cc725bedeb17231339c67b5f0590ea`, publishes the manifest last,
-and closes the exact 44-file public root. The current installers and
-`bw update` now select official `0.2.2`; Update still performs no version
+and closes the exact 44-file public root. At that closure, the installers and
+`bw update` selected official `0.2.2`; Update still performs no version
 comparison.
 
 ## Published Backwriter 0.2.1 observation reuse
