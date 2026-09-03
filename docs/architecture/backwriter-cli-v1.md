@@ -1,6 +1,6 @@
 # Backwriter CLI V1
 
-## 0.2.4 boundary through Gate 5
+## 0.2.4 boundary through Gate 6
 
 Gate 2 changes no CLI syntax, Adapter envelope schema, human formatting,
 parser flow, or executable version. Current source embeds canonical v5 objects
@@ -17,6 +17,9 @@ terminator directly from v5 and removes its private View. Search querying/order,
 View output order and all-or-none batch behavior, Edit receipt meaning, raw
 Session Edit/Apply, and existing output/error boundaries remain distinct
 consumers.
+Gate 6 changes no CLI syntax, schema, writer, status, or error. Check, Data,
+Pick, and Session already consume direct v5 values and collections, so no
+Adapter wrapper or compatibility branch is added.
 
 The v5 wire is fixed by the address authority. Search position duplication,
 View relation work, and one-shot Edit's private View are removed. Stdin

@@ -2,10 +2,11 @@
 
 The in-progress `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-Gates 2–5 hard-cut current source to v5, install the sole Issuer and shared
+Gates 2–6 hard-cut current source to v5, install the sole Issuer and shared
 complete-source structural cursor, contract Search results and View, and remove
-one-shot Edit's private View without altering the closed `0.2.3` v4 release or
-the Cargo/CLI version.
+one-shot Edit's private View, then confirm source-state-only Check and direct v5
+consumers without altering the closed `0.2.3` v4 release or the Cargo/CLI
+version.
 
 The closed public `0.1.0` release remains immutable v3 evidence. Published and
 closed `0.2.3`, the prior published `0.2.2` and `0.2.1`, and the prior closed public

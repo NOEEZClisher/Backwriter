@@ -14,9 +14,9 @@ are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. Current source
-is hard-cut through Gate 5 to the v5 Anddress algebra, wire, shared structural
+is hard-cut through Gate 6 to the v5 Anddress algebra, wire, shared structural
 cursor, direct Search result collection, geometry-driven single/batch View, and
-View-free one-shot Edit. Their direct View
+View-free one-shot Edit, with source-state-only Check classification. Their direct View
 source-state/range projection, target-specific Search literal
 projection and exact logical File lookup, Pick predicate semantics, direct
 Anchor target projection and live continuity, and source-state Check batch
@@ -41,9 +41,10 @@ complete from Source Authority revision
 The published `0.2.3` source, v4 API/wire, artifacts, installers, and public
 tree are closed immutable evidence. `0.2.4` is an in-progress target governed
 by the [structural-authority tracker](docs/tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-Gates 1–5 close authority, v5 algebra/wire, the sole Issuer, the shared
+Gates 1–6 close authority, v5 algebra/wire, the sole Issuer, the shared
 structural cursor, Search result contraction, exact-range View, and Edit/Apply/
-Anchor migration without a private Edit View. Cargo and
+Anchor migration without a private Edit View, plus Check and remaining consumer
+contraction. Cargo and
 `bw version` remain `0.2.3`; artifacts and the published distribution remain
 closed v4 evidence until later gates are separately accepted.
 
@@ -77,6 +78,9 @@ deletes one-shot Edit's private View: the Adapter prepares Line Content from
 the decoded v5 terminator before Runtime access, while `apply` and
 `apply_replace` share one executor and prospective cursor/Issuer pass for
 receipt and Anchor candidates. The plan
+retains Check's source-key grouping and shared observer, while proving that it
+compares only v5 source state and that Data, Pick, and Session carry the direct
+v5 values without adapters. It
 reuses existing admission/no-follow reads, literal matching, ordered batch
 grouping, staging and prospective provenance, Host proof, publication, and
 Anchor reflection. It adds no history, relocation, registry, watcher, retry,

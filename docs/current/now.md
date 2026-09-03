@@ -1,8 +1,8 @@
 # Backwriter Current State
 
-## In progress: 0.2.4 structural authority, Gate 5 complete
+## In progress: 0.2.4 structural authority, Gate 6 complete
 
-Gates 2–5 implement the v5 Rust algebra, canonical wire, sole crate-private
+Gates 2–6 implement the v5 Rust algebra, canonical wire, sole crate-private
 Issuer, common structural cursor, direct Search result collection, and
 geometry-driven exact-range View and Edit/Apply/Anchor projection.
 Published and closed `0.2.3` remains the sole current Cargo/CLI release
@@ -44,9 +44,15 @@ Apply, Replace receipts, Host proof, and Anchor reflection share the existing
 executor and one prospective `StructuralCursor`/Issuer pass; local range
 helpers and a separate relation allocation are gone in favor of v5
 `contains`/`overlaps`. Existing matching, batch grouping, publication, proof,
-and Anchor mechanics retain their actual consumers. The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
+and Anchor mechanics retain their actual consumers. Gate 6 confirms that Check
+validates all v5 inputs before I/O, groups by source key, compares only SHA-256,
+byte length, and Line count, and uses matching Host proof without opening the
+source. A nonmatching proof is I/O-free `NotCurrent`; proof miss uses one shared
+observation per source and does not install or mutate proof or Anchor state.
+Data, Pick, and Session already consume the
+direct v5 values, so no adapter or parallel collection was added. The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
 separates authority, implementation, semantic evidence, version readiness, and
-release approval. Check and remaining structural contraction begin at Gate 6;
+release approval. Integrated semantic and measurement evidence begins at Gate 7;
 stdin and CLI file splitting remain separately owned later decisions.
 
 ## Published and closed 0.2.3 Patch Box

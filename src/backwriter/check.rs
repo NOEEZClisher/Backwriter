@@ -1,4 +1,4 @@
-//! Batch currentness reporting for caller-provided v4 addresses.
+//! Batch currentness reporting for caller-provided v5 addresses.
 
 use thiserror::Error;
 

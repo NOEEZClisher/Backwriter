@@ -76,7 +76,7 @@ official installer remains separate and selects the closed public `0.2.3`
 distribution.
 
 The Cargo package, `bw version`, and closed official distribution remain
-`0.2.3`. The source checkout contains the unpublished `0.2.4` v5 Gates 1–5;
+`0.2.3`. The source checkout contains the unpublished `0.2.4` v5 Gates 1–6;
 its published `0.2.3`
 canonical artifacts retain Source Authority revision
 `195aaa37068122097ecc04d2644642b6afcc6765`. Patch Box Gates 1–8 are complete,

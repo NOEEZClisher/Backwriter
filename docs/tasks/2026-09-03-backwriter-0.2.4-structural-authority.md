@@ -1,6 +1,6 @@
 # Backwriter 0.2.4 Structural Authority
 
-Status: Gates 1–5 complete. The source accepts and emits only v5 while Cargo,
+Status: Gates 1–6 complete. The source accepts and emits only v5 while Cargo,
 CLI version, and the published closed `0.2.3` distribution remain unchanged.
 
 ## Objective and boundary
@@ -233,7 +233,7 @@ Closure:
   scratch-boundary, large no-EOL, duplicate-drift, and writer-failure
   regressions remain green with 258 tests on GNU and musl.
 
-## Gate 6 — Check and remaining contraction
+## Gate 6 — Check and remaining contraction — complete
 
 Acceptance:
 
@@ -248,6 +248,30 @@ Acceptance:
 
 Any v4 runtime branch, duplicate parser/constructor, result semantic drift, or
 unexplained code growth is a gate failure.
+
+Closure:
+
+- Check validates the complete v5 input collection before I/O, groups exact
+  workspace-coordinate/logical-path source keys, and compares only complete
+  source SHA-256, byte length, and Line count. It never parses or searches for
+  target kind or geometry;
+- a matching Host proof classifies its complete source group without open,
+  read, or hash work, while a mismatch is I/O-free `NotCurrent`. Missing,
+  invalidated, poisoned, or unusable proof falls back to the existing single
+  `observe_source` call and never installs, replaces, or invalidates proof or
+  Anchor state;
+- report assembly restores caller order and duplicate multiplicity. Current
+  and Unavailable values remain filtered, only NotCurrent values are removed,
+  and empty Search/Pick results remain canonical;
+- Data, Pick, raw Session, and external Rust tests already consume direct v5
+  Anddress values, collections, and outcomes. Removed no-op occurrence helpers
+  were the last result-carrier residue; no wrapper, DTO, shim, or second batch
+  executor replaces them;
+- production retains exactly one `StructuralCursor`, one ordinary-address
+  `AnddressIssuer`, and the capability-specific source grouping, observation,
+  report, and error boundaries with actual consumers. The Gate 1 production
+  baseline of 302,614 bytes/9,155 lines remains contracted at the Gate 5 level
+  of 297,269 bytes/8,954 lines; Gate 6 adds no production bytes or lines.
 
 ## Gate 7 — integration, evidence, and source-readiness decision
 

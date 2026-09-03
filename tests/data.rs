@@ -31,10 +31,6 @@ fn view(path: &str, content: &str) -> ViewOutcome {
     }
 }
 
-fn occurrence(value: Anddress) -> Anddress {
-    value
-}
-
 fn check_outcomes() -> (
     CheckOutcome<Option<Anddress>>,
     CheckOutcome<SearchOutcome>,
@@ -103,7 +99,7 @@ fn typed_store_get_pairs_accept_every_native_payload() {
     let check_pick_name = name("check-pick");
     let address = address("a.txt");
     let search = SearchOutcome::Found {
-        anddresses: vec![occurrence(address.clone())],
+        anddresses: vec![address.clone()],
     };
     let pick = PickOutcome::Selected {
         anddresses: vec![address.clone()],
@@ -153,7 +149,7 @@ fn store_preserves_kinds_and_returns_the_exact_duplicate_input() {
     let first = address("first.txt");
     let duplicate = address("duplicate.txt");
     let search = SearchOutcome::Found {
-        anddresses: vec![occurrence(address("search.txt"))],
+        anddresses: vec![address("search.txt")],
     };
 
     store.store_anddress(&shared, first.clone()).unwrap();
@@ -267,7 +263,7 @@ fn rename_and_remove_dispatch_each_data_kind_without_cross_kind_aliasing() {
     let check_pick_name = name("check-pick-new");
     let anddress = address("anddress.txt");
     let search = SearchOutcome::Found {
-        anddresses: vec![occurrence(address("search.txt"))],
+        anddresses: vec![address("search.txt")],
     };
     let pick = PickOutcome::Selected {
         anddresses: vec![address("pick.txt")],

@@ -632,9 +632,32 @@ mod tests {
             "SourceEvent",
             "scan_source(",
             "AnddressTarget",
+            "AnddressIssuer",
+            "StructuralCursor",
+            ".target()",
+            ".byte_start()",
+            ".byte_end()",
+            "anchor",
         ] {
             assert!(!production.contains(forbidden));
         }
+        let search = production
+            .split("pub(super) fn check_search")
+            .nth(1)
+            .unwrap()
+            .split("pub(super) fn check_pick")
+            .next()
+            .unwrap();
+        assert!(search.find("validate_all(&inputs)?") < search.find("execute_prevalidated_batch"));
+        let pick = production
+            .split("pub(super) fn check_pick")
+            .nth(1)
+            .unwrap()
+            .split("fn execute_prevalidated_batch")
+            .next()
+            .unwrap();
+        assert!(pick.find("validate_all(&inputs)?") < pick.find("execute_prevalidated_batch"));
+        assert!(production.contains("Err(SourceScanError::Resource) => Err(CheckError::Resource)"));
         assert_eq!(production.matches("observe_source(").count(), 1);
         assert_eq!(production.matches("select_current_proof(").count(), 1);
         assert!(!production.contains("install_search_proofs"));
@@ -666,5 +689,25 @@ mod tests {
                 "fn select_current_proof(&self, path: &str) -> Option<SourceProofEvidence>"
             )
         );
+        let structural_cursor = include_str!("structural_cursor.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        assert_eq!(
+            structural_cursor
+                .matches("pub(crate) struct StructuralCursor")
+                .count(),
+            1
+        );
+        let anddress = include_str!("../backwriter/anddress.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        assert_eq!(
+            anddress.matches("pub(crate) struct AnddressIssuer").count(),
+            1
+        );
+        let issuer = anddress.split("impl AnddressIssuer").nth(1).unwrap();
+        assert_eq!(issuer.matches("pub(crate) fn new(").count(), 1);
     }
 }

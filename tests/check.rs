@@ -49,10 +49,6 @@ fn coordinate(runtime: &WorkspaceRuntime) -> String {
     anddresses[0].workspace_coordinate().to_owned()
 }
 
-fn occurrence(anddress: Anddress, _line: usize) -> Anddress {
-    anddress
-}
-
 #[test]
 fn check_reports_current_removed_and_unavailable_v5_addresses() {
     let fixture = tempdir().unwrap();
@@ -103,10 +99,10 @@ fn check_search_and_pick_preserve_order_multiplicity_and_canonical_empty() {
     ];
 
     let search_candidates = vec![
-        occurrence(current.clone(), 1),
-        occurrence(stale.clone(), 2),
-        occurrence(unavailable.clone(), 3),
-        occurrence(current.clone(), 4),
+        current.clone(),
+        stale.clone(),
+        unavailable.clone(),
+        current.clone(),
     ];
     let expected_search = SearchOutcome::Found {
         anddresses: vec![
@@ -338,10 +334,10 @@ fn host_search_proof_drives_every_check_form_and_preserves_a_large_mixed_group()
     assert_eq!(one.report.current_count(), 1);
 
     let search_inputs = vec![
-        occurrence(stale_hash.clone(), 1),
-        occurrence(current_line.clone(), 2),
-        occurrence(stale_length.clone(), 3),
-        occurrence(current_file.clone(), 4),
+        stale_hash.clone(),
+        current_line.clone(),
+        stale_length.clone(),
+        current_file.clone(),
     ];
     let expected_search = SearchOutcome::Found {
         anddresses: vec![search_inputs[1].clone(), search_inputs[3].clone()],

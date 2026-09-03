@@ -2,11 +2,12 @@
 
 ## 0.2.4 structural-authority gates
 
-Gate 1 records the consumer baseline. Gates 2–5 hard-cut current source to v5,
+Gate 1 records the consumer baseline. Gates 2–6 hard-cut current source to v5,
 install the sole Issuer and complete-source structural cursor, and contract
 Search results to direct Anddresses and View to geometry-driven exact-range
-projection, then remove one-shot Edit's private View while leaving Cargo/CLI
-version and the closed `0.2.3` distribution
+projection, remove one-shot Edit's private View, and close source-state-only
+Check plus direct v5 consumer contraction while leaving Cargo/CLI version and
+the closed `0.2.3` distribution
 unchanged. Exact File, Paragraph, text-Line, and
 File-child-Line KATs; strict v4/v3 rejection; source/geometry mutation and
 overflow fail-closure; algebra; shared source identity; every terminator and
@@ -16,12 +17,23 @@ matching and Apply publication paths are unchanged. View has no relation or
 Paragraph scan and returns only `Projected { anddress, content }` or
 `RelationAbsent`.
 
-Gate 5 passes the complete suite on both GNU and musl. Both targets pass offline/locked
+Gate 6 passes the complete suite on both GNU and musl. Both targets pass offline/locked
 all-target check, clippy with warnings denied, and release build; the GNU run
 also records offline/locked metadata and dependency tree plus rustfmt. Cargo,
 lockfile, toolchain, Search/Check/Edit Adapter envelopes, and the `0.2.3`
 executable version are unchanged. View alone hard-cuts to
 `bw.cli.view.v2` for shared single/batch outcome items.
+
+Check validates every input before I/O and groups by workspace coordinate and
+logical path. Matching Host proof classifies from SHA-256, byte length, and Line
+count without an open/read/hash, while mismatch is I/O-free `NotCurrent`;
+miss, invalidation, poison, or unusable proof falls back to one source
+observation and installs no proof. Reports preserve
+input order and multiplicity, keep Current and Unavailable inputs, remove only
+NotCurrent inputs, and canonicalize empty Search/Pick results. Structural tests
+fix one production `StructuralCursor`, one ordinary-address Issuer, no target
+geometry branch in Check, and no proof or Anchor mutation. Data, Pick, Session,
+and external Rust regressions consume direct v5 values without an adapter.
 
 Every later implementation gate must reject unsupported/invalid structure
 before source mutation, discard provisional results on failure, leave no

@@ -3,10 +3,11 @@
 ## In progress: 0.2.4 structural-authority hard cut
 
 The [0.2.4 tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
-defines eight ordered gates. Gates 1–5 close authority, the consumer baseline,
+defines eight ordered gates. Gates 1–6 close authority, the consumer baseline,
 v5 algebra, canonical wire, sole Issuer, complete-source structural cursor,
 direct Search result collection, geometry-driven exact-range View, and
-View-free Edit/Apply/Anchor projection;
+View-free Edit/Apply/Anchor projection, plus source-state-only Check and direct
+v5 consumer contraction;
 `0.2.3` remains the published, immutable v4 release and current Cargo/CLI
 version.
 
@@ -15,7 +16,7 @@ version.
 3. sole `StructuralCursor`, Search migration, and result contraction — complete.
 4. View Runtime plus single/batch Adapter migration — complete.
 5. Edit/Apply/Anchor migration and private View removal — complete.
-6. Check migration, remaining duplication removal, and code contraction.
+6. Check migration, remaining duplication removal, and code contraction — complete.
 7. semantic, AI-workflow, performance, and memory evidence followed by a
    separate `0.2.4` source-readiness GO/NO-GO.
 8. artifacts, installers, and publication under separate release authority.
@@ -38,9 +39,12 @@ geometry. Gate 4 removes View-owned relation scans and uses one minimal
 single and JSON batch projection through one item writer. Gate 5 obtains Line
 terminators directly from v5, removes the one-shot private View, and shares the
 existing Apply executor plus one prospective cursor/Issuer pass across unit
-Apply, Replace receipt, Host proof, and Anchor reflection. There is no v4
-compatibility or parallel Runtime. Remaining acceptance includes Check
-contraction and blind duplicate drift. Later Adapter
+Apply, Replace receipt, Host proof, and Anchor reflection. Gate 6 retains one
+source-key grouping path and the shared source observer for Check, removes no-op
+consumer adapters, and confirms that Host proof hits compare source state
+without I/O. There is no v4 compatibility or parallel Runtime. Remaining
+acceptance includes integrated semantics, measurement, and blind duplicate
+drift. Later Adapter
 contraction, stdin, and `bw.rs` splitting are decided only by their owning
 gates.
 History, relocation, registry,

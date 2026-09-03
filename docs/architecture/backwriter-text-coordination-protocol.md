@@ -1,6 +1,6 @@
 # Backwriter Protocol
 
-## 0.2.4 structural-authority target through Gate 5
+## 0.2.4 structural-authority target through Gate 6
 
 Gate 2 hard-cuts the source to `artext.backwriter-anddress.v5`. Published and
 closed `0.2.3` remains immutable v4 release evidence. Current decode rejects v4
@@ -58,6 +58,12 @@ overlap instead of local range helpers. Existing admission/no-follow
 observation, literal matcher, batch source grouping, fixed-scratch staging,
 prospective provenance, Host proof, publication, and Anchor reflection stay
 because they have distinct consumers.
+Gate 6 keeps Check's source-key grouping and shared source observer. It validates
+the complete v5 input before I/O and compares only source SHA-256, byte length,
+and Line count. A matching Host proof performs no source I/O, and a nonmatching
+proof is I/O-free `NotCurrent`; miss or unusable proof falls back to one
+observation per source without mutating proof or Anchor state. Data, Pick, and
+Session carry the same direct v5 values and collections.
 No history, relocation, registry, watcher, retry, merge, rollback, or implicit
 capability order is created.
 
