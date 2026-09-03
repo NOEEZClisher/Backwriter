@@ -1,5 +1,45 @@
 # Backwriter Protocol
 
+## 0.2.5 performance-recovery authority
+
+Gate 1 changes documentation only. Current production and the official release
+remain closed `0.2.4`. The performance target preserves all public v5,
+capability, Runtime, Adapter, failure, and publication meaning under one rule:
+semantics stay unified while execution becomes specialized again.
+
+`sourceLineCount` remains part of `SourceIdentity`, ordinary equality,
+`CurrentObservation`, Host proof, and View, Check, and Apply currentness. A
+same-hash, same-length address that claims a different Line count remains
+`NotCurrent`. Raw observation specialization must derive the exact Line count
+in its one forward read with a minimal accumulator; it may omit Paragraph,
+parent, and target geometry and must not invoke or duplicate the sole
+`StructuralCursor`.
+
+Safe Rust typed Anddresses remain valid by construction through strict v5
+decode or the sole crate-private Issuer. Wire decode, Issuer source/geometry
+validation, public `Anddress::validate()`, and existing error priorities remain
+strict. A later hot path may skip only a repeated validation whose typed
+construction boundary is proved; it may not create an unchecked wire path or
+another validator.
+
+The one authorized encoding addition is
+`Anddress::encode_into(&mut Vec<u8>) -> Result<(), AnddressError>`. It clears
+the caller buffer first, computes complete capacity with checked arithmetic,
+fallibly reserves before appending, and leaves buffer length zero on error;
+capacity may remain reusable. Success writes exactly one canonical v5 object
+with no trailing bytes. Existing `encode()` remains, delegates through one new
+empty vector, and preserves exact KAT bytes and the existing error type. The
+CLI may reuse a scratch vector but may not duplicate the writer or retain a
+second result collection.
+
+The ordered implementation gates are bulk matching, raw/structural
+observation, issuance/encoding, chunked pending memory, and final consumer
+contraction, followed by fixed evidence/source readiness and separately
+authorized release. Conditional structural demand, cursor specialization,
+shared Paragraph allocation, and pending chunk size require measured evidence.
+No gate may change v5 fields or output, add another parser or authority, or
+restore a retired carrier, relation scan, or private Edit View.
+
 ## Published and closed 0.2.4 structural authority
 
 Gate 2 hard-cuts the source to `artext.backwriter-anddress.v5`. Published and

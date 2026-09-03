@@ -38,6 +38,40 @@ live publication, fresh installation, and explicit public `0.2.3` update are
 complete from Source Authority revision
 `0ee4dcce14da93f925c27a04d0e79051c83fd124`.
 
+## Planned 0.2.5 performance recovery
+
+Gate 1 of the
+[performance-recovery tracker](docs/tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
+closes documentation authority only. Cargo, `bw version`, source behavior,
+artifacts, installers, Update, and the public distribution remain published and
+closed `0.2.4`. The governing rule is: semantics stay unified; execution
+becomes specialized again.
+
+The target preserves v5 fields, algebra, wire bytes, Search/View/Edit output,
+one `StructuralCursor`, one `AnddressIssuer`, single/batch View, fresh Edit
+receipts, source Line-count currentness, Host proof, publication, and Anchor
+fail-closure. A same-hash, same-length address with a false Line count remains
+`NotCurrent`. Gate 3 may replace unnecessary structural work only with a
+minimal same-read Line-count accumulator that owns no Paragraph or parent
+geometry and does not invoke the structural cursor.
+
+Strict Issuer/decode construction and public `Anddress::validate()` remain.
+Only repeated validation on a proven already typed hot path may be removed.
+Gate 4 is authorized to add public
+`Anddress::encode_into(&mut Vec<u8>) -> Result<(), AnddressError>`: it clears
+the destination, checks and fallibly reserves complete capacity before writing,
+leaves length zero on error, and emits the exact existing canonical v5 bytes on
+success. Existing `encode()` remains and delegates to it.
+
+The ordered work is authority, bulk literal matching, raw/structural
+observation, issuance/encoding, chunked pending memory, consumer contraction,
+fixed evidence/source readiness, then separately authorized release. Conditional
+cursor demand, shared Paragraph allocation, and chunk size require measurement;
+they are not Gate 1 implementation choices. Do not introduce v6, change v5 or
+Adapter output, restore retired carriers/scanners/private View, or add a parser,
+persistent state/index/registry, stdin, CLI split, history, relocation, watcher,
+merge, retry, rollback, or compatibility path.
+
 ## Published and closed 0.2.4 structural-authority target
 
 The published `0.2.3` source, v4 API/wire, artifacts, installers, and public

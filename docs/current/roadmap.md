@@ -1,5 +1,43 @@
 # Backwriter Roadmap
 
+## Planned: 0.2.5 structural specialization and performance recovery
+
+The [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
+closes Gate 1 authority without changing production or release state. The
+target keeps the complete closed `0.2.4` v5 meaning and restores specialized
+hot paths only where measurement and reachability show unnecessary work.
+
+1. Performance-recovery authority — complete; documentation only.
+2. Bulk literal matching — replace the per-byte caller loop with one equivalent
+   segment path and measure fixed sparse and dense native cells.
+3. Raw/structural observation — retain Line-count currentness while removing
+   `StructuralCursor` and Paragraph work from raw consumers.
+4. Issuance/encoding — remove only proven typed revalidation and add one
+   reusable canonical `encode_into` buffer path.
+5. Chunked pending memory — release consumed provisional Search storage and
+   centralize Paragraph attachment.
+6. Consumer reaudit and contraction — delete remaining dead or duplicate
+   plumbing without adding a feature.
+7. Fixed A/B/C evidence and source-readiness GO/NO-GO — only a complete GO may
+   advance source to unpublished `0.2.5`.
+8. Artifacts, installers, publication, and release closure — requires separate
+   exact Owner authorization.
+
+Line count remains part of v5 identity, Host proof, and currentness; false
+same-hash/same-length Line count remains `NotCurrent`. Strict decode, Issuer,
+and public validation remain. The authorized public encoder reuses a caller
+`Vec<u8>`, clears it, performs checked fallible reserve before writing, leaves
+it empty on error, and preserves exact v5 bytes; existing `encode()` delegates.
+`StructuralDemand`, cursor specialization, shared Paragraph `Arc`, and chunk
+size remain measurement-dependent rather than planned architecture.
+
+The fixed labels are published v4 A=`195aaa37068122097ecc04d2644642b6afcc6765`,
+closed `0.2.4` production B=`8b20987893ea5ac454c4c0a50d0c470e26b5e650`,
+release Source Authority `0ee4dcce14da93f925c27a04d0e79051c83fd124`,
+and a future candidate C. Cargo, `bw version`, official artifacts, Update, and
+the public distribution remain closed `0.2.4` until later gates authorize and
+pass their distinct boundaries.
+
 ## Completed: 0.2.4 structural-authority hard cut and distribution
 
 The [0.2.4 tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)

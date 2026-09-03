@@ -1,5 +1,51 @@
 # Verification
 
+## 0.2.5 performance-recovery gates
+
+Gate 1 is documentation-only. It preserves the closed `0.2.4` production
+baseline of 297,269 bytes/8,954 lines and reuses the closed GNU and musl
+258-test evidence because Rust, Cargo, lockfile, tests, README, and toolchain
+are byte-identical. The
+[tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
+fixes evidence labels, gate order, thresholds, exclusions, and the three
+authority decisions before implementation.
+
+Line count remains v5 identity and currentness evidence. Gate 3 must retain the
+same-hash/same-length/false-Line-count `NotCurrent` control while proving that
+raw consumers use one minimal same-read Line counter and zero
+`StructuralCursor` work. Strict decode, Issuer validation, public
+`validate()`, and error priority remain. Gate 4 may remove only proved typed
+revalidation and must prove that `encode_into` clears its buffer, reserves
+fallibly before output, leaves length zero on error, reuses capacity, and emits
+the exact existing File, Paragraph, Paragraph-parent Line, and File-parent Line
+KAT bytes. Existing `encode()` must delegate and remain byte-exact.
+
+Gate-specific evidence is cumulative:
+
+- Gate 2: exhaustive byte/segment matcher parity plus fixed 256 MiB, 1 GiB,
+  and 1,048,576-hit native Search cells.
+- Gate 3: raw/structural parity and failure boundaries; Host/Untrusted Check,
+  View, Range Apply, CRLF Edit, and 134-million-short-Line cells.
+- Gate 4: one and million-address allocation/latency/output measurements,
+  writer equality, million-result CLI Search, and 200,000-file Search/View.
+- Gate 5: exact dense count/order/digest, all-or-none cleanup, one huge
+  Paragraph, many one-Line Paragraphs, and actual release of pending capacity.
+- Gate 6: one cursor, one Issuer, no retired carrier/relation/private View, no
+  duplicate parser/validator/writer, and code-size contraction.
+- Gate 7: complete GNU/musl semantics and fixed A/B/C performance, memory, I/O,
+  output, drift, and code-size evidence before source-readiness GO/NO-GO.
+- Gate 8: separately authorized artifacts, installers, publication, endpoints,
+  update, and release closure.
+
+Fixed gates are C/A sparse target at most 1.10 and ceiling 1.15; 1,048,576-hit
+RSS target at most 130 MiB, soft at most 140 MiB, and hard NO-GO above 145 MiB;
+CRLF Edit C/A target at most 1.20 and hard ceiling 1.25; Host Check zero I/O;
+Untrusted Check, View, and Range Apply boundaries recorded in the tracker;
+exact KAT/output/order and Correct 1 / Safe Reject 6 / Wrong Apply 0; and final
+production no larger than 297,269 bytes/8,954 lines unless growth up to 3
+percent has direct evidence. Any duplicate parser, validator, or writer is a
+hard NO-GO. Native and CLI Search measurements remain separate.
+
 ## 0.2.4 structural-authority gates
 
 Gate 1 records the consumer baseline. Gates 2–7 hard-cut current source to v5,

@@ -1,5 +1,37 @@
 # Backwriter Current State
 
+## Planned 0.2.5 performance recovery — Gate 1 authority complete
+
+Gate 1 is documentation-only authority under the
+[performance-recovery tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
+Implementation has not started. Cargo, `bw version`, source behavior,
+artifacts, installers, Update, and the official distribution remain published
+and closed `0.2.4`.
+
+The governing rule is **semantics stay unified; execution becomes specialized
+again**. V5 fields, algebra, canonical bytes, capability and Adapter outputs,
+one structural cursor, one Issuer, single/batch View, receipts, Host proof,
+publication, and Anchor behavior remain fixed. The performance target may
+remove only capability work that has no consumer.
+
+Gate 1 resolves three planning questions. First, exact source Line count stays
+in v5 identity, observations, Host proof, and currentness. Same-hash,
+same-length input with a false Line count remains `NotCurrent`; Gate 3 may count
+Lines in a minimal raw same-read accumulator without Paragraph or parent
+geometry rather than weakening this Safe Reject. Second, strict Issuer/decode
+and public `validate()` remain; Gate 4 may remove only proven duplicate
+validation of an already typed address. Third, Gate 4 may add one public
+allocation-reusing `Anddress::encode_into(&mut Vec<u8>)` while retaining
+`encode()` as a delegating surface and preserving every v5 KAT and Adapter
+byte.
+
+The ordered gates are bulk literal matching, raw/structural observation,
+issuance/encoding, chunked pending memory, consumer contraction, fixed
+evidence/source readiness, and a separately authorized release. No Gate 1
+decision fixes `StructuralDemand`, cursor specialization, shared Paragraph
+allocation, or chunk size. The production baseline remains 297,269 bytes and
+8,954 lines, and the closed GNU and musl evidence remains 258 tests each.
+
 ## Published and closed 0.2.4 structural authority
 
 Gates 2–7 implement and verify the v5 Rust algebra, canonical wire, sole

@@ -1,5 +1,10 @@
 # Backwriter Principles
 
+The planned `0.2.5` performance recovery is governed by Principle 19 and its
+[eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
+Gate 1 changes authority documents only; current source and official release
+remain closed `0.2.4`.
+
 The published and closed `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
 Gates 2–7 hard-cut current source to v5, install the sole Issuer and shared
@@ -144,3 +149,15 @@ the v5 `0.2.4` distribution governed by Principle 18.
     musl, fixed A/V5/B, and AI-workflow evidence before advancing source version.
     This consolidation creates no history, relocation, registry, watcher,
     retry, merge, rollback, or implicit workflow.
+19. **Unified semantics permit specialized execution.** Performance recovery
+    may remove only work a capability does not consume while preserving v5,
+    exact output, errors, ordering, multiplicity, and fail-closure. Source Line
+    count remains identity and currentness evidence even when a raw path uses a
+    minimal same-read counter instead of the structural cursor. Strict decode,
+    the sole Issuer, and public explicit validation remain construction
+    authority; only proved typed hot-path repetition may disappear. One public
+    reusable `encode_into` writer may replace per-result allocation while
+    existing `encode()` delegates and canonical bytes remain exact. Measured
+    evidence alone may select cursor demand, shared Paragraph allocation, or
+    pending chunk size; none authorizes another parser, validator, writer,
+    compatibility path, state, or release.

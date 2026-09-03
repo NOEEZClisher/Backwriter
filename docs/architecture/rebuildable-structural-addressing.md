@@ -1,5 +1,30 @@
 # Backwriter Anddress and Exact Line Model
 
+## Planned 0.2.5 encoding and currentness boundary
+
+Gate 1 preserves the complete published v5 algebra and wire. Exact source Line
+count remains a `SourceIdentity` field and currentness requirement. A typed
+address whose hash and byte length match but whose claimed Line count differs
+from the accepted observation or Host proof remains `NotCurrent`; performance
+work may derive that count more cheaply but may not remove or reinterpret it.
+
+Strict decode and the sole crate-private Issuer remain the only safe
+construction boundaries, and public `validate()` remains strict. Gate 4 may
+remove only repeated validation after a proved typed boundary. It is authorized
+to add:
+
+```rust
+pub fn encode_into(&self, output: &mut Vec<u8>) -> Result<(), AnddressError>
+```
+
+`encode_into` clears the vector on entry, calculates the complete canonical
+length with checked arithmetic, and fallibly reserves before appending. On
+error its length is zero, although its capacity may remain reusable. On success
+it contains exactly the current fixed-order v5 object and no trailing bytes.
+Existing `encode()` remains and delegates through one newly allocated empty
+vector. This adds no second wire, builder, JSON model, compatibility path, or
+change to the four canonical KAT byte sequences.
+
 ## Published and closed 0.2.4 v5 target algebra
 
 The source is hard-cut to `artext.backwriter-anddress.v5`. Published and closed
