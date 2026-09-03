@@ -1309,7 +1309,7 @@ mod apply_tests {
             drop(proofs);
             assert!(matches!(
                 runtime.view_anchored(&handle, AnddressTarget::File),
-                Ok(ViewOutcome::File { text, .. }) if text == "source"
+                Ok(ViewOutcome::Projected { content, .. }) if content == "source"
             ));
         }
     }

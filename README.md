@@ -75,8 +75,9 @@ external Adapter command are `bw`. There is no `backwriter` binary, alias, or wr
 official installer remains separate and selects the closed public `0.2.3`
 distribution.
 
-The source checkout, Cargo package, `bw version`, and closed official
-distribution are `0.2.3`, and its
+The Cargo package, `bw version`, and closed official distribution remain
+`0.2.3`. The source checkout contains the unpublished `0.2.4` v5 Gates 1–4;
+its published `0.2.3`
 canonical artifacts retain Source Authority revision
 `195aaa37068122097ecc04d2644642b6afcc6765`. Patch Box Gates 1–8 are complete,
 including Search positions, View projection/batching, native Edit receipts,
@@ -89,9 +90,9 @@ comparison, `bw update` installs or reinstalls the official `0.2.3` release.
 The default source-checkout replacement flow is:
 
 1. Run `bw --json search ...`.
-2. Select one occurrence from `occurrences` and pass its exact embedded v4
+2. Select one occurrence from `occurrences` and pass its exact embedded v5
    `anddress` object unchanged as one argv value.
-3. Run `bw edit anddress '<opaque-v4-object>' '<new-content>'`.
+3. Run `bw edit anddress '<opaque-v5-object>' '<new-content>'`.
 
 Human Search rows are not encoded Anddress values and cannot be Edit input.
 Treat the selected JSON object as opaque: do not interpret or rewrite its hash,
@@ -101,11 +102,11 @@ the current None, LF, CR, or CRLF terminator. View or Pick may help a caller
 select a target; Check is not required.
 
 Human success writes one exact LF-terminated receipt row. `Unchanged` is
-followed by the still-current input v4 object; `Changed` is followed by the
-fresh v4 object when the resulting File, Line, or unique Paragraph has one,
+followed by the still-current input v5 object; `Changed` is followed by the
+fresh v5 object when the resulting File, Line, or unique Paragraph has one,
 and otherwise by `None`. With leading `--json`, the same result is the compact
 Adapter-only `bw.cli.edit.v1` object with `schema`, `outcome`, and `anddress`
-keys in that order; `anddress` is the exact v4 object or JSON `null`. Reuse only
+keys in that order; `anddress` is the exact v5 object or JSON `null`. Reuse only
 the address returned by the receipt. A changed Paragraph with `None` requires
 an explicit Search before later target work. Exit `1` is neither a stale-only
 classification nor proof that source bytes are unchanged, so it must not
@@ -157,19 +158,19 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     search /file <logical-path>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
-    view anddress <encoded-v4-Anddress>
+    view anddress <encoded-v5-Anddress>... [--as <line|paragraph|file>]
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
-    check anddress <encoded-v4-Anddress>
+    check anddress <encoded-v5-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw
-    view anddress <encoded-v4-Anddress>
+    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
-    view anddress <encoded-v4-Anddress>
+    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
-    check anddress <encoded-v4-Anddress>
+    check anddress <encoded-v5-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
-    edit anddress <encoded-v4-Anddress> <content>
+    edit anddress <encoded-v5-Anddress> <content>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
-    edit anddress <encoded-v4-Anddress> <content>
+    edit anddress <encoded-v5-Anddress> <content>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 ```
 
@@ -181,15 +182,18 @@ deterministic result order. The distinct `search /file` form validates one
 logical path and returns the current File Anddress for an admitted regular
 UTF-8, NUL-free source regardless of whether it is empty or contains matching
 text. Missing paths and directories return Empty; the form has no scope
-selectors or synthetic content query. View decodes a v4 Anddress and writes only
-its exact selected text. Check decodes one v4 Anddress and writes only
+selectors or synthetic content query. View decodes v5 Anddresses and projects
+each to itself or one ancestor before reading its exact content. A single input
+defaults to self projection. `--as` chooses one target kind; multiple inputs
+require both `--json` and `--as`. Check decodes one v5 Anddress and writes only
 `Current`, `NotCurrent`, or `Unavailable`. Search, View, Check, and Edit `--json`
-write one compact Adapter object with exact embedded v4 Anddress objects where
-applicable; each is an Adapter schema, not a second Core wire.
+write compact Adapter objects with exact embedded v5 Anddress objects where
+applicable; each is an Adapter schema, not a second Core wire. View uses the
+hard-cut `bw.cli.view.v2` outcomes array for both single and batch results.
 Raw View is an explicit Adapter exact-text mode that reuses the ordinary View
 projection without a Core wire or changed View meaning.
 Human Search, View, and Check keep their existing projections; human Edit
-receipts intentionally return the exact current v4 object when one exists.
+receipts intentionally return the exact current v5 object when one exists.
 The Session holds one Runtime until EOF
 or `exit` and has explicit local Search, Pick, Anddress, Edit, View, and Check
 bindings plus non-aliasing Anchedress handles. It owns one explicit `DataStore`

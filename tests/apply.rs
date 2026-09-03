@@ -294,7 +294,7 @@ fn host_apply_reuses_and_replaces_current_proof_across_publications() {
     );
     assert!(matches!(
         workspace.view(&second, second.target()),
-        Ok(ViewOutcome::File { text, .. }) if text == "two\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "two\n"
     ));
     let parked_other = root.join("parked-other");
     fs::rename(root.join("other.txt"), &parked_other).unwrap();
@@ -337,7 +337,7 @@ fn host_apply_reuses_and_replaces_current_proof_across_publications() {
     );
     assert!(matches!(
         workspace.view_anchored(&handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "three\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "three\n"
     ));
     assert_no_apply_temp(&root);
 }
@@ -396,7 +396,7 @@ fn host_apply_direct_and_identical_noops_preserve_proof_anchor_inode_and_bytes()
     assert_eq!(fs::metadata(&source_path).unwrap().ino(), inode);
     assert!(matches!(
         workspace.view_anchored(&handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "same\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "same\n"
     ));
     let parked = root.join("parked");
     fs::rename(&source_path, &parked).unwrap();
@@ -460,7 +460,7 @@ fn apply_replace_returns_exact_line_and_paragraph_results() {
             );
             assert!(matches!(
                 workspace.view(&fresh, PublicAnddressTarget::Line),
-                Ok(ViewOutcome::Line { anddress, .. }) if anddress == fresh
+                Ok(ViewOutcome::Projected { anddress, .. }) if anddress == fresh
             ));
         }
         assert_no_apply_temp(root);
@@ -578,7 +578,7 @@ fn host_apply_proof_mismatch_rejects_before_source_io_and_preserves_state() {
     fs::rename(&parked, &source_path).unwrap();
     assert!(matches!(
         workspace.view_anchored(&handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "current\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "current\n"
     ));
     fs::rename(&source_path, &parked).unwrap();
     assert_eq!(
@@ -809,7 +809,7 @@ fn host_apply_open_failure_removes_only_proof_and_preserves_anchor() {
     fs::rename(&parked, &source_path).unwrap();
     assert!(matches!(
         workspace.view_anchored(&handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "current\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "current\n"
     ));
 
     fs::rename(&source_path, &parked).unwrap();
@@ -1001,12 +1001,12 @@ fn v5_drift_matrix_has_one_correct_apply_and_no_wrong_publication_in_both_modes(
 
             if succeeds {
                 assert!(
-                    matches!(workspace.view_anchored(&handle, PublicAnddressTarget::File), Ok(ViewOutcome::File { text, .. }) if text.as_bytes() == CORRECT),
+                    matches!(workspace.view_anchored(&handle, PublicAnddressTarget::File), Ok(ViewOutcome::Projected { content, .. }) if content.as_bytes() == CORRECT),
                     "{mode} {name}"
                 );
             } else {
                 assert!(
-                    matches!(workspace.view_anchored(&handle, PublicAnddressTarget::File), Ok(ViewOutcome::File { text, .. }) if text.as_bytes() == before_apply),
+                    matches!(workspace.view_anchored(&handle, PublicAnddressTarget::File), Ok(ViewOutcome::Projected { content, .. }) if content.as_bytes() == before_apply),
                     "{mode} {name}"
                 );
             }

@@ -34,7 +34,7 @@ use backwriter::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v5-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v5-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> <content>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, Check, and Anddress-first Edit, raw View, plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v5-Anddress>... [--as <line|paragraph|file>]\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v5-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> <content>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, Check, and Anddress-first Edit, raw View, plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
 
 #[cfg(unix)]
 const INSTALL_SH_URL: &str = "https://backwriter.pentagration.com/install.sh";
@@ -533,8 +533,13 @@ fn execute_edit(
 
     let anddress = decode_anddress(encoded)?;
     let mut runtime = open_runtime(workspace, admissions)?;
-    let outcome = run_view(&runtime, &anddress)?;
-    if let ViewOutcome::Line { terminator, .. } = outcome {
+    let outcome = run_view(&runtime, &anddress, anddress.target())?;
+    if let ViewOutcome::Projected {
+        anddress: projected,
+        ..
+    } = outcome
+        && projected.target() == AnddressTarget::Line
+    {
         if content
             .as_bytes()
             .iter()
@@ -542,7 +547,10 @@ fn execute_edit(
         {
             return Err(map_edit_error(EditError::InvalidInput));
         }
-        let terminator = match terminator {
+        let terminator = match projected
+            .terminator()
+            .expect("a projected Line has a terminator")
+        {
             LineTerminator::None => "",
             LineTerminator::Lf => "\n",
             LineTerminator::Cr => "\r",
@@ -641,16 +649,67 @@ fn execute_view(
         }
         return Err(CliError::usage("view requires the anddress input form"));
     }
-    let encoded = required_text(&mut arguments, "view anddress")?;
-    if arguments.next().is_some() {
-        return Err(CliError::usage("view accepts exactly one anddress operand"));
+    let arguments = text_arguments(arguments, "view operand")?;
+    let as_index = arguments.iter().position(|argument| argument == "--as");
+    let (encoded, projection) = match as_index {
+        Some(index) => {
+            if arguments[index + 1..].len() != 1 {
+                return Err(CliError::usage(
+                    "view --as requires exactly one target and must be last",
+                ));
+            }
+            (
+                &arguments[..index],
+                Some(parse_view_target(&arguments[index + 1])?),
+            )
+        }
+        None => (arguments.as_slice(), None),
+    };
+    if encoded.is_empty() {
+        return Err(CliError::usage(
+            "view requires at least one anddress operand",
+        ));
     }
-    let anddress = decode_anddress(encoded)?;
+    if encoded.iter().any(|argument| argument == "--as") {
+        return Err(CliError::usage("view accepts --as only once"));
+    }
+    if encoded.len() != 1 && output != OutputMode::Json {
+        return Err(CliError::usage("batch View requires --json"));
+    }
+    if encoded.len() != 1 && projection.is_none() {
+        return Err(CliError::usage("batch View requires --as"));
+    }
+    let mut anddresses = Vec::new();
+    anddresses
+        .try_reserve_exact(encoded.len())
+        .map_err(|_| CliError::execution("View input allocation failed"))?;
+    for value in encoded {
+        anddresses.push(decode_anddress(value.clone())?);
+    }
     let runtime = open_runtime(workspace, admissions)?;
-    let outcome = run_view(&runtime, &anddress)?;
-    match output {
-        OutputMode::Human | OutputMode::Raw => write_view(&outcome),
-        OutputMode::Json => write_view_json(outcome),
+    let projection = projection.unwrap_or_else(|| anddresses[0].target());
+    if anddresses.len() == 1 {
+        let outcome = run_view(&runtime, &anddresses[0], projection)?;
+        match output {
+            OutputMode::Human | OutputMode::Raw => write_view(&outcome),
+            OutputMode::Json => write_view_json(std::slice::from_ref(&outcome)),
+        }
+    } else {
+        let outcomes = runtime
+            .view_batch(&anddresses, projection)
+            .map_err(|error| CliError::execution(error.to_string()))?;
+        write_view_json(&outcomes)
+    }
+}
+
+fn parse_view_target(value: &str) -> Result<AnddressTarget, CliError> {
+    match value {
+        "line" => Ok(AnddressTarget::Line),
+        "paragraph" => Ok(AnddressTarget::Paragraph),
+        "file" => Ok(AnddressTarget::File),
+        _ => Err(CliError::usage(
+            "view --as requires line, paragraph, or file",
+        )),
     }
 }
 
@@ -697,9 +756,13 @@ fn run_search(
         .map_err(|error| CliError::execution(error.to_string()))
 }
 
-fn run_view(runtime: &WorkspaceRuntime, anddress: &Anddress) -> Result<ViewOutcome, CliError> {
+fn run_view(
+    runtime: &WorkspaceRuntime,
+    anddress: &Anddress,
+    projection: AnddressTarget,
+) -> Result<ViewOutcome, CliError> {
     runtime
-        .view(anddress, anddress.target())
+        .view(anddress, projection)
         .map_err(|error| CliError::execution(error.to_string()))
 }
 
@@ -929,21 +992,8 @@ fn write_view(outcome: &ViewOutcome) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
     let result = (|| -> io::Result<()> {
         match outcome {
-            ViewOutcome::File { text, .. } | ViewOutcome::Paragraph { text, .. } => {
-                stdout.write_all(text.as_bytes())?;
-            }
-            ViewOutcome::Line {
-                content,
-                terminator,
-                ..
-            } => {
+            ViewOutcome::Projected { content, .. } => {
                 stdout.write_all(content.as_bytes())?;
-                stdout.write_all(match terminator {
-                    LineTerminator::None => b"",
-                    LineTerminator::Lf => b"\n",
-                    LineTerminator::Cr => b"\r",
-                    LineTerminator::Crlf => b"\r\n",
-                })?;
             }
             ViewOutcome::RelationAbsent => {
                 return Err(io::Error::other("requested View relation is absent"));
@@ -957,97 +1007,52 @@ fn write_view(outcome: &ViewOutcome) -> Result<(), CliError> {
         .map_err(|error| CliError::stream(error.to_string()))
 }
 
-fn write_view_json(outcome: ViewOutcome) -> Result<(), CliError> {
+fn write_view_json(outcomes: &[ViewOutcome]) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
-    let result = (|| -> Result<(), CliError> {
-        match outcome {
-            ViewOutcome::File { text, .. } => {
-                stdout
-                    .write_all(b"{\"schema\":\"bw.cli.view.v1\",\"kind\":\"file\",\"text\":")
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-                serde_json::to_writer(&mut stdout, &text)
-                    .map_err(|error| CliError::execution(error.to_string()))?;
-                stdout
-                    .write_all(b"}")
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-            }
-            ViewOutcome::Paragraph { text, file, .. } => {
-                stdout
-                    .write_all(b"{\"schema\":\"bw.cli.view.v1\",\"kind\":\"paragraph\",\"text\":")
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-                serde_json::to_writer(&mut stdout, &text)
-                    .map_err(|error| CliError::execution(error.to_string()))?;
-                stdout
-                    .write_all(b",\"file\":")
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-                let file = file
-                    .encode()
-                    .map_err(|error| CliError::execution(error.to_string()))?;
-                stdout
-                    .write_all(&file)
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-                stdout
-                    .write_all(b"}")
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-            }
-            ViewOutcome::Line {
-                content,
-                terminator,
-                file,
-                paragraph,
-                ..
-            } => {
-                stdout
-                    .write_all(b"{\"schema\":\"bw.cli.view.v1\",\"kind\":\"line\",\"content\":")
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-                serde_json::to_writer(&mut stdout, &content)
-                    .map_err(|error| CliError::execution(error.to_string()))?;
-                stdout
-                    .write_all(match terminator {
-                        LineTerminator::None => b",\"terminator\":\"none\",\"file\":",
-                        LineTerminator::Lf => b",\"terminator\":\"lf\",\"file\":",
-                        LineTerminator::Cr => b",\"terminator\":\"cr\",\"file\":",
-                        LineTerminator::Crlf => b",\"terminator\":\"crlf\",\"file\":",
-                    })
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-                let file = file
-                    .encode()
-                    .map_err(|error| CliError::execution(error.to_string()))?;
-                stdout
-                    .write_all(&file)
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-                stdout
-                    .write_all(b",\"paragraph\":")
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-                if let Some(paragraph) = paragraph {
-                    let paragraph = paragraph
-                        .encode()
-                        .map_err(|error| CliError::execution(error.to_string()))?;
-                    stdout
-                        .write_all(&paragraph)
-                        .map_err(|error| CliError::stream(error.to_string()))?;
-                } else {
-                    stdout
-                        .write_all(b"null")
-                        .map_err(|error| CliError::stream(error.to_string()))?;
-                }
-                stdout
-                    .write_all(b"}")
-                    .map_err(|error| CliError::stream(error.to_string()))?;
-            }
-            ViewOutcome::RelationAbsent => {
-                return Err(CliError::execution("requested View relation is absent"));
-            }
-        }
-        Ok(())
-    })();
-    result?;
     stdout
-        .write_all(b"\n")
+        .write_all(b"{\"schema\":\"bw.cli.view.v2\",\"outcomes\":[")
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    for (index, outcome) in outcomes.iter().enumerate() {
+        if index != 0 {
+            stdout
+                .write_all(b",")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+        }
+        write_view_json_item(&mut stdout, outcome)?;
+    }
+    stdout
+        .write_all(b"]}\n")
         .map_err(|error| CliError::stream(error.to_string()))?;
     stdout
         .flush()
         .map_err(|error| CliError::stream(error.to_string()))
+}
+
+fn write_view_json_item(stdout: &mut impl Write, outcome: &ViewOutcome) -> Result<(), CliError> {
+    match outcome {
+        ViewOutcome::Projected { anddress, content } => {
+            stdout
+                .write_all(b"{\"outcome\":\"projected\",\"anddress\":")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+            let encoded = anddress
+                .encode()
+                .map_err(|error| CliError::execution(error.to_string()))?;
+            stdout
+                .write_all(&encoded)
+                .map_err(|error| CliError::stream(error.to_string()))?;
+            stdout
+                .write_all(b",\"content\":")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+            serde_json::to_writer(&mut *stdout, content)
+                .map_err(|error| CliError::execution(error.to_string()))?;
+            stdout
+                .write_all(b"}")
+                .map_err(|error| CliError::stream(error.to_string()))
+        }
+        ViewOutcome::RelationAbsent => stdout
+            .write_all(b"{\"outcome\":\"relation-absent\"}")
+            .map_err(|error| CliError::stream(error.to_string())),
+    }
 }
 
 fn raw_check_status(outcome: &CheckOutcome<Option<Anddress>>) -> Result<&'static str, CliError> {
@@ -1307,7 +1312,7 @@ fn execute_let(
                     ));
                 }
                 let anddress = resolve_anddress(bindings, &tokens[5])?;
-                run_view(runtime, &anddress)?
+                run_view(runtime, &anddress, anddress.target())?
             }
             "anchored" => {
                 if tokens.len() != 6 {
@@ -2036,7 +2041,7 @@ fn execute_session_view(
         "anddress" => {
             session_anddress_form(tokens, "view")?;
             let anddress = resolve_anddress(bindings, &tokens[2])?;
-            write_view(&run_view(runtime, &anddress)?)
+            write_view(&run_view(runtime, &anddress, anddress.target())?)
         }
         "anchored" => {
             if tokens.len() != 3 {

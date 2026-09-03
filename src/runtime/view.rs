@@ -2,12 +2,12 @@
 
 use std::io::{Read, Seek, SeekFrom};
 
-use crate::backwriter::anddress::{Anddress, AnddressTarget, LineTerminator};
-use crate::backwriter::view::{ViewError, ViewOutcome, validate_request};
+use crate::backwriter::anddress::{Anddress, AnddressTarget};
+use crate::backwriter::view::{ViewError, ViewOutcome, project_request};
 
 use super::{
     CurrentProofMatch, WorkspaceRuntime, is_backwriter_spill,
-    source_scan::{READ_BUFFER_SIZE, SourceScanError, TargetProjection, observe_structural},
+    source_scan::{SourceScanError, TargetProjection, observe_source, observe_structural},
     structural_cursor::{LineSpan, StructuralSink},
 };
 
@@ -26,32 +26,26 @@ pub(super) struct AnchoredObservation {
 pub(super) fn observe_anchored(
     reader: &mut impl Read,
     inputs: &[Anddress],
-    capture_focus: Option<(usize, AnddressTarget)>,
+    capture_focus: Option<(usize, Anddress)>,
 ) -> Result<AnchoredObservation, ObservationError> {
     let indexes = indices(inputs.len())?;
-    let captures = capture_focus
-        .into_iter()
-        .map(|(focus, projection)| (focus, DirectViewProjection::new(&inputs[focus], projection)))
-        .collect();
-    let mut projection = DirectObservation {
-        captures,
-        targets: Some(TargetProjection::new(inputs, &indexes).map_err(map_scan_error)?),
-    };
-    let state = observe_structural(reader, &mut projection).map_err(map_scan_error)?;
-    let mut targets = projection
-        .targets
-        .take()
-        .expect("anchored observation tracks target currentness");
-    targets.finish(&state);
-    let current = targets.into_current();
-    let outcome = if capture_focus.is_some_and(|(focus, _)| current[focus]) {
+    let focus = capture_focus.as_ref().map(|(index, _)| *index);
+    let capture = capture_focus
+        .map(|(_, projected)| RangeCapture::new(projected))
+        .transpose()
+        .map_err(map_scan_error)?;
+    let targets = TargetProjection::new(inputs, &indexes).map_err(map_scan_error)?;
+    let mut observation = AnchoredSink { targets, capture };
+    let state = observe_structural(reader, &mut observation).map_err(map_scan_error)?;
+    observation.targets.finish(&state);
+    let current = observation.targets.into_current();
+    let outcome = if focus.is_some_and(|index| current[index]) {
         Some(
-            projection
-                .captures
-                .pop()
-                .expect("capture focus creates a View capture")
-                .1
-                .finish(state.byte_length)
+            observation
+                .capture
+                .take()
+                .expect("capture focus creates a range capture")
+                .finish()
                 .map_err(map_scan_error)?,
         )
     } else {
@@ -65,17 +59,19 @@ pub(super) fn execute(
     input: &Anddress,
     projection: AnddressTarget,
 ) -> Result<ViewOutcome, ViewError> {
-    validate_request(input, projection)?;
-    validate_runtime_input(runtime, input)?;
-    match runtime.match_current_proof(input) {
+    let Some(projected) = project_request(input, projection)? else {
+        return Ok(ViewOutcome::RelationAbsent);
+    };
+    validate_runtime_input(runtime, &projected)?;
+    match runtime.match_current_proof(&projected) {
         CurrentProofMatch::Missing => {
             let mut file = runtime
-                .open_admitted_source(input.logical_path())
+                .open_admitted_source(projected.logical_path())
                 .map_err(|_| ViewError::Unavailable)?;
-            observe_direct(&mut file, input, projection).map_err(|_| ViewError::Unavailable)
+            observe_direct(&mut file, projected).map_err(|_| ViewError::Unavailable)
         }
         CurrentProofMatch::Mismatched => Err(ViewError::Unavailable),
-        CurrentProofMatch::Matching => execute_trusted(runtime, input, projection),
+        CurrentProofMatch::Matching => execute_trusted_projected(runtime, projected),
     }
 }
 
@@ -84,39 +80,61 @@ pub(super) fn execute_batch(
     inputs: &[Anddress],
     projection: AnddressTarget,
 ) -> Result<Vec<ViewOutcome>, ViewError> {
-    for input in inputs {
-        validate_request(input, projection)?;
-    }
-    for input in inputs {
-        validate_runtime_input(runtime, input)?;
-    }
-    if inputs.is_empty() {
-        return Ok(Vec::new());
+    let projected = project_inputs(inputs, projection)?;
+    for anddress in projected.iter().flatten() {
+        validate_runtime_input(runtime, anddress)?;
     }
 
-    let mut order = indices(inputs.len()).map_err(|_| ViewError::Unavailable)?;
-    order.sort_unstable_by(|left, right| {
-        super::compare_source_keys(&inputs[*left], &inputs[*right]).then_with(|| left.cmp(right))
-    });
     let mut outcomes = Vec::new();
     outcomes
         .try_reserve_exact(inputs.len())
         .map_err(|_| ViewError::Unavailable)?;
     outcomes.resize_with(inputs.len(), || None);
 
+    let mut order = Vec::new();
+    order
+        .try_reserve_exact(inputs.len())
+        .map_err(|_| ViewError::Unavailable)?;
+    for (index, value) in projected.iter().enumerate() {
+        if value.is_some() {
+            order.push(index);
+        } else {
+            outcomes[index] = Some(ViewOutcome::RelationAbsent);
+        }
+    }
+    order.sort_unstable_by(|left, right| {
+        super::compare_source_keys(
+            projected[*left]
+                .as_ref()
+                .expect("ordered projection exists"),
+            projected[*right]
+                .as_ref()
+                .expect("ordered projection exists"),
+        )
+        .then_with(|| left.cmp(right))
+    });
+
     let mut start = 0;
     while start < order.len() {
-        let end = batch_group_end(inputs, &order, start);
-        execute_batch_group(
-            runtime,
-            inputs,
-            &order[start..end],
-            projection,
-            &mut outcomes,
-        )?;
+        let end = batch_group_end(&projected, &order, start);
+        execute_batch_group(runtime, &projected, &order[start..end], &mut outcomes)?;
         start = end;
     }
     finish_batch(outcomes)
+}
+
+fn project_inputs(
+    inputs: &[Anddress],
+    projection: AnddressTarget,
+) -> Result<Vec<Option<Anddress>>, ViewError> {
+    let mut projected = Vec::new();
+    projected
+        .try_reserve_exact(inputs.len())
+        .map_err(|_| ViewError::Unavailable)?;
+    for input in inputs {
+        projected.push(project_request(input, projection)?);
+    }
+    Ok(projected)
 }
 
 fn validate_runtime_input(runtime: &WorkspaceRuntime, input: &Anddress) -> Result<(), ViewError> {
@@ -129,10 +147,19 @@ fn validate_runtime_input(runtime: &WorkspaceRuntime, input: &Anddress) -> Resul
     Ok(())
 }
 
-fn batch_group_end(inputs: &[Anddress], order: &[usize], start: usize) -> usize {
-    let first = &inputs[order[start]];
+fn batch_group_end(projected: &[Option<Anddress>], order: &[usize], start: usize) -> usize {
+    let first = projected[order[start]]
+        .as_ref()
+        .expect("grouped projection exists");
     let mut end = start + 1;
-    while end < order.len() && super::same_source_key(first, &inputs[order[end]]) {
+    while end < order.len()
+        && super::same_source_key(
+            first,
+            projected[order[end]]
+                .as_ref()
+                .expect("grouped projection exists"),
+        )
+    {
         end += 1;
     }
     end
@@ -140,31 +167,36 @@ fn batch_group_end(inputs: &[Anddress], order: &[usize], start: usize) -> usize 
 
 fn execute_batch_group(
     runtime: &WorkspaceRuntime,
-    inputs: &[Anddress],
+    projected: &[Option<Anddress>],
     group: &[usize],
-    projection: AnddressTarget,
     outcomes: &mut [Option<ViewOutcome>],
 ) -> Result<(), ViewError> {
-    let path = inputs[group[0]].logical_path();
+    let path = projected[group[0]]
+        .as_ref()
+        .expect("grouped projection exists")
+        .logical_path();
     match runtime.select_current_proof(path) {
         Some(proof) => {
             if group.iter().any(|&index| {
+                let input = projected[index]
+                    .as_ref()
+                    .expect("grouped projection exists");
                 !super::source_state_matches(
                     &proof.hash,
                     proof.byte_length,
                     proof.line_count,
-                    &inputs[index],
+                    input,
                 )
             }) {
                 return Err(ViewError::Unavailable);
             }
-            execute_trusted_batch(runtime, inputs, group, projection, outcomes)
+            execute_trusted_batch(runtime, projected, group, outcomes)
         }
         None => {
             let mut file = runtime
                 .open_admitted_source(path)
                 .map_err(|_| ViewError::Unavailable)?;
-            observe_direct_batch(&mut file, inputs, group, projection, outcomes)
+            observe_direct_batch(&mut file, projected, group, outcomes)
                 .map_err(|_| ViewError::Unavailable)
         }
     }
@@ -172,9 +204,8 @@ fn execute_batch_group(
 
 fn observe_direct_batch(
     reader: &mut impl Read,
-    inputs: &[Anddress],
+    projected: &[Option<Anddress>],
     group: &[usize],
-    projection: AnddressTarget,
     outcomes: &mut [Option<ViewOutcome>],
 ) -> Result<(), SourceScanError> {
     let mut captures = Vec::new();
@@ -182,43 +213,80 @@ fn observe_direct_batch(
         .try_reserve_exact(group.len())
         .map_err(|_| SourceScanError::Resource)?;
     for &index in group {
-        captures.push((index, DirectViewProjection::new(&inputs[index], projection)));
+        captures.push((
+            index,
+            RangeCapture::new(
+                projected[index]
+                    .as_ref()
+                    .expect("grouped projection exists")
+                    .clone(),
+            )?,
+        ));
     }
-    let mut observation = DirectObservation {
-        captures,
-        targets: None,
-    };
-    let state = observe_structural(reader, &mut observation)?;
+    let state = observe_source(reader, |bytes, byte_start| {
+        for (_, capture) in &mut captures {
+            capture.source(bytes, byte_start)?;
+        }
+        Ok(())
+    })?;
     if group.iter().any(|&index| {
+        let input = projected[index]
+            .as_ref()
+            .expect("grouped projection exists");
         !super::source_state_matches(
             state.hash.as_bytes(),
             state.byte_length,
             state.line_count,
-            &inputs[index],
+            input,
         )
     }) {
         return Err(SourceScanError::InvalidSource);
     }
-    for (index, capture) in observation.captures {
-        outcomes[index] = Some(capture.finish(state.byte_length)?);
+
+    let mut finished = Vec::new();
+    finished
+        .try_reserve_exact(captures.len())
+        .map_err(|_| SourceScanError::Resource)?;
+    for (index, capture) in captures {
+        finished.push((index, capture.finish()?));
+    }
+    for (index, outcome) in finished {
+        outcomes[index] = Some(outcome);
     }
     Ok(())
 }
 
 fn execute_trusted_batch(
     runtime: &WorkspaceRuntime,
-    inputs: &[Anddress],
+    projected: &[Option<Anddress>],
     group: &[usize],
-    projection: AnddressTarget,
     outcomes: &mut [Option<ViewOutcome>],
 ) -> Result<(), ViewError> {
-    let path = inputs[group[0]].logical_path();
+    let path = projected[group[0]]
+        .as_ref()
+        .expect("grouped projection exists")
+        .logical_path();
     let result = runtime
         .open_admitted_source(path)
         .map_err(|_| TrustedViewError::Source)
         .and_then(|mut file| {
+            let mut finished = Vec::new();
+            finished
+                .try_reserve_exact(group.len())
+                .map_err(|_| TrustedViewError::Resource)?;
             for &index in group {
-                outcomes[index] = Some(observe_trusted(&mut file, &inputs[index], projection)?);
+                finished.push((
+                    index,
+                    read_projected(
+                        &mut file,
+                        projected[index]
+                            .as_ref()
+                            .expect("grouped projection exists"),
+                    )?,
+                ));
+            }
+            for (index, outcome) in finished {
+                outcomes[index] = Some(outcome);
             }
             Ok(())
         });
@@ -242,171 +310,109 @@ fn finish_batch(outcomes: Vec<Option<ViewOutcome>>) -> Result<Vec<ViewOutcome>, 
     Ok(finished)
 }
 
-pub(super) fn execute_trusted(
+pub(super) fn execute_trusted_projected(
     runtime: &WorkspaceRuntime,
-    input: &Anddress,
-    projection: AnddressTarget,
+    projected: Anddress,
 ) -> Result<ViewOutcome, ViewError> {
     let outcome = runtime
-        .open_admitted_source(input.logical_path())
+        .open_admitted_source(projected.logical_path())
         .map_err(|_| TrustedViewError::Source)
-        .and_then(|mut file| observe_trusted(&mut file, input, projection));
+        .and_then(|mut file| read_projected(&mut file, &projected));
     if matches!(
         outcome,
         Err(TrustedViewError::Source | TrustedViewError::Resource)
     ) {
-        runtime.invalidate_current_proof(input.logical_path());
+        runtime.invalidate_current_proof(projected.logical_path());
     }
     outcome.map_err(|_| ViewError::Unavailable)
 }
 
 pub(super) fn observe_direct(
     reader: &mut impl Read,
-    input: &Anddress,
-    projection: AnddressTarget,
+    projected: Anddress,
 ) -> Result<ViewOutcome, SourceScanError> {
-    let mut observation = DirectObservation {
-        captures: vec![(0, DirectViewProjection::new(input, projection))],
-        targets: None,
-    };
-    let state = observe_structural(reader, &mut observation)?;
-    if input.source_byte_length() != state.byte_length
-        || input.source_line_count() != state.line_count
-        || input.source_state_hash() != state.hash
-    {
+    let mut capture = RangeCapture::new(projected)?;
+    let state = observe_source(reader, |bytes, byte_start| {
+        capture.source(bytes, byte_start)
+    })?;
+    if !super::source_state_matches(
+        state.hash.as_bytes(),
+        state.byte_length,
+        state.line_count,
+        &capture.anddress,
+    ) {
         return Err(SourceScanError::InvalidSource);
     }
-    observation
-        .captures
-        .pop()
-        .expect("single View capture exists")
-        .1
-        .finish(state.byte_length)
+    capture.finish()
 }
 
-struct DirectObservation<'a> {
-    captures: Vec<(usize, DirectViewProjection<'a>)>,
-    targets: Option<TargetProjection<'a>>,
+struct AnchoredSink<'a> {
+    targets: TargetProjection<'a>,
+    capture: Option<RangeCapture>,
 }
 
-impl StructuralSink for DirectObservation<'_> {
+impl StructuralSink for AnchoredSink<'_> {
     fn source(&mut self, bytes: &[u8], byte_start: usize) -> Result<(), SourceScanError> {
-        for (_, capture) in &mut self.captures {
+        if let Some(capture) = self.capture.as_mut() {
             capture.source(bytes, byte_start)?;
         }
         Ok(())
     }
 
     fn line(&mut self, line: LineSpan) -> Result<(), SourceScanError> {
-        if let Some(targets) = self.targets.as_mut() {
-            targets.line(line)?;
-        }
-        for (_, capture) in &mut self.captures {
-            capture.line(line)?;
-        }
-        Ok(())
+        self.targets.line(line)
     }
 
     fn paragraph(
         &mut self,
         paragraph: crate::backwriter::anddress::ParagraphGeometry,
     ) -> Result<(), SourceScanError> {
-        if let Some(targets) = self.targets.as_mut() {
-            targets.paragraph(paragraph)?;
-        }
-        for (_, capture) in &mut self.captures {
-            capture.paragraph(paragraph)?;
-        }
-        Ok(())
+        self.targets.paragraph(paragraph)
     }
 }
 
-struct DirectViewProjection<'a> {
-    input: &'a Anddress,
-    projection: AnddressTarget,
-    target_range: Option<(usize, usize)>,
-    target: Vec<u8>,
-    line_relation: Option<LineRelation>,
+struct RangeCapture {
+    anddress: Anddress,
+    bytes: Vec<u8>,
 }
 
-impl<'a> DirectViewProjection<'a> {
-    fn new(input: &'a Anddress, projection: AnddressTarget) -> Self {
-        let target_range = match (input.target(), projection) {
-            (_, AnddressTarget::File) => Some((0, input.source_byte_length())),
-            (AnddressTarget::Paragraph, AnddressTarget::Paragraph)
-            | (AnddressTarget::Line, AnddressTarget::Line) => {
-                Some((input.byte_start(), input.byte_end()))
-            }
-            (AnddressTarget::Line, AnddressTarget::Paragraph) => input
-                .project(AnddressTarget::Paragraph)
-                .expect("validated Line projection")
-                .map(|paragraph| (paragraph.byte_start(), paragraph.byte_end())),
-            _ => None,
-        };
-        Self {
-            input,
-            projection,
-            target_range,
-            target: Vec::new(),
-            line_relation: (input.target() == AnddressTarget::Line
-                && projection != AnddressTarget::File)
-                .then(|| LineRelation::new(input.byte_start(), input.byte_end())),
-        }
+impl RangeCapture {
+    fn new(anddress: Anddress) -> Result<Self, SourceScanError> {
+        let length = anddress
+            .byte_end()
+            .checked_sub(anddress.byte_start())
+            .ok_or(SourceScanError::Resource)?;
+        let mut bytes = Vec::new();
+        bytes
+            .try_reserve_exact(length)
+            .map_err(|_| SourceScanError::Resource)?;
+        Ok(Self { anddress, bytes })
     }
 
     fn source(&mut self, bytes: &[u8], chunk_start: usize) -> Result<(), SourceScanError> {
-        if let Some((start, end)) = self.target_range {
-            append_overlap(&mut self.target, bytes, chunk_start, start, end)?;
-        }
-        Ok(())
-    }
-
-    fn line(&mut self, line: LineSpan) -> Result<(), SourceScanError> {
-        if let Some(relation) = self.line_relation.as_mut() {
-            relation.line(line);
-        }
-        Ok(())
-    }
-
-    fn paragraph(
-        &mut self,
-        paragraph: crate::backwriter::anddress::ParagraphGeometry,
-    ) -> Result<(), SourceScanError> {
-        if let Some(relation) = self.line_relation.as_mut() {
-            relation.paragraph(paragraph);
-        }
-        Ok(())
-    }
-
-    fn finish(mut self, _source_byte_length: usize) -> Result<ViewOutcome, SourceScanError> {
-        let related = self
-            .line_relation
-            .take()
-            .and_then(|relation| relation.related);
-        if self.projection == AnddressTarget::Paragraph
-            && self.input.target() == AnddressTarget::Line
-        {
-            return match related {
-                Some(related) => finish_outcome(
-                    self.input,
-                    self.projection,
-                    self.target,
-                    (related.start, related.end),
-                    None,
-                ),
-                None => Ok(ViewOutcome::RelationAbsent),
-            };
-        }
-        let range = self
-            .target_range
-            .expect("every non-relational projection has a target range");
-        finish_outcome(
-            self.input,
-            self.projection,
-            self.target,
-            range,
-            related.map(|related| (related.start, related.end)),
+        append_overlap(
+            &mut self.bytes,
+            bytes,
+            chunk_start,
+            self.anddress.byte_start(),
+            self.anddress.byte_end(),
         )
+    }
+
+    fn finish(self) -> Result<ViewOutcome, SourceScanError> {
+        let expected = self
+            .anddress
+            .byte_end()
+            .checked_sub(self.anddress.byte_start())
+            .ok_or(SourceScanError::Resource)?;
+        if self.bytes.len() != expected {
+            return Err(SourceScanError::InvalidSource);
+        }
+        let content = String::from_utf8(self.bytes).map_err(|_| SourceScanError::InvalidSource)?;
+        Ok(ViewOutcome::Projected {
+            anddress: self.anddress,
+            content,
+        })
     }
 }
 
@@ -417,57 +423,16 @@ enum TrustedViewError {
     Resource,
 }
 
-fn observe_trusted(
+fn read_projected(
     reader: &mut (impl Read + Seek),
-    input: &Anddress,
-    projection: AnddressTarget,
+    projected: &Anddress,
 ) -> Result<ViewOutcome, TrustedViewError> {
-    match (input.target(), projection) {
-        (_, AnddressTarget::File) => finish_outcome(
-            input,
-            projection,
-            read_range(reader, 0, input.source_byte_length())?,
-            (0, input.source_byte_length()),
-            None,
-        )
-        .map_err(map_trusted_scan_error),
-        (AnddressTarget::Paragraph, AnddressTarget::Paragraph) => finish_outcome(
-            input,
-            projection,
-            read_range(reader, input.byte_start(), input.byte_end())?,
-            (input.byte_start(), input.byte_end()),
-            None,
-        )
-        .map_err(map_trusted_scan_error),
-        (AnddressTarget::Line, AnddressTarget::Line) => {
-            let target = read_range(reader, input.byte_start(), input.byte_end())?;
-            let related = related_paragraph_range(reader, input, &target)?;
-            finish_outcome(
-                input,
-                projection,
-                target,
-                (input.byte_start(), input.byte_end()),
-                related,
-            )
-            .map_err(map_trusted_scan_error)
-        }
-        (AnddressTarget::Line, AnddressTarget::Paragraph) => {
-            let target = read_range(reader, input.byte_start(), input.byte_end())?;
-            let Some((start, end)) = related_paragraph_range(reader, input, &target)? else {
-                return Ok(ViewOutcome::RelationAbsent);
-            };
-            drop(target);
-            finish_outcome(
-                input,
-                projection,
-                read_range(reader, start, end)?,
-                (start, end),
-                None,
-            )
-            .map_err(map_trusted_scan_error)
-        }
-        _ => Err(TrustedViewError::InvalidRange),
-    }
+    let bytes = read_range(reader, projected.byte_start(), projected.byte_end())?;
+    let content = String::from_utf8(bytes).map_err(|_| TrustedViewError::InvalidRange)?;
+    Ok(ViewOutcome::Projected {
+        anddress: projected.clone(),
+        content,
+    })
 }
 
 fn read_range(
@@ -487,277 +452,6 @@ fn read_range(
     seek_to(reader, start)?;
     read_fully(reader, &mut output)?;
     Ok(output)
-}
-
-fn related_paragraph_range(
-    reader: &mut (impl Read + Seek),
-    input: &Anddress,
-    target: &[u8],
-) -> Result<Option<(usize, usize)>, TrustedViewError> {
-    if !is_exact_text_line(reader, input, target)? {
-        return Ok(None);
-    }
-    let start = scan_paragraph_start(reader, input.byte_start())?;
-    let end = scan_paragraph_end(reader, input.byte_end(), input.source_byte_length())?;
-    Ok(Some((start, end)))
-}
-
-fn is_exact_text_line(
-    reader: &mut (impl Read + Seek),
-    input: &Anddress,
-    target: &[u8],
-) -> Result<bool, TrustedViewError> {
-    if target.is_empty() {
-        return Ok(false);
-    }
-    if input.byte_start() != 0 {
-        match read_byte_at(reader, input.byte_start() - 1)? {
-            b'\n' => {}
-            b'\r' if target.first() != Some(&b'\n') => {}
-            _ => return Ok(false),
-        }
-    }
-
-    let first_terminator = target.iter().position(|byte| matches!(byte, b'\r' | b'\n'));
-    let body_end = match first_terminator {
-        None if input.byte_end() == input.source_byte_length() => target.len(),
-        None => return Ok(false),
-        Some(index) if target[index] == b'\n' => {
-            if index + 1 != target.len() {
-                return Ok(false);
-            }
-            index
-        }
-        Some(index) => {
-            let terminator_length = if target.get(index + 1) == Some(&b'\n') {
-                2
-            } else {
-                1
-            };
-            if index + terminator_length != target.len() {
-                return Ok(false);
-            }
-            if terminator_length == 1
-                && input.byte_end() < input.source_byte_length()
-                && read_byte_at(reader, input.byte_end())? == b'\n'
-            {
-                return Ok(false);
-            }
-            index
-        }
-    };
-    Ok(target[..body_end]
-        .iter()
-        .any(|byte| !matches!(byte, b' ' | b'\t')))
-}
-
-fn scan_paragraph_start(
-    reader: &mut (impl Read + Seek),
-    target_start: usize,
-) -> Result<usize, TrustedViewError> {
-    if target_start == 0 {
-        return Ok(0);
-    }
-    let mut scratch = [0_u8; READ_BUFFER_SIZE];
-    let mut chunk_end = target_start;
-    let mut paragraph_start = target_start;
-    let mut expect_terminator = true;
-    let mut maybe_cr = false;
-    let mut has_text = false;
-
-    while chunk_end != 0 {
-        let chunk_start = chunk_end.saturating_sub(READ_BUFFER_SIZE);
-        let chunk_length = chunk_end - chunk_start;
-        seek_to(reader, chunk_start)?;
-        read_fully(reader, &mut scratch[..chunk_length])?;
-        let mut cursor = chunk_length;
-
-        while cursor != 0 {
-            if maybe_cr {
-                if scratch[cursor - 1] == b'\r' {
-                    cursor -= 1;
-                }
-                maybe_cr = false;
-                expect_terminator = false;
-                continue;
-            }
-            if expect_terminator {
-                match scratch[cursor - 1] {
-                    b'\n' => {
-                        cursor -= 1;
-                        maybe_cr = true;
-                    }
-                    b'\r' => {
-                        cursor -= 1;
-                        expect_terminator = false;
-                    }
-                    _ => return Err(TrustedViewError::Source),
-                }
-                continue;
-            }
-
-            let body = &scratch[..cursor];
-            let Some(delimiter) = last_line_break(body) else {
-                has_text |= body.iter().any(|byte| !matches!(byte, b' ' | b'\t'));
-                cursor = 0;
-                continue;
-            };
-            has_text |= body[delimiter + 1..]
-                .iter()
-                .any(|byte| !matches!(byte, b' ' | b'\t'));
-            if !has_text {
-                return Ok(paragraph_start);
-            }
-            paragraph_start = chunk_start
-                .checked_add(delimiter + 1)
-                .ok_or(TrustedViewError::Resource)?;
-            cursor = delimiter + 1;
-            expect_terminator = true;
-            has_text = false;
-        }
-
-        chunk_end = chunk_start;
-    }
-
-    if maybe_cr {
-        expect_terminator = false;
-    }
-    if expect_terminator {
-        return Err(TrustedViewError::Source);
-    }
-    Ok(if has_text { 0 } else { paragraph_start })
-}
-
-fn scan_paragraph_end(
-    reader: &mut (impl Read + Seek),
-    target_end: usize,
-    source_end: usize,
-) -> Result<usize, TrustedViewError> {
-    let mut scratch = [0_u8; READ_BUFFER_SIZE];
-    let mut position = target_end;
-    let mut paragraph_end = target_end;
-    let mut has_text = false;
-    let mut pending_cr = false;
-    seek_to(reader, target_end)?;
-
-    while position < source_end {
-        let chunk_length = (source_end - position).min(READ_BUFFER_SIZE);
-        read_fully(reader, &mut scratch[..chunk_length])?;
-        let chunk_start = position;
-        let mut cursor = 0;
-
-        while cursor < chunk_length {
-            if pending_cr {
-                if scratch[cursor] == b'\n' {
-                    cursor += 1;
-                }
-                pending_cr = false;
-                if !has_text {
-                    return Ok(paragraph_end);
-                }
-                paragraph_end = chunk_start
-                    .checked_add(cursor)
-                    .ok_or(TrustedViewError::Resource)?;
-                has_text = false;
-                continue;
-            }
-
-            let remaining = &scratch[cursor..chunk_length];
-            let Some(relative) = first_line_break(remaining) else {
-                has_text |= remaining.iter().any(|byte| !matches!(byte, b' ' | b'\t'));
-                cursor = chunk_length;
-                continue;
-            };
-            let delimiter = cursor + relative;
-            has_text |= scratch[cursor..delimiter]
-                .iter()
-                .any(|byte| !matches!(byte, b' ' | b'\t'));
-            let terminator = scratch[delimiter];
-            cursor = delimiter + 1;
-            if terminator == b'\r' {
-                pending_cr = true;
-            } else {
-                if !has_text {
-                    return Ok(paragraph_end);
-                }
-                paragraph_end = chunk_start
-                    .checked_add(cursor)
-                    .ok_or(TrustedViewError::Resource)?;
-                has_text = false;
-            }
-        }
-
-        position = chunk_start
-            .checked_add(chunk_length)
-            .ok_or(TrustedViewError::Resource)?;
-    }
-
-    if pending_cr || has_text {
-        if !has_text {
-            return Ok(paragraph_end);
-        }
-        paragraph_end = source_end;
-    }
-    Ok(paragraph_end)
-}
-
-fn first_line_break(bytes: &[u8]) -> Option<usize> {
-    let mut words = bytes.chunks_exact(8);
-    for (index, chunk) in words.by_ref().enumerate() {
-        if word_has_line_break(u64::from_ne_bytes(
-            chunk.try_into().expect("eight-byte chunk"),
-        )) {
-            return chunk
-                .iter()
-                .position(|byte| matches!(byte, b'\r' | b'\n'))
-                .map(|offset| index * 8 + offset);
-        }
-    }
-    let remainder_start = bytes.len() - words.remainder().len();
-    words
-        .remainder()
-        .iter()
-        .position(|byte| matches!(byte, b'\r' | b'\n'))
-        .map(|offset| remainder_start + offset)
-}
-
-fn last_line_break(bytes: &[u8]) -> Option<usize> {
-    let full_length = bytes.len() - bytes.len() % 8;
-    if let Some(offset) = bytes[full_length..]
-        .iter()
-        .rposition(|byte| matches!(byte, b'\r' | b'\n'))
-    {
-        return Some(full_length + offset);
-    }
-    for (index, chunk) in bytes[..full_length].chunks_exact(8).enumerate().rev() {
-        if word_has_line_break(u64::from_ne_bytes(
-            chunk.try_into().expect("eight-byte chunk"),
-        )) {
-            return chunk
-                .iter()
-                .rposition(|byte| matches!(byte, b'\r' | b'\n'))
-                .map(|offset| index * 8 + offset);
-        }
-    }
-    None
-}
-
-fn word_has_line_break(word: u64) -> bool {
-    const LOW_BITS: u64 = 0x0101_0101_0101_0101;
-    const HIGH_BITS: u64 = 0x8080_8080_8080_8080;
-    const CR: u64 = u64::from_ne_bytes([b'\r'; 8]);
-    const LF: u64 = u64::from_ne_bytes([b'\n'; 8]);
-
-    [word ^ CR, word ^ LF]
-        .into_iter()
-        .any(|candidate| candidate.wrapping_sub(LOW_BITS) & !candidate & HIGH_BITS != 0)
-}
-
-fn read_byte_at(reader: &mut (impl Read + Seek), offset: usize) -> Result<u8, TrustedViewError> {
-    seek_to(reader, offset)?;
-    let mut byte = [0];
-    read_fully(reader, &mut byte)?;
-    Ok(byte[0])
 }
 
 fn seek_to(reader: &mut impl Seek, offset: usize) -> Result<(), TrustedViewError> {
@@ -780,66 +474,6 @@ fn read_fully(reader: &mut impl Read, mut output: &mut [u8]) -> Result<(), Trust
     Ok(())
 }
 
-fn map_trusted_scan_error(error: SourceScanError) -> TrustedViewError {
-    match error {
-        SourceScanError::Read => TrustedViewError::Source,
-        SourceScanError::InvalidSource => TrustedViewError::InvalidRange,
-        SourceScanError::Resource => TrustedViewError::Resource,
-    }
-}
-
-struct LineRelation {
-    target_start: usize,
-    target_end: usize,
-    selected_text_line: bool,
-    done: bool,
-    related: Option<RelatedParagraph>,
-}
-
-struct RelatedParagraph {
-    start: usize,
-    end: usize,
-}
-
-impl LineRelation {
-    fn new(target_start: usize, target_end: usize) -> Self {
-        Self {
-            target_start,
-            target_end,
-            selected_text_line: false,
-            done: false,
-            related: None,
-        }
-    }
-
-    fn line(&mut self, line: LineSpan) {
-        if self.done {
-            return;
-        }
-        if line.byte_start != self.target_start || line.byte_end != self.target_end {
-            return;
-        }
-        if line.body_class == crate::backwriter::anddress::LineBodyClass::Text {
-            self.selected_text_line = true;
-        } else {
-            self.done = true;
-        }
-    }
-
-    fn paragraph(&mut self, paragraph: crate::backwriter::anddress::ParagraphGeometry) {
-        if self.done || !self.selected_text_line {
-            return;
-        }
-        if paragraph.byte_start <= self.target_start && self.target_end <= paragraph.byte_end {
-            self.related = Some(RelatedParagraph {
-                start: paragraph.byte_start,
-                end: paragraph.byte_end,
-            });
-            self.done = true;
-        }
-    }
-}
-
 fn append_overlap(
     output: &mut Vec<u8>,
     bytes: &[u8],
@@ -853,10 +487,11 @@ fn append_overlap(
     let overlap_start = target_start.max(chunk_start);
     let overlap_end = target_end.min(chunk_end);
     if overlap_start < overlap_end {
-        append(
-            output,
-            &bytes[overlap_start - chunk_start..overlap_end - chunk_start],
-        )?;
+        let overlap = &bytes[overlap_start - chunk_start..overlap_end - chunk_start];
+        output
+            .try_reserve(overlap.len())
+            .map_err(|_| SourceScanError::Resource)?;
+        output.extend_from_slice(overlap);
     }
     Ok(())
 }
@@ -880,84 +515,6 @@ fn map_scan_error(error: SourceScanError) -> ObservationError {
     }
 }
 
-fn finish_outcome(
-    input: &Anddress,
-    projection: AnddressTarget,
-    target: Vec<u8>,
-    range: (usize, usize),
-    related: Option<(usize, usize)>,
-) -> Result<ViewOutcome, SourceScanError> {
-    let anddress = target_address(input, projection, range.0, range.1)?;
-    match projection {
-        AnddressTarget::File => Ok(ViewOutcome::File {
-            anddress,
-            text: String::from_utf8(target).map_err(|_| SourceScanError::InvalidSource)?,
-        }),
-        AnddressTarget::Paragraph => Ok(ViewOutcome::Paragraph {
-            anddress,
-            text: String::from_utf8(target).map_err(|_| SourceScanError::InvalidSource)?,
-            file: file_address(input)?,
-        }),
-        AnddressTarget::Line => {
-            let (content, terminator) = line_parts(target)?;
-            Ok(ViewOutcome::Line {
-                anddress,
-                content,
-                terminator,
-                file: file_address(input)?,
-                paragraph: related
-                    .map(|(start, end)| {
-                        target_address(input, AnddressTarget::Paragraph, start, end)
-                    })
-                    .transpose()?,
-            })
-        }
-    }
-}
-
-fn line_parts(mut line_bytes: Vec<u8>) -> Result<(String, LineTerminator), SourceScanError> {
-    let (length, terminator) = if line_bytes.ends_with(b"\r\n") {
-        (line_bytes.len() - 2, LineTerminator::Crlf)
-    } else if line_bytes.ends_with(b"\r") {
-        (line_bytes.len() - 1, LineTerminator::Cr)
-    } else if line_bytes.ends_with(b"\n") {
-        (line_bytes.len() - 1, LineTerminator::Lf)
-    } else {
-        (line_bytes.len(), LineTerminator::None)
-    };
-    line_bytes.truncate(length);
-    String::from_utf8(line_bytes)
-        .map(|content| (content, terminator))
-        .map_err(|_| SourceScanError::InvalidSource)
-}
-
-fn append(output: &mut Vec<u8>, bytes: &[u8]) -> Result<(), SourceScanError> {
-    output
-        .try_reserve(bytes.len())
-        .map_err(|_| SourceScanError::Resource)?;
-    output.extend_from_slice(bytes);
-    Ok(())
-}
-
-fn file_address(input: &Anddress) -> Result<Anddress, SourceScanError> {
-    target_address(input, AnddressTarget::File, 0, input.source_byte_length())
-}
-
-fn target_address(
-    input: &Anddress,
-    target: AnddressTarget,
-    byte_start: usize,
-    byte_end: usize,
-) -> Result<Anddress, SourceScanError> {
-    let address = input
-        .project(target)
-        .map_err(|_| SourceScanError::InvalidSource)?
-        .ok_or(SourceScanError::InvalidSource)?;
-    (address.byte_start() == byte_start && address.byte_end() == byte_end)
-        .then_some(address)
-        .ok_or(SourceScanError::InvalidSource)
-}
-
 #[cfg(test)]
 mod tests {
     use std::{
@@ -965,6 +522,7 @@ mod tests {
         path::Path,
     };
 
+    use crate::backwriter::anddress::LineTerminator;
     use crate::hash::Sha256;
     use crate::runtime::{
         AdmissionRoot, CurrentProof, WorkspaceAdmission, WorkspaceRuntime,
@@ -1198,16 +756,13 @@ mod tests {
                 ended: false,
             };
 
-            let outcome = observe_direct(&mut reader, &input, input.target()).unwrap();
+            let outcome = observe_direct(&mut reader, input.clone()).unwrap();
 
             assert_eq!(
                 outcome,
-                ViewOutcome::Line {
+                ViewOutcome::Projected {
                     anddress: input,
-                    content: format!("{}é", "x".repeat(target_length)),
-                    terminator: LineTerminator::Crlf,
-                    file: address(&bytes, AnddressTarget::File, 0, bytes.len()),
-                    paragraph: Some(address(&bytes, AnddressTarget::Paragraph, 0, bytes.len(),)),
+                    content: format!("{}é\r\n", "x".repeat(target_length)),
                 }
             );
             assert!(reader.ended);
@@ -1224,7 +779,7 @@ mod tests {
             ended: false,
         };
         assert_eq!(
-            observe_direct(&mut failed, &input, input.target()),
+            observe_direct(&mut failed, input.clone()),
             Err(SourceScanError::Read)
         );
 
@@ -1236,13 +791,13 @@ mod tests {
                 ended: false,
             };
             assert_eq!(
-                observe_direct(&mut changed, &input, input.target()),
+                observe_direct(&mut changed, input.clone()),
                 Err(SourceScanError::InvalidSource)
             );
             assert!(changed.ended);
         }
 
-        let mut projection = DirectViewProjection::new(&input, input.target());
+        let mut projection = RangeCapture::new(input).unwrap();
         projection.source(b"one\n", 0).unwrap();
         assert_eq!(
             projection.source(b"x", usize::MAX),
@@ -1253,12 +808,13 @@ mod tests {
     #[test]
     fn direct_batch_feeds_every_projection_from_one_forward_observation() {
         let bytes = "α\n \t\r\nlast".as_bytes();
-        let inputs = vec![
+        let inputs = [
             address(bytes, AnddressTarget::Line, 0, 3),
             address(bytes, AnddressTarget::Line, 3, 7),
             address(bytes, AnddressTarget::Line, 0, 3),
             address(bytes, AnddressTarget::Line, 7, 11),
         ];
+        let projected: Vec<_> = inputs.iter().cloned().map(Some).collect();
         let group = [0, 1, 2, 3];
         let mut outcomes = Vec::new();
         outcomes.resize_with(inputs.len(), || None);
@@ -1269,52 +825,38 @@ mod tests {
             ended: false,
         };
 
-        observe_direct_batch(
-            &mut source,
-            &inputs,
-            &group,
-            AnddressTarget::Line,
-            &mut outcomes,
-        )
-        .unwrap();
+        observe_direct_batch(&mut source, &projected, &group, &mut outcomes).unwrap();
 
         assert!(source.ended);
         assert!(matches!(
             outcomes[0],
-            Some(ViewOutcome::Line {
-                ref content,
-                terminator: LineTerminator::Lf,
-                paragraph: Some(_),
-                ..
-            }) if content == "α"
+            Some(ViewOutcome::Projected { ref anddress, ref content })
+                if content == "α\n"
+                    && anddress.terminator() == Some(LineTerminator::Lf)
+                    && anddress.project(AnddressTarget::Paragraph).unwrap().is_some()
         ));
         assert!(matches!(
             outcomes[1],
-            Some(ViewOutcome::Line {
-                ref content,
-                terminator: LineTerminator::Crlf,
-                paragraph: None,
-                ..
-            }) if content == " \t"
+            Some(ViewOutcome::Projected { ref anddress, ref content })
+                if content == " \t\r\n"
+                    && anddress.terminator() == Some(LineTerminator::Crlf)
+                    && anddress.project(AnddressTarget::Paragraph).unwrap().is_none()
         ));
         assert_eq!(outcomes[0], outcomes[2]);
         assert!(matches!(
             outcomes[3],
-            Some(ViewOutcome::Line {
-                ref content,
-                terminator: LineTerminator::None,
-                paragraph: Some(_),
-                ..
-            }) if content == "last"
+            Some(ViewOutcome::Projected { ref anddress, ref content })
+                if content == "last" && anddress.terminator() == Some(LineTerminator::None)
         ));
     }
 
     #[test]
     fn direct_batch_keeps_every_output_provisional_through_late_failure() {
-        let inputs = vec![
+        let inputs = [
             address(b"one\nlate", AnddressTarget::Line, 0, 4),
             address(b"one\nlate", AnddressTarget::Line, 4, 8),
         ];
+        let projected: Vec<_> = inputs.iter().cloned().map(Some).collect();
         let group = [0, 1];
         for (bytes, fail_at, expected) in [
             (b"one\nlate".as_slice(), Some(4), SourceScanError::Read),
@@ -1340,13 +882,7 @@ mod tests {
             };
 
             assert_eq!(
-                observe_direct_batch(
-                    &mut source,
-                    &inputs,
-                    &group,
-                    AnddressTarget::Line,
-                    &mut outcomes,
-                ),
+                observe_direct_batch(&mut source, &projected, &group, &mut outcomes,),
                 Err(expected)
             );
             assert!(outcomes.iter().all(Option::is_none));
@@ -1354,7 +890,7 @@ mod tests {
     }
 
     #[test]
-    fn ordinary_view_uses_only_the_direct_observation_path() {
+    fn ordinary_view_projects_before_io_and_reuses_one_source_handle_per_group() {
         let production = include_str!("view.rs")
             .split("#[cfg(test)]")
             .next()
@@ -1367,7 +903,7 @@ mod tests {
             .next()
             .unwrap();
         assert!(
-            batch.find("validate_request").unwrap() < batch.find("validate_runtime_input").unwrap()
+            batch.find("project_inputs").unwrap() < batch.find("validate_runtime_input").unwrap()
         );
         assert!(batch.contains("execute_batch_group("));
         assert!(!batch.contains("execute(runtime"));
@@ -1387,8 +923,8 @@ mod tests {
             .split("fn execute_trusted_batch")
             .next()
             .unwrap();
-        assert_eq!(direct_batch.matches("observe_structural(").count(), 1);
-        assert!(direct_batch.contains("DirectViewProjection::new"));
+        assert_eq!(direct_batch.matches("observe_source(").count(), 1);
+        assert!(direct_batch.contains("RangeCapture::new"));
         let trusted_batch = production
             .split("fn execute_trusted_batch")
             .nth(1)
@@ -1397,13 +933,21 @@ mod tests {
             .next()
             .unwrap();
         assert_eq!(trusted_batch.matches("open_admitted_source(").count(), 1);
-        assert_eq!(trusted_batch.matches("observe_trusted(").count(), 1);
+        assert!(trusted_batch.contains("read_projected("));
         assert!(trusted_batch.contains("invalidate_current_proof"));
         let direct = production.split("fn observe_direct").nth(1).unwrap();
-        for forbidden in ["scan_source(", "SourceEvent", "ExactTargetTracker"] {
+        for forbidden in [
+            "scan_source(",
+            "SourceEvent",
+            "ExactTargetTracker",
+            "DirectViewProjection",
+            "LineRelation",
+            "scan_paragraph_start",
+            "scan_paragraph_end",
+        ] {
             assert!(!direct.contains(forbidden));
         }
-        assert_eq!(direct.matches("observe_structural(").count(), 1);
+        assert_eq!(direct.matches("observe_source(").count(), 1);
 
         let anchored = production
             .split("fn observe_anchored")
@@ -1427,18 +971,18 @@ mod tests {
         assert!(execute.contains("CurrentProofMatch::Missing"));
         assert!(execute.contains("observe_direct("));
         assert!(execute.contains("CurrentProofMatch::Matching"));
-        assert!(execute.contains("execute_trusted("));
+        assert!(execute.contains("execute_trusted_projected("));
         let trusted_execution = production
-            .split("pub(super) fn execute_trusted")
+            .split("pub(super) fn execute_trusted_projected")
             .nth(1)
             .unwrap()
             .split("pub(super) fn observe_direct")
             .next()
             .unwrap();
-        assert!(trusted_execution.contains("observe_trusted("));
+        assert!(trusted_execution.contains("read_projected("));
         assert!(trusted_execution.contains("invalidate_current_proof"));
         let trusted = production
-            .split("fn observe_trusted")
+            .split("fn read_projected")
             .nth(1)
             .unwrap()
             .split("fn read_range")
@@ -1446,218 +990,70 @@ mod tests {
             .unwrap();
         assert!(!trusted.contains("observe_source("));
         assert!(!trusted.contains("Sha256"));
-        assert_eq!(production.matches("fn finish_outcome(").count(), 1);
-        assert!(!production.contains("view_projected"));
+        assert!(!production.contains("fn finish_outcome("));
+        assert!(!production.contains("DirectViewProjection"));
+        assert!(!production.contains("LineRelation"));
+        assert!(!production.contains("scan_paragraph_start"));
+        assert!(!production.contains("scan_paragraph_end"));
         assert!(!production.contains("ReverseBytes"));
         assert!(!production.contains("ForwardBytes"));
-        let relation = production
-            .split("fn scan_paragraph_start")
-            .nth(1)
-            .unwrap()
-            .split("fn read_byte_at")
-            .next()
-            .unwrap();
-        assert_eq!(relation.matches("[0_u8; READ_BUFFER_SIZE]").count(), 2);
-        assert!(relation.contains(".rposition("));
-        assert!(relation.contains(".position("));
     }
 
     #[test]
-    fn line_break_word_filter_matches_byte_order_at_every_alignment() {
-        for length in (0..=33).chain([READ_BUFFER_SIZE - 1, READ_BUFFER_SIZE, READ_BUFFER_SIZE + 1])
-        {
-            let mut bytes = vec![b'x'; length];
-            assert_eq!(first_line_break(&bytes), None);
-            assert_eq!(last_line_break(&bytes), None);
-            let mut positions: Vec<_> = (0..length.min(17)).collect();
-            positions.extend(length.saturating_sub(17)..length);
-            positions.sort_unstable();
-            positions.dedup();
-            for position in positions {
-                for delimiter in [b'\r', b'\n'] {
-                    bytes[position] = delimiter;
-                    assert_eq!(first_line_break(&bytes), Some(position));
-                    assert_eq!(last_line_break(&bytes), Some(position));
-                    bytes[position] = b'x';
-                }
-            }
-        }
-        assert_eq!(first_line_break(b"x\rxxx\nx"), Some(1));
-        assert_eq!(last_line_break(b"x\rxxx\nx"), Some(5));
-    }
-
-    #[test]
-    fn trusted_line_reads_only_its_range_and_nearest_paragraph_boundaries() {
+    fn trusted_line_reads_only_its_projected_exact_range() {
         let mut bytes = vec![b'p'; READ_BUFFER_SIZE * 16];
         bytes.extend_from_slice(b"\n \t\r\n");
         let target_start = bytes.len();
         bytes.extend_from_slice("한글\r\n".as_bytes());
         let target_end = bytes.len();
         bytes.extend_from_slice("β\n".as_bytes());
-        let paragraph_end = bytes.len();
         bytes.extend_from_slice(b"\t\n");
         bytes.extend(std::iter::repeat_n(b's', READ_BUFFER_SIZE * 16));
         let input = address(&bytes, AnddressTarget::Line, target_start, target_end);
         let mut reader = CountingCursor::new(bytes.clone());
 
-        let outcome = observe_trusted(&mut reader, &input, input.target()).unwrap();
+        let outcome = read_projected(&mut reader, &input).unwrap();
 
         assert_eq!(
             outcome,
-            ViewOutcome::Line {
+            ViewOutcome::Projected {
                 anddress: input,
-                content: "한글".to_owned(),
-                terminator: LineTerminator::Crlf,
-                file: address(&bytes, AnddressTarget::File, 0, bytes.len()),
-                paragraph: Some(address(
-                    &bytes,
-                    AnddressTarget::Paragraph,
-                    target_start,
-                    paragraph_end,
-                )),
+                content: "한글\r\n".to_owned(),
             }
         );
-        assert!(reader.bytes_read <= target_end - target_start + 2 * READ_BUFFER_SIZE + 2);
+        assert_eq!(reader.bytes_read, target_end - target_start);
         assert!(reader.bytes_read < bytes.len() / 4);
-        assert!(reader.seeks >= 3);
+        assert_eq!(reader.seeks, 1);
     }
 
     #[test]
     fn trusted_line_preserves_terminators_unicode_and_nonstructural_relations() {
-        for (extent, content, terminator) in [
-            ("한글\n", "한글", LineTerminator::Lf),
-            ("한글\r", "한글", LineTerminator::Cr),
-            ("한글\r\n", "한글", LineTerminator::Crlf),
-            ("한글", "한글", LineTerminator::None),
+        for (extent, terminator) in [
+            ("한글\n", LineTerminator::Lf),
+            ("한글\r", LineTerminator::Cr),
+            ("한글\r\n", LineTerminator::Crlf),
+            ("한글", LineTerminator::None),
         ] {
             let source = format!("\n{extent}");
             let start = 1;
             let end = source.len();
             let input = address(source.as_bytes(), AnddressTarget::Line, start, end);
             assert!(matches!(
-                observe_trusted(&mut Cursor::new(source.as_bytes()), &input, input.target())
-                    .unwrap(),
-                ViewOutcome::Line {
-                    content: actual,
-                    terminator: actual_terminator,
-                    paragraph: Some(paragraph),
-                    ..
-                } if actual == content
-                    && actual_terminator == terminator
-                    && paragraph.byte_start() == start
-                    && paragraph.byte_end() == end
+                read_projected(&mut Cursor::new(source.as_bytes()), &input).unwrap(),
+                ViewOutcome::Projected { anddress, content }
+                    if content == extent
+                        && anddress.terminator() == Some(terminator)
+                        && anddress.project(AnddressTarget::Paragraph).unwrap().is_some()
             ));
         }
 
         let whitespace = b"one\n \t\r\ntwo";
         let whitespace_input = address(whitespace, AnddressTarget::Line, 4, 8);
         assert!(matches!(
-            observe_trusted(
-                &mut Cursor::new(whitespace),
-                &whitespace_input,
-                whitespace_input.target(),
-            )
-            .unwrap(),
-            ViewOutcome::Line {
-                paragraph: None,
-                ..
-            }
+            read_projected(&mut Cursor::new(whitespace), &whitespace_input).unwrap(),
+            ViewOutcome::Projected { anddress, .. }
+                if anddress.project(AnddressTarget::Paragraph).unwrap().is_none()
         ));
-        let raw = b"zero\none\r\ntwo";
-        let raw_input = address(raw, AnddressTarget::Line, 2, 10);
-        assert!(matches!(
-            observe_trusted(&mut Cursor::new(raw), &raw_input, raw_input.target()).unwrap(),
-            ViewOutcome::Line {
-                paragraph: None,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn trusted_relation_crosses_fixed_scratch_in_both_directions() {
-        let mut source = b"\n".to_vec();
-        let paragraph_start = source.len();
-        source.extend(std::iter::repeat_n(b'a', READ_BUFFER_SIZE + 1));
-        source.extend_from_slice(b"\r\n");
-        let target_start = source.len();
-        source.extend_from_slice(b"needle\n");
-        let target_end = source.len();
-        source.extend(std::iter::repeat_n(b'b', READ_BUFFER_SIZE - 1));
-        source.extend_from_slice(b"\r");
-        let paragraph_end = source.len();
-        source.extend_from_slice(b" \t\n");
-        let input = address(&source, AnddressTarget::Line, target_start, target_end);
-
-        assert!(matches!(
-            observe_trusted(&mut Cursor::new(&source), &input, input.target()).unwrap(),
-            ViewOutcome::Line {
-                content,
-                terminator: LineTerminator::Lf,
-                paragraph: Some(paragraph),
-                ..
-            } if content == "needle"
-                && paragraph.byte_start() == paragraph_start
-                && paragraph.byte_end() == paragraph_end
-        ));
-    }
-
-    #[test]
-    fn trusted_chunk_relation_preserves_complete_and_separator_bounded_paragraphs() {
-        let mut complete = "α\r\n".as_bytes().to_vec();
-        complete.extend(std::iter::repeat_n(b'b', READ_BUFFER_SIZE - 2));
-        complete.push(b'\r');
-        let target_start = complete.len();
-        complete.extend_from_slice(b"needle\n");
-        let target_end = complete.len();
-        complete.extend(std::iter::repeat_n(b'c', READ_BUFFER_SIZE - 1));
-        complete.extend_from_slice(b"\r\n");
-        complete.extend_from_slice("끝".as_bytes());
-        let input = address(&complete, AnddressTarget::Line, target_start, target_end);
-        let expected = observe_direct(&mut Cursor::new(&complete), &input, input.target()).unwrap();
-        let actual = observe_trusted(&mut Cursor::new(&complete), &input, input.target()).unwrap();
-        assert_eq!(actual, expected);
-        assert!(matches!(
-            actual,
-            ViewOutcome::Line {
-                paragraph: Some(paragraph),
-                ..
-            } if paragraph.byte_start() == 0 && paragraph.byte_end() == complete.len()
-        ));
-
-        let bounded = "left\n \t\r\nneedle\r\nβ\r\t \nright";
-        let target_start = bounded.find("needle").unwrap();
-        let target_end = target_start + "needle\r\n".len();
-        let paragraph_end = target_end + "β\r".len();
-        let input = address(
-            bounded.as_bytes(),
-            AnddressTarget::Line,
-            target_start,
-            target_end,
-        );
-        let expected =
-            observe_direct(&mut Cursor::new(bounded.as_bytes()), &input, input.target()).unwrap();
-        let actual =
-            observe_trusted(&mut Cursor::new(bounded.as_bytes()), &input, input.target()).unwrap();
-        assert_eq!(actual, expected);
-        assert!(matches!(
-            actual,
-            ViewOutcome::Line {
-                paragraph: Some(paragraph),
-                ..
-            } if paragraph.byte_start() == "left\n \t\r\n".len()
-                && paragraph.byte_end() == paragraph_end
-        ));
-
-        for (source, start, end) in [("\t\n끝\r", 2, 6), ("끝", 0, 3)] {
-            let input = address(source.as_bytes(), AnddressTarget::Line, start, end);
-            assert_eq!(
-                observe_trusted(&mut Cursor::new(source.as_bytes()), &input, input.target())
-                    .unwrap(),
-                observe_direct(&mut Cursor::new(source.as_bytes()), &input, input.target())
-                    .unwrap()
-            );
-        }
     }
 
     #[test]
@@ -1704,16 +1100,19 @@ mod tests {
                 AnddressTarget::File => unreachable!(),
             };
             for &projection in projections {
-                let expected = observe_direct(&mut Cursor::new(bytes), &input, projection).unwrap();
-                let actual = observe_trusted(&mut Cursor::new(bytes), &input, projection).unwrap();
+                let Some(projected) = project_request(&input, projection).unwrap() else {
+                    continue;
+                };
+                let expected = observe_direct(&mut Cursor::new(bytes), projected.clone()).unwrap();
+                let actual = read_projected(&mut Cursor::new(bytes), &projected).unwrap();
                 assert_eq!(actual, expected, "{:?}->{projection:?}", input.target());
             }
         }
 
         let file = address(bytes, AnddressTarget::File, 0, source.len());
         assert_eq!(
-            observe_trusted(&mut Cursor::new(bytes), &file, AnddressTarget::File).unwrap(),
-            observe_direct(&mut Cursor::new(bytes), &file, AnddressTarget::File).unwrap()
+            read_projected(&mut Cursor::new(bytes), &file).unwrap(),
+            observe_direct(&mut Cursor::new(bytes), file).unwrap()
         );
     }
 
@@ -1721,16 +1120,12 @@ mod tests {
     fn trusted_short_read_and_matching_open_failure_remove_only_matching_proof() {
         let input = address(b"one", AnddressTarget::File, 0, 3);
         assert_eq!(
-            observe_trusted(&mut Cursor::new(b"on"), &input, input.target()),
+            read_projected(&mut Cursor::new(b"on"), &input),
             Err(TrustedViewError::Source)
         );
         for fail_seek in [true, false] {
             assert_eq!(
-                observe_trusted(
-                    &mut FailingTrustedReader { fail_seek },
-                    &input,
-                    input.target(),
-                ),
+                read_projected(&mut FailingTrustedReader { fail_seek }, &input),
                 Err(TrustedViewError::Source)
             );
         }
@@ -1876,7 +1271,7 @@ mod tests {
     }
 
     #[test]
-    fn anchored_one_byte_observation_preserves_utf8_terminators_and_related_addresses() {
+    fn anchored_one_byte_observation_captures_projected_exact_content() {
         let bytes = "한글🦀\nβ\rγ".as_bytes();
         let inputs = [address(bytes, AnddressTarget::Line, 11, 14)];
         let mut reader = OneByteReader {
@@ -1887,17 +1282,14 @@ mod tests {
         };
 
         let AnchoredObservation { current, outcome } =
-            observe_anchored(&mut reader, &inputs, Some((0, inputs[0].target()))).unwrap();
+            observe_anchored(&mut reader, &inputs, Some((0, inputs[0].clone()))).unwrap();
 
         assert_eq!(current, [true]);
         assert_eq!(
             outcome,
-            Some(ViewOutcome::Line {
+            Some(ViewOutcome::Projected {
                 anddress: inputs[0].clone(),
-                content: "β".to_owned(),
-                terminator: LineTerminator::Cr,
-                file: address(bytes, AnddressTarget::File, 0, bytes.len()),
-                paragraph: Some(address(bytes, AnddressTarget::Paragraph, 0, bytes.len())),
+                content: "β\r".to_owned(),
             })
         );
     }
@@ -1926,7 +1318,7 @@ mod tests {
                 ended: false,
             };
             assert!(
-                matches!(observe_anchored(&mut reader, &inputs, Some((0, inputs[0].target()))), Err(error) if same_error(error, expected))
+                matches!(observe_anchored(&mut reader, &inputs, Some((0, inputs[0].clone()))), Err(error) if same_error(error, expected))
             );
         }
     }

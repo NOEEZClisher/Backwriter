@@ -14,8 +14,9 @@ are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. Current source
-is hard-cut through Gate 3 to the v5 Anddress algebra, wire, shared structural
-cursor, and direct Search result collection; their direct View
+is hard-cut through Gate 4 to the v5 Anddress algebra, wire, shared structural
+cursor, direct Search result collection, and geometry-driven single/batch View;
+their direct View
 source-state/range projection, target-specific Search literal
 projection and exact logical File lookup, Pick predicate semantics, direct
 Anchor target projection and live continuity, and source-state Check batch
@@ -40,8 +41,8 @@ complete from Source Authority revision
 The published `0.2.3` source, v4 API/wire, artifacts, installers, and public
 tree are closed immutable evidence. `0.2.4` is an in-progress target governed
 by the [structural-authority tracker](docs/tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-Gates 1–3 close authority, v5 algebra/wire, the sole Issuer, the shared
-structural cursor, and Search result contraction. Cargo and
+Gates 1–4 close authority, v5 algebra/wire, the sole Issuer, the shared
+structural cursor, Search result contraction, and exact-range View. Cargo and
 `bw version` remain `0.2.3`; artifacts and the published distribution remain
 closed v4 evidence until later gates are separately accepted.
 
@@ -60,7 +61,7 @@ terminators. One crate-private Anddress Issuer is now the sole construction
 authority; one shared source identity and allocation-free target/parent
 geometry serve every issued value. One private `StructuralCursor` owns
 complete-source Line and Paragraph framing for Search, source observation,
-direct View relation validation, and prospective Apply output. Search retains
+and prospective Apply output. Search retains
 literal finding, tiers, ordering, and multiplicity while returning owned
 Anddresses directly; Adapter positions derive only from their v5 geometry.
 View projects then reads an exact range; Check determines currentness; Apply
@@ -69,8 +70,9 @@ exception.
 
 Gate 2 deletes public raw and capability-owned address constructors. Gate 3
 deletes the Search position/occurrence wrappers and duplicate complete-source
-framers. Later gates delete the retained View range/relation scans and
-one-shot Edit's private View. The plan
+framers. Gate 4 deletes View's relation/range scanners and hard-cuts its native
+and Adapter results to the projected v5 address plus exact Content. Later gates
+delete one-shot Edit's private View. The plan
 reuses existing admission/no-follow reads, literal matching, ordered batch
 grouping, staging and prospective provenance, Host proof, publication, and
 Anchor reflection. It adds no history, relocation, registry, watcher, retry,
@@ -391,15 +393,18 @@ are preserved evidence, never current authority.
   the normal `ViewOutcome::RelationAbsent` result. Batch preserves order,
   duplicates, and per-item outcomes, returns all results or none, and groups
   inputs so each Untrusted or Host-proof-miss source has one accepted direct
-  observation; matching Host groups reuse one handle and trusted scanner. It has no
+  observation; matching Host groups reuse one handle and read only requested
+  exact ranges. It has no
   query, ranking,
   mutation, display, adapter payload, or
   retained source/result/relation state, registry, cache, history, snapshot, or
   lease. Pick may supply the input, but View neither calls Pick nor proves Pick
   provenance; explicit selection is the caller's responsibility.
 - View's admitted no-follow one-read access checks v5 coordinate/path,
-  source-state hash/length/Line count, and exact range, constructing related results from
-  the same read.
+  source-state hash/length/Line count, and exact range. Its only successful
+  target result is `ViewOutcome::Projected { anddress, content }`; v5 algebra,
+  rather than extra outcome fields or a relation scan, provides ancestors and
+  Line terminators.
 - Arbitrary range selection, descendants, and partial behavior are post-V1 owner
   decisions. View does not classify input state; Check does not change View.
 - **Check V1** has closed semantic/API/type/report authority and a stateless

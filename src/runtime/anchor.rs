@@ -3,13 +3,13 @@
 use crate::backwriter::{
     anchor::{Anchedress, AnchorError, AnchorOutcome},
     anddress::{Anddress, AnddressError, AnddressTarget},
-    view::{ViewError, ViewOutcome, validate_projection},
+    view::{ViewError, ViewOutcome, project_request},
 };
 use crate::source::validate_logical_path;
 
 use super::{
     AnchorBinding, CurrentProofMatch, WorkspaceRuntime, is_backwriter_spill,
-    view::{AnchoredObservation, ObservationError, execute_trusted, observe_anchored},
+    view::{AnchoredObservation, ObservationError, execute_trusted_projected, observe_anchored},
 };
 
 pub(super) fn anchor(
@@ -79,20 +79,22 @@ pub(super) fn view_anchored(
         return Err(ViewError::Unavailable);
     };
     let input = runtime.anchors[index].anddress.clone();
-    validate_projection(input.target(), projection)?;
+    let Some(projected) = project_request(&input, projection)? else {
+        return Ok(ViewOutcome::RelationAbsent);
+    };
     match runtime.match_current_proof(&input) {
         CurrentProofMatch::Mismatched => {
             runtime.invalidate_source_state(input.logical_path());
             return Err(ViewError::Unavailable);
         }
-        CurrentProofMatch::Matching => return execute_trusted(runtime, &input, projection),
+        CurrentProofMatch::Matching => return execute_trusted_projected(runtime, projected),
         CurrentProofMatch::Missing => {}
     }
     let observed = match observe_current(
         runtime,
         &input,
         std::slice::from_ref(&input),
-        Some((0, projection)),
+        Some((0, projected)),
     ) {
         Ok(observed) => observed,
         Err(ObservationError::InvalidSource) => {
@@ -138,7 +140,7 @@ fn observe_current(
     runtime: &WorkspaceRuntime,
     input: &Anddress,
     inputs: &[Anddress],
-    capture_focus: Option<(usize, AnddressTarget)>,
+    capture_focus: Option<(usize, Anddress)>,
 ) -> Result<AnchoredObservation, ObservationError> {
     if input.workspace_coordinate() != runtime.workspace_coordinate
         || is_backwriter_spill(input.logical_path())

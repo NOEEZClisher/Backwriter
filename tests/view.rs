@@ -54,8 +54,15 @@ fn address(
     support::address(&coordinate, path, source, target, byte_start, byte_end)
 }
 
+fn projected(anddress: Anddress, content: &[u8]) -> ViewOutcome {
+    ViewOutcome::Projected {
+        anddress,
+        content: String::from_utf8(content.to_vec()).unwrap(),
+    }
+}
+
 #[test]
-fn view_checks_exact_source_and_range_and_returns_related_addresses() {
+fn view_checks_exact_source_range_and_projected_address() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
@@ -71,21 +78,16 @@ fn view_checks_exact_source_and_range_and_returns_related_addresses() {
         10,
     );
 
-    let ViewOutcome::Line {
-        anddress,
-        content,
-        terminator,
-        file,
-        paragraph,
-    } = workspace.view(&input, input.target()).unwrap()
+    let ViewOutcome::Projected { anddress, content } =
+        workspace.view(&input, input.target()).unwrap()
     else {
         panic!("line")
     };
     assert_eq!(anddress, input);
-    assert_eq!(content, "two");
-    assert_eq!(terminator, LineTerminator::Crlf);
+    assert_eq!(content, "two\r\n");
+    assert_eq!(anddress.terminator(), Some(LineTerminator::Crlf));
     assert_eq!(
-        file,
+        anddress.project(AnddressTarget::File).unwrap().unwrap(),
         address(
             input.workspace_coordinate().to_owned(),
             "note.txt",
@@ -96,7 +98,10 @@ fn view_checks_exact_source_and_range_and_returns_related_addresses() {
         )
     );
     assert_eq!(
-        paragraph.unwrap(),
+        anddress
+            .project(AnddressTarget::Paragraph)
+            .unwrap()
+            .unwrap(),
         address(
             input.workspace_coordinate().to_owned(),
             "note.txt",
@@ -143,50 +148,27 @@ fn view_projects_all_six_upward_relations_from_one_current_observation() {
 
     assert_eq!(
         workspace.view(&file, AnddressTarget::File),
-        Ok(ViewOutcome::File {
-            anddress: file.clone(),
-            text: String::from_utf8(source.to_vec()).unwrap(),
-        })
+        Ok(projected(file.clone(), source))
     );
     assert_eq!(
         workspace.view(&paragraph, AnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph {
-            anddress: paragraph.clone(),
-            text: "one\r\ntwo\n".to_owned(),
-            file: file.clone(),
-        })
+        Ok(projected(paragraph.clone(), b"one\r\ntwo\n"))
     );
     assert_eq!(
         workspace.view(&paragraph, AnddressTarget::File),
-        Ok(ViewOutcome::File {
-            anddress: file.clone(),
-            text: String::from_utf8(source.to_vec()).unwrap(),
-        })
+        Ok(projected(file.clone(), source))
     );
     assert_eq!(
         workspace.view(&line, AnddressTarget::Line),
-        Ok(ViewOutcome::Line {
-            anddress: line.clone(),
-            content: "two".to_owned(),
-            terminator: LineTerminator::Lf,
-            file: file.clone(),
-            paragraph: Some(paragraph.clone()),
-        })
+        Ok(projected(line.clone(), b"two\n"))
     );
     assert_eq!(
         workspace.view(&line, AnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph {
-            anddress: paragraph.clone(),
-            text: "one\r\ntwo\n".to_owned(),
-            file: file.clone(),
-        })
+        Ok(projected(paragraph.clone(), b"one\r\ntwo\n"))
     );
     assert_eq!(
         workspace.view(&line, AnddressTarget::File),
-        Ok(ViewOutcome::File {
-            anddress: file.clone(),
-            text: String::from_utf8(source.to_vec()).unwrap(),
-        })
+        Ok(projected(file.clone(), source))
     );
 
     let handle = match workspace.anchor(&line).unwrap() {
@@ -195,18 +177,11 @@ fn view_projects_all_six_upward_relations_from_one_current_observation() {
     };
     assert_eq!(
         workspace.view_anchored(&handle, AnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph {
-            anddress: paragraph,
-            text: "one\r\ntwo\n".to_owned(),
-            file: file.clone(),
-        })
+        Ok(projected(paragraph, b"one\r\ntwo\n"))
     );
     assert_eq!(
         workspace.view_anchored(&handle, AnddressTarget::File),
-        Ok(ViewOutcome::File {
-            anddress: file,
-            text: String::from_utf8(source.to_vec()).unwrap(),
-        })
+        Ok(projected(file, source))
     );
 }
 
@@ -261,23 +236,11 @@ fn view_batch_preserves_empty_single_duplicate_and_mixed_source_order() {
     );
     assert_eq!(
         workspace.view_batch(std::slice::from_ref(&line_a), AnddressTarget::Line),
-        Ok(vec![ViewOutcome::Line {
-            anddress: line_a.clone(),
-            content: "two".to_owned(),
-            terminator: LineTerminator::Lf,
-            file: file_a.clone(),
-            paragraph: Some(paragraph_a.clone()),
-        }])
+        Ok(vec![projected(line_a.clone(), b"two\n")])
     );
 
-    let output_a = ViewOutcome::File {
-        anddress: file_a.clone(),
-        text: String::from_utf8(source_a.to_vec()).unwrap(),
-    };
-    let output_b = ViewOutcome::File {
-        anddress: file_b,
-        text: String::from_utf8(source_b.to_vec()).unwrap(),
-    };
+    let output_a = projected(file_a.clone(), source_a);
+    let output_b = projected(file_b, source_b);
     assert_eq!(
         workspace.view_batch(
             &[line_a.clone(), line_b, line_a, paragraph_a, file_a,],
@@ -374,15 +337,25 @@ fn view_batch_preserves_relations_terminators_unicode_and_raw_ranges() {
     let line_outcomes = workspace.view_batch(&lines, AnddressTarget::Line).unwrap();
     assert_eq!(line_outcomes.len(), 5);
     for (outcome, content, terminator, related) in [
-        (&line_outcomes[0], "α", LineTerminator::Lf, Some(&paragraph)),
-        (&line_outcomes[1], "β", LineTerminator::Cr, Some(&paragraph)),
+        (
+            &line_outcomes[0],
+            "α\n",
+            LineTerminator::Lf,
+            Some(&paragraph),
+        ),
+        (
+            &line_outcomes[1],
+            "β\r",
+            LineTerminator::Cr,
+            Some(&paragraph),
+        ),
         (
             &line_outcomes[2],
-            "γ",
+            "γ\r\n",
             LineTerminator::Crlf,
             Some(&paragraph),
         ),
-        (&line_outcomes[3], " \t", LineTerminator::Lf, None),
+        (&line_outcomes[3], " \t\n", LineTerminator::Lf, None),
         (
             &line_outcomes[4],
             "last",
@@ -392,24 +365,17 @@ fn view_batch_preserves_relations_terminators_unicode_and_raw_ranges() {
     ] {
         assert!(matches!(
             outcome,
-            ViewOutcome::Line {
+            ViewOutcome::Projected {
+                anddress,
                 content: actual,
-                terminator: actual_terminator,
-                file: actual_file,
-                paragraph: actual_paragraph,
-                ..
             } if actual == content
-                && *actual_terminator == terminator
-                && actual_file == &file
-                && actual_paragraph.as_ref() == related
+                && anddress.terminator() == Some(terminator)
+                && anddress.project(AnddressTarget::File).unwrap().as_ref() == Some(&file)
+                && anddress.project(AnddressTarget::Paragraph).unwrap().as_ref() == related
         ));
     }
 
-    let paragraph_output = ViewOutcome::Paragraph {
-        anddress: paragraph.clone(),
-        text: "α\nβ\rγ\r\n".to_owned(),
-        file: file.clone(),
-    };
+    let paragraph_output = projected(paragraph.clone(), "α\nβ\rγ\r\n".as_bytes());
     assert_eq!(
         workspace.view_batch(
             &[
@@ -427,11 +393,7 @@ fn view_batch_preserves_relations_terminators_unicode_and_raw_ranges() {
             paragraph_output.clone(),
             ViewOutcome::RelationAbsent,
             ViewOutcome::RelationAbsent,
-            ViewOutcome::Paragraph {
-                anddress: last_paragraph,
-                text: "last".to_owned(),
-                file,
-            },
+            projected(last_paragraph, b"last"),
             paragraph_output,
         ])
     );
@@ -783,7 +745,7 @@ fn view_rejects_private_path_before_access_and_allows_other_artext_children() {
             0,
             1,
         ), AnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "x"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "x"
     ));
 }
 
@@ -798,11 +760,11 @@ fn view_reads_unicode_and_all_line_terminators() {
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
 
-    for (start, end, content, terminator) in [
-        (0, 7, "한글", LineTerminator::Lf),
-        (7, 10, "β", LineTerminator::Cr),
-        (10, 14, "γ", LineTerminator::Crlf),
-        (14, 16, "δ", LineTerminator::None),
+    for (start, end, terminator) in [
+        (0, 7, LineTerminator::Lf),
+        (7, 10, LineTerminator::Cr),
+        (10, 14, LineTerminator::Crlf),
+        (14, 16, LineTerminator::None),
     ] {
         assert!(matches!(
             workspace.view(&address(
@@ -813,11 +775,11 @@ fn view_reads_unicode_and_all_line_terminators() {
                 start,
                 end,
             ), AnddressTarget::Line),
-            Ok(ViewOutcome::Line {
+            Ok(ViewOutcome::Projected {
+                anddress,
                 content: actual,
-                terminator: actual_terminator,
-                ..
-            }) if actual == content && actual_terminator == terminator
+            }) if actual.as_bytes() == &source[start..end]
+                && anddress.terminator() == Some(terminator)
         ));
         assert!(matches!(
             workspace.view(
@@ -831,7 +793,7 @@ fn view_reads_unicode_and_all_line_terminators() {
                 ),
                 AnddressTarget::Paragraph,
             ),
-            Ok(ViewOutcome::Paragraph { text, .. }) if text.as_bytes() == source
+            Ok(ViewOutcome::Projected { content, .. }) if content.as_bytes() == source
         ));
     }
 }
@@ -892,11 +854,11 @@ fn every_target_is_bound_to_the_complete_source_state() {
     );
     assert!(matches!(
         workspace.view(&file, file.target()),
-        Ok(ViewOutcome::File { .. })
+        Ok(ViewOutcome::Projected { .. })
     ));
     assert!(matches!(
         workspace.view(&paragraph, paragraph.target()),
-        Ok(ViewOutcome::Paragraph { ref text, .. }) if text == "one\ntwo\n"
+        Ok(ViewOutcome::Projected { ref content, .. }) if content == "one\ntwo\n"
     ));
 
     fs::write(root.join("note.txt"), b"one\ntwo\n\nother").unwrap();
@@ -943,7 +905,7 @@ fn view_discards_same_length_inside_and_outside_mutations_truncation_and_growth(
     fs::write(root.join("note.txt"), source).unwrap();
     assert!(matches!(
         workspace.view(&input, input.target()),
-        Ok(ViewOutcome::Line { content, .. }) if content == "two"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "two\n"
     ));
 }
 
@@ -965,12 +927,12 @@ fn view_accepts_raw_empty_range_and_rejects_invalid_text_wrong_coordinate_and_no
             1,
             1,
         ), AnddressTarget::Line),
-        Ok(ViewOutcome::Line {
+        Ok(ViewOutcome::Projected {
+            anddress,
             content,
-            terminator: LineTerminator::None,
-            paragraph: None,
-            ..
         }) if content.is_empty()
+            && anddress.terminator() == Some(LineTerminator::None)
+            && anddress.project(AnddressTarget::Paragraph).unwrap().is_none()
     ));
     assert_eq!(
         workspace.view(
@@ -1050,7 +1012,7 @@ fn separator_line_has_no_paragraph() {
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
 
-    let ViewOutcome::Line { paragraph, .. } = workspace
+    let ViewOutcome::Projected { anddress, .. } = workspace
         .view(
             &address(coordinate, "note.txt", source, AnddressTarget::Line, 4, 7),
             AnddressTarget::Line,
@@ -1059,7 +1021,12 @@ fn separator_line_has_no_paragraph() {
     else {
         panic!("separator")
     };
-    assert!(paragraph.is_none());
+    assert!(
+        anddress
+            .project(AnddressTarget::Paragraph)
+            .unwrap()
+            .is_none()
+    );
 }
 
 #[test]
@@ -1081,7 +1048,7 @@ fn raw_nonstructural_ranges_return_exact_bytes_without_asserting_relations() {
             2,
             10,
         ), AnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph { text, .. }) if text == "ro\none\r\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "ro\none\r\n"
     ));
     assert!(matches!(
         workspace.view(&address(
@@ -1092,12 +1059,12 @@ fn raw_nonstructural_ranges_return_exact_bytes_without_asserting_relations() {
             2,
             10,
         ), AnddressTarget::Line),
-        Ok(ViewOutcome::Line {
+        Ok(ViewOutcome::Projected {
+            anddress,
             content,
-            terminator: LineTerminator::Crlf,
-            paragraph: None,
-            ..
-        }) if content == "ro\none"
+        }) if content == "ro\none\r\n"
+            && anddress.terminator() == Some(LineTerminator::None)
+            && anddress.project(AnddressTarget::Paragraph).unwrap().is_none()
     ));
 
     let unicode = "aéz".as_bytes();
@@ -1138,29 +1105,28 @@ fn view_preserves_ranges_at_every_source_scratch_boundary() {
         );
         assert!(matches!(
             workspace.view(&input, input.target()),
-            Ok(ViewOutcome::Line {
+            Ok(ViewOutcome::Projected {
+                anddress,
                 content,
-                terminator: LineTerminator::Crlf,
-                paragraph: Some(_),
-                ..
-            }) if content == format!("{}é", "x".repeat(boundary))
+            }) if content == format!("{}é\r\n", "x".repeat(boundary))
+                && anddress.terminator() == Some(LineTerminator::Crlf)
+                && anddress.project(AnddressTarget::Paragraph).unwrap().is_some()
         ));
         assert!(matches!(
             workspace.view(&input, AnddressTarget::Paragraph),
-            Ok(ViewOutcome::Paragraph {
+            Ok(ViewOutcome::Projected {
                 anddress,
-                text,
-                ..
+                content,
             }) if anddress.byte_start() == 0
                 && anddress.byte_end() == source.len()
-                && text.as_bytes() == source
+                && content.as_bytes() == source
         ));
         assert!(matches!(
             workspace.view(&input, AnddressTarget::File),
-            Ok(ViewOutcome::File { anddress, text })
+            Ok(ViewOutcome::Projected { anddress, content })
                 if anddress.byte_start() == 0
                     && anddress.byte_end() == source.len()
-                    && text.as_bytes() == source
+                    && content.as_bytes() == source
         ));
         for projection in [
             AnddressTarget::Line,
@@ -1194,7 +1160,7 @@ fn view_finds_a_real_line_after_4096_lines_and_raw_state_can_reestablish() {
     );
     assert!(matches!(
         workspace.view(&input, input.target()),
-        Ok(ViewOutcome::Line { .. })
+        Ok(ViewOutcome::Projected { .. })
     ));
     fs::write(root.join("note.txt"), b"two\n").unwrap();
     assert_eq!(
@@ -1204,7 +1170,7 @@ fn view_finds_a_real_line_after_4096_lines_and_raw_state_can_reestablish() {
     fs::write(root.join("note.txt"), &source).unwrap();
     assert!(matches!(
         workspace.view(&input, input.target()),
-        Ok(ViewOutcome::Line { .. })
+        Ok(ViewOutcome::Projected { .. })
     ));
 }
 
@@ -1237,8 +1203,7 @@ fn view_returns_complete_large_file_paragraph_and_line_outputs() {
             )
             .unwrap();
         let text = match outcome {
-            ViewOutcome::File { text, .. } | ViewOutcome::Paragraph { text, .. } => text,
-            ViewOutcome::Line { content, .. } => content,
+            ViewOutcome::Projected { content, .. } => content,
             ViewOutcome::RelationAbsent => panic!("self projection exists"),
         };
         assert_eq!(text, source);
@@ -1262,7 +1227,7 @@ fn view_accepts_same_coordinate_under_a_different_admission() {
     );
     assert!(matches!(
         runtime_with_admission(&root, "docs").view(&input, input.target()),
-        Ok(ViewOutcome::File { text, .. }) if text == "one"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "one"
     ));
 }
 
@@ -1294,11 +1259,11 @@ fn host_view_reuses_matching_search_proof_and_falls_back_after_a_miss_or_invalid
 
     assert!(matches!(
         host.view(&line, line.target()),
-        Ok(ViewOutcome::Line {
+        Ok(ViewOutcome::Projected {
+            anddress,
             ref content,
-            terminator: LineTerminator::Crlf,
-            ..
-        }) if content == "one"
+        }) if content == "one\r\n"
+            && anddress.terminator() == Some(LineTerminator::Crlf)
     ));
 
     let request = SearchRequest::new(
@@ -1334,40 +1299,29 @@ fn host_view_reuses_matching_search_proof_and_falls_back_after_a_miss_or_invalid
 
     assert!(matches!(
         host.view(&file, file.target()),
-        Ok(ViewOutcome::File { ref text, .. }) if text.as_bytes() == source
+        Ok(ViewOutcome::Projected { ref content, .. }) if content.as_bytes() == source
     ));
     assert!(matches!(
         host.view(&paragraph, paragraph.target()),
-        Ok(ViewOutcome::Paragraph { ref text, .. }) if text == "one\r\ntwo\n"
+        Ok(ViewOutcome::Projected { ref content, .. }) if content == "one\r\ntwo\n"
     ));
     assert!(matches!(
         host.view(&line, line.target()),
-        Ok(ViewOutcome::Line {
-            paragraph: Some(ref related),
-            ..
-        }) if related == &paragraph
+        Ok(ViewOutcome::Projected { anddress, .. })
+            if anddress.project(AnddressTarget::Paragraph).unwrap().as_ref()
+                == Some(&paragraph)
     ));
     assert_eq!(
         host.view(&line, AnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph {
-            anddress: paragraph.clone(),
-            text: "one\r\ntwo\n".to_owned(),
-            file: file.clone(),
-        })
+        Ok(projected(paragraph.clone(), b"one\r\ntwo\n"))
     );
     assert_eq!(
         host.view(&line, AnddressTarget::File),
-        Ok(ViewOutcome::File {
-            anddress: file.clone(),
-            text: String::from_utf8(source.to_vec()).unwrap(),
-        })
+        Ok(projected(file.clone(), source))
     );
     assert_eq!(
         host.view(&paragraph, AnddressTarget::File),
-        Ok(ViewOutcome::File {
-            anddress: file.clone(),
-            text: String::from_utf8(source.to_vec()).unwrap(),
-        })
+        Ok(projected(file.clone(), source))
     );
 
     let stale = support::file(file.workspace_coordinate(), "note.txt", b"stale\n");
@@ -1383,7 +1337,7 @@ fn host_view_reuses_matching_search_proof_and_falls_back_after_a_miss_or_invalid
     host.invalidate_source("note.txt").unwrap();
     assert!(matches!(
         host.view(&line, line.target()),
-        Ok(ViewOutcome::Line { ref content, .. }) if content == "one"
+        Ok(ViewOutcome::Projected { ref content, .. }) if content == "one\r\n"
     ));
 
     let untrusted = runtime(&root);
@@ -1392,7 +1346,7 @@ fn host_view_reuses_matching_search_proof_and_falls_back_after_a_miss_or_invalid
     };
     assert!(matches!(
         untrusted.view(&anddresses[0], anddresses[0].target()),
-        Ok(ViewOutcome::Line { ref content, .. }) if content == "one"
+        Ok(ViewOutcome::Projected { ref content, .. }) if content == "one\r\n"
     ));
 }
 
@@ -1435,7 +1389,7 @@ fn host_view_open_and_short_failures_remove_only_proof_and_preserve_anchor() {
         }
         assert!(matches!(
             host.view_anchored(&handle, AnddressTarget::File),
-            Ok(ViewOutcome::File { text, .. }) if text == "current\n"
+            Ok(ViewOutcome::Projected { content, .. }) if content == "current\n"
         ));
 
         fs::rename(&source_path, &parked).unwrap();

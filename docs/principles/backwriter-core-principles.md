@@ -129,8 +129,9 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
     into the sole `StructuralCursor` and removes Search's position and
     occurrence wrappers. Search finds and returns Anddresses directly; View
     projects then range-reads, Check checks currentness, Apply publishes
-    mutation, and Anchor alone carries live continuity. Gate 4 still owns
-    removal of bounded View relation/range scans, and Gate 5 owns the private
-    composition View. No compatibility path is retained. This consolidation
+    mutation, and Anchor alone carries live continuity. Gate 4 removes bounded
+    View relation/range scans and returns only the projected v5 address plus
+    exact Content or `RelationAbsent`; Gate 5 owns the private composition
+    View. No compatibility path is retained. This consolidation
     creates no history, relocation, registry, watcher, retry, merge, rollback,
     or implicit workflow.

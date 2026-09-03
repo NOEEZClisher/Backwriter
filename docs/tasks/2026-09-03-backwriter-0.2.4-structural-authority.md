@@ -149,7 +149,7 @@ Implemented evidence:
   peak RSS changes from 215,660 KiB to 166,404 KiB after removing the duplicate
   occurrence/position carrier. Timing is descriptive and is not a gate.
 
-## Gate 4 — View Runtime and single/batch Adapter
+## Gate 4 — View Runtime and single/batch Adapter — complete
 
 Acceptance:
 
@@ -166,6 +166,31 @@ Acceptance:
 Invalid projection, stale state, unavailable source, inconsistent geometry,
 resource failure, or one member failure rejects the required scope without a
 partial batch. Exact CLI/JSON representation is decided here.
+
+Closure:
+
+- `Anddress::project` resolves every self/ancestor request before I/O. A
+  File-parent Line projected to Paragraph returns `RelationAbsent`; the three
+  downward relations return `InvalidInput` before source access.
+- ordinary and anchored direct execution validate current source state once
+  while capturing only the requested ranges. A matching Host proof opens one
+  handle and reads only those ranges. `DirectViewProjection`, `LineRelation`,
+  Paragraph boundary scans, and View-owned address construction are removed.
+- `ViewOutcome` is exactly `Projected { anddress, content } | RelationAbsent`.
+  The Content is the projected exact range, including a Line terminator;
+  ancestors and terminators remain available through v5 algebra.
+- one-shot View accepts one self projection or explicit `--as`; JSON batch
+  accepts a nonempty Anddress collection plus one `--as` projection. Both use
+  the hard-cut `bw.cli.view.v2` outcomes envelope and one item writer. Human
+  and raw single output remain byte-identical.
+- public regressions cover all six allowed and three downward relations,
+  RelationAbsent, every terminator, Unicode, range edges, order, duplicates,
+  source grouping, proof hit/miss, and all-or-none failure. Search, Edit/Apply,
+  Check, Data retention, and Anchor continuity meanings remain unchanged.
+- a task-local native harness verifies one ordered File `view_batch` over
+  exactly 200,000 admitted one-byte sources and 200,000 Search results, with
+  input-equal projected Anddresses and exact `x` Content for every outcome;
+  the harness and generated files are removed after the run.
 
 ## Gate 5 — Edit, Apply, Anchor, and private View removal
 

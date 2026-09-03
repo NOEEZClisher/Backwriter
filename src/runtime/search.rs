@@ -1263,7 +1263,7 @@ mod tests {
         );
         assert!(matches!(
             host.view_anchored(&other_handle, AnddressTarget::File),
-            Ok(ViewOutcome::File { text, .. }) if text == "two\n"
+            Ok(ViewOutcome::Projected { content, .. }) if content == "two\n"
         ));
 
         exact_file(&host, "note.txt");

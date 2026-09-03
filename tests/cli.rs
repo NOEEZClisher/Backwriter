@@ -15,7 +15,7 @@ use std::{
 
 use backwriter::{
     backwriter::{
-        anddress::{Anddress, AnddressTarget as PublicAnddressTarget, LineTerminator},
+        anddress::{Anddress, AnddressTarget as PublicAnddressTarget},
         check::CheckOutcome,
         search::{SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget},
         view::ViewOutcome,
@@ -441,66 +441,35 @@ fn assert_search_json(output: Output, expected: &SearchOutcome) {
 }
 
 fn expected_view_json(outcome: &ViewOutcome) -> Vec<u8> {
-    let mut output = b"{\"schema\":\"bw.cli.view.v1\",\"kind\":".to_vec();
-    match outcome {
-        ViewOutcome::File { text, .. } => {
-            output.extend_from_slice(b"\"file\",\"text\":");
-            serde_json::to_writer(&mut output, text).unwrap();
+    expected_view_json_many(std::slice::from_ref(outcome))
+}
+
+fn expected_view_json_many(outcomes: &[ViewOutcome]) -> Vec<u8> {
+    let mut output = b"{\"schema\":\"bw.cli.view.v2\",\"outcomes\":[".to_vec();
+    for (index, outcome) in outcomes.iter().enumerate() {
+        if index != 0 {
+            output.push(b',');
         }
-        ViewOutcome::Paragraph { text, file, .. } => {
-            output.extend_from_slice(b"\"paragraph\",\"text\":");
-            serde_json::to_writer(&mut output, text).unwrap();
-            output.extend_from_slice(b",\"file\":");
-            output.extend_from_slice(&file.encode().unwrap());
-        }
-        ViewOutcome::Line {
-            content,
-            terminator,
-            file,
-            paragraph,
-            ..
-        } => {
-            output.extend_from_slice(b"\"line\",\"content\":");
-            serde_json::to_writer(&mut output, content).unwrap();
-            output.extend_from_slice(match terminator {
-                LineTerminator::None => b",\"terminator\":\"none\",\"file\":",
-                LineTerminator::Lf => b",\"terminator\":\"lf\",\"file\":",
-                LineTerminator::Cr => b",\"terminator\":\"cr\",\"file\":",
-                LineTerminator::Crlf => b",\"terminator\":\"crlf\",\"file\":",
-            });
-            output.extend_from_slice(&file.encode().unwrap());
-            output.extend_from_slice(b",\"paragraph\":");
-            if let Some(paragraph) = paragraph {
-                output.extend_from_slice(&paragraph.encode().unwrap());
-            } else {
-                output.extend_from_slice(b"null");
+        match outcome {
+            ViewOutcome::Projected { anddress, content } => {
+                output.extend_from_slice(b"{\"outcome\":\"projected\",\"anddress\":");
+                output.extend_from_slice(&anddress.encode().unwrap());
+                output.extend_from_slice(b",\"content\":");
+                serde_json::to_writer(&mut output, content).unwrap();
+                output.extend_from_slice(b"}");
+            }
+            ViewOutcome::RelationAbsent => {
+                output.extend_from_slice(b"{\"outcome\":\"relation-absent\"}");
             }
         }
-        ViewOutcome::RelationAbsent => panic!("CLI self-View relation exists"),
     }
-    output.extend_from_slice(b"}\n");
+    output.extend_from_slice(b"]}\n");
     output
 }
 
 fn expected_human_view(outcome: &ViewOutcome) -> Vec<u8> {
     match outcome {
-        ViewOutcome::File { text, .. } | ViewOutcome::Paragraph { text, .. } => {
-            text.as_bytes().to_vec()
-        }
-        ViewOutcome::Line {
-            content,
-            terminator,
-            ..
-        } => {
-            let mut output = content.as_bytes().to_vec();
-            output.extend_from_slice(match terminator {
-                LineTerminator::None => b"",
-                LineTerminator::Lf => b"\n",
-                LineTerminator::Cr => b"\r",
-                LineTerminator::Crlf => b"\r\n",
-            });
-            output
-        }
+        ViewOutcome::Projected { content, .. } => content.as_bytes().to_vec(),
         ViewOutcome::RelationAbsent => panic!("CLI self-View relation exists"),
     }
 }
@@ -511,47 +480,18 @@ fn assert_view_json(output: Output, expected: &ViewOutcome) {
     assert!(output.stderr.is_empty());
 
     let document: Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(document["schema"], "bw.cli.view.v1");
+    assert_eq!(document["schema"], "bw.cli.view.v2");
+    let items = document["outcomes"].as_array().unwrap();
+    assert_eq!(items.len(), 1);
+    let document = &items[0];
     match expected {
-        ViewOutcome::File { text, .. } => {
-            assert_eq!(document["kind"], "file");
-            assert_eq!(document["text"], text.as_str());
-        }
-        ViewOutcome::Paragraph { text, file, .. } => {
-            assert_eq!(document["kind"], "paragraph");
-            assert_eq!(document["text"], text.as_str());
-            let encoded = serde_json::to_vec(&document["file"]).unwrap();
-            assert_eq!(Anddress::decode(&encoded).unwrap(), *file);
-        }
-        ViewOutcome::Line {
-            content,
-            terminator,
-            file,
-            paragraph,
-            ..
-        } => {
-            assert_eq!(document["kind"], "line");
+        ViewOutcome::Projected { anddress, content } => {
+            assert_eq!(document["outcome"], "projected");
             assert_eq!(document["content"], content.as_str());
-            assert_eq!(
-                document["terminator"],
-                match terminator {
-                    LineTerminator::None => "none",
-                    LineTerminator::Lf => "lf",
-                    LineTerminator::Cr => "cr",
-                    LineTerminator::Crlf => "crlf",
-                }
-            );
-            let encoded = serde_json::to_vec(&document["file"]).unwrap();
-            assert_eq!(Anddress::decode(&encoded).unwrap(), *file);
-            match paragraph {
-                Some(paragraph) => {
-                    let encoded = serde_json::to_vec(&document["paragraph"]).unwrap();
-                    assert_eq!(Anddress::decode(&encoded).unwrap(), *paragraph);
-                }
-                None => assert!(document["paragraph"].is_null()),
-            }
+            let encoded = serde_json::to_vec(&document["anddress"]).unwrap();
+            assert_eq!(Anddress::decode(&encoded).unwrap(), *anddress);
         }
-        ViewOutcome::RelationAbsent => panic!("CLI self-View relation exists"),
+        ViewOutcome::RelationAbsent => assert_eq!(document["outcome"], "relation-absent"),
     }
 }
 
@@ -1299,6 +1239,84 @@ fn one_shot_view_json_streams_exact_v5_objects_and_preserves_human_output() {
 }
 
 #[test]
+fn one_shot_view_projection_and_batch_share_the_v2_item_schema() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    let source = "one\n \t\nlast\r\n";
+    write(root.path(), "note.txt", source);
+    let line = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::zero(),
+            exact_extent: "one\n".to_owned(),
+        },
+    );
+    let separator = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::one(),
+            exact_extent: " \t\n".to_owned(),
+        },
+    );
+
+    let human = run(
+        root.path(),
+        &["view", "anddress", &line, "--as", "paragraph"],
+    );
+    assert!(human.status.success());
+    assert_eq!(human.stdout, b"one\n");
+    assert!(human.stderr.is_empty());
+
+    let inputs = [
+        Anddress::decode(line.as_bytes()).unwrap(),
+        Anddress::decode(separator.as_bytes()).unwrap(),
+        Anddress::decode(line.as_bytes()).unwrap(),
+    ];
+    let runtime = WorkspaceRuntime::open(
+        root.path(),
+        WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+    )
+    .unwrap();
+    let expected = runtime
+        .view_batch(&inputs, PublicAnddressTarget::Paragraph)
+        .unwrap();
+    assert!(matches!(expected[1], ViewOutcome::RelationAbsent));
+    assert_eq!(expected[0], expected[2]);
+
+    let output = run(
+        root.path(),
+        &[
+            "--json",
+            "view",
+            "anddress",
+            &line,
+            &separator,
+            &line,
+            "--as",
+            "paragraph",
+        ],
+    );
+    assert!(output.status.success());
+    assert_eq!(output.stdout, expected_view_json_many(&expected));
+    assert!(output.stderr.is_empty());
+
+    let document: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(document["schema"], "bw.cli.view.v2");
+    let outcomes = document["outcomes"].as_array().unwrap();
+    assert_eq!(outcomes.len(), 3);
+    assert_eq!(outcomes[1]["outcome"], "relation-absent");
+    for (actual, expected) in outcomes.iter().zip(&expected) {
+        if let ViewOutcome::Projected { anddress, content } = expected {
+            let encoded = serde_json::to_vec(&actual["anddress"]).unwrap();
+            assert_eq!(Anddress::decode(&encoded).unwrap(), *anddress);
+            assert_eq!(actual["content"], content.as_str());
+        }
+    }
+}
+
+#[test]
 fn one_shot_view_json_rejects_invalid_forms_and_keeps_errors_off_stdout() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "coordinate.txt", "coordinate\n");
@@ -1315,6 +1333,17 @@ fn one_shot_view_json_rejects_invalid_forms_and_keeps_errors_off_stdout() {
         root.path(),
         &["--json", "view", "anddress", &operand, "extra"],
     ));
+    for arguments in [
+        vec!["--json", "view", "anddress", &operand, "--as"],
+        vec!["--json", "view", "anddress", &operand, "--as", "block"],
+        vec![
+            "--json", "view", "anddress", &operand, "--as", "file", "extra",
+        ],
+        vec!["view", "anddress", &operand, &operand, "--as", "file"],
+        vec!["--json", "view", "anddress", &operand, &operand],
+    ] {
+        assert_usage(run(root.path(), &arguments));
+    }
     assert_usage(run(root.path(), &["view", "anddress", &operand, "--raw"]));
 
     let stale = view_operand(
@@ -1359,10 +1388,10 @@ fn one_shot_view_json_rejects_invalid_forms_and_keeps_errors_off_stdout() {
 fn one_shot_view_json_writer_has_no_value_clone_or_collection_path() {
     let source = include_str!("../src/bin/bw.rs");
     let writer = source
-        .split("fn write_view_json")
-        .nth(1)
+        .rsplit_once("fn write_view_json")
         .unwrap()
-        .split("fn write_check")
+        .1
+        .split("fn raw_check_status")
         .next()
         .unwrap();
     assert!(writer.contains("serde_json::to_writer"));
@@ -1800,7 +1829,9 @@ fn one_shot_edit_exact_noop_preserves_bytes_and_inode_and_reuses_existing_seams(
         .0;
     let decode = edit.find("decode_anddress(encoded)").unwrap();
     let open = edit.find("open_runtime(workspace, admissions)").unwrap();
-    let view = edit.find("run_view(&runtime, &anddress)").unwrap();
+    let view = edit
+        .find("run_view(&runtime, &anddress, anddress.target())")
+        .unwrap();
     let construct = edit.find("Edit::Replace").unwrap();
     let validate = edit.find("edit.validate()").unwrap();
     let apply = edit.find(".apply_replace(&edit)").unwrap();

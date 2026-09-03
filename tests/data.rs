@@ -24,6 +24,13 @@ fn address(path: &str) -> Anddress {
     support::file(&"a".repeat(64), path, b"")
 }
 
+fn view(path: &str, content: &str) -> ViewOutcome {
+    ViewOutcome::Projected {
+        anddress: address(path),
+        content: content.to_owned(),
+    }
+}
+
 fn occurrence(value: Anddress) -> Anddress {
     value
 }
@@ -101,9 +108,9 @@ fn typed_store_get_pairs_accept_every_native_payload() {
     let pick = PickOutcome::Selected {
         anddresses: vec![address.clone()],
     };
-    let view = ViewOutcome::File {
+    let view = ViewOutcome::Projected {
         anddress: address.clone(),
-        text: "snapshot".to_owned(),
+        content: "snapshot".to_owned(),
     };
     let (check_anddress, check_search, check_pick) = check_outcomes();
 
@@ -176,15 +183,7 @@ fn list_yields_only_borrowed_kind_name_pairs_without_order_authority() {
     store.store_anddress(&one, address("one.txt")).unwrap();
     store.store_search(&two, SearchOutcome::Empty).unwrap();
     store.store_pick(&three, PickOutcome::Empty).unwrap();
-    store
-        .store_view(
-            &four,
-            ViewOutcome::File {
-                anddress: address("four.txt"),
-                text: String::new(),
-            },
-        )
-        .unwrap();
+    store.store_view(&four, view("four.txt", "")).unwrap();
     store.store_check_anddress(&five, check_anddress).unwrap();
     store.store_check_search(&six, check_search).unwrap();
     store.store_check_pick(&seven, check_pick).unwrap();
@@ -240,19 +239,10 @@ fn remove_drops_only_the_selected_binding() {
     let removed = name("removed");
     let retained = name("retained");
     let missing = name("missing");
-    let retained_value = ViewOutcome::File {
-        anddress: address("retained.txt"),
-        text: "keep".to_owned(),
-    };
+    let retained_value = view("retained.txt", "keep");
 
     store
-        .store_view(
-            &removed,
-            ViewOutcome::File {
-                anddress: address("removed.txt"),
-                text: "drop".to_owned(),
-            },
-        )
+        .store_view(&removed, view("removed.txt", "drop"))
         .unwrap();
     store.store_view(&retained, retained_value.clone()).unwrap();
     assert_eq!(
@@ -282,10 +272,7 @@ fn rename_and_remove_dispatch_each_data_kind_without_cross_kind_aliasing() {
     let pick = PickOutcome::Selected {
         anddresses: vec![address("pick.txt")],
     };
-    let view = ViewOutcome::File {
-        anddress: address("view.txt"),
-        text: "view".to_owned(),
-    };
+    let view = view("view.txt", "view");
     let (check_anddress, check_search, check_pick) = check_outcomes();
 
     store.store_anddress(&old, anddress.clone()).unwrap();
@@ -406,10 +393,7 @@ fn rename_and_remove_dispatch_each_data_kind_without_cross_kind_aliasing() {
 fn duplicate_view_store_returns_the_original_owned_allocation() {
     let mut store = DataStore::new();
     let entry_name = name("view");
-    let stored = ViewOutcome::File {
-        anddress: address("stored.txt"),
-        text: "stored".to_owned(),
-    };
+    let stored = view("stored.txt", "stored");
     store.store_view(&entry_name, stored.clone()).unwrap();
 
     let mut text = String::with_capacity(64);
@@ -420,13 +404,13 @@ fn duplicate_view_store_returns_the_original_owned_allocation() {
 
     match store.store_view(
         &entry_name,
-        ViewOutcome::File {
+        ViewOutcome::Projected {
             anddress: address("duplicate.txt"),
-            text,
+            content: text,
         },
     ) {
         Err(StoreError::AlreadyExists {
-            value: ViewOutcome::File { text, .. },
+            value: ViewOutcome::Projected { content: text, .. },
         }) => {
             assert_eq!(text.as_ptr(), text_pointer);
             assert_eq!(text.capacity(), text_capacity);

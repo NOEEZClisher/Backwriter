@@ -29,8 +29,8 @@ geometry. Exact field order and error classification are owned by the active
 address model. Gate 3 installs one private allocation-bounded
 `StructuralCursor` for complete-source CR, LF, CRLF, no-EOL, body-class, Line,
 and blank-line-bounded Paragraph framing. Search, source-state observation,
-direct View relation validation, and prospective Apply projection consume its
-events instead of owning complete-source framers.
+and prospective Apply projection consume its events instead of owning
+complete-source framers.
 
 Capabilities retain only their distinct work:
 
@@ -38,9 +38,8 @@ Capabilities retain only their distinct work:
   asks the Issuer for result addresses, and returns those Anddresses directly
   as `SearchOutcome::Found { anddresses }`.
 - View validates the requested Anddress projection, confirms current source
-  state, and reads the projected exact byte range. Gate 3 routes its direct
-  relation verification through the common cursor; Gate 4 removes the retained
-  bounded relation/range scanners.
+  state, and reads the projected exact byte range. v5 geometry supplies every
+  self/ancestor relation without a View-owned relation scanner.
 - Check reports currentness and does not parse targets.
 - Apply validates an Edit, prepares and publishes the mutation, and consumes
   prospective cursor/Issuer geometry for any exact resulting address.
@@ -50,9 +49,9 @@ Capabilities retain only their distinct work:
 Gate 2 removes public raw and capability-local address constructors. Gate 3
 removes Search's occurrence/position carrier and duplicate complete-source
 structural projections. Human and machine Search positions derive only from
-v5 Anddress geometry. The retained bounded View range/relation scanners and
-one-shot Edit's private View remain temporary consumers until Gates 4–5 remove
-them. Existing admission/no-follow
+v5 Anddress geometry. Gate 4 removes the bounded View range/relation scanners;
+one-shot Edit's private View remains a temporary consumer until Gate 5 removes
+it. Existing admission/no-follow
 observation, literal matcher, batch source grouping, fixed-scratch staging,
 prospective provenance, Host proof, publication, and Anchor reflection stay
 because they have distinct consumers.
@@ -449,25 +448,27 @@ WorkspaceRuntime::view_anchored(&mut self, &Anchedress, AnddressTarget) -> Resul
 ```
 
 The requested `AnddressTarget` reuses the existing target-kind representation;
-there is no request wrapper or relation enum. Source-less v4 validation precedes
+there is no request wrapper or relation enum. Source-less v5 validation precedes
 relation validation. Unsupported input version remains `UnsupportedVersion`;
 another raw input violation or a downward relation is `InvalidInput`, and both
-precede source I/O. File, Paragraph, and Line outcomes include the projected
-current v4 Anddress plus exact Content from the same accepted observation.
-Their existing related File and optional Paragraph values remain. When a
+precede source I/O. The sole successful target outcome is
+`ViewOutcome::Projected { anddress, content }`, containing the projected current
+v5 Anddress plus its exact range Content from the same accepted observation.
+Ancestors and Line terminators remain available through Anddress algebra rather
+than duplicated result fields. When a
 Line-to-Paragraph request names a separator Line or a raw-valid nonstructural
 Line with no containing current Paragraph, it succeeds as
 `ViewOutcome::RelationAbsent`; this is not `Unavailable` or `InvalidInput`.
 Batch applies one requested projection to an ordered borrowed input collection,
 preserves input order and duplicates, and is all-or-nothing. Empty input returns
-an empty vector without source access. Every source-less v4 and relation check
+an empty vector without source access. Every source-less v5 and relation check
 runs in input order before any Runtime preflight or I/O; coordinate, spill, and
 admission preflight then covers the complete collection. Inputs are grouped by
 workspace coordinate and logical path without changing returned order. An
 Untrusted or Host-proof-miss group opens one retained source handle and feeds
 every target projection from one direct observation. A matching Host-proof
-group selects the proof once, opens one source handle, and applies the existing
-trusted range and Paragraph scanner to every member. Any validation,
+group selects the proof once, opens one source handle, and reads only each
+requested exact range. Any validation,
 allocation, open, read, UTF-8/NUL, source-state, range, or resource failure
 discards all provisional outcomes. A proof mismatch occurs before I/O and
 preserves that proof; a matching trusted source or resource failure invalidates
@@ -731,10 +732,11 @@ automatic Store, has no latest slot, and performs no automatic update.
 
 The completed one-shot Search, View, Check, and Edit JSON projections are
 Adapter-only. Their compact envelopes identify `bw.cli.search.v2`,
-`bw.cli.view.v1`, `bw.cli.check.v1`, and `bw.cli.edit.v1`. Search identifies each occurrence by logical path, target
+`bw.cli.view.v2`, `bw.cli.check.v1`, and `bw.cli.edit.v1`. Search identifies each result by logical path, target
 kind, applicable current Line number or Paragraph Line range, and its directly
-embedded existing encoded v4 Anddress object. View embeds its related v4 File
-and optional Paragraph objects directly, and Check embeds its filtered v4
+embedded encoded v5 Anddress object. View uses one ordered `outcomes` array for
+single and batch requests; each item is either `projected` with the exact v5
+Anddress and Content or `relation-absent`. Check embeds its filtered v5
 Anddress object directly when present. Edit embeds the one native receipt
 address directly or uses `null`. They create no Core wire, value model,
 Search/View/Check/Edit state, result collection, or capability workflow. The
@@ -779,10 +781,10 @@ SearchInputError>`; source-less path rejection is
 private instead of exposing a second request enum or a stringly query mode.
 
 For a Line target, every matching current Line is returned exactly once as its
-v4 source identity and exact range. For a Paragraph target, every current
+v5 source identity and exact range. For a Paragraph target, every current
 Paragraph containing one or more matching text Lines is returned exactly once
-as its v4 range; a matching separator Line does not create a Paragraph. For a
-File target, any matching Line, including a separator, returns the current v4
+as its v5 range; a matching separator Line does not create a Paragraph. For a
+File target, any matching Line, including a separator, returns the current v5
 complete-source range exactly once. A parent has `FullLine` tier when any included match is
 `FullLine`, otherwise `Substring`.
 
@@ -803,25 +805,27 @@ currentness, observation, continuity, or any other field. v4 has no
 `PickRelation`, `related_to`, compatibility alias, or generic single-variant
 relation enum. Pick does not read text or call Runtime to replace them.
 
-## Implemented 0.2.0 View behavior
+## Implemented View behavior
 
 View V1 has one single-input seam and one ordered borrowed-collection seam,
 each with one requested existing target kind:
 `WorkspaceRuntime::view(&Anddress, AnddressTarget)` and
 `WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)`. Its admitted
 capability-relative no-follow access and File/Paragraph/Line text projection
-shape remain reusable. Its former v2 evidence-based construction is rejected;
-successful related results use v4 source identity and ranges. View stays
+shape remain reusable. Its former v2 evidence-based construction and v4 result
+variants are rejected; successful results use v5 source identity and geometry.
+View stays
 current-only, result/history-stateless, non-mutating, and without arbitrary
 range, descendant, or partial behavior. Batch preserves order and duplicates,
 groups by exact source key, and makes one accepted direct observation per
 Untrusted or Host-proof-miss logical source rather than invoking single View
-for every item. Matching Host groups reuse one handle and the trusted scanner.
+for every item. Matching Host groups reuse one handle and read only requested
+exact ranges.
 
-View first performs source-less v4 validation and then validates the allowed
+View first performs source-less v5 validation and then validates the allowed
 projection relation before any I/O. It preserves the existing
 `UnsupportedVersion`, `InvalidInput`, and `Unavailable` errors. Unsupported
-version, another invalid source-less v4 input, or a downward projection returns
+version, another invalid source-less v5 input, or a downward projection returns
 the corresponding first two errors. After that validation, every
 coordinate, admission, open, read, UTF-8/NUL, source-state, range-text,
 or resource failure returns `Unavailable`. Batch performs all source-less and
@@ -829,34 +833,30 @@ relation validation before Runtime preflight or I/O and publishes no partial
 vector. View adds no public evidence,
 registry, cache, retry, second read, error, or type.
 
-`ViewOutcome::{File, Paragraph, Line}` now includes an `anddress` member for
-the requested projected target. File carries full text; Paragraph carries exact
-text and its related File; Line carries exact content, terminator, related File,
-and optional containing Paragraph. Every address shares the accepted current
-workspace/path/hash/length identity and uses only its exact range. The fourth
-`RelationAbsent` outcome is valid only for Line-to-Paragraph without a
-containing current Paragraph and carries no fabricated address or Content.
+`ViewOutcome` is exactly
+`Projected { anddress: Anddress, content: String } | RelationAbsent`.
+`Projected` uses the requested v5 target and its complete exact byte range,
+including a Line terminator. `RelationAbsent` is valid only for
+Line-to-Paragraph without a containing Paragraph and carries no fabricated
+address or Content.
 
 A File is current exactly when the input coordinate/path resolves to an
-admitted regular UTF-8, NUL-free source whose complete SHA-256 and byte length
-match and whose range is `[0,length)`. Admission is not raw equality: another
+admitted regular UTF-8, NUL-free source whose complete SHA-256, byte length, and
+Line count match and whose range is `[0,length)`. Admission is not raw equality: another
 Runtime with the same workspace coordinate may use the same value whenever it
 currently admits that path and observes the exact same source state.
 
-A Paragraph or Line is current when the complete source hash and byte length
-match. The validated caller range is then copied directly from the same
+A Paragraph or Line is current when the complete source hash, byte length, and
+Line count match. The projected range is then copied directly from the same
 observation; kind and structural range membership are not separate currentness
 evidence. If the range cuts a UTF-8 scalar and cannot form its public text,
 View returns `Unavailable`.
 
-For a successful Paragraph, the returned File is constructed with the same v4
-source identity from the one-read observation. For a successful Line, its
-returned File shares that identity. The same pass may project an optional
-related Paragraph only when the caller range is exactly one current text Line;
-a separator or caller-built nonstructural Line has no Paragraph. This relation
-does not affect range acceptance or currentness. Re-establishing an identical
-tuple makes only a current lookup succeed. It makes no continuity,
-authenticity, survivor, or historical-identity claim.
+No View-owned constructor or relation scan creates related addresses. The
+projected v5 address already carries the source and parent geometry needed for
+`parent` and `project`. Re-establishing an identical tuple makes only a current
+lookup succeed. It makes no continuity, authenticity, survivor, or
+historical-identity claim.
 
 ## Implemented 0.1.0 Check V1 Runtime authority
 

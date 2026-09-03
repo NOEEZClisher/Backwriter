@@ -1,6 +1,6 @@
 # Backwriter Anddress and Exact Line Model
 
-## Implemented 0.2.4 Gates 2–3 v5 target algebra
+## Implemented 0.2.4 Gates 2–4 v5 target algebra
 
 The source is hard-cut to `artext.backwriter-anddress.v5`. Published and closed
 `0.2.3` remains immutable v4 release evidence; current decode returns
@@ -49,7 +49,9 @@ geometry, so `parent` and `project` neither parse nor reconstruct source
 structure. Gate 3 installs one private allocation-bounded `StructuralCursor`
 for complete-source Line/Paragraph framing. Search emits Anddresses directly,
 and display positions derive from the address algebra rather than a parallel
-position value.
+position value. View calls `project` before I/O and returns that exact projected
+address with its range Content; it neither scans relations nor reconstructs an
+ancestor.
 
 The encoder emits one compact object with this fixed field order:
 
@@ -79,7 +81,8 @@ half-open File-Line ranges; Line numbers are one-based. A downward projection
 returns `Invalid`; Line-to-Paragraph for a File-parent Line is valid but
 returns `None`.
 
-Status: implemented Gate 2 raw-address authority. Published and closed `0.2.3`, the
+Status: implemented Gates 2–4 raw-address and View-projection authority.
+Published and closed `0.2.3`, the
 prior published `0.2.2` and `0.2.1`, and the prior closed public `0.2.0` production release
 implement the v4 algebra and hard cutover below. The closed public `0.1.0` v3
 algebra is preserved later in this document only as immutable release evidence;

@@ -1,6 +1,6 @@
 # Backwriter CLI V1
 
-## 0.2.4 boundary through Gate 3
+## 0.2.4 boundary through Gate 4
 
 Gate 2 changes no CLI syntax, Adapter envelope schema, human formatting,
 parser flow, or executable version. Current source embeds canonical v5 objects
@@ -10,17 +10,16 @@ release evidence. There is no source v4 decoder or parallel Adapter branch.
 
 Gate 3 derives Search Line/Paragraph display positions from v5 Anddress
 geometry, removes the Core `SearchPosition`/`SearchOccurrence` carriers, and
-keeps the Adapter-only v2 envelope byte-exact. The target derives View
-self/ancestor projection from Anddress instead of a Runtime relation scan; and
-lets one-shot Line Edit read the v5 terminator directly instead of privately
-invoking View. Search
-querying/order, View output order and all-or-none batch behavior, Edit receipt
-meaning, raw Session Edit/Apply, and existing output/error boundaries remain
-distinct consumers unless their owning gate proves a change necessary.
+keeps the Adapter-only Search v2 envelope byte-exact. Gate 4 derives View
+self/ancestor projection from Anddress instead of a Runtime relation scan and
+hard-cuts machine View to `bw.cli.view.v2`. One-shot Line Edit still privately
+invokes View until Gate 5. Search querying/order, View output order and
+all-or-none batch behavior, Edit receipt meaning, raw Session Edit/Apply, and
+existing output/error boundaries remain distinct consumers.
 
-The v5 wire is fixed by the address authority. Search position duplication is
-removed; View relation work and one-shot Edit's private View—and any
-corresponding later presentation contraction—belong to Gates 4–5. Stdin
+The v5 wire is fixed by the address authority. Search position duplication and
+View relation work are removed; one-shot Edit's private View belongs to Gate 5.
+Stdin
 transport and splitting `src/bin/bw.rs` remain explicit later decisions. Gate
 2 introduces no alternate command, envelope schema, wrapper, compatibility
 mode, or process lifecycle.
@@ -148,11 +147,11 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     search /file <logical-path>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
-    view anddress <encoded-v4-Anddress>
+    view anddress <encoded-v5-Anddress>... [--as <line|paragraph|file>]
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
-    check anddress <encoded-v4-Anddress>
+    check anddress <encoded-v5-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw
-    view anddress <encoded-v4-Anddress>
+    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]
 ```
 
 The default workspace is the process current working directory. An explicit
@@ -267,46 +266,49 @@ The complete syntax for this slice is:
 
 ```text
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
-    view anddress <encoded-v4-Anddress>
+    [--json|--raw] view anddress <encoded-v5-Anddress>...
+    [--as <line|paragraph|file>]
 ```
 
 View reuses the same global workspace and admission parsing as Search. Its
-operand is exactly one argv value decoded by `Anddress::decode`; it introduces
-no CLI address schema, alias, shorthand, or wrapper. Invalid encoding, version,
-or address is a usage error. Resource, Runtime, source, View, and stdout errors
-are execution errors. `view anchored` and extra operands are explicit usage
-errors in this one-shot form.
+operands are exact argv values decoded by `Anddress::decode`; it introduces no
+CLI address schema, alias, shorthand, or wrapper. One operand without `--as`
+requests self projection. `--as` selects one projection for the complete input
+collection. Multiple operands require both `--json` and `--as`; human and raw
+output remain single-input only. Invalid grammar, encoding, version, or address
+is a usage error. Resource, Runtime, source, View, and stdout errors are
+execution errors. `view anchored` remains a Session-only form.
 
-Human View output contains only the selected target's exact text: File and
-Paragraph write their text unchanged, and Line writes its content followed by
-its exact None/LF/CR/CRLF terminator. It adds no header, automatic newline,
-preview, truncation, raw Anddress, or related File/Paragraph address.
+Human View output contains only the projected target's exact range Content.
+Line Content includes its exact None/LF/CR/CRLF terminator. It adds no header,
+automatic newline, preview, truncation, raw Anddress, or related address.
+`RelationAbsent` has no text and is therefore an execution error in human/raw
+mode.
 
 ### JSON View projection
 
-With the global `--json` flag, View decodes one v4 Anddress, calls the existing
-Runtime View seam once, and writes exactly one compact UTF-8 JSON value followed
-by one LF. Its schema is Adapter-only, not a Core wire. Its fixed key orders are:
+With the global `--json` flag, View decodes one or more v5 Anddresses, invokes
+the single or batch Runtime seam, and writes exactly one compact UTF-8 JSON
+value followed by one LF. Its schema is Adapter-only, not a Core wire. The
+fixed envelope and item key orders are:
 
 ```json
-{"schema":"bw.cli.view.v1","kind":"file","text":"..."}
-{"schema":"bw.cli.view.v1","kind":"paragraph","text":"...","file":<exact-v4-Anddress-object>}
-{"schema":"bw.cli.view.v1","kind":"line","content":"...","terminator":"none|lf|cr|crlf","file":<exact-v4-Anddress-object>,"paragraph":<exact-v4-Anddress-object-or-null>}
+{"schema":"bw.cli.view.v2","outcomes":[{"outcome":"projected","anddress":<exact-v5-Anddress-object>,"content":"..."},{"outcome":"relation-absent"}]}
 ```
 
-`text` and `content` use the existing JSON string writer directly. Related
-File/Paragraph values are their exact existing v4 `Anddress::encode()` objects,
-not strings or new CLI values. Line terminators project only to `none`, `lf`,
-`cr`, or `crlf`; a separator Line has `paragraph:null`. The writer retains no
-JSON `Value`, cloned `ViewOutcome`, complete JSON string, or result collection.
-Encoding resource and stdout failure are execution errors, and a successful
-JSON response contains no diagnostic bytes. The human View projection is
-unchanged.
+Single View uses the same one-item `outcomes` array and item writer as batch.
+`content` uses the existing JSON string writer directly. `anddress` is the
+exact projected v5 `Anddress::encode()` object, not a string or new CLI value;
+its algebra supplies target, parent, and terminator information. Order,
+duplicates, and `RelationAbsent` items are preserved. The writer retains no
+JSON `Value`, cloned `ViewOutcome`, complete JSON string, or second result
+collection. Encoding resource and stdout failure are execution errors, and a
+successful JSON response contains no diagnostic bytes.
 
 ### Raw View projection
 
-With the global `--raw` flag, View performs the same one-v4-Anddress decode and
-one Runtime View call as ordinary View, then uses the existing human View writer
+With the global `--raw` flag, View performs the same single-v5-Anddress decode
+and projection as ordinary View, then uses the existing human View writer
 unchanged. File, Paragraph, and Line stdout is therefore byte-for-byte identical
 to default View, including Unicode and exact None/LF/CR/CRLF/no-EOL terminators.
 It adds no writer, buffer, normalization, header, automatic LF, Core wire, or
@@ -318,10 +320,10 @@ The complete syntax for this slice is:
 
 ```text
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
-    check anddress <encoded-v4-Anddress>
+    check anddress <encoded-v5-Anddress>
 ```
 
-Check shares View's one-value v4 Anddress decoding and global workspace and
+Check shares View's one-value v5 Anddress decoding and global workspace and
 admission parsing. It passes the decoded value directly to
 `WorkspaceRuntime::check`; it introduces no CLI input schema, request, wrapper,
 alias, or retained result. The only successful human outputs are one of
@@ -333,19 +335,19 @@ Check resource, and stdout errors are execution errors. One-shot `check search`,
 
 ### JSON Check projection
 
-With the global `--json` flag, Check decodes one v4 Anddress, calls the existing
+With the global `--json` flag, Check decodes one v5 Anddress, calls the existing
 Runtime Check seam once, and writes exactly one compact UTF-8 JSON value followed
 by one LF. Its schema is Adapter-only, not a Core wire. Its fixed key orders are:
 
 ```json
-{"schema":"bw.cli.check.v1","status":"current","filtered":<exact-v4-Anddress-object>}
+{"schema":"bw.cli.check.v1","status":"current","filtered":<exact-v5-Anddress-object>}
 {"schema":"bw.cli.check.v1","status":"not-current","filtered":null}
-{"schema":"bw.cli.check.v1","status":"unavailable","filtered":<exact-v4-Anddress-object>}
+{"schema":"bw.cli.check.v1","status":"unavailable","filtered":<exact-v5-Anddress-object>}
 ```
 
 The JSON and human writers share the existing raw one-input Check-report
 classification. `current` and `unavailable` contain the exact existing filtered
-v4 `Anddress::encode()` object; `not-current` contains only `filtered:null`.
+v5 `Anddress::encode()` object; `not-current` contains only `filtered:null`.
 An inconsistent report/filtered combination is an execution error before either
 writer emits output. The writer keeps no JSON `Value`, cloned `CheckOutcome`, or
 result collection. The human Check projection is unchanged.
@@ -356,14 +358,14 @@ The exact syntax is:
 
 ```text
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json]
-    edit anddress <encoded-v4-Anddress> <content>
+    edit anddress <encoded-v5-Anddress> <content>
 ```
 
 This is the canonical general editing form. It accepts one host argv Content
-value and optional leading JSON output selection. Search or Pick may provide the encoded v4
+value and optional leading JSON output selection. Search or Pick may provide the encoded v5
 Anddress to a caller, but the CLI requires no caller-visible View, Check,
 Session binding, index, or Core Edit value. It opens one ordinary Untrusted
-Runtime, reuses the existing strict v4 decoder, privately calls Runtime View,
+Runtime, reuses the existing strict v5 decoder, privately calls Runtime View,
 constructs one existing `Edit::Replace`, and calls Runtime's Replace-only
 receipt seam on that same Runtime. Patch Box Gate 6 passes that native result
 to one direct writer. It adds no request type, Core wire, retained state, or

@@ -5,7 +5,7 @@ use std::fs;
 use backwriter::{
     backwriter::{
         anchor::{AnchorError, AnchorOutcome},
-        anddress::{Anddress, AnddressTarget as PublicAnddressTarget},
+        anddress::{Anddress, AnddressTarget as PublicAnddressTarget, LineTerminator},
         apply::{ApplyError, EditReceipt},
         edit::{Edit, Position},
         view::{ViewError, ViewOutcome},
@@ -28,6 +28,14 @@ fn host_runtime(root: &std::path::Path) -> WorkspaceRuntime {
         WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
     )
     .unwrap()
+}
+
+fn line_body<'a>(anddress: &Anddress, content: &'a str) -> &'a str {
+    match anddress.terminator().expect("projected Line terminator") {
+        LineTerminator::None => content,
+        LineTerminator::Lf | LineTerminator::Cr => &content[..content.len() - 1],
+        LineTerminator::Crlf => &content[..content.len() - 2],
+    }
 }
 
 #[derive(Clone)]
@@ -220,17 +228,23 @@ fn host_apply_reflects_file_paragraph_and_line_from_the_installed_after_identity
     );
     assert!(matches!(
         workspace.view_anchored(&file_handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text.as_bytes() == after
+        Ok(ViewOutcome::Projected { content, .. }) if content.as_bytes() == after
     ));
     assert!(matches!(
         workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph { text, file, .. })
-            if text == "one\n" && file == after_file
+        Ok(ViewOutcome::Projected { anddress, content })
+            if content == "one\n"
+                && anddress.project(PublicAnddressTarget::File).unwrap().as_ref()
+                    == Some(&after_file)
     ));
     assert!(matches!(
         workspace.view_anchored(&line_handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, file, paragraph: Some(related), .. })
-            if content == "one" && file == after_file && related == after_paragraph
+        Ok(ViewOutcome::Projected { anddress, content })
+            if line_body(&anddress, &content) == "one"
+                && anddress.project(PublicAnddressTarget::File).unwrap().as_ref()
+                    == Some(&after_file)
+                && anddress.project(PublicAnddressTarget::Paragraph).unwrap().as_ref()
+                    == Some(&after_paragraph)
     ));
 }
 
@@ -256,7 +270,7 @@ fn anchor_is_runtime_local_and_drop_allows_a_fresh_handle() {
     ));
     assert!(matches!(
         workspace.view_anchored(&handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { .. })
+        Ok(ViewOutcome::Projected { .. })
     ));
     drop(handle);
     assert!(matches!(
@@ -297,10 +311,10 @@ fn raw_anchor_tracks_large_file_and_paragraph_without_view_capture() {
         Ok(AnchorOutcome::AlreadyLive)
     ));
     assert!(
-        matches!(workspace.view_anchored(&file_handle, PublicAnddressTarget::File), Ok(ViewOutcome::File { text, .. }) if text.len() == 40_015)
+        matches!(workspace.view_anchored(&file_handle, PublicAnddressTarget::File), Ok(ViewOutcome::Projected { content, .. }) if content.len() == 40_015)
     );
     assert!(
-        matches!(workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph), Ok(ViewOutcome::Paragraph { text, .. }) if text.len() == 20_010)
+        matches!(workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph), Ok(ViewOutcome::Projected { content, .. }) if content.len() == 20_010)
     );
 }
 
@@ -372,7 +386,7 @@ fn invalidation_is_path_exact_and_does_not_read_the_source() {
     fs::rename(&parked_note, fixture.path().join("note.txt")).unwrap();
     assert!(matches!(
         workspace.view_anchored(&note_handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "one\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "one\n"
     ));
     assert_eq!(workspace.invalidate_anchored_source("note.txt"), Ok(()));
     assert_eq!(
@@ -415,7 +429,7 @@ fn invalidation_is_path_exact_and_does_not_read_the_source() {
     fs::rename(&parked_admitted, fixture.path().join("admitted/source.txt")).unwrap();
     assert!(matches!(
         named.view_anchored(&admitted_handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "admitted\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "admitted\n"
     ));
 }
 
@@ -448,7 +462,7 @@ fn stale_anchor_input_preserves_current_binding_and_foreign_handle_is_unavailabl
         Err(AnchorError::Unavailable)
     ));
     assert!(
-        matches!(first_runtime.view_anchored(&handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "one")
+        matches!(first_runtime.view_anchored(&handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "one")
     );
     assert_eq!(
         second_runtime.view_anchored(&handle, PublicAnddressTarget::Line),
@@ -526,7 +540,7 @@ fn apply_reflects_moved_contained_bindings_without_anchoring_copies() {
         })
         .unwrap();
     assert!(
-        matches!(workspace.view_anchored(&contained, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "one")
+        matches!(workspace.view_anchored(&contained, PublicAnddressTarget::Line), Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "one")
     );
     drop(contained);
 
@@ -556,7 +570,7 @@ fn apply_reflects_moved_contained_bindings_without_anchoring_copies() {
         })
         .unwrap();
     assert!(
-        matches!(workspace.view_anchored(&original_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "b")
+        matches!(workspace.view_anchored(&original_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "b")
     );
     let copied = current(
         &workspace,
@@ -613,8 +627,8 @@ fn apply_replacement_uses_only_the_source_target_for_containing_provenance() {
     );
     assert!(matches!(
         workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph { anddress, text, .. })
-            if text == "a\nB\n"
+        Ok(ViewOutcome::Projected { anddress, content })
+            if content == "a\nB\n"
                 && anddress.source_state_hash() == fresh_b.source_state_hash()
                 && anddress.source_byte_length() == fresh_b.source_byte_length()
     ));
@@ -666,7 +680,7 @@ fn apply_replacement_uses_only_the_source_target_for_containing_provenance() {
         .unwrap();
     assert!(matches!(
         workspace.view_anchored(&handle, PublicAnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph { text, .. }) if text == "new\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "new\n"
     ));
 }
 
@@ -721,7 +735,7 @@ fn paragraph_source_membership_keeps_outside_lines_independent() {
     );
     assert!(matches!(
         workspace.view_anchored(&outside_handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, .. }) if content == "b"
+        Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "b"
     ));
     assert!(matches!(
         workspace.anchor(&outside),
@@ -758,7 +772,7 @@ fn paragraph_source_membership_keeps_outside_lines_independent() {
     );
     assert!(matches!(
         workspace.view_anchored(&outside_handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, .. }) if content == "b"
+        Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "b"
     ));
     assert!(matches!(
         workspace.anchor(&current(
@@ -802,8 +816,8 @@ fn copy_source_member_rebinds_a_joined_terminal_line_exactly() {
     );
     assert!(matches!(
         workspace.view_anchored(&handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, terminator, .. })
-            if content == "cc" && terminator == backwriter::backwriter::anddress::LineTerminator::None
+        Ok(ViewOutcome::Projected { anddress, content })
+            if content == "cc" && anddress.terminator() == Some(LineTerminator::None)
     ));
     assert!(matches!(
         workspace.anchor(&current(
@@ -857,8 +871,8 @@ fn copy_source_member_rebinds_across_after_projector_chunk_boundaries() {
         );
         assert!(matches!(
             workspace.view_anchored(&handle, PublicAnddressTarget::Line),
-            Ok(ViewOutcome::Line { content, terminator, .. })
-                if content == expected && terminator == backwriter::backwriter::anddress::LineTerminator::None
+            Ok(ViewOutcome::Projected { anddress, content })
+                if content == expected && anddress.terminator() == Some(LineTerminator::None)
         ));
         assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
             !entry
@@ -894,7 +908,7 @@ fn apply_file_anchor_replace_preserves_the_handle_without_a_relation_pass() {
     );
     assert!(matches!(
         workspace.view_anchored(&handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "after\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "after\n"
     ));
     assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
         !entry
@@ -950,7 +964,7 @@ fn file_replace_preserves_only_the_file_anchor_without_relation_scan() {
     );
     assert!(matches!(
         workspace.view_anchored(&file_handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "one\nthree\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "one\nthree\n"
     ));
     assert_eq!(
         workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph),
@@ -1008,7 +1022,7 @@ fn apply_position_is_geometry_and_does_not_grant_provenance() {
     );
     assert!(matches!(
         workspace.view_anchored(&b_handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, .. }) if content == "b"
+        Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "b"
     ));
 
     let fixture = tempdir().unwrap();
@@ -1049,7 +1063,7 @@ fn apply_position_is_geometry_and_does_not_grant_provenance() {
     );
     assert!(matches!(
         workspace.view_anchored(&c_handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, .. }) if content == "c"
+        Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "c"
     ));
 }
 
@@ -1085,7 +1099,7 @@ fn apply_move_and_copy_keep_only_the_normalized_source_relations() {
         .unwrap();
     assert!(matches!(
         workspace.view_anchored(&b_handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, .. }) if content == "b"
+        Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "b"
     ));
 
     let fixture = tempdir().unwrap();
@@ -1127,11 +1141,11 @@ fn apply_move_and_copy_keep_only_the_normalized_source_relations() {
         })
         .unwrap();
     assert!(
-        matches!(workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph), Ok(ViewOutcome::Paragraph { text, .. }) if text == "c\n")
+        matches!(workspace.view_anchored(&paragraph_handle, PublicAnddressTarget::Paragraph), Ok(ViewOutcome::Projected { content, .. }) if content == "c\n")
     );
     assert!(matches!(
         workspace.view_anchored(&line_handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, .. }) if content == "c"
+        Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "c"
     ));
 }
 
@@ -1189,15 +1203,15 @@ fn same_kind_line_relations_preserve_source_and_outside_anchors() {
     );
     assert!(matches!(
         workspace.view_anchored(&file_handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "b\na\nb\nc\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "b\na\nb\nc\n"
     ));
     assert!(matches!(
         workspace.view_anchored(&source_handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, .. }) if content == "b"
+        Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "b"
     ));
     assert!(matches!(
         workspace.view_anchored(&outside_handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, .. }) if content == "c"
+        Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "c"
     ));
     let copied = current(
         &workspace,
@@ -1265,11 +1279,11 @@ fn same_kind_paragraph_relations_keep_copy_and_delete_dispositions() {
     );
     assert!(matches!(
         workspace.view_anchored(&source_handle, PublicAnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph { text, .. }) if text == "a\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "a\n"
     ));
     assert!(matches!(
         workspace.view_anchored(&outside_handle, PublicAnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph { text, .. }) if text == "c\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "c\n"
     ));
 
     let fixture = tempdir().unwrap();
@@ -1309,7 +1323,7 @@ fn same_kind_paragraph_relations_keep_copy_and_delete_dispositions() {
     );
     assert!(matches!(
         workspace.view_anchored(&outside_handle, PublicAnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph { text, .. }) if text == "b\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "b\n"
     ));
     assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
         !entry
@@ -1350,7 +1364,7 @@ fn apply_rebinds_outside_targets_and_removes_absorbed_or_split_candidates() {
         })
         .unwrap();
     assert!(
-        matches!(workspace.view_anchored(&outside_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "c")
+        matches!(workspace.view_anchored(&outside_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "c")
     );
 
     let fixture = tempdir().unwrap();
@@ -1444,7 +1458,7 @@ fn apply_noop_leaves_live_anchor_continuity_unchanged() {
         "one\nb\n"
     );
     assert!(
-        matches!(workspace.view_anchored(&handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "b")
+        matches!(workspace.view_anchored(&handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "b")
     );
 
     let fixture = tempdir().unwrap();
@@ -1493,13 +1507,13 @@ fn apply_noop_leaves_live_anchor_continuity_unchanged() {
         source
     );
     assert!(
-        matches!(workspace.view_anchored(&file_handle, PublicAnddressTarget::File), Ok(ViewOutcome::File { text, .. }) if text == source)
+        matches!(workspace.view_anchored(&file_handle, PublicAnddressTarget::File), Ok(ViewOutcome::Projected { content, .. }) if content == source)
     );
     assert!(
-        matches!(workspace.view_anchored(&first_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content.len() == 8_191)
+        matches!(workspace.view_anchored(&first_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content).len() == 8_191)
     );
     assert!(
-        matches!(workspace.view_anchored(&second_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content.len() == 8_191)
+        matches!(workspace.view_anchored(&second_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content).len() == 8_191)
     );
     assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
         !entry
@@ -1556,7 +1570,7 @@ fn zero_range_apply_noops_preserve_live_anchor_continuity() {
         workspace.apply(&edit).unwrap();
         assert_eq!(fs::read(fixture.path().join("note.txt")).unwrap(), source);
         assert!(
-            matches!(workspace.view_anchored(&handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "b")
+            matches!(workspace.view_anchored(&handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "b")
         );
     }
 }
@@ -1596,11 +1610,11 @@ fn empty_insert_preserves_live_file_and_line_anchors_after_validation() {
     );
     assert!(matches!(
         workspace.view_anchored(&file_handle, PublicAnddressTarget::File),
-        Ok(ViewOutcome::File { text, .. }) if text == "one\nb\n"
+        Ok(ViewOutcome::Projected { content, .. }) if content == "one\nb\n"
     ));
     assert!(matches!(
         workspace.view_anchored(&line_handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, .. }) if content == "b"
+        Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "b"
     ));
     assert!(fs::read_dir(fixture.path()).unwrap().all(|entry| {
         !entry
@@ -1707,7 +1721,7 @@ fn apply_paragraph_boundary_noop_preserves_anchor_provenance() {
         "one\n \t\nb\n"
     );
     assert!(
-        matches!(workspace.view_anchored(&handle, PublicAnddressTarget::Paragraph), Ok(ViewOutcome::Paragraph { text, .. }) if text == "b\n")
+        matches!(workspace.view_anchored(&handle, PublicAnddressTarget::Paragraph), Ok(ViewOutcome::Projected { content, .. }) if content == "b\n")
     );
 }
 
@@ -1785,7 +1799,7 @@ fn raw_view_never_changes_live_anchor_continuity() {
     );
     assert!(matches!(
         workspace.view_anchored(&handle, PublicAnddressTarget::Line),
-        Ok(ViewOutcome::Line { content, .. }) if content == "one"
+        Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "one"
     ));
 }
 
@@ -1954,7 +1968,7 @@ fn explicit_invalidation_keeps_hard_link_paths_and_reopened_runtimes_separate() 
         Err(ViewError::Unavailable)
     );
     assert!(
-        matches!(workspace.view_anchored(&linked_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Line { content, .. }) if content == "one")
+        matches!(workspace.view_anchored(&linked_handle, PublicAnddressTarget::Line), Ok(ViewOutcome::Projected { anddress, content }) if line_body(&anddress, &content) == "one")
     );
 
     let mut reopened = runtime(fixture.path());

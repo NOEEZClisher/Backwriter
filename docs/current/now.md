@@ -1,9 +1,10 @@
 # Backwriter Current State
 
-## In progress: 0.2.4 structural authority, Gate 3 complete
+## In progress: 0.2.4 structural authority, Gate 4 complete
 
-Gates 2–3 implement the v5 Rust algebra, canonical wire, sole crate-private
-Issuer, common structural cursor, and direct Search result collection.
+Gates 2–4 implement the v5 Rust algebra, canonical wire, sole crate-private
+Issuer, common structural cursor, direct Search result collection, and
+geometry-driven exact-range View.
 Published and closed `0.2.3` remains the sole current Cargo/CLI release
 and immutable v4 distribution; Cargo and `bw version` remain `0.2.3`. There is
 no `0.2.4` artifact, installer, publication, or release claim.
@@ -24,19 +25,24 @@ is self-contained and omits unused geometry. Runtime Search and prospective
 Apply output now carry exact parent/range/count/offset/terminator geometry.
 One allocation-bounded `StructuralCursor` supplies complete-source CR/LF/CRLF/
 no-EOL, body-class, Line, and Paragraph framing to Search, source observation,
-direct View relation validation, and prospective Apply output without changing
-matching, ordering, staging, publication, proof, or Anchor semantics.
+and prospective Apply output without changing matching, ordering, staging,
+publication, proof, or Anchor semantics.
 
-Gate 3 also hard-cuts `SearchOutcome::Found` to direct owned Anddresses and
+Gate 3 hard-cuts `SearchOutcome::Found` to direct owned Anddresses and
 removes the native occurrence/position wrappers. Human and JSON Search bytes,
 order, and duplicate multiplicity are unchanged; every display position now
-derives from v5 geometry. Remaining contraction starts with Gate 4's View
-range/relation scans, followed by Gate 5's one-shot Edit private View. Existing
-matching, batch grouping, publication/provenance, Host proof, and Anchor
-mechanics remain their actual consumers. The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
+derives from v5 geometry. Gate 4 removes View's relation and Paragraph scans:
+every request first uses `Anddress::project`, then confirms currentness and
+returns only `ViewOutcome::Projected { anddress, content }` or
+`RelationAbsent`. Single and batch CLI View share the hard-cut
+`bw.cli.view.v2` item writer; batch requires JSON plus one explicit `--as`
+projection. Existing human/raw single output remains byte-identical. Remaining
+contraction starts with Gate 5's one-shot Edit private View. Existing matching,
+batch grouping, publication/provenance, Host proof, and Anchor mechanics remain
+their actual consumers. The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
 separates authority, implementation, semantic evidence, version readiness, and
-release approval. Remaining View/Edit presentation contraction, stdin, and CLI
-file splitting remain later-gate decisions.
+release approval. Remaining Edit contraction, stdin, and CLI file splitting
+remain later-gate decisions.
 
 ## Published and closed 0.2.3 Patch Box
 

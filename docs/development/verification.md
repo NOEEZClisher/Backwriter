@@ -2,21 +2,25 @@
 
 ## 0.2.4 structural-authority gates
 
-Gate 1 records the consumer baseline. Gates 2–3 hard-cut current source to v5,
+Gate 1 records the consumer baseline. Gates 2–4 hard-cut current source to v5,
 install the sole Issuer and complete-source structural cursor, and contract
-Search results to direct Anddresses while leaving Cargo/CLI version and the
-closed `0.2.3` distribution unchanged. Exact File, Paragraph, text-Line, and
+Search results to direct Anddresses and View to geometry-driven exact-range
+projection while leaving Cargo/CLI version and the closed `0.2.3` distribution
+unchanged. Exact File, Paragraph, text-Line, and
 File-child-Line KATs; strict v4/v3 rejection; source/geometry mutation and
 overflow fail-closure; algebra; shared source identity; every terminator and
 body class; source Line counting; Runtime Search geometry; Apply receipt/Anchor
 projection; and existing semantic regressions are executable tests. Search
-matching and Apply publication paths are unchanged.
+matching and Apply publication paths are unchanged. View has no relation or
+Paragraph scan and returns only `Projected { anddress, content }` or
+`RelationAbsent`.
 
-Gate 3 passes 260 tests on both GNU and musl. Both targets pass offline/locked
+Gate 4 passes the complete suite on both GNU and musl. Both targets pass offline/locked
 all-target check, clippy with warnings denied, and release build; the GNU run
 also records offline/locked metadata and dependency tree plus rustfmt. Cargo,
-lockfile, toolchain, Adapter envelope schemas, and the `0.2.3` executable
-version are unchanged.
+lockfile, toolchain, Search/Check/Edit Adapter envelopes, and the `0.2.3`
+executable version are unchanged. View alone hard-cuts to
+`bw.cli.view.v2` for shared single/batch outcome items.
 
 Every later implementation gate must reject unsupported/invalid structure
 before source mutation, discard provisional results on failure, leave no
@@ -51,6 +55,24 @@ streaming JSON is byte-identical for 256 MiB and 1 GiB one-hit sources and a
 1,048,576-hit source. Candidate peak RSS is 2,640 KiB, 2,504 KiB, and 166,404
 KiB respectively; the parent million-hit peak is 215,660 KiB. These are
 bounded-memory observations, not performance or arbitrary-input promises.
+
+Gate 4's complete GNU suite passes 258 tests. The six allowed projections and
+three downward rejections, File-child-Line `RelationAbsent`, direct/trusted/
+anchored range equality, exact CR/LF/CRLF/no-EOL and Unicode Content, A/B/A
+grouping, duplicates, fail-all behavior, Data retention, and Anchor/Apply
+consumer continuity are executable. Matching Host proof tests read exactly the
+requested range on one handle; proof-miss groups use one complete observation.
+CLI tests parse and re-decode the hard-cut `bw.cli.view.v2` single and batch
+items, preserve order and duplicates, and cover `--as` grammar and
+`RelationAbsent`. The retired relation-scanner-specific tests are removed with
+their production scanner; no compatibility assertion remains.
+
+A task-local native harness creates exactly 200,000 one-byte admitted Files,
+obtains 200,000 ordered File Search results from `d000/f000.txt` through
+`d199/f999.txt`, and passes that collection to one File `view_batch` call. It
+returns exactly 200,000 ordered `Projected` outcomes whose Anddresses equal the
+inputs and whose Content is `x`. The harness, its generated workspace, and its
+build output are removed after verification.
 
 ## 0.2.3 Patch Box Gates 1–8
 

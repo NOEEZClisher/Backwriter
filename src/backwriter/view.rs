@@ -2,26 +2,13 @@
 
 use thiserror::Error;
 
-use crate::backwriter::anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator};
+use crate::backwriter::anddress::{Anddress, AnddressError, AnddressTarget};
 
-#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ViewOutcome {
-    File {
-        anddress: Anddress,
-        text: String,
-    },
-    Paragraph {
-        anddress: Anddress,
-        text: String,
-        file: Anddress,
-    },
-    Line {
+    Projected {
         anddress: Anddress,
         content: String,
-        terminator: LineTerminator,
-        file: Anddress,
-        paragraph: Option<Anddress>,
     },
     /// The requested Line-to-Paragraph relation does not exist.
     RelationAbsent,
@@ -36,34 +23,12 @@ pub enum ViewError {
     Unavailable,
 }
 
-pub(crate) fn validate_request(
+pub(crate) fn project_request(
     anddress: &Anddress,
     projection: AnddressTarget,
-) -> Result<(), ViewError> {
+) -> Result<Option<Anddress>, ViewError> {
     anddress.validate().map_err(map_input_error)?;
-    validate_projection(anddress.target(), projection)
-}
-
-pub(crate) fn validate_projection(
-    input: AnddressTarget,
-    projection: AnddressTarget,
-) -> Result<(), ViewError> {
-    if matches!(
-        (input, projection),
-        (AnddressTarget::File, AnddressTarget::File)
-            | (
-                AnddressTarget::Paragraph,
-                AnddressTarget::Paragraph | AnddressTarget::File
-            )
-            | (
-                AnddressTarget::Line,
-                AnddressTarget::Line | AnddressTarget::Paragraph | AnddressTarget::File
-            )
-    ) {
-        Ok(())
-    } else {
-        Err(ViewError::InvalidInput)
-    }
+    anddress.project(projection).map_err(map_input_error)
 }
 
 fn map_input_error(error: AnddressError) -> ViewError {
