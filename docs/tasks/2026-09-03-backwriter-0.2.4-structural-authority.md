@@ -437,8 +437,9 @@ with the same final source SHA. Production `src/**` is byte-identical to Gate 6,
 297,269 bytes/8,954 lines versus Gate 1's 302,614/9,155. No unexplained
 whole-source read, duplicate result retention, memory, or code-size growth is
 present. Gate 7 therefore advances only Cargo, the root lock entry, version
-KAT, and active status to source-ready `0.2.4`. Gate 8 remains the
-only artifact, installer, manifest, Update, publication, and release authority.
+KAT, and active status to source-ready `0.2.4`. At that Gate 7 decision,
+Gate 8 remained the sole artifact, installer, manifest, Update, publication,
+and release authority.
 
 ## Gate 8 — artifacts and publication — complete
 
