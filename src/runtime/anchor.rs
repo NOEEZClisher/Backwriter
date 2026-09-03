@@ -2,7 +2,7 @@
 
 use crate::backwriter::{
     anchor::{Anchedress, AnchorError, AnchorOutcome},
-    anddress::{Anddress, AnddressError, AnddressTarget},
+    anddress::{Anddress, AnddressTarget},
     view::{ViewError, ViewOutcome, project_request},
 };
 use crate::source::validate_logical_path;
@@ -16,7 +16,6 @@ pub(super) fn anchor(
     runtime: &mut WorkspaceRuntime,
     input: &Anddress,
 ) -> Result<AnchorOutcome, AnchorError> {
-    validate(input)?;
     runtime.prune_dead_anchors();
     let focus = input.clone();
     let mut inputs = path_inputs(runtime, input.logical_path(), focus)?;
@@ -126,14 +125,6 @@ pub(super) fn invalidate_source(
     runtime.prune_dead_anchors();
     runtime.invalidate_source_state(path);
     Ok(())
-}
-
-fn validate(input: &Anddress) -> Result<(), AnchorError> {
-    input.validate().map_err(|error| match error {
-        AnddressError::UnsupportedVersion => AnchorError::UnsupportedVersion,
-        AnddressError::Invalid | AnddressError::Encoding => AnchorError::InvalidInput,
-        AnddressError::Resource => AnchorError::Unavailable,
-    })
 }
 
 fn observe_current(

@@ -2,7 +2,7 @@
 
 ## 0.2.5 encoding and currentness boundary
 
-Gates 1 through 3 preserve the complete published v5 algebra and wire. Exact
+Gates 1 through 4 preserve the complete published v5 algebra and wire. Exact
 source Line count remains a `SourceIdentity` field and currentness requirement. A typed
 address whose hash and byte length match but whose claimed Line count differs
 from the accepted observation or Host proof remains `NotCurrent`. The raw
@@ -11,9 +11,10 @@ observer now derives that count without Paragraph, parent, target geometry, or
 cursor in the same read.
 
 Strict decode and the sole crate-private Issuer remain the only safe
-construction boundaries, and public `validate()` remains strict. Gate 4 may
-remove only repeated validation after a proved typed boundary. It is authorized
-to add:
+construction boundaries, and public `validate()` remains strict. The Issuer
+validates the shared source once and each target geometry once. View, Check,
+and Anchor accept those already typed invariants without repeating validation.
+The public reusable encoding surface is:
 
 ```rust
 pub fn encode_into(&self, output: &mut Vec<u8>) -> Result<(), AnddressError>
@@ -24,8 +25,8 @@ length with checked arithmetic, and fallibly reserves before appending. On
 error its length is zero, although its capacity may remain reusable. On success
 it contains exactly the current fixed-order v5 object and no trailing bytes.
 Existing `encode()` remains and delegates through one newly allocated empty
-vector. This adds no second wire, builder, JSON model, compatibility path, or
-change to the four canonical KAT byte sequences.
+vector to the same private emitter. This adds no second wire, builder, JSON
+model, compatibility path, or change to the four canonical KAT byte sequences.
 
 ## Published and closed 0.2.4 v5 target algebra
 

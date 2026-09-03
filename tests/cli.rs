@@ -937,7 +937,9 @@ fn one_shot_search_json_writer_has_no_value_or_result_clone_path() {
         .next()
         .unwrap();
     assert!(writer.contains("for (index, anddress) in anddresses.iter().enumerate()"));
-    assert!(writer.contains("anddress\n                    .encode()"));
+    assert_eq!(writer.matches("let mut encoded = Vec::new();").count(), 1);
+    assert!(writer.contains(".encode_into(&mut encoded)"));
+    assert!(!writer.contains(".encode()"));
     assert!(writer.contains("serde_json::to_writer(&mut stdout, anddress.logical_path())"));
     assert!(!writer.contains("Value"));
     assert!(!writer.contains("collect("));
@@ -1388,13 +1390,16 @@ fn one_shot_view_json_rejects_invalid_forms_and_keeps_errors_off_stdout() {
 fn one_shot_view_json_writer_has_no_value_clone_or_collection_path() {
     let source = include_str!("../src/bin/bw.rs");
     let writer = source
-        .rsplit_once("fn write_view_json")
+        .split_once("fn write_view_json(")
         .unwrap()
         .1
         .split("fn raw_check_status")
         .next()
         .unwrap();
     assert!(writer.contains("serde_json::to_writer"));
+    assert_eq!(writer.matches("let mut encoded = Vec::new();").count(), 1);
+    assert!(writer.contains(".encode_into(encoded)"));
+    assert!(!writer.contains(".encode()"));
     assert!(!writer.contains("Value"));
     assert!(!writer.contains(".clone()"));
     assert!(!writer.contains("collect("));

@@ -38,14 +38,14 @@ live publication, fresh installation, and explicit public `0.2.3` update are
 complete from Source Authority revision
 `0ee4dcce14da93f925c27a04d0e79051c83fd124`.
 
-## 0.2.5 performance recovery — Gates 1–3 complete
+## 0.2.5 performance recovery — Gates 1–4 complete
 
-Gates 1 through 3 of the
+Gates 1 through 4 of the
 [performance-recovery tracker](docs/tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
-close authority and bulk literal matching. Cargo, `bw version`, artifacts,
-installers, Update, and the public distribution remain published and closed
-`0.2.4`. The governing rule is: semantics stay unified; execution becomes
-specialized again.
+close authority, bulk literal matching, raw/structural observation, and
+canonical encoding reuse. Cargo, `bw version`, artifacts, installers, Update,
+and the public distribution remain published and closed `0.2.4`. The governing
+rule is: semantics stay unified; execution becomes specialized again.
 
 The target preserves v5 fields, algebra, wire bytes, Search/View/Edit output,
 one `StructuralCursor`, one `AnddressIssuer`, single/batch View, fresh Edit
@@ -56,13 +56,18 @@ counter that owns no Paragraph or parent geometry and invokes no structural
 cursor. The structural observer composes the same raw state with the sole
 `StructuralCursor` only for actual Line/Paragraph geometry consumers.
 
-Strict Issuer/decode construction and public `Anddress::validate()` remain.
-Only repeated validation on a proven already typed hot path may be removed.
-Gate 4 is authorized to add public
+Strict decode and public `Anddress::validate()` remain. The sole Issuer now
+validates shared source identity once and each issued target's geometry once.
+View, Check, and Anchor no longer repeat source-less validation after accepting
+an already typed value from strict decode or that Issuer; wire decode, explicit
+validation, Edit validation, and Runtime Apply's defensive validation remain.
+Gate 4 adds public
 `Anddress::encode_into(&mut Vec<u8>) -> Result<(), AnddressError>`: it clears
 the destination, checks and fallibly reserves complete capacity before writing,
 leaves length zero on error, and emits the exact existing canonical v5 bytes on
-success. Existing `encode()` remains and delegates to it.
+success. Existing `encode()` remains and delegates to the same sole writer.
+Search and batch View reuse one operation-local scratch vector; single Edit and
+Check retain their one-address `encode()` use.
 
 Gate 2 replaces the sole matcher's byte-at-a-time Runtime caller with checked
 segment matching, preserves KMP partial state across chunks, and stops matcher
@@ -78,10 +83,10 @@ Apply after-state activates it only for a non-File receipt or live non-File
 Anchor. Fixed A/B/C/D evidence passes the Check, View, 256 MiB Apply, CRLF
 Edit, and 134,217,728-short-Line boundaries without changing v5 or output.
 
-The remaining ordered work is issuance/encoding, chunked pending memory,
-consumer contraction, fixed evidence/source readiness, then separately
-authorized release. Shared Paragraph allocation and chunk size require
-measurement. Do not introduce v6, change v5 or Adapter output, restore
+The remaining ordered work is chunked pending memory, consumer contraction,
+fixed evidence/source readiness, then separately authorized release. Shared
+Paragraph allocation and chunk size require measurement. Do not introduce v6,
+change v5 or Adapter output, restore
 retired carriers/scanners/private View, or add a parser, persistent
 state/index/registry, stdin, CLI split, history, relocation, watcher, merge,
 retry, rollback, or compatibility path.

@@ -353,7 +353,7 @@ fn invalidation_is_path_exact_and_does_not_read_the_source() {
     );
     let invalidator = include_str!("../src/runtime/anchor.rs")
         .split_once("pub(super) fn invalidate_source")
-        .and_then(|(_, invalidator)| invalidator.split_once("fn validate("))
+        .and_then(|(_, invalidator)| invalidator.split_once("fn observe_current"))
         .map(|(invalidator, _)| invalidator)
         .unwrap();
     assert!(invalidator.contains("invalidate_source_state(path)"));

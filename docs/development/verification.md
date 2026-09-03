@@ -2,25 +2,31 @@
 
 ## 0.2.5 performance-recovery gates
 
-Gate 1 is documentation-only. Gates 2 and 3 replace the sole literal matcher's
-per-byte Runtime caller loop with one checked segment operation and move raw
-consumers without structural geometry onto a cursor-free observation path.
-Cargo, lockfile, README, toolchain, v5 wire, and Adapter output remain unchanged. The
+Gate 1 is documentation-only. Gates 2 through 4 replace the sole literal
+matcher's per-byte Runtime caller loop with one checked segment operation and
+move raw consumers without structural geometry onto a cursor-free observation
+path, then consolidate canonical Anddress encoding and proven typed validation.
+Cargo, lockfile, README, toolchain, v5 wire, and Adapter output remain
+unchanged. The
 [tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
 fixes evidence labels, gate order, thresholds, exclusions, and the three
 authority decisions before implementation. Gate 2 passed 258 tests per target;
-Gate 3 passes 261 per target plus all-target check, clippy with warnings denied,
-and release build. Offline/locked metadata and tree plus rustfmt also pass.
+Gate 3 passed 261 and Gate 4 passes 263 per target plus all-target check,
+clippy with warnings denied, and release build. Offline/locked metadata and
+tree plus rustfmt also pass.
 
 Line count remains v5 identity and currentness evidence. Gate 3 retains the
 same-hash/same-length/false-Line-count `NotCurrent` control while proving that
 raw consumers use one minimal same-read Line counter and zero
-`StructuralCursor` work. Strict decode, Issuer validation, public
-`validate()`, and error priority remain. Gate 4 may remove only proved typed
-revalidation and must prove that `encode_into` clears its buffer, reserves
+`StructuralCursor` work. Strict decode, public `validate()`, and error
+priority remain. The sole Issuer validates shared source once and each target
+geometry once; typed View, Check, and Anchor do not repeat that source-less
+validation. Gate 4 proves that `encode_into` clears its buffer, reserves
 fallibly before output, leaves length zero on error, reuses capacity, and emits
 the exact existing File, Paragraph, Paragraph-parent Line, and File-parent Line
-KAT bytes. Existing `encode()` must delegate and remain byte-exact.
+KAT bytes. Existing `encode()` delegates and remains byte-exact. Search and
+batch View structurally own one reusable operation-local scratch, while
+single-address Edit and Check retain their distinct one-address encoder use.
 
 Gate-specific evidence is cumulative:
 
@@ -97,6 +103,34 @@ SHA-256 `cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf`.
 The native and Edit CSV SHA-256 values are
 `d16c8eaf2992e6dff787bc844da7e3cdb6bb7e00813ed355018f3669b1c0b5a8`
 and `bd1446554c9c9e09c2dfbb7bc87440c988b42f86f3404d0ba2de1192829575da`.
+
+Gate 4 compares committed Gate 3
+D=`042cc9e7f6dfe6faf23937367ec02446693a1d2d` with E as D plus the exact
+sampled production delta, SHA-256
+`e2dbdcf529f14009b9a4c6caefc88ace414feae10eaf2c0769b2d8ca471b162c`.
+The fixed host uses CPU 0, `powersave`, tmpfs, Rust/Cargo 1.95.0, one warm-up,
+seven crossed samples, and nearest-rank p95.
+
+| Gate 4 cell | D median/p95 | E median/p95 | D/E allocations per result | D/E peak HWM KiB |
+| --- | ---: | ---: | ---: | ---: |
+| one Line encode | 4,824/6,408 ns | 3,283/4,771 ns | 30/0 | n/a |
+| 1,048,576 Line encode | 698.879/701.466 ns | 256.217/256.510 ns | 30/0 | n/a |
+| 1,048,576 File encode | 496.660/500.301 ns | 166.140/170.774 ns | 17/0 | n/a |
+| 1,048,576-result CLI Search | 0.85/0.87 s | 0.21/0.22 s | not claimed | 166,544/166,544 |
+| native 200,000-File Search | 545.077/549.280 ms | 522.292/531.186 ms | not claimed | 126,588/126,716 |
+| batch 200,000-File View | 669.651/673.911 ms | 659.558/666.399 ms | not claimed | 162,816/163,244 |
+
+Every D/E output is exact. The million-result CLI object is 630,800,294 bytes
+with SHA-256
+`fcaceecf33c02bc382a25cce862dff97145f4c1941f04b0c52a269068672890a`;
+native Search and batch View result digests are
+`289912c04cc30f3a11126683a421cf8431f7d386ca89821749567887c019082e`
+and `bcb333381293bb186f643565298d36783f0bd1913aaf3f8c737bd5cc5e02f958`.
+The roughly 630 MB CLI stream is Adapter output, not native engine memory, and
+the zero allocation evidence applies only to repeated canonical address
+encoding. Production grows by 12 bytes/31 lines from Gate 3 and remains
+2.42%/2.71% over B, inside but not renewing the existing direct-evidence
+allowance.
 
 ## 0.2.4 structural-authority gates
 

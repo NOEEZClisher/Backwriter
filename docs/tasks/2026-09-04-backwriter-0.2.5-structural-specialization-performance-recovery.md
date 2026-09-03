@@ -1,8 +1,9 @@
 # Backwriter 0.2.5 Structural Specialization and Performance Recovery
 
-Status: Gates 1 and 2 complete. Bulk literal matching is implemented and
-verified. Cargo, `bw version`, artifacts, installers, Update, and the public
-distribution remain published and closed `0.2.4`.
+Status: Gates 1 through 4 complete. Bulk literal matching, raw/structural
+observation, and canonical encoding reuse are implemented and verified. Cargo,
+`bw version`, artifacts, installers, Update, and the public distribution
+remain published and closed `0.2.4`.
 
 This tracker resolves the planning questions preserved in the companion
 [source note](2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery-source.md)
@@ -32,6 +33,10 @@ not a structural redesign.
 - **C** is the Gate 2 candidate built from
   `0b7fbbd9d06c0f2417374d428089232704c49b8b` plus the exact Gate 2 Search
   diff. A future comparison must not relabel A or B.
+- **D** is the committed Gate 3 revision
+  `042cc9e7f6dfe6faf23937367ec02446693a1d2d`.
+- **E** is D plus the exact sampled Gate 4 production delta, SHA-256
+  `e2dbdcf529f14009b9a4c6caefc88ace414feae10eaf2c0769b2d8ca471b162c`.
 
 The B production baseline is 297,269 bytes and 8,954 lines. GNU and musl each
 have a closed 258-test `0.2.4` result.
@@ -63,15 +68,15 @@ and Issuer validation remain strict, and public `Anddress::validate()` remains
 available and strict. Unsupported-version, encoding, invalid-geometry, and
 resource classifications do not change.
 
-Gate 4 may remove a repeated `validate()` only after production reachability
-proves that the hot path accepts an already typed `Anddress` created by those
-boundaries. It may not weaken wire decode, public explicit validation, Edit
-validation, or any source-less error priority, and it may not introduce a
-second validator or unchecked wire-to-value path.
+Gate 4 removes repeated `validate()` only where production reachability proves
+that the hot path accepts an already typed `Anddress` created by those
+boundaries. It does not weaken wire decode, public explicit validation, Edit
+validation, or any source-less error priority, and introduces no second
+validator or unchecked wire-to-value path.
 
 ### One reusable canonical encoder is public
 
-Gate 4 is authorized to add exactly this narrow library surface:
+Gate 4 adds exactly this narrow library surface:
 
 ```rust
 pub fn encode_into(&self, output: &mut Vec<u8>) -> Result<(), AnddressError>
@@ -107,8 +112,8 @@ collection.
   invalidation. Their Line-count comparison remains authoritative.
 - `AnddressIssuer` is retained as the sole ordinary-address construction
   boundary for Search, View projection, prospective Apply receipts, and Anchor
-  reflection. Gate 4 may validate its shared source once and each target
-  geometry once; no capability-local constructor is permitted.
+  reflection. Gate 4 validates its shared source once and each target geometry
+  once; no capability-local constructor is permitted.
 - Search's tier buckets and final sort are retained for deterministic global
   ordering. Gate 5 may replace only the monolithic provisional geometry store
   with storage that demonstrably releases consumed capacity.
@@ -120,8 +125,8 @@ collection.
 - Search and Apply currently duplicate Line-to-Paragraph attachment arithmetic.
   Gate 5 or 6 may move only that arithmetic behind one geometry-owned helper.
 - CLI Search, View, Check, and Edit writers retain their Adapter schemas and
-  exact bytes. Gate 4 may replace per-object allocation with the one reusable
-  encoder buffer, not add a JSON model or writer.
+  exact bytes. Gate 4 replaces per-object allocation in Search and batch View
+  with the one reusable encoder buffer and adds no JSON model or writer.
 
 ## Ordered gates
 
@@ -350,14 +355,87 @@ inside the three-percent direct-evidence allowance. Gate 6 still owns
 contraction to the final baseline target; Gate 3 adds no second parser,
 validator, writer, dependency, public API, or compatibility path.
 
-### Gate 4 — issuance and encoding
+### Gate 4 — issuance and encoding — complete
 
-Validate the shared source and target geometry at their single construction
-boundaries, remove only proven typed-object revalidation, implement
-`encode_into`, and reuse one Adapter scratch buffer. Preserve every KAT and
-output byte. Measure one address, one million same-source Lines, one million
-distinct-source Files, million-result CLI Search, and 200,000-file Search/View
-batch.
+The sole Issuer validates a shared source before constructing it, and validates
+each issued target geometry against that source. Strict v5 decode, public
+`validate()`, Edit validation, and Runtime Apply's defensive validation
+remain. View, Check, and Anchor delete only repeated validation of an already
+typed value whose safe Rust origins are strict decode or that Issuer.
+
+One private canonical emitter serves public `encode_into` and delegating
+`encode`. It first counts exact bytes with checked arithmetic, fallibly
+reserves the caller vector, then writes through the same field-order and escape
+path. The output is cleared before counting or reserve; any counting or reserve
+failure leaves length zero. Valid logical paths require escaping only quote;
+Unicode bytes remain exact, and decimal fields use one fixed stack buffer
+without intermediate `String`, JSON `Value`, or serde model. Search and batch
+View each reuse one operation-local scratch vector. Single-result Edit and
+Check retain their one-address `encode()` paths because neither has a result
+loop to amortize.
+
+All four exact v5 KATs, round trips, prefilled output replacement, reusable
+capacity, Unicode and quote escaping, decimal bounds, invalid path controls,
+and construction/writer singularity pass. GNU passes 263 tests; the same suite
+and all required target verification pass on musl. Adapter schemas, exact
+bytes, order, multiplicity, ordinals, extents, failure classification, and
+stdout behavior are unchanged.
+
+The fixed Gate 4 host is Linux 7.2.2-arch1-1 x86_64 on an Intel i7-12700K,
+CPU 0, `powersave`, Rust/Cargo 1.95.0, and tmpfs. After one warm-up, seven
+crossed D/E samples use nearest-rank p95. The dense fixture is 1,048,576 copies
+of `needle\n`, 7,340,032 bytes, SHA-256
+`913515a4e50f1f93c03b21908ff7c47dffed461eabf02b433939256595286b8c`.
+The File fixture has 200,000 one-byte sources named `000000` through
+`199999`; its NUL-separated name-list SHA-256 is
+`e278da996ea260823006584224bc6b9dbbbf9080eabbb70ea2712d8f3874bb66`.
+
+| Encoder cell | D median/p95 | E median/p95 | D/E allocations per result | Exact output |
+| --- | ---: | ---: | ---: | --- |
+| one canonical Line | 4,824/6,408 ns | 3,283/4,771 ns | 30/0 | 394 bytes |
+| 1,048,576 same-source Lines | 698.879/701.466 ns | 256.217/256.510 ns | 30/0 | 443,422,586 bytes |
+| 1,048,576 distinct-source Files | 496.660/500.301 ns | 166.140/170.774 ns | 17/0 | 319,753,146 bytes |
+
+The one, Line, and File output SHA-256 values are respectively
+`eba96c306ecf6f8b0849b7377065e03a7088527041d08264f02ed2b5b704fdb9`,
+`9d1d7a6c53631f68df685d84109f1b1a53b9a8d805626c4f888bd7fa2ad05644`,
+and `d8bc2921edbe745e2f45980d722506991c5c874b21de7eeab5fe20498ad59ed3`
+for both D and E. Peak scratch capacity falls from 520/521/525 bytes to
+394/425/306 bytes. Allocation counts cover only the canonical result encoder;
+they do not claim zero allocation for the CLI or Runtime.
+
+| Consumer cell | D median/p95 | E median/p95 | D/E peak HWM KiB | Exact result |
+| --- | ---: | ---: | ---: | --- |
+| CLI Search, 1,048,576 JSON results | 0.85/0.87 s | 0.21/0.22 s | 166,544/166,544 | 630,800,294 bytes |
+| native Search, 200,000 Files | 545.077/549.280 ms | 522.292/531.186 ms | 126,588/126,716 | 200,000 results |
+| batch View, 200,000 Files | 669.651/673.911 ms | 659.558/666.399 ms | 162,816/163,244 | 200,000 results |
+
+CLI output is byte-identical at SHA-256
+`fcaceecf33c02bc382a25cce862dff97145f4c1941f04b0c52a269068672890a`;
+its roughly 630 MB stream is Adapter output, not native engine memory. Native
+Search and batch View semantic-output SHA-256 values are
+`289912c04cc30f3a11126683a421cf8431f7d386ca89821749567887c019082e`
+and `bcb333381293bb186f643565298d36783f0bd1913aaf3f8c737bd5cc5e02f958`.
+A full sequential View pass over all 200,000 results also matches. The common,
+D encoder, E encoder, and native harness source SHA-256 values are
+`ff7c42c630be5b327185c7d75943233833cf90acfb826f1dc8b9c9a628de11fc`,
+`81f283af66d2e1f0919de9bbc84db025a110eb5b61ca6e514945fd381bfc3b56`,
+`ad09000cd2d812fd130f9121cc0a20fc04deb5f9281d0e522e8ffb28d90a8b17`,
+and `021ed1e51a980c0f81b2108c1c6b7ec0dbc65d88300f02ab0768a0baac7b256c`.
+The raw evidence SHA-256 is
+`06868c27fe268806a927f31d907ec51bf36ecfeed8fa7508e8f6705a5f69dc2a`;
+all task-local evidence is removed after verification.
+
+Final verification removes one immediately dereferenced borrow in the CLI View
+writer for clippy and adds one test-only checked-overflow assertion after E was
+sampled. Neither changes an encoder, Search, native View measurement path or
+any output byte.
+
+Gate 4 production is 304,475 bytes and 9,197 lines, +12 bytes/+31 lines over
+Gate 3 and +7,206/+243 (2.42%/2.71%) over B. This remains inside the existing
+three-percent direct-evidence allowance and does not renew it. Gate 6 still
+owns contraction to the final baseline target. Gate 4 adds no parser, validator,
+parallel writer, dependency, schema, or compatibility path.
 
 ### Gate 5 — chunked pending memory
 
@@ -447,12 +525,13 @@ Gate 1 changes documentation only. Server, public root, services, cloudflared,
 DNS, tunnel, credentials, actual HOME, artifact, release, and deployment state
 remain outside the target until separately authorized.
 
-## Gate 4 input
+## Gate 5 input
 
-Gate 4 starts from the completed segment matcher and measured raw/structural
-split. It may remove only typed revalidation proved redundant after strict v5
-decode or the sole Issuer, and may add only the authorized reusable canonical
-`encode_into` writer. It must preserve all four v5 KAT byte sequences,
-`encode()` behavior, error priority, Adapter output, and the one-Issuer/one-
-cursor observation boundary while measuring one and million-address encoding,
-million-result CLI Search, and 200,000-file Search/View consumers.
+Gate 5 starts from the measured canonical writer and operation-local Adapter
+scratch. It may replace only Search's dense provisional storage with a minimal
+chunked form whose consumed capacity is demonstrably released, and may
+centralize existing Paragraph attachment arithmetic. It must preserve global
+indices, cross-chunk promotion, target tiers, output order and multiplicity,
+all-or-none cleanup, one Issuer, one cursor, exact v5 bytes, and every Gate 4
+consumer digest. Chunk size and any shared Paragraph allocation remain
+measurement decisions rather than preselected architecture.

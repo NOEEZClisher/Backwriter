@@ -4,7 +4,7 @@ use super::{
     DirectoryAccessError, WorkspaceRuntime, is_backwriter_spill,
     source_scan::{SourceScanError, observe_source},
 };
-use crate::backwriter::anddress::{Anddress, AnddressError};
+use crate::backwriter::anddress::Anddress;
 use crate::backwriter::check::{CheckError, CheckOutcome, CheckReport};
 use crate::backwriter::pick::PickOutcome;
 use crate::backwriter::search::SearchOutcome;
@@ -20,7 +20,6 @@ pub(super) fn check_one(
     runtime: &WorkspaceRuntime,
     input: Anddress,
 ) -> Result<CheckOutcome<Option<Anddress>>, CheckError> {
-    validate_one(&input)?;
     let mut inputs = Vec::new();
     inputs
         .try_reserve_exact(1)
@@ -29,7 +28,7 @@ pub(super) fn check_one(
     let CheckOutcome {
         mut filtered,
         report,
-    } = execute_prevalidated_batch(runtime, inputs)?;
+    } = execute_batch(runtime, inputs)?;
     Ok(CheckOutcome {
         filtered: filtered.pop(),
         report,
@@ -44,8 +43,7 @@ pub(super) fn check_search(
         SearchOutcome::Empty => Vec::new(),
         SearchOutcome::Found { anddresses } => anddresses,
     };
-    validate_all(&inputs)?;
-    let CheckOutcome { filtered, report } = execute_prevalidated_batch(runtime, inputs)?;
+    let CheckOutcome { filtered, report } = execute_batch(runtime, inputs)?;
     Ok(CheckOutcome {
         filtered: search_outcome(filtered),
         report,
@@ -60,15 +58,14 @@ pub(super) fn check_pick(
         PickOutcome::Empty => Vec::new(),
         PickOutcome::Selected { anddresses } => anddresses,
     };
-    validate_all(&inputs)?;
-    let CheckOutcome { filtered, report } = execute_prevalidated_batch(runtime, inputs)?;
+    let CheckOutcome { filtered, report } = execute_batch(runtime, inputs)?;
     Ok(CheckOutcome {
         filtered: pick_outcome(filtered),
         report,
     })
 }
 
-fn execute_prevalidated_batch(
+fn execute_batch(
     runtime: &WorkspaceRuntime,
     inputs: Vec<Anddress>,
 ) -> Result<CheckOutcome<Vec<Anddress>>, CheckError> {
@@ -89,21 +86,6 @@ fn execute_prevalidated_batch(
         start = end;
     }
     finish(inputs, statuses)
-}
-
-fn validate_all(inputs: &[Anddress]) -> Result<(), CheckError> {
-    for input in inputs {
-        validate_one(input)?;
-    }
-    Ok(())
-}
-
-fn validate_one(input: &Anddress) -> Result<(), CheckError> {
-    input.validate().map_err(|error| match error {
-        AnddressError::UnsupportedVersion => CheckError::UnsupportedVersion,
-        AnddressError::Invalid | AnddressError::Encoding => CheckError::InvalidInput,
-        AnddressError::Resource => CheckError::Resource,
-    })
 }
 
 fn indices(length: usize) -> Result<Vec<usize>, CheckError> {
@@ -641,22 +623,15 @@ mod tests {
         ] {
             assert!(!production.contains(forbidden));
         }
-        let search = production
-            .split("pub(super) fn check_search")
-            .nth(1)
-            .unwrap()
-            .split("pub(super) fn check_pick")
-            .next()
-            .unwrap();
-        assert!(search.find("validate_all(&inputs)?") < search.find("execute_prevalidated_batch"));
-        let pick = production
-            .split("pub(super) fn check_pick")
-            .nth(1)
-            .unwrap()
-            .split("fn execute_prevalidated_batch")
-            .next()
-            .unwrap();
-        assert!(pick.find("validate_all(&inputs)?") < pick.find("execute_prevalidated_batch"));
+        assert!(!production.contains(".validate()"));
+        assert!(!production.contains("validate_all"));
+        assert!(!production.contains("validate_one"));
+        assert_eq!(
+            production
+                .matches("execute_batch(runtime, inputs)?")
+                .count(),
+            3
+        );
         assert!(production.contains("Err(SourceScanError::Resource) => Err(CheckError::Resource)"));
         assert_eq!(production.matches("observe_source(").count(), 1);
         assert_eq!(production.matches("select_current_proof(").count(), 1);
@@ -718,5 +693,15 @@ mod tests {
         );
         let issuer = anddress.split("impl AnddressIssuer").nth(1).unwrap();
         assert_eq!(issuer.matches("pub(crate) fn new(").count(), 1);
+        let view = include_str!("../backwriter/view.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        let anchor = include_str!("anchor.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        assert!(!view.contains(".validate()"));
+        assert!(!anchor.contains(".validate()"));
     }
 }

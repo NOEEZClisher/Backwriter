@@ -1,8 +1,8 @@
 # Backwriter Current State
 
-## 0.2.5 performance recovery — Gates 1–3 complete
+## 0.2.5 performance recovery — Gates 1–4 complete
 
-Gates 1 through 3 are complete under the
+Gates 1 through 4 are complete under the
 [performance-recovery tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
 Gate 2 adds one checked segment operation to the existing literal matcher and
 deletes the Runtime per-byte caller loop. Cargo, `bw version`, artifacts,
@@ -29,12 +29,13 @@ Gate 1 resolves three planning questions. First, exact source Line count stays
 in v5 identity, observations, Host proof, and currentness. Same-hash,
 same-length input with a false Line count remains `NotCurrent`; Gate 3 counts
 Lines in a minimal raw same-read accumulator without Paragraph or parent
-geometry rather than weakening this Safe Reject. Second, strict Issuer/decode
-and public `validate()` remain; Gate 4 may remove only proven duplicate
-validation of an already typed address. Third, Gate 4 may add one public
-allocation-reusing `Anddress::encode_into(&mut Vec<u8>)` while retaining
-`encode()` as a delegating surface and preserving every v5 KAT and Adapter
-byte.
+geometry rather than weakening this Safe Reject. Second, strict decode and
+public `validate()` remain; the sole Issuer validates shared source once and
+target geometry once, while typed View, Check, and Anchor no longer repeat
+source-less validation. Third, one public allocation-reusing
+`Anddress::encode_into(&mut Vec<u8>)` now clears and fallibly reserves a caller
+buffer, emits the canonical v5 bytes through the sole writer, and leaves
+`encode()` as a delegating surface.
 
 Gate 3 splits one raw builder from the sole structural builder. Raw observation
 owns UTF-8/NUL validation, SHA-256, checked byte length, exact Line count, and
@@ -49,15 +50,20 @@ On the fixed CPU-0/tmpfs A/B/C/D evidence, D/A median ratios are 1.0812 for
 Untrusted Check, 1.0582/1.0501/1.0513 for unit/receipt/live-Anchor 256 MiB
 Apply, 1.0287 for CRLF one-shot Edit, and 1.0948 for 134,217,728 `x\n`
 Lines. Host Check remains in the approximately one-microsecond class with zero
-capability I/O; Host and Untrusted self-Line View preserve the exact source digest. The
-suite is now 261 tests. Gate 3 production is 304,463 bytes and 9,166 lines,
-2.42%/2.37% over the fixed 297,269-byte/8,954-line baseline and inside the
-direct-evidence allowance; later contraction still owns the final target.
+capability I/O; Host and Untrusted self-Line View preserve the exact source
+digest. Gate 4 preserves all four v5 KATs and every measured output digest.
+Search and batch View reuse one operation-local encoding scratch; single Edit
+and Check retain their one-address `encode()` path. The complete suite is now
+263 tests. Production is 304,475 bytes and 9,197 lines, only 12 bytes and 31
+lines above Gate 3 and 2.42%/2.71% above the fixed
+297,269-byte/8,954-line baseline. This remains within the existing
+direct-evidence allowance and does not renew it; later contraction still owns
+the final target.
 
-The remaining gates are issuance/encoding, chunked pending memory, consumer
-contraction, fixed evidence/source readiness, and a separately authorized
-release. No completed gate fixes `StructuralDemand`, cursor specialization,
-shared Paragraph allocation, or chunk size.
+The remaining gates are chunked pending memory, consumer contraction, fixed
+evidence/source readiness, and a separately authorized release. No completed
+gate fixes `StructuralDemand`, cursor specialization, shared Paragraph
+allocation, or chunk size.
 
 ## Published and closed 0.2.4 structural authority
 

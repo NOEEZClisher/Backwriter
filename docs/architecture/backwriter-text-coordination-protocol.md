@@ -2,7 +2,7 @@
 
 ## 0.2.5 performance-recovery authority
 
-Gates 1 through 3 are complete. Current production and the official release
+Gates 1 through 4 are complete. Current production and the official release
 remain closed `0.2.4`. The performance target preserves all public v5,
 capability, Runtime, Adapter, failure, and publication meaning under one rule:
 semantics stay unified while execution becomes specialized again.
@@ -17,26 +17,28 @@ Structural observation composes that same raw state with the cursor only when
 a caller consumes Line or Paragraph geometry.
 
 Safe Rust typed Anddresses remain valid by construction through strict v5
-decode or the sole crate-private Issuer. Wire decode, Issuer source/geometry
-validation, public `Anddress::validate()`, and existing error priorities remain
-strict. A later hot path may skip only a repeated validation whose typed
-construction boundary is proved; it may not create an unchecked wire path or
-another validator.
+decode or the sole crate-private Issuer. Wire decode, public
+`Anddress::validate()`, and existing error priorities remain strict. The Issuer
+validates one shared source identity before constructing it and validates each
+target geometry against that source. Typed View, Check, and Anchor therefore
+do not repeat source-less validation; Edit and Runtime Apply retain their
+distinct request and defensive validation boundaries.
 
-The one authorized encoding addition is
+The canonical encoding addition is
 `Anddress::encode_into(&mut Vec<u8>) -> Result<(), AnddressError>`. It clears
 the caller buffer first, computes complete capacity with checked arithmetic,
 fallibly reserves before appending, and leaves buffer length zero on error;
 capacity may remain reusable. Success writes exactly one canonical v5 object
 with no trailing bytes. Existing `encode()` remains, delegates through one new
-empty vector, and preserves exact KAT bytes and the existing error type. The
-CLI may reuse a scratch vector but may not duplicate the writer or retain a
-second result collection.
+empty vector, and preserves exact KAT bytes and the existing error type. Search
+and batch View reuse one operation-local scratch vector without duplicating the
+writer or retaining a second result collection; single-result Edit and Check
+keep their one-address `encode()` calls.
 
-Bulk matching and raw/structural observation are complete. The remaining
-ordered implementation gates are issuance/encoding, chunked pending memory,
-and final consumer contraction, followed by fixed evidence/source readiness
-and separately authorized release. Conditional structural demand, cursor
+Bulk matching, raw/structural observation, and issuance/encoding are complete.
+The remaining ordered implementation gates are chunked pending memory and
+final consumer contraction, followed by fixed evidence/source readiness and
+separately authorized release. Conditional structural demand, cursor
 specialization, shared Paragraph allocation, and pending chunk size require
 measured evidence.
 No gate may change v5 fields or output, add another parser or authority, or

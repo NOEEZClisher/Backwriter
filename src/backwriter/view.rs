@@ -27,7 +27,6 @@ pub(crate) fn project_request(
     anddress: &Anddress,
     projection: AnddressTarget,
 ) -> Result<Option<Anddress>, ViewError> {
-    anddress.validate().map_err(map_input_error)?;
     anddress.project(projection).map_err(map_input_error)
 }
 

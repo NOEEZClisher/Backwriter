@@ -125,7 +125,7 @@ impl AnddressIssuer {
     }
 
     pub(crate) fn issue(&self, geometry: TargetGeometry) -> Result<Anddress, AnddressError> {
-        validate_address(&self.source, geometry)?;
+        validate_geometry(&self.source, geometry)?;
         Ok(Anddress {
             source: Arc::clone(&self.source),
             geometry,
@@ -299,68 +299,22 @@ impl Anddress {
     }
 
     pub fn encode(&self) -> Result<Vec<u8>, AnddressError> {
-        self.validate()?;
-        let mut output = String::new();
+        let mut output = Vec::new();
+        self.encode_into(&mut output)?;
+        Ok(output)
+    }
+
+    /// Replaces `output` with this address's canonical v5 JSON object.
+    pub fn encode_into(&self, output: &mut Vec<u8>) -> Result<(), AnddressError> {
+        output.clear();
+        let mut length = EncodedLength(0);
+        encode_to(self, &mut length)?;
         output
-            .try_reserve(
-                self.workspace_coordinate()
-                    .len()
-                    .checked_add(self.logical_path().len())
-                    .and_then(|length| length.checked_add(self.source_state_hash().len()))
-                    .and_then(|length| length.checked_add(384))
-                    .ok_or(AnddressError::Resource)?,
-            )
+            .try_reserve(length.0)
             .map_err(|_| AnddressError::Resource)?;
-        output.push('{');
-        append_field(&mut output, "version", ANDDRESS_VERSION)?;
-        output.push(',');
-        append_field(
-            &mut output,
-            "workspaceCoordinate",
-            self.workspace_coordinate(),
-        )?;
-        output.push(',');
-        append_field(&mut output, "logicalPath", self.logical_path())?;
-        output.push(',');
-        append_field(&mut output, "sourceStateHash", self.source_state_hash())?;
-        output.push(',');
-        append_decimal_field(&mut output, "sourceByteLength", self.source_byte_length())?;
-        output.push(',');
-        append_decimal_field(&mut output, "sourceLineCount", self.source_line_count())?;
-        output.push(',');
-        append_field(&mut output, "kind", self.target().as_str())?;
-        match self.geometry {
-            TargetGeometry::File => {}
-            TargetGeometry::Paragraph(paragraph) => {
-                append_paragraph_fields(&mut output, false, paragraph)?;
-            }
-            TargetGeometry::Line {
-                byte_start,
-                byte_end,
-                terminator,
-                line_offset_in_parent,
-                parent,
-            } => {
-                output.push(',');
-                append_decimal_field(&mut output, "byteStart", byte_start)?;
-                output.push(',');
-                append_decimal_field(&mut output, "byteEnd", byte_end)?;
-                output.push(',');
-                append_field(&mut output, "terminator", terminator.as_str())?;
-                output.push(',');
-                append_decimal_field(&mut output, "lineOffsetInParent", line_offset_in_parent)?;
-                output.push(',');
-                match parent {
-                    ParentGeometry::File => append_field(&mut output, "parentKind", "file")?,
-                    ParentGeometry::Paragraph(paragraph) => {
-                        append_field(&mut output, "parentKind", "paragraph")?;
-                        append_paragraph_fields(&mut output, true, paragraph)?;
-                    }
-                }
-            }
-        }
-        output.push('}');
-        Ok(output.into_bytes())
+        encode_to(self, output)?;
+        debug_assert_eq!(output.len(), length.0);
+        Ok(())
     }
 
     pub fn decode(encoded: &[u8]) -> Result<Self, AnddressError> {
@@ -451,6 +405,13 @@ fn validate_address(
     geometry: TargetGeometry,
 ) -> Result<(), AnddressError> {
     validate_source(source)?;
+    validate_geometry(source, geometry)
+}
+
+fn validate_geometry(
+    source: &SourceIdentity,
+    geometry: TargetGeometry,
+) -> Result<(), AnddressError> {
     match geometry {
         TargetGeometry::File => Ok(()),
         TargetGeometry::Paragraph(paragraph) => validate_paragraph(source, paragraph),
@@ -519,54 +480,146 @@ fn fallible_copy(value: &str) -> Result<String, AnddressError> {
     Ok(copy)
 }
 
-fn append_field(output: &mut String, name: &str, value: &str) -> Result<(), AnddressError> {
-    let name = serde_json::to_string(name).map_err(|_| AnddressError::Encoding)?;
-    let value = serde_json::to_string(value).map_err(|_| AnddressError::Encoding)?;
-    output
-        .try_reserve(
-            name.len()
-                .checked_add(value.len())
-                .and_then(|size| size.checked_add(1))
-                .ok_or(AnddressError::Resource)?,
-        )
-        .map_err(|_| AnddressError::Resource)?;
-    output.push_str(&name);
-    output.push(':');
-    output.push_str(&value);
-    Ok(())
+trait EncodeSink {
+    fn push(&mut self, bytes: &[u8]) -> Result<(), AnddressError>;
+}
+
+struct EncodedLength(usize);
+
+impl EncodeSink for EncodedLength {
+    fn push(&mut self, bytes: &[u8]) -> Result<(), AnddressError> {
+        self.0 = self
+            .0
+            .checked_add(bytes.len())
+            .ok_or(AnddressError::Resource)?;
+        Ok(())
+    }
+}
+
+impl EncodeSink for Vec<u8> {
+    fn push(&mut self, bytes: &[u8]) -> Result<(), AnddressError> {
+        self.extend_from_slice(bytes);
+        Ok(())
+    }
+}
+
+fn encode_to(anddress: &Anddress, output: &mut impl EncodeSink) -> Result<(), AnddressError> {
+    output.push(br#"{"version":"artext.backwriter-anddress.v5","workspaceCoordinate":""#)?;
+    output.push(anddress.workspace_coordinate().as_bytes())?;
+    output.push(br#"","logicalPath":""#)?;
+    append_json_path(output, anddress.logical_path())?;
+    output.push(br#"","sourceStateHash":""#)?;
+    output.push(anddress.source_state_hash().as_bytes())?;
+    append_decimal_field(
+        output,
+        br#"","sourceByteLength":""#,
+        anddress.source_byte_length(),
+    )?;
+    append_decimal_field(
+        output,
+        br#","sourceLineCount":""#,
+        anddress.source_line_count(),
+    )?;
+    output.push(br#","kind":""#)?;
+    output.push(anddress.target().as_str().as_bytes())?;
+    output.push(b"\"")?;
+    match anddress.geometry {
+        TargetGeometry::File => {}
+        TargetGeometry::Paragraph(paragraph) => append_paragraph(output, false, paragraph)?,
+        TargetGeometry::Line {
+            byte_start,
+            byte_end,
+            terminator,
+            line_offset_in_parent,
+            parent,
+        } => {
+            append_decimal_field(output, br#","byteStart":""#, byte_start)?;
+            append_decimal_field(output, br#","byteEnd":""#, byte_end)?;
+            append_field(output, br#","terminator":""#, terminator.as_str())?;
+            append_decimal_field(output, br#","lineOffsetInParent":""#, line_offset_in_parent)?;
+            match parent {
+                ParentGeometry::File => append_field(output, br#","parentKind":""#, "file")?,
+                ParentGeometry::Paragraph(paragraph) => {
+                    append_field(output, br#","parentKind":""#, "paragraph")?;
+                    append_paragraph(output, true, paragraph)?;
+                }
+            }
+        }
+    }
+    output.push(b"}")
+}
+
+fn append_json_path(output: &mut impl EncodeSink, path: &str) -> Result<(), AnddressError> {
+    let mut start = 0;
+    for (index, _) in path.match_indices('"') {
+        output.push(&path.as_bytes()[start..index])?;
+        output.push(br#"\""#)?;
+        start = index + 1;
+    }
+    output.push(&path.as_bytes()[start..])
+}
+
+fn append_decimal(output: &mut impl EncodeSink, mut value: usize) -> Result<(), AnddressError> {
+    let mut digits = [0_u8; 3 * std::mem::size_of::<usize>()];
+    let mut start = digits.len();
+    loop {
+        start -= 1;
+        digits[start] = b'0' + (value % 10) as u8;
+        value /= 10;
+        if value == 0 {
+            break;
+        }
+    }
+    output.push(&digits[start..])
+}
+
+fn append_field(
+    output: &mut impl EncodeSink,
+    prefix: &[u8],
+    value: &str,
+) -> Result<(), AnddressError> {
+    output.push(prefix)?;
+    output.push(value.as_bytes())?;
+    output.push(b"\"")
 }
 
 fn append_decimal_field(
-    output: &mut String,
-    name: &str,
+    output: &mut impl EncodeSink,
+    prefix: &[u8],
     value: usize,
 ) -> Result<(), AnddressError> {
-    append_field(output, name, &value.to_string())
+    output.push(prefix)?;
+    append_decimal(output, value)?;
+    output.push(b"\"")
 }
 
-fn append_paragraph_fields(
-    output: &mut String,
+fn append_paragraph(
+    output: &mut impl EncodeSink,
     parent: bool,
     paragraph: ParagraphGeometry,
 ) -> Result<(), AnddressError> {
-    let names = if parent {
+    let prefixes = if parent {
         [
-            "parentByteStart",
-            "parentByteEnd",
-            "parentFileLineOffset",
-            "parentLineCount",
+            br#","parentByteStart":""# as &[u8],
+            br#","parentByteEnd":""#,
+            br#","parentFileLineOffset":""#,
+            br#","parentLineCount":""#,
         ]
     } else {
-        ["byteStart", "byteEnd", "fileLineOffset", "lineCount"]
+        [
+            br#","byteStart":""# as &[u8],
+            br#","byteEnd":""#,
+            br#","fileLineOffset":""#,
+            br#","lineCount":""#,
+        ]
     };
-    for (name, value) in names.into_iter().zip([
+    for (prefix, value) in prefixes.into_iter().zip([
         paragraph.byte_start,
         paragraph.byte_end,
         paragraph.file_line_offset,
         paragraph.line_count,
     ]) {
-        output.push(',');
-        append_decimal_field(output, name, value)?;
+        append_decimal_field(output, prefix, value)?;
     }
     Ok(())
 }
@@ -959,12 +1012,91 @@ mod tests {
             file_line.encode().unwrap(),
             br#"{"version":"artext.backwriter-anddress.v5","workspaceCoordinate":"0000000000000000000000000000000000000000000000000000000000000000","logicalPath":"source.txt","sourceStateHash":"0000000000000000000000000000000000000000000000000000000000000000","sourceByteLength":"14","sourceLineCount":"3","kind":"line","byteStart":"12","byteEnd":"14","terminator":"lf","lineOffsetInParent":"2","parentKind":"file"}"#
         );
-        for address in [file, paragraph_address, text_line, file_line] {
-            assert_eq!(
-                Anddress::decode(&address.encode().unwrap()).unwrap(),
-                address
-            );
+        let addresses = [file, paragraph_address, text_line, file_line];
+        let mut output = b"replaced".to_vec();
+        addresses[2].encode_into(&mut output).unwrap();
+        let capacity = output.capacity();
+        for address in &addresses {
+            let expected = address.encode().unwrap();
+            address.encode_into(&mut output).unwrap();
+            assert_eq!(output, expected);
+            assert_eq!(output.capacity(), capacity);
+            assert_eq!(Anddress::decode(&output).unwrap(), *address);
         }
+    }
+
+    #[test]
+    fn encoder_escapes_only_valid_path_content_and_writes_decimal_bounds() {
+        let address =
+            AnddressIssuer::new(ZERO_HASH, "문\"서.txt", ZERO_HASH, usize::MAX, usize::MAX)
+                .unwrap()
+                .issue(TargetGeometry::File)
+                .unwrap();
+        let mut output = Vec::new();
+        address.encode_into(&mut output).unwrap();
+        assert_eq!(Anddress::decode(&output), Ok(address));
+        let output = String::from_utf8(output).unwrap();
+        assert!(output.contains(r#""logicalPath":"문\"서.txt""#));
+        assert!(output.contains(&format!(
+            r#""sourceByteLength":"{}","sourceLineCount":"{}""#,
+            usize::MAX,
+            usize::MAX
+        )));
+
+        for path in ["a\\b.txt", "a\nb.txt", "a\u{1f}b.txt"] {
+            assert!(matches!(
+                AnddressIssuer::new(ZERO_HASH, path, ZERO_HASH, 1, 1),
+                Err(AnddressError::Invalid)
+            ));
+        }
+
+        let mut length = EncodedLength(usize::MAX);
+        assert_eq!(length.push(b"x"), Err(AnddressError::Resource));
+    }
+
+    #[test]
+    fn typed_construction_and_encoding_have_single_validation_and_writer_paths() {
+        let production = include_str!("anddress.rs")
+            .split("#[cfg(test)]\nmod tests")
+            .next()
+            .unwrap();
+        let issuer = production.split("impl AnddressIssuer").nth(1).unwrap();
+        let issue = issuer
+            .split("pub(crate) fn issue")
+            .nth(1)
+            .unwrap()
+            .split("impl Anddress")
+            .next()
+            .unwrap();
+        assert!(issue.contains("validate_geometry"));
+        assert!(!issue.contains("validate_source"));
+        assert_eq!(production.matches("fn validate_source(").count(), 1);
+        assert_eq!(production.matches("fn validate_geometry(").count(), 1);
+        assert_eq!(production.matches("fn encode_to(").count(), 1);
+        let encode = production
+            .split("pub fn encode(&self)")
+            .nth(1)
+            .unwrap()
+            .split("pub fn decode")
+            .next()
+            .unwrap();
+        assert!(encode.contains("self.encode_into(&mut output)?"));
+        assert!(!encode.contains("self.validate()"));
+        let encode_into = encode.split("pub fn encode_into").nth(1).unwrap();
+        assert!(
+            encode_into.find("output.clear();")
+                < encode_into.find("let mut length = EncodedLength(0);")
+        );
+        assert!(
+            encode_into.find("encode_to(self, &mut length)?;")
+                < encode_into.find(".try_reserve(length.0)")
+        );
+        assert!(
+            encode_into.find(".try_reserve(length.0)")
+                < encode_into.rfind("encode_to(self, output)?")
+        );
+        assert!(!production.contains("serde_json::to_string"));
+        assert!(!production.contains("value.to_string()"));
     }
 
     #[test]

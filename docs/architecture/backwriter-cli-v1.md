@@ -1,20 +1,21 @@
 # Backwriter CLI V1
 
-## Planned 0.2.5 encoder reuse boundary
+## 0.2.5 encoder reuse boundary
 
-Gate 1 changes no CLI syntax, schema, key order, output byte, status, error,
-version, or process behavior. Cargo, `bw version`, installers, Update, and the
-official distribution remain closed `0.2.4`.
+Gates 1 through 4 change no CLI syntax, schema, key order, output byte, status,
+error, version, or process behavior. Cargo, `bw version`, installers, Update,
+and the official distribution remain closed `0.2.4`.
 
-Gate 4 may replace per-address temporary allocation in existing Search, View,
-Check, and Edit writers with the address authority's public
-`Anddress::encode_into(&mut Vec<u8>)`. One scratch vector may be cleared and
-reused serially; on encoding error that vector has zero length and contributes
-no address bytes. Existing `Anddress::encode()` remains and delegates. The
-nested v5 objects, Adapter metadata, envelopes, order, duplicates, KAT bytes, stdout
-failure meaning, and no-second-collection rule remain exact. The Adapter may
-not copy the canonical writer into `bw.rs` or add a JSON model, buffer pool,
-alternate wire, or output schema.
+Search and batch View replace per-address temporary allocation with the address
+authority's public `Anddress::encode_into(&mut Vec<u8>)`. Each operation owns
+one scratch vector, cleared and reused serially; on encoding error that vector
+has zero length and contributes no address bytes. Single-result Edit and Check
+retain their one-address `encode()` calls. Existing `Anddress::encode()`
+delegates to the same canonical writer. The nested v5 objects, Adapter
+metadata, envelopes, order, duplicates, KAT bytes, stdout failure meaning, and
+no-second-collection rule remain exact. The Adapter may not copy the canonical
+writer into `bw.rs` or add a JSON model, buffer pool, alternate wire, or output
+schema.
 
 ## Published and closed 0.2.4 boundary
 

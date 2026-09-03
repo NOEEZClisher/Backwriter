@@ -877,6 +877,7 @@ fn write_search_json(outcome: &SearchOutcome) -> Result<(), CliError> {
             stdout
                 .write_all(b"found\",\"occurrences\":[")
                 .map_err(|error| CliError::stream(error.to_string()))?;
+            let mut encoded = Vec::new();
             for (index, anddress) in anddresses.iter().enumerate() {
                 if index != 0 {
                     stdout
@@ -911,8 +912,8 @@ fn write_search_json(outcome: &SearchOutcome) -> Result<(), CliError> {
                 stdout
                     .write_all(b",\"anddress\":")
                     .map_err(|error| CliError::stream(error.to_string()))?;
-                let encoded = anddress
-                    .encode()
+                anddress
+                    .encode_into(&mut encoded)
                     .map_err(|error| CliError::execution(error.to_string()))?;
                 stdout
                     .write_all(&encoded)
@@ -1000,6 +1001,7 @@ fn write_view(outcome: &ViewOutcome) -> Result<(), CliError> {
 
 fn write_view_json(outcomes: &[ViewOutcome]) -> Result<(), CliError> {
     let mut stdout = BufWriter::new(io::stdout().lock());
+    let mut encoded = Vec::new();
     stdout
         .write_all(b"{\"schema\":\"bw.cli.view.v2\",\"outcomes\":[")
         .map_err(|error| CliError::stream(error.to_string()))?;
@@ -1009,7 +1011,7 @@ fn write_view_json(outcomes: &[ViewOutcome]) -> Result<(), CliError> {
                 .write_all(b",")
                 .map_err(|error| CliError::stream(error.to_string()))?;
         }
-        write_view_json_item(&mut stdout, outcome)?;
+        write_view_json_item(&mut stdout, outcome, &mut encoded)?;
     }
     stdout
         .write_all(b"]}\n")
@@ -1019,17 +1021,21 @@ fn write_view_json(outcomes: &[ViewOutcome]) -> Result<(), CliError> {
         .map_err(|error| CliError::stream(error.to_string()))
 }
 
-fn write_view_json_item(stdout: &mut impl Write, outcome: &ViewOutcome) -> Result<(), CliError> {
+fn write_view_json_item(
+    stdout: &mut impl Write,
+    outcome: &ViewOutcome,
+    encoded: &mut Vec<u8>,
+) -> Result<(), CliError> {
     match outcome {
         ViewOutcome::Projected { anddress, content } => {
             stdout
                 .write_all(b"{\"outcome\":\"projected\",\"anddress\":")
                 .map_err(|error| CliError::stream(error.to_string()))?;
-            let encoded = anddress
-                .encode()
+            anddress
+                .encode_into(encoded)
                 .map_err(|error| CliError::execution(error.to_string()))?;
             stdout
-                .write_all(&encoded)
+                .write_all(encoded)
                 .map_err(|error| CliError::stream(error.to_string()))?;
             stdout
                 .write_all(b",\"content\":")

@@ -1,9 +1,9 @@
 # Backwriter Roadmap
 
-## Planned: 0.2.5 structural specialization and performance recovery
+## In progress: 0.2.5 structural specialization and performance recovery
 
 The [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
-closes Gates 1 through 3 without changing release state. The target keeps the
+closes Gates 1 through 4 without changing release state. The target keeps the
 complete closed `0.2.4` v5 meaning and restores specialized hot paths only
 where measurement and reachability show unnecessary work.
 
@@ -14,8 +14,8 @@ where measurement and reachability show unnecessary work.
 3. Raw/structural observation — retain Line-count currentness while removing
    `StructuralCursor` and Paragraph work from raw consumers — complete, with
    fixed A/B/C/D evidence.
-4. Issuance/encoding — remove only proven typed revalidation and add one
-   reusable canonical `encode_into` buffer path.
+4. Issuance/encoding — complete; strict boundaries validate once, one canonical
+   writer serves `encode`/`encode_into`, and Search/batch View reuse scratch.
 5. Chunked pending memory — release consumed provisional Search storage and
    centralize Paragraph attachment.
 6. Consumer reaudit and contraction — delete remaining dead or duplicate
@@ -26,8 +26,9 @@ where measurement and reachability show unnecessary work.
    exact Owner authorization.
 
 Line count remains part of v5 identity, Host proof, and currentness; false
-same-hash/same-length Line count remains `NotCurrent`. Strict decode, Issuer,
-and public validation remain. The authorized public encoder reuses a caller
+same-hash/same-length Line count remains `NotCurrent`. Strict decode and public
+validation remain. The sole Issuer validates shared source once and each target
+geometry once. The public encoder reuses a caller
 `Vec<u8>`, clears it, performs checked fallible reserve before writing, leaves
 it empty on error, and preserves exact v5 bytes; existing `encode()` delegates.
 `StructuralDemand`, cursor specialization, shared Paragraph `Arc`, and chunk
@@ -46,6 +47,14 @@ Apply, 1.0287 for CRLF Edit, and 1.0948 for short-Line density. Host Check has
 zero capability I/O and remains approximately one microsecond; View output and
 every semantic digest are exact. No cursor mode, second parser, or dependency
 is added.
+
+Gate 4 keeps one canonical writer and removes only redundant typed validation
+from View, Check, and Anchor. Across 1,048,576 addresses, reusable encoding
+records zero result-sized allocations versus 30 per same-source Line and 17 per
+distinct-source File in the Gate 3 baseline, with byte-identical output. The
+million-result CLI Search falls from 0.85 s to 0.21 s median while retaining
+the same 630,800,294-byte output and 166,544 KiB peak HWM. These are fixed-host
+observations, not broad performance claims.
 
 The fixed labels are published v4 A=`195aaa37068122097ecc04d2644642b6afcc6765`,
 closed `0.2.4` production B=`8b20987893ea5ac454c4c0a50d0c470e26b5e650`,
