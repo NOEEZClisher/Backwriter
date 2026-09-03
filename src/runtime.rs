@@ -42,6 +42,7 @@ mod apply;
 mod check;
 mod search;
 mod source_scan;
+mod structural_cursor;
 mod view;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

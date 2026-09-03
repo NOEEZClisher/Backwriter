@@ -2,7 +2,7 @@
 
 use thiserror::Error;
 
-use crate::backwriter::anddress::{Anddress, AnddressTarget};
+use crate::backwriter::anddress::Anddress;
 use crate::source::validate_logical_path;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -155,61 +155,7 @@ impl SearchRequest {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SearchOutcome {
     Empty,
-    Found { occurrences: Vec<SearchOccurrence> },
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum SearchPosition {
-    Line { line: usize },
-    Paragraph { start_line: usize, end_line: usize },
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct SearchOccurrence {
-    anddress: Anddress,
-    position: Option<SearchPosition>,
-}
-
-impl SearchOccurrence {
-    pub fn new(
-        anddress: Anddress,
-        position: Option<SearchPosition>,
-    ) -> Result<Self, SearchOccurrenceError> {
-        let valid = match (anddress.target(), position) {
-            (AnddressTarget::File, None) => true,
-            (AnddressTarget::Line, Some(SearchPosition::Line { line })) => line != 0,
-            (
-                AnddressTarget::Paragraph,
-                Some(SearchPosition::Paragraph {
-                    start_line,
-                    end_line,
-                }),
-            ) => start_line != 0 && start_line <= end_line,
-            _ => false,
-        };
-        if !valid {
-            return Err(SearchOccurrenceError::Invalid);
-        }
-        Ok(Self { anddress, position })
-    }
-
-    pub fn anddress(&self) -> &Anddress {
-        &self.anddress
-    }
-
-    pub fn position(&self) -> Option<SearchPosition> {
-        self.position
-    }
-
-    pub fn into_anddress(self) -> Anddress {
-        self.anddress
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
-pub enum SearchOccurrenceError {
-    #[error("search occurrence is invalid")]
-    Invalid,
+    Found { anddresses: Vec<Anddress> },
 }
 #[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
 pub enum SearchInputError {
@@ -288,18 +234,6 @@ impl LiteralMatcher<'_> {
         self.push_content_byte(byte);
     }
 
-    pub(crate) fn first_byte(&self) -> u8 {
-        self.literal.query[0]
-    }
-
-    pub(crate) fn has_partial_match(&self) -> bool {
-        self.matched != 0
-    }
-
-    pub(crate) fn found(&self) -> bool {
-        self.found
-    }
-
     pub(crate) fn push_content_byte(&mut self, byte: u8) {
         while self.matched > 0 && byte != self.literal.query[self.matched] {
             self.matched = self.literal.failure[self.matched - 1];
@@ -311,15 +245,6 @@ impl LiteralMatcher<'_> {
                 self.matched = self.literal.failure[self.matched - 1];
             }
         }
-    }
-
-    pub(crate) fn finish_at_length(&self, line_content_length: usize) -> Option<MatchTier> {
-        self.found
-            .then_some(if line_content_length == self.literal.query.len() {
-                MatchTier::FullLine
-            } else {
-                MatchTier::Substring
-            })
     }
 
     pub(crate) fn finish(&self) -> Option<MatchTier> {

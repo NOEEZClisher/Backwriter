@@ -8,7 +8,7 @@ use backwriter::backwriter::data::{
 };
 use backwriter::backwriter::pick::PickOutcome;
 use backwriter::backwriter::search::{
-    SearchOccurrence, SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
+    SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
 };
 use backwriter::backwriter::view::ViewOutcome;
 use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
@@ -24,8 +24,8 @@ fn address(path: &str) -> Anddress {
     support::file(&"a".repeat(64), path, b"")
 }
 
-fn occurrence(value: Anddress) -> SearchOccurrence {
-    SearchOccurrence::new(value, None).unwrap()
+fn occurrence(value: Anddress) -> Anddress {
+    value
 }
 
 fn check_outcomes() -> (
@@ -47,15 +47,14 @@ fn check_outcomes() -> (
         SearchScope::all_admitted(),
         SearchTarget::File,
     );
-    let SearchOutcome::Found { mut occurrences } = workspace.search(&request).unwrap() else {
+    let SearchOutcome::Found { mut anddresses } = workspace.search(&request).unwrap() else {
         panic!("fixture supplies one source");
     };
-    let current_occurrence = occurrences.remove(0);
-    let current = current_occurrence.anddress().clone();
+    let current = anddresses.remove(0);
     let raw = workspace.check(current.clone()).unwrap();
     let search = workspace
         .check_search(SearchOutcome::Found {
-            occurrences: vec![current_occurrence],
+            anddresses: vec![current.clone()],
         })
         .unwrap();
     let pick = workspace
@@ -97,7 +96,7 @@ fn typed_store_get_pairs_accept_every_native_payload() {
     let check_pick_name = name("check-pick");
     let address = address("a.txt");
     let search = SearchOutcome::Found {
-        occurrences: vec![occurrence(address.clone())],
+        anddresses: vec![occurrence(address.clone())],
     };
     let pick = PickOutcome::Selected {
         anddresses: vec![address.clone()],
@@ -147,7 +146,7 @@ fn store_preserves_kinds_and_returns_the_exact_duplicate_input() {
     let first = address("first.txt");
     let duplicate = address("duplicate.txt");
     let search = SearchOutcome::Found {
-        occurrences: vec![occurrence(address("search.txt"))],
+        anddresses: vec![occurrence(address("search.txt"))],
     };
 
     store.store_anddress(&shared, first.clone()).unwrap();
@@ -278,7 +277,7 @@ fn rename_and_remove_dispatch_each_data_kind_without_cross_kind_aliasing() {
     let check_pick_name = name("check-pick-new");
     let anddress = address("anddress.txt");
     let search = SearchOutcome::Found {
-        occurrences: vec![occurrence(address("search.txt"))],
+        anddresses: vec![occurrence(address("search.txt"))],
     };
     let pick = PickOutcome::Selected {
         anddresses: vec![address("pick.txt")],

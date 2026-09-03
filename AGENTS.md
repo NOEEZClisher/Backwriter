@@ -14,7 +14,8 @@ are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. Current source
-is hard-cut to the Gate 2 v5 Anddress algebra and wire; their direct View
+is hard-cut through Gate 3 to the v5 Anddress algebra, wire, shared structural
+cursor, and direct Search result collection; their direct View
 source-state/range projection, target-specific Search literal
 projection and exact logical File lookup, Pick predicate semantics, direct
 Anchor target projection and live continuity, and source-state Check batch
@@ -39,7 +40,8 @@ complete from Source Authority revision
 The published `0.2.3` source, v4 API/wire, artifacts, installers, and public
 tree are closed immutable evidence. `0.2.4` is an in-progress target governed
 by the [structural-authority tracker](docs/tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-Gates 1–2 close authority, v5 algebra/wire, and the sole Issuer. Cargo and
+Gates 1–3 close authority, v5 algebra/wire, the sole Issuer, the shared
+structural cursor, and Search result contraction. Cargo and
 `bw version` remain `0.2.3`; artifacts and the published distribution remain
 closed v4 evidence until later gates are separately accepted.
 
@@ -56,15 +58,19 @@ Anddress owns exact-state and source relationships, containment and overlap,
 parent/projection validation, Line counts and numbers, ranges, and Line
 terminators. One crate-private Anddress Issuer is now the sole construction
 authority; one shared source identity and allocation-free target/parent
-geometry serve every issued value. The private `StructuralCursor`
-consolidation remains Gate 3. Search retains
-literal finding, tiers, ordering, and multiplicity; View projects then reads an
-exact range; Check determines currentness; Apply owns mutation and publication;
-Anchor remains the sole Backwriter continuity exception.
+geometry serve every issued value. One private `StructuralCursor` owns
+complete-source Line and Paragraph framing for Search, source observation,
+direct View relation validation, and prospective Apply output. Search retains
+literal finding, tiers, ordering, and multiplicity while returning owned
+Anddresses directly; Adapter positions derive only from their v5 geometry.
+View projects then reads an exact range; Check determines currentness; Apply
+owns mutation and publication; Anchor remains the sole Backwriter continuity
+exception.
 
-Gate 2 deletes public raw and capability-owned address constructors. Later
-gates delete the Search position wrapper, View relation scan, and one-shot
-Edit's private View. The plan
+Gate 2 deletes public raw and capability-owned address constructors. Gate 3
+deletes the Search position/occurrence wrappers and duplicate complete-source
+framers. Later gates delete the retained View range/relation scans and
+one-shot Edit's private View. The plan
 reuses existing admission/no-follow reads, literal matching, ordered batch
 grouping, staging and prospective provenance, Host proof, publication, and
 Anchor reflection. It adds no history, relocation, registry, watcher, retry,
@@ -300,15 +306,15 @@ are preserved evidence, never current authority.
 - Search also accepts a distinct exact logical File request. It validates one
   logical path, observes that admitted regular source under the same UTF-8/NUL
   and no-follow policy, and returns its File Anddress without content matching
-  or Line framing.
+  or traversal. The shared cursor supplies the source Line count.
   Missing paths and directories are Empty; the operation creates no empty
   query, synthetic Line or Paragraph, scope traversal, index, or cache.
 - Search's live scan, matching, ordering, all-or-nothing behavior, and
   no-fixed-limit contract remain valid. It constructs v5 values through the
   Issuer from the current source identity and exact target/parent geometry.
-  Each result is one `SearchOccurrence`; its optional `SearchPosition` is
-  descriptive output calculated by the same Line framing pass and is not an
-  Anddress field or matching/currentness input.
+  `SearchOutcome::Found` owns `Vec<Anddress>` directly. Human and machine
+  positions are descriptive Adapter output derived from each v5 Anddress's
+  Line geometry; there is no parallel Core position or occurrence carrier.
   Search owns no registry, persistent identity, mutation lifecycle, or result
   store.
 - In the v5 source, Search remains the only target finder. It computes the

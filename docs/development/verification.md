@@ -2,15 +2,17 @@
 
 ## 0.2.4 structural-authority gates
 
-Gate 1 records the consumer baseline. Gate 2 hard-cuts current source to v5
-while leaving Cargo/CLI version and the closed `0.2.3` distribution unchanged.
-Its exact File, Paragraph, text-Line, and File-child-Line KATs; strict v4/v3
-rejection; source/geometry mutation and overflow fail-closure; algebra; shared
-source identity; source Line counting; Runtime Search geometry; Apply receipt/
-Anchor projection; and existing semantic regressions are executable tests.
-Search matching and Apply publication paths are unchanged.
+Gate 1 records the consumer baseline. Gates 2–3 hard-cut current source to v5,
+install the sole Issuer and complete-source structural cursor, and contract
+Search results to direct Anddresses while leaving Cargo/CLI version and the
+closed `0.2.3` distribution unchanged. Exact File, Paragraph, text-Line, and
+File-child-Line KATs; strict v4/v3 rejection; source/geometry mutation and
+overflow fail-closure; algebra; shared source identity; every terminator and
+body class; source Line counting; Runtime Search geometry; Apply receipt/Anchor
+projection; and existing semantic regressions are executable tests. Search
+matching and Apply publication paths are unchanged.
 
-Gate 2 passes 257 tests on both GNU and musl. Both targets pass offline/locked
+Gate 3 passes 260 tests on both GNU and musl. Both targets pass offline/locked
 all-target check, clippy with warnings denied, and release build; the GNU run
 also records offline/locked metadata and dependency tree plus rustfmt. Cargo,
 lockfile, toolchain, Adapter envelope schemas, and the `0.2.3` executable
@@ -42,6 +44,13 @@ all-or-none contracts. Gate evidence is cumulative:
 Wall-clock results are evidence, not a semantic gate. No gate may infer
 history, relocation, registry, watcher, retry, merge, rollback, or publication
 authority from structural geometry.
+
+Gate 3 fixes complete-source cursor behavior at 8,191/8,192/8,193-byte scratch
+edges and checked offset overflow before input consumption. Parent/candidate
+streaming JSON is byte-identical for 256 MiB and 1 GiB one-hit sources and a
+1,048,576-hit source. Candidate peak RSS is 2,640 KiB, 2,504 KiB, and 166,404
+KiB respectively; the parent million-hit peak is 215,660 KiB. These are
+bounded-memory observations, not performance or arbitrary-input promises.
 
 ## 0.2.3 Patch Box Gates 1–8
 

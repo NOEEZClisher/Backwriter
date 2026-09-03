@@ -10,8 +10,7 @@ use cap_std::fs::{Dir, File, OpenOptions};
 use cap_std::fs::{Permissions, PermissionsExt};
 
 use crate::backwriter::anddress::{
-    Anddress, AnddressIssuer, AnddressTarget, LineTerminator, ParagraphGeometry, ParentGeometry,
-    TargetGeometry,
+    Anddress, AnddressIssuer, AnddressTarget, ParagraphGeometry, ParentGeometry, TargetGeometry,
 };
 use crate::backwriter::{
     apply::{ApplyError, EditReceipt},
@@ -26,6 +25,7 @@ use super::{
         CurrentObservation, ObservationBuilder, READ_BUFFER_SIZE, SourceScanError, observe_source,
         validate_source_exact,
     },
+    structural_cursor::{LineSpan, StructuralSink},
 };
 
 pub(super) fn finish_publication(
@@ -277,17 +277,9 @@ enum Emission {
 
 struct AfterProjector<'a> {
     candidates: Vec<Candidate<'a>>,
-    byte_offset: usize,
-    line_start: usize,
-    line_offset: usize,
-    line_started: bool,
-    pending_cr: bool,
-    line_has_text: bool,
-    paragraph_start: usize,
-    paragraph_end: usize,
-    paragraph_file_line_offset: usize,
-    paragraph_line_count: usize,
     in_paragraph: bool,
+    emission: Emission,
+    emission_start: usize,
 }
 
 impl<'a> AfterProjector<'a> {
@@ -308,54 +300,18 @@ impl<'a> AfterProjector<'a> {
         }
         Ok(Self {
             candidates,
-            byte_offset: 0,
-            line_start: 0,
-            line_offset: 0,
-            line_started: false,
-            pending_cr: false,
-            line_has_text: false,
-            paragraph_start: 0,
-            paragraph_end: 0,
-            paragraph_file_line_offset: 0,
-            paragraph_line_count: 0,
             in_paragraph: false,
+            emission: Emission::Replacement,
+            emission_start: 0,
         })
     }
 
-    fn push(&mut self, bytes: &[u8], emission: Emission) -> Result<(), ApplyError> {
-        for (index, &byte) in bytes.iter().enumerate() {
-            let byte_start = self.byte_offset;
-            if self.pending_cr {
-                if byte == b'\n' {
-                    self.mark(emission, index)?;
-                    self.advance()?;
-                    self.finish_line(LineTerminator::Crlf)?;
-                    continue;
-                }
-                self.finish_line(LineTerminator::Cr)?;
-            }
-            self.begin_line(byte_start);
-            self.mark(emission, index)?;
-            self.advance()?;
-            match byte {
-                b'\r' => self.pending_cr = true,
-                b'\n' => self.finish_line(LineTerminator::Lf)?,
-                _ => self.line_has_text |= !matches!(byte, b' ' | b'\t'),
-            }
-        }
-        Ok(())
+    fn begin_emission(&mut self, emission: Emission, byte_start: usize) {
+        self.emission = emission;
+        self.emission_start = byte_start;
     }
 
-    fn finish(mut self) -> Result<Vec<Option<TargetGeometry>>, ApplyError> {
-        if self.line_started {
-            let terminator = if self.pending_cr {
-                LineTerminator::Cr
-            } else {
-                LineTerminator::None
-            };
-            self.finish_line(terminator)?;
-        }
-        self.finish_paragraph()?;
+    fn finish(self) -> Result<Vec<Option<TargetGeometry>>, ApplyError> {
         let mut results = Vec::new();
         results
             .try_reserve_exact(self.candidates.len())
@@ -366,12 +322,7 @@ impl<'a> AfterProjector<'a> {
         Ok(results)
     }
 
-    fn begin_line(&mut self, byte_start: usize) {
-        if self.line_started {
-            return;
-        }
-        self.line_started = true;
-        self.line_start = byte_start;
+    fn begin_line(&mut self) {
         for candidate in &mut self.candidates {
             if !candidate.multiple {
                 candidate.line = Markers::default();
@@ -379,12 +330,18 @@ impl<'a> AfterProjector<'a> {
         }
     }
 
-    fn mark(&mut self, emission: Emission, index: usize) -> Result<(), ApplyError> {
-        let original_offset = match emission {
+    fn mark(&mut self, byte_start: usize, index: usize) -> Result<(), SourceScanError> {
+        let output_offset = byte_start
+            .checked_add(index)
+            .ok_or(SourceScanError::Resource)?;
+        let emission_index = output_offset
+            .checked_sub(self.emission_start)
+            .ok_or(SourceScanError::InvalidSource)?;
+        let original_offset = match self.emission {
             Emission::Original { byte_start } => Some(
                 byte_start
-                    .checked_add(index)
-                    .ok_or(ApplyError::Unavailable)?,
+                    .checked_add(emission_index)
+                    .ok_or(SourceScanError::Resource)?,
             ),
             Emission::Copied | Emission::Replacement => None,
         };
@@ -392,7 +349,7 @@ impl<'a> AfterProjector<'a> {
             if candidate.multiple {
                 continue;
             }
-            match emission {
+            match self.emission {
                 Emission::Original { .. } => {
                     let offset = original_offset.expect("original emission has an offset");
                     if candidate.binding.byte_start() <= offset
@@ -413,72 +370,34 @@ impl<'a> AfterProjector<'a> {
         Ok(())
     }
 
-    fn advance(&mut self) -> Result<(), ApplyError> {
-        self.byte_offset = self
-            .byte_offset
-            .checked_add(1)
-            .ok_or(ApplyError::Unavailable)?;
-        Ok(())
-    }
-
-    fn finish_line(&mut self, terminator: LineTerminator) -> Result<(), ApplyError> {
-        let geometry = TargetGeometry::Line {
-            byte_start: self.line_start,
-            byte_end: self.byte_offset,
-            terminator,
-            line_offset_in_parent: self.line_offset,
-            parent: ParentGeometry::File,
-        };
+    fn finish_line(&mut self, line: LineSpan) {
+        let geometry = line.file_geometry();
         for candidate in &mut self.candidates {
             if candidate.binding.target() == AnddressTarget::Line {
                 candidate.record(candidate.line, geometry);
             }
         }
-        if self.line_has_text {
+        if line.body_class == crate::backwriter::anddress::LineBodyClass::Text {
             if !self.in_paragraph {
                 self.in_paragraph = true;
-                self.paragraph_start = self.line_start;
-                self.paragraph_file_line_offset = self.line_offset;
-                self.paragraph_line_count = 0;
                 for candidate in &mut self.candidates {
                     if !candidate.multiple {
                         candidate.paragraph = Markers::default();
                     }
                 }
             }
-            self.paragraph_end = self.byte_offset;
-            self.paragraph_line_count = self
-                .paragraph_line_count
-                .checked_add(1)
-                .ok_or(ApplyError::Unavailable)?;
             for candidate in &mut self.candidates {
                 if !candidate.multiple {
                     candidate.paragraph.include(candidate.line);
                 }
             }
-        } else {
-            self.finish_paragraph()?;
         }
-        self.line_offset = self
-            .line_offset
-            .checked_add(1)
-            .ok_or(ApplyError::Unavailable)?;
-        self.line_started = false;
-        self.pending_cr = false;
-        self.line_has_text = false;
-        Ok(())
     }
 
-    fn finish_paragraph(&mut self) -> Result<(), ApplyError> {
+    fn finish_paragraph(&mut self, paragraph: ParagraphGeometry) -> Result<(), SourceScanError> {
         if !self.in_paragraph {
             return Ok(());
         }
-        let paragraph = ParagraphGeometry {
-            byte_start: self.paragraph_start,
-            byte_end: self.paragraph_end,
-            file_line_offset: self.paragraph_file_line_offset,
-            line_count: self.paragraph_line_count,
-        };
         for candidate in &mut self.candidates {
             if let Some(TargetGeometry::Line {
                 byte_start,
@@ -492,7 +411,7 @@ impl<'a> AfterProjector<'a> {
             {
                 *line_offset_in_parent = line_offset_in_parent
                     .checked_sub(paragraph.file_line_offset)
-                    .ok_or(ApplyError::Unavailable)?;
+                    .ok_or(SourceScanError::Resource)?;
                 *parent = ParentGeometry::Paragraph(paragraph);
             }
             if candidate.binding.target() == AnddressTarget::Paragraph {
@@ -501,6 +420,38 @@ impl<'a> AfterProjector<'a> {
         }
         self.in_paragraph = false;
         Ok(())
+    }
+}
+
+impl StructuralSink for AfterProjector<'_> {
+    fn begin_line(
+        &mut self,
+        _byte_start: usize,
+        _file_line_offset: usize,
+    ) -> Result<(), SourceScanError> {
+        self.begin_line();
+        Ok(())
+    }
+
+    fn segment(
+        &mut self,
+        bytes: &[u8],
+        byte_start: usize,
+        _is_content: bool,
+    ) -> Result<(), SourceScanError> {
+        for index in 0..bytes.len() {
+            self.mark(byte_start, index)?;
+        }
+        Ok(())
+    }
+
+    fn line(&mut self, line: LineSpan) -> Result<(), SourceScanError> {
+        self.finish_line(line);
+        Ok(())
+    }
+
+    fn paragraph(&mut self, paragraph: ParagraphGeometry) -> Result<(), SourceScanError> {
+        self.finish_paragraph(paragraph)
     }
 }
 
@@ -962,34 +913,41 @@ impl<'parent, 'bindings> Output<'parent, 'bindings> {
     }
 
     fn emit(&mut self, bytes: &[u8], emission: Emission) -> Result<(), ApplyError> {
-        let chunk_start = self.observation.push(bytes).map_err(map_scan_error)?;
-        debug_assert_eq!(chunk_start, self.projector.as_ref().unwrap().byte_offset);
+        let chunk_start = self.observation.byte_offset();
+        let projector = self.projector.as_mut().expect("output owns its projector");
+        projector.begin_emission(emission, chunk_start);
+        self.observation
+            .push_structural(bytes, projector)
+            .map_err(map_scan_error)?;
         self.temporary
             .as_mut()
             .expect("output owns its temporary")
             .write(bytes)?;
         compare_exact(&mut self.comparison, bytes, &mut self.identical)?;
-        self.projector
-            .as_mut()
-            .expect("output owns its projector")
-            .push(bytes, emission)
+        Ok(())
     }
 
-    fn finish(mut self) -> Result<CompletedOutput<'parent>, ApplyError> {
-        if self.identical {
-            self.identical = comparison_exhausted(&mut self.comparison)?;
+    fn finish(self) -> Result<CompletedOutput<'parent>, ApplyError> {
+        let Self {
+            temporary,
+            mut comparison,
+            mut identical,
+            observation,
+            projector,
+        } = self;
+        if identical {
+            identical = comparison_exhausted(&mut comparison)?;
         }
-        let state = self.observation.finish().map_err(map_scan_error)?;
-        let candidates = self
-            .projector
-            .take()
-            .expect("output owns its projector")
-            .finish()?;
+        let mut projector = projector.expect("output owns its projector");
+        let state = observation
+            .finish_structural(&mut projector)
+            .map_err(map_scan_error)?;
+        let candidates = projector.finish()?;
         Ok(CompletedOutput {
-            temporary: self.temporary.take().expect("output owns its temporary"),
+            temporary: temporary.expect("output owns its temporary"),
             observation: state,
             candidates,
-            identical: self.identical,
+            identical,
         })
     }
 }

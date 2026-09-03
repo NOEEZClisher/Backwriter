@@ -1,6 +1,6 @@
 # Backwriter Anddress and Exact Line Model
 
-## Implemented 0.2.4 Gate 2 v5 target algebra
+## Implemented 0.2.4 Gates 2–3 v5 target algebra
 
 The source is hard-cut to `artext.backwriter-anddress.v5`. Published and closed
 `0.2.3` remains immutable v4 release evidence; current decode returns
@@ -46,7 +46,10 @@ decode and issue pass through the same source/geometry validator. Addresses
 issued for one observed source share one `Arc<SourceIdentity>`. Target geometry
 is allocation-free and a Line stores its complete File or Paragraph parent
 geometry, so `parent` and `project` neither parse nor reconstruct source
-structure. The later `StructuralCursor` consolidation remains Gate 3.
+structure. Gate 3 installs one private allocation-bounded `StructuralCursor`
+for complete-source Line/Paragraph framing. Search emits Anddresses directly,
+and display positions derive from the address algebra rather than a parallel
+position value.
 
 The encoder emits one compact object with this fixed field order:
 

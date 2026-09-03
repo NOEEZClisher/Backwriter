@@ -2,8 +2,10 @@
 
 use std::io::Read;
 
-use crate::backwriter::anddress::{Anddress, AnddressTarget, LineBodyClass};
+use crate::backwriter::anddress::{Anddress, AnddressTarget};
 use crate::hash::Sha256;
+
+use super::structural_cursor::{LineSpan, StructuralCursor, StructuralSink};
 
 pub(crate) const READ_BUFFER_SIZE: usize = 8_192;
 
@@ -26,13 +28,6 @@ pub(crate) struct TargetProjection<'a> {
     inputs: &'a [Anddress],
     indexes: &'a [usize],
     current: Vec<bool>,
-    line_start: usize,
-    line_started: bool,
-    pending_cr: bool,
-    line_has_text: bool,
-    paragraph_start: usize,
-    paragraph_end: usize,
-    in_paragraph: bool,
 }
 
 impl<'a> TargetProjection<'a> {
@@ -49,50 +44,10 @@ impl<'a> TargetProjection<'a> {
             inputs,
             indexes,
             current,
-            line_start: 0,
-            line_started: false,
-            pending_cr: false,
-            line_has_text: false,
-            paragraph_start: 0,
-            paragraph_end: 0,
-            in_paragraph: false,
         })
     }
 
-    pub(crate) fn push(&mut self, bytes: &[u8], chunk_start: usize) -> Result<(), SourceScanError> {
-        for (index, &byte) in bytes.iter().enumerate() {
-            let byte_start = chunk_start
-                .checked_add(index)
-                .ok_or(SourceScanError::Resource)?;
-            if self.pending_cr {
-                if byte == b'\n' {
-                    self.finish_direct_line(
-                        byte_start.checked_add(1).ok_or(SourceScanError::Resource)?,
-                    );
-                    continue;
-                }
-                self.finish_direct_line(byte_start);
-            }
-            if !self.line_started {
-                self.line_started = true;
-                self.line_start = byte_start;
-            }
-            match byte {
-                b'\r' => self.pending_cr = true,
-                b'\n' => self.finish_direct_line(
-                    byte_start.checked_add(1).ok_or(SourceScanError::Resource)?,
-                ),
-                _ => self.line_has_text |= !matches!(byte, b' ' | b'\t'),
-            }
-        }
-        Ok(())
-    }
-
     pub(crate) fn finish(&mut self, state: &CurrentObservation) {
-        if self.line_started {
-            self.finish_direct_line(state.byte_length);
-        }
-        self.finish_paragraph();
         for &index in self.indexes {
             let input = &self.inputs[index];
             let source_matches = input.source_byte_length() == state.byte_length
@@ -109,60 +64,36 @@ impl<'a> TargetProjection<'a> {
     pub(crate) fn into_current(self) -> Vec<bool> {
         self.current
     }
+}
 
-    fn finish_line(&mut self, byte_start: usize, byte_end: usize, body_class: LineBodyClass) {
+impl StructuralSink for TargetProjection<'_> {
+    fn line(&mut self, line: LineSpan) -> Result<(), SourceScanError> {
         for &index in self.indexes {
             let input = &self.inputs[index];
             if input.target() == AnddressTarget::Line
-                && input.byte_start() == byte_start
-                && input.byte_end() == byte_end
+                && input.byte_start() == line.byte_start
+                && input.byte_end() == line.byte_end
             {
                 self.current[index] = true;
             }
         }
-
-        if body_class == LineBodyClass::Text {
-            if !self.in_paragraph {
-                self.in_paragraph = true;
-                self.paragraph_start = byte_start;
-            }
-            self.paragraph_end = byte_end;
-        } else if self.in_paragraph {
-            self.finish_paragraph();
-        }
+        Ok(())
     }
 
-    fn finish_direct_line(&mut self, byte_end: usize) {
-        self.finish_line(
-            self.line_start,
-            byte_end,
-            LineBodyClass::from_has_text(self.line_has_text),
-        );
-        self.line_started = false;
-        self.pending_cr = false;
-        self.line_has_text = false;
-    }
-
-    fn finish_paragraph(&mut self) {
-        if !self.in_paragraph {
-            return;
-        }
+    fn paragraph(
+        &mut self,
+        paragraph: crate::backwriter::anddress::ParagraphGeometry,
+    ) -> Result<(), SourceScanError> {
         for &index in self.indexes {
             let input = &self.inputs[index];
             if input.target() == AnddressTarget::Paragraph
-                && input.byte_start() == self.paragraph_start
-                && input.byte_end() == self.paragraph_end
+                && input.byte_start() == paragraph.byte_start
+                && input.byte_end() == paragraph.byte_end
             {
                 self.current[index] = true;
             }
         }
-        self.in_paragraph = false;
-    }
-}
-
-impl LineBodyClass {
-    fn from_has_text(has_text: bool) -> Self {
-        if has_text { Self::Text } else { Self::Empty }
+        Ok(())
     }
 }
 
@@ -172,38 +103,50 @@ struct Utf8Validator {
     length: usize,
 }
 
-#[derive(Default)]
-struct SourceTextBuilder {
-    utf8: Utf8Validator,
-    byte_length: usize,
-    line_count: usize,
-    line_started: bool,
-    pending_cr: bool,
-}
-
 /// Incremental source-policy and exact-state accumulator shared by retained
 /// source observation and generated Apply output.
 pub(crate) struct ObservationBuilder {
-    source: SourceTextBuilder,
+    utf8: Utf8Validator,
+    cursor: StructuralCursor,
     hash: Sha256,
 }
 
 impl ObservationBuilder {
     pub(crate) fn new() -> Result<Self, SourceScanError> {
         Ok(Self {
-            source: SourceTextBuilder::default(),
+            utf8: Utf8Validator::default(),
+            cursor: StructuralCursor::default(),
             hash: Sha256::new(),
         })
     }
 
-    pub(crate) fn push(&mut self, bytes: &[u8]) -> Result<usize, SourceScanError> {
-        let chunk_start = self.source.push(bytes)?;
+    pub(crate) fn byte_offset(&self) -> usize {
+        self.cursor.byte_offset()
+    }
+
+    pub(crate) fn push_structural(
+        &mut self,
+        bytes: &[u8],
+        sink: &mut impl StructuralSink,
+    ) -> Result<usize, SourceScanError> {
+        if !self.utf8.push(bytes) {
+            return Err(SourceScanError::InvalidSource);
+        }
+        let chunk_start = self.cursor.byte_offset();
         self.hash.update(bytes);
+        sink.source(bytes, chunk_start)?;
+        self.cursor.push(bytes, sink)?;
         Ok(chunk_start)
     }
 
-    pub(crate) fn finish(self) -> Result<CurrentObservation, SourceScanError> {
-        let (byte_length, line_count) = self.source.finish()?;
+    pub(crate) fn finish_structural(
+        self,
+        sink: &mut impl StructuralSink,
+    ) -> Result<CurrentObservation, SourceScanError> {
+        if !self.utf8.finish() {
+            return Err(SourceScanError::InvalidSource);
+        }
+        let (byte_length, line_count) = self.cursor.finish(sink)?;
         Ok(CurrentObservation {
             hash: self.hash.finish().to_hex(),
             byte_length,
@@ -212,58 +155,9 @@ impl ObservationBuilder {
     }
 }
 
-impl SourceTextBuilder {
-    fn push(&mut self, bytes: &[u8]) -> Result<usize, SourceScanError> {
-        if !self.utf8.push(bytes) {
-            return Err(SourceScanError::InvalidSource);
-        }
-        for &byte in bytes {
-            if self.pending_cr {
-                self.line_count = self
-                    .line_count
-                    .checked_add(1)
-                    .ok_or(SourceScanError::Resource)?;
-                self.pending_cr = false;
-                self.line_started = false;
-                if byte == b'\n' {
-                    continue;
-                }
-            }
-            self.line_started = true;
-            match byte {
-                b'\r' => self.pending_cr = true,
-                b'\n' => {
-                    self.line_count = self
-                        .line_count
-                        .checked_add(1)
-                        .ok_or(SourceScanError::Resource)?;
-                    self.line_started = false;
-                }
-                _ => {}
-            }
-        }
-        let chunk_start = self.byte_length;
-        self.byte_length = self
-            .byte_length
-            .checked_add(bytes.len())
-            .ok_or(SourceScanError::Resource)?;
-        Ok(chunk_start)
-    }
+struct EmptySink;
 
-    fn finish(self) -> Result<(usize, usize), SourceScanError> {
-        if !self.utf8.finish() {
-            return Err(SourceScanError::InvalidSource);
-        }
-        let line_count = if self.pending_cr || self.line_started {
-            self.line_count
-                .checked_add(1)
-                .ok_or(SourceScanError::Resource)?
-        } else {
-            self.line_count
-        };
-        Ok((self.byte_length, line_count))
-    }
-}
+impl StructuralSink for EmptySink {}
 
 impl Utf8Validator {
     fn push(&mut self, bytes: &[u8]) -> bool {
@@ -316,7 +210,15 @@ impl Utf8Validator {
 /// only after it has passed UTF-8 and NUL validation.
 pub(crate) fn observe_source(
     reader: &mut impl Read,
-    mut on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
+    on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
+) -> Result<CurrentObservation, SourceScanError> {
+    let mut sink = ChunkSink(on_chunk);
+    observe_structural(reader, &mut sink)
+}
+
+pub(crate) fn observe_structural(
+    reader: &mut impl Read,
+    sink: &mut impl StructuralSink,
 ) -> Result<CurrentObservation, SourceScanError> {
     let mut observation = ObservationBuilder::new()?;
     let mut scratch = [0_u8; READ_BUFFER_SIZE];
@@ -325,11 +227,21 @@ pub(crate) fn observe_source(
             .read(&mut scratch)
             .map_err(|_| SourceScanError::Read)?;
         if count == 0 {
-            return observation.finish();
+            return observation.finish_structural(sink);
         }
         let bytes = &scratch[..count];
-        let chunk_start = observation.push(bytes)?;
-        on_chunk(bytes, chunk_start)?;
+        observation.push_structural(bytes, sink)?;
+    }
+}
+
+struct ChunkSink<F>(F);
+
+impl<F> StructuralSink for ChunkSink<F>
+where
+    F: FnMut(&[u8], usize) -> Result<(), SourceScanError>,
+{
+    fn source(&mut self, bytes: &[u8], byte_start: usize) -> Result<(), SourceScanError> {
+        (self.0)(bytes, byte_start)
     }
 }
 
@@ -340,11 +252,13 @@ pub(crate) fn validate_source_exact(
     expected_length: usize,
     mut on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
 ) -> Result<(), SourceScanError> {
-    let mut source = SourceTextBuilder::default();
+    let mut utf8 = Utf8Validator::default();
+    let mut cursor = StructuralCursor::default();
+    let mut sink = EmptySink;
     let mut scratch = [0_u8; READ_BUFFER_SIZE];
-    while source.byte_length < expected_length {
+    while cursor.byte_offset() < expected_length {
         let remaining = expected_length
-            .checked_sub(source.byte_length)
+            .checked_sub(cursor.byte_offset())
             .ok_or(SourceScanError::Resource)?;
         let capacity = remaining.min(scratch.len());
         let count = reader
@@ -354,14 +268,20 @@ pub(crate) fn validate_source_exact(
             return Err(SourceScanError::InvalidSource);
         }
         let bytes = &scratch[..count];
-        let chunk_start = source.push(bytes)?;
+        if !utf8.push(bytes) {
+            return Err(SourceScanError::InvalidSource);
+        }
+        let chunk_start = cursor.push(bytes, &mut sink)?;
         on_chunk(bytes, chunk_start)?;
     }
     let mut extra = [0_u8; 1];
     if reader.read(&mut extra).map_err(|_| SourceScanError::Read)? != 0 {
         return Err(SourceScanError::InvalidSource);
     }
-    let (actual, _) = source.finish()?;
+    if !utf8.finish() {
+        return Err(SourceScanError::InvalidSource);
+    }
+    let (actual, _) = cursor.finish(&mut sink)?;
     (actual == expected_length)
         .then_some(())
         .ok_or(SourceScanError::InvalidSource)
@@ -371,7 +291,9 @@ pub(crate) fn validate_source_exact(
 mod tests {
     use std::io::{self, Read};
 
-    use super::{ObservationBuilder, READ_BUFFER_SIZE, SourceScanError, validate_source_exact};
+    use super::{
+        EmptySink, ObservationBuilder, READ_BUFFER_SIZE, SourceScanError, validate_source_exact,
+    };
 
     struct CountingReader {
         bytes: Vec<u8>,
@@ -473,10 +395,11 @@ mod tests {
             ),
         ] {
             let mut observation = ObservationBuilder::new().unwrap();
+            let mut sink = EmptySink;
             for chunk in chunks {
-                observation.push(chunk).unwrap();
+                observation.push_structural(chunk, &mut sink).unwrap();
             }
-            let state = observation.finish().unwrap();
+            let state = observation.finish_structural(&mut sink).unwrap();
             assert_eq!(state.byte_length, expected_length);
             assert_eq!(state.line_count, expected_lines);
         }

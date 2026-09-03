@@ -38,9 +38,7 @@ fn coordinate(workspace: &WorkspaceRuntime) -> String {
         SearchTarget::File,
     );
     match workspace.search(&request).unwrap() {
-        SearchOutcome::Found { occurrences } => {
-            occurrences[0].anddress().workspace_coordinate().to_owned()
-        }
+        SearchOutcome::Found { anddresses } => anddresses[0].workspace_coordinate().to_owned(),
         SearchOutcome::Empty => panic!("coordinate source"),
     }
 }
@@ -629,7 +627,7 @@ fn host_view_batch_reuses_and_invalidates_proof_per_source_group() {
     );
     assert!(matches!(
         host.search(&request),
-        Ok(SearchOutcome::Found { occurrences }) if occurrences.len() == 2
+        Ok(SearchOutcome::Found { anddresses }) if anddresses.len() == 2
     ));
 
     let trusted = host.view_batch(&inputs, AnddressTarget::Line).unwrap();
@@ -1308,11 +1306,11 @@ fn host_view_reuses_matching_search_proof_and_falls_back_after_a_miss_or_invalid
         SearchScope::all_admitted(),
         SearchTarget::Line,
     );
-    let SearchOutcome::Found { occurrences } = host.search(&request).unwrap() else {
+    let SearchOutcome::Found { anddresses } = host.search(&request).unwrap() else {
         panic!("matching Line")
     };
-    assert_eq!(occurrences[0].anddress(), &line);
-    assert_eq!(occurrences.len(), 1);
+    assert_eq!(anddresses[0], line);
+    assert_eq!(anddresses.len(), 1);
     assert_eq!(
         host.view(&separator, AnddressTarget::Paragraph),
         Ok(ViewOutcome::RelationAbsent)
@@ -1389,14 +1387,11 @@ fn host_view_reuses_matching_search_proof_and_falls_back_after_a_miss_or_invalid
     ));
 
     let untrusted = runtime(&root);
-    let SearchOutcome::Found { occurrences } = untrusted.search(&request).unwrap() else {
+    let SearchOutcome::Found { anddresses } = untrusted.search(&request).unwrap() else {
         panic!("untrusted Line")
     };
     assert!(matches!(
-        untrusted.view(
-            occurrences[0].anddress(),
-            occurrences[0].anddress().target(),
-        ),
+        untrusted.view(&anddresses[0], anddresses[0].target()),
         Ok(ViewOutcome::Line { ref content, .. }) if content == "one"
     ));
 }
@@ -1410,13 +1405,13 @@ fn host_view_open_and_short_failures_remove_only_proof_and_preserve_anchor() {
         let source_path = root.join("note.txt");
         fs::write(&source_path, b"current\n").unwrap();
         let mut host = host_runtime(&root);
-        let SearchOutcome::Found { mut occurrences } = host
+        let SearchOutcome::Found { mut anddresses } = host
             .search(&SearchRequest::exact_file("note.txt").unwrap())
             .unwrap()
         else {
             panic!("current File")
         };
-        let current = occurrences.pop().unwrap().into_anddress();
+        let current = anddresses.pop().unwrap();
         let handle = match host.anchor(&current).unwrap() {
             AnchorOutcome::Anchored(handle) => handle,
             AnchorOutcome::AlreadyLive => panic!("File Anchor"),

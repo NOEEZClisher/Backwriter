@@ -3,13 +3,14 @@
 ## In progress: 0.2.4 structural-authority hard cut
 
 The [0.2.4 tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
-defines eight ordered gates. Gates 1–2 close authority, the consumer baseline,
-v5 algebra, canonical wire, and sole Issuer; `0.2.3` remains the published,
-immutable v4 release and current Cargo/CLI version.
+defines eight ordered gates. Gates 1–3 close authority, the consumer baseline,
+v5 algebra, canonical wire, sole Issuer, complete-source structural cursor,
+and direct Search result collection; `0.2.3` remains the published, immutable
+v4 release and current Cargo/CLI version.
 
 1. Authority and consumer baseline — complete.
 2. v5 algebra, exact wire, and sole Anddress Issuer — complete.
-3. sole `StructuralCursor`, Search migration, and result contraction.
+3. sole `StructuralCursor`, Search migration, and result contraction — complete.
 4. View Runtime plus single/batch Adapter migration.
 5. Edit/Apply/Anchor migration and private View removal.
 6. Check migration, remaining duplication removal, and code contraction.
@@ -27,11 +28,14 @@ publication, and Anchor the sole continuity authority.
 
 Each implementation gate hard-cuts its completed surface and fails closed.
 Gate 2 accepts only v5, shares one source identity across issued targets, and
-stores complete allocation-free target/parent geometry. There is no v4
-compatibility or parallel Runtime. Remaining acceptance includes sparse
-Search, one million hits, 200,000 files, single/batch View projection,
-terminator-preserving Edit, and blind duplicate drift. CLI/JSON presentation,
-stdin, and `bw.rs` splitting are decided only by their owning later gate.
+stores complete allocation-free target/parent geometry. Gate 3 routes
+complete-source framing through one cursor, returns Anddresses directly from
+Search, and preserves human/JSON position output by deriving it from v5
+geometry. There is no v4 compatibility or parallel Runtime. Remaining
+acceptance includes 200,000 files, single/batch View projection,
+terminator-preserving Edit, and blind duplicate drift. Later Adapter
+contraction, stdin, and `bw.rs` splitting are decided only by their owning
+gates.
 History, relocation, registry,
 watcher, retry, merge, rollback, and publication before Gate 8 remain excluded.
 

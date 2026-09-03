@@ -1,6 +1,6 @@
 # Backwriter CLI V1
 
-## 0.2.4 Gate 2 boundary
+## 0.2.4 boundary through Gate 3
 
 Gate 2 changes no CLI syntax, Adapter envelope schema, human formatting,
 parser flow, or executable version. Current source embeds canonical v5 objects
@@ -8,17 +8,19 @@ where existing Search, View, Check, Edit, Data, and Session surfaces carry an
 Anddress. The published `0.2.3` CLI and its embedded v4 objects remain immutable
 release evidence. There is no source v4 decoder or parallel Adapter branch.
 
-The target derives Search Line/Paragraph display positions from v5 Anddress
-geometry instead of `SearchPosition`; derives View self/ancestor projection
-from Anddress instead of a Runtime relation scan; and lets one-shot Line Edit
-read the v5 terminator directly instead of privately invoking View. Search
+Gate 3 derives Search Line/Paragraph display positions from v5 Anddress
+geometry, removes the Core `SearchPosition`/`SearchOccurrence` carriers, and
+keeps the Adapter-only v2 envelope byte-exact. The target derives View
+self/ancestor projection from Anddress instead of a Runtime relation scan; and
+lets one-shot Line Edit read the v5 terminator directly instead of privately
+invoking View. Search
 querying/order, View output order and all-or-none batch behavior, Edit receipt
 meaning, raw Session Edit/Apply, and existing output/error boundaries remain
 distinct consumers unless their owning gate proves a change necessary.
 
-The v5 wire is fixed by the address authority. Removing duplicated
-`SearchPosition`, View relation work, and one-shot Edit's private View—and any
-corresponding JSON/human presentation contraction—belongs to Gates 3–5. Stdin
+The v5 wire is fixed by the address authority. Search position duplication is
+removed; View relation work and one-shot Edit's private View—and any
+corresponding later presentation contraction—belong to Gates 4–5. Stdin
 transport and splitting `src/bin/bw.rs` remain explicit later decisions. Gate
 2 introduces no alternate command, envelope schema, wrapper, compatibility
 mode, or process lifecycle.
@@ -220,9 +222,9 @@ Found <count>
 
 `Empty` is one line, `Found 0`. `Found` preserves the Core result vector's
 existing deterministic order and duplicate multiplicity. File rows have no
-position; Line and Paragraph rows use the descriptive position captured by the
-same Search observation. The Search-specific writer never modifies an internal
-`SearchOutcome`, `SearchOccurrence`, or `Anddress`; it omits raw Anddress,
+position; Line and Paragraph rows derive their descriptive position from each
+result Anddress's same-observation v5 geometry. The Search-specific writer never
+modifies an internal `SearchOutcome` or `Anddress`; it omits raw Anddress,
 workspace coordinate, source hash, source length, and byte ranges. Pick keeps
 its separate existing raw-Anddress byte-range rows unchanged. Preview is not
 implemented.
@@ -240,9 +242,9 @@ followed by one LF. Its envelope keys are ordered `schema`, `outcome`, and
 Found items preserve this exact key order and target-specific shape:
 
 ```text
-{"logicalPath":"<path>","kind":"file","anddress":<exact-v4-Anddress-object>}
-{"logicalPath":"<path>","kind":"line","line":"<decimal>","anddress":<exact-v4-Anddress-object>}
-{"logicalPath":"<path>","kind":"paragraph","lineStart":"<decimal>","lineEnd":"<decimal>","anddress":<exact-v4-Anddress-object>}
+{"logicalPath":"<path>","kind":"file","anddress":<exact-v5-Anddress-object>}
+{"logicalPath":"<path>","kind":"line","line":"<decimal>","anddress":<exact-v5-Anddress-object>}
+{"logicalPath":"<path>","kind":"paragraph","lineStart":"<decimal>","lineEnd":"<decimal>","anddress":<exact-v5-Anddress-object>}
 ```
 
 A nonempty envelope is therefore
@@ -250,8 +252,9 @@ A nonempty envelope is therefore
 Line values are one-based canonical decimal strings; Paragraph start and end
 are one-based inclusive canonical decimal strings; File has no Line field. The
 writer maps `SearchOutcome::Empty` and `Found` directly and streams each
-`SearchOccurrence` in existing order, retaining duplicates. Its `anddress`
-member is the exact v4 `Anddress::encode()` object, not a JSON string, preview,
+Anddress in existing order, retaining duplicates. Position fields derive from
+that Anddress's geometry. Its `anddress` member is the exact v5
+`Anddress::encode()` object, not a JSON string, preview,
 normalized value, or new Core wire. The v2 envelope and occurrence item are CLI
 Adapter schema only. The writer allocates neither a JSON `Value` nor a second
 result collection. Encoding resource and stdout failure are execution errors;

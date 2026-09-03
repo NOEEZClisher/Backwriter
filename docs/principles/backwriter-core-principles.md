@@ -2,8 +2,10 @@
 
 The in-progress `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-Gate 2 hard-cuts current source to v5 without altering the closed `0.2.3` v4
-release or the Cargo/CLI version.
+Gates 2–3 hard-cut current source to v5, install the sole Issuer and shared
+complete-source structural cursor, and contract Search results to direct
+Anddresses without altering the closed `0.2.3` v4 release or the Cargo/CLI
+version.
 
 The closed public `0.1.0` release remains immutable v3 evidence. Published and
 closed `0.2.3`, the prior published `0.2.2` and `0.2.1`, and the prior closed public
@@ -123,10 +125,12 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
     source identity plus complete target/parent geometry now owns state/source
     relationships,
     containment, overlap, parent/projection, Line geometry, ranges, and
-    terminators. Gate 3 will consolidate Line and Paragraph framing into the
-    sole `StructuralCursor`. Search finds, View projects then range-reads, Check checks
-    currentness, Apply publishes mutation, and Anchor alone carries live
-    continuity. Capability-local parsers, constructors, position wrappers,
-    relation scans, and private composition Reads are removed rather than kept
-    as compatibility paths. This consolidation creates no history, relocation,
-    registry, watcher, retry, merge, rollback, or implicit workflow.
+    terminators. Gate 3 consolidates complete-source Line and Paragraph framing
+    into the sole `StructuralCursor` and removes Search's position and
+    occurrence wrappers. Search finds and returns Anddresses directly; View
+    projects then range-reads, Check checks currentness, Apply publishes
+    mutation, and Anchor alone carries live continuity. Gate 4 still owns
+    removal of bounded View relation/range scans, and Gate 5 owns the private
+    composition View. No compatibility path is retained. This consolidation
+    creates no history, relocation, registry, watcher, retry, merge, rollback,
+    or implicit workflow.

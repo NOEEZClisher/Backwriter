@@ -1,6 +1,6 @@
 # Backwriter 0.2.4 Structural Authority
 
-Status: Gates 1–2 complete. The source accepts and emits only v5 while Cargo,
+Status: Gates 1–3 complete. The source accepts and emits only v5 while Cargo,
 CLI version, and the published closed `0.2.3` distribution remain unchanged.
 
 ## Objective and boundary
@@ -21,9 +21,9 @@ decisions for their owning later gates.
 
 ## Gate 1 — authority and consumer baseline — complete
 
-Current direct consumers establish the contraction boundary:
+The Gate 1 baseline direct consumers establish the contraction boundary:
 
-| Current surface | Actual consumers | 0.2.4 disposition |
+| Gate 1 surface | Actual consumers | 0.2.4 disposition |
 | --- | --- | --- |
 | v4 `SourceIdentity`, `construct_source_identity`, `construct_anddress` | Runtime Search, View, and Apply; encoded objects in CLI, Check, Data, Pick, Anchor, and tests | Replace with v5 source geometry and one Issuer; no capability constructor remains |
 | `SearchOccurrence` plus optional `SearchPosition` | Runtime Search, Check filtering, Data/Session storage and indexing, human/JSON writers | Preserve order/multiplicity and caller ownership; remove the wrapper position after positions derive from Anddress |
@@ -97,7 +97,7 @@ Implemented evidence:
   geometry until Gate 3 replaces their duplicate framing with the sole
   `StructuralCursor`; literal matching and publication behavior are unchanged.
 
-## Gate 3 — StructuralCursor, Search, and result contraction
+## Gate 3 — StructuralCursor, Search, and result contraction — complete
 
 Acceptance:
 
@@ -105,7 +105,7 @@ Acceptance:
   blank/separator, Line, and Paragraph framer;
 - Search retains literal tiers, deterministic order, duplicates, and
   all-or-none failure while emitting v5 Anddresses through the Issuer;
-- remove `SearchPosition`, `SearchOccurrence.position`,
+- remove `SearchPosition` and `SearchOccurrence` completely,
   `LineProjection.line_number`, and `ParagraphState.start_line/end_line`;
 - prove sparse matching on 256 MiB and 1 GiB inputs, one million ordered hits,
   exact Unicode and terminator geometry, and no whole-source/result duplicate;
@@ -114,6 +114,40 @@ Acceptance:
 Any parser disagreement, missing/extra hit, order or multiplicity drift,
 partial result, source reread, arithmetic failure, or v4 residue is a gate
 failure. Exact Search JSON migration belongs to this gate and is not preclosed.
+
+Implemented evidence:
+
+- one private `StructuralCursor` owns complete-source byte offset, CR/LF/CRLF/
+  no-EOL framing, body class, Line geometry, File Line offset, and Paragraph
+  geometry. Search, source-state observation, direct View relation validation,
+  and prospective Apply projection consume its forward events. The retained
+  bounded trusted View range/relation scans remain Gate 4 work.
+- Runtime Search deletes `FileProjection`, `LineProjection`,
+  `ParagraphProjection`, and `ParagraphState`; Apply deletes `AfterProjector`'s
+  local framer; source observation deletes `SourceTextBuilder`. Literal
+  matching, tier buckets, traversal, currentness, staging, publication, Host
+  proof, and Anchor reflection retain their existing consumers and meanings.
+- Core hard-cuts `SearchOutcome::Found` to `anddresses: Vec<Anddress>` and
+  deletes `SearchOccurrence`, `SearchPosition`, their validator, and all
+  producer/consumer wrappers. Check, Data, Session indexing, Pick candidate
+  extraction, human output, and JSON output consume the direct collection.
+  The Adapter-only `bw.cli.search.v2` envelope and its key order and bytes are
+  unchanged; positions derive only from `line_number` and `line_range`.
+- fixed-scratch regressions cover all terminators and body classes across
+  8,191/8,192/8,193-byte edges and fail checked offset overflow before input
+  consumption. Unicode, exact geometry, provisional fail-all, order,
+  multiplicity, and currentness suites remain green.
+- parent/candidate JSON output is byte-identical for a 256 MiB one-hit source
+  (output SHA-256 `735a389c98de40a126137d4654a72df46a40d37175a5a4c1839f3bba77b31d58`)
+  and a 1 GiB one-hit source
+  (`06e84d3dca2d35c8c6f2edc032a9814e0b68df7a71c8346a5b8a92fd02c59e6e`).
+  Candidate peak RSS is 2,640 KiB and 2,504 KiB respectively; source size does
+  not create whole-source retention.
+- a 1,048,576-Line/full-hit fixture produces exactly 1,048,576 ordered results.
+  Parent/candidate streaming JSON is byte-identical at SHA-256
+  `823b903c89f45bb739e0e9a65a6b04df9313e4dc012f6b30c54e6ad06ee20c9e`;
+  peak RSS changes from 215,660 KiB to 166,404 KiB after removing the duplicate
+  occurrence/position carrier. Timing is descriptive and is not a gate.
 
 ## Gate 4 — View Runtime and single/batch Adapter
 

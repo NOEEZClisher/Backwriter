@@ -1,6 +1,6 @@
 # Backwriter Protocol
 
-## 0.2.4 structural-authority target
+## 0.2.4 structural-authority target through Gate 3
 
 Gate 2 hard-cuts the source to `artext.backwriter-anddress.v5`. Published and
 closed `0.2.3` remains immutable v4 release evidence. Current decode rejects v4
@@ -26,26 +26,33 @@ construction authority. Decode and issue use one validator. File, Paragraph,
 and Line values issued for one observation share one immutable
 `SourceIdentity`; the self-contained wire flattens required target and parent
 geometry. Exact field order and error classification are owned by the active
-address model. Consolidating CR, LF, CRLF, no-EOL, and blank-line-bounded
-Paragraph framing into the private `StructuralCursor` remains Gate 3.
+address model. Gate 3 installs one private allocation-bounded
+`StructuralCursor` for complete-source CR, LF, CRLF, no-EOL, body-class, Line,
+and blank-line-bounded Paragraph framing. Search, source-state observation,
+direct View relation validation, and prospective Apply projection consume its
+events instead of owning complete-source framers.
 
 Capabilities retain only their distinct work:
 
 - Search finds literal matches, preserves established tier/order/multiplicity,
-  and asks the Issuer for result addresses.
+  asks the Issuer for result addresses, and returns those Anddresses directly
+  as `SearchOutcome::Found { anddresses }`.
 - View validates the requested Anddress projection, confirms current source
-  state, and reads the projected exact byte range; it neither finds nor scans
-  for a structural relation.
+  state, and reads the projected exact byte range. Gate 3 routes its direct
+  relation verification through the common cursor; Gate 4 removes the retained
+  bounded relation/range scanners.
 - Check reports currentness and does not parse targets.
 - Apply validates an Edit, prepares and publishes the mutation, and consumes
   prospective cursor/Issuer geometry for any exact resulting address.
 - Anchor remains the sole live Runtime-local Backwriter continuity authority
   and consumes the same prospective geometry as Apply.
 
-Gate 2 removes public raw and capability-local address constructors. Existing
-Search position state, structural projections, View's relation finder, and
-one-shot Edit's private View remain temporary consumers until their owning
-Gates 3–5 replace them with Anddress geometry. Existing admission/no-follow
+Gate 2 removes public raw and capability-local address constructors. Gate 3
+removes Search's occurrence/position carrier and duplicate complete-source
+structural projections. Human and machine Search positions derive only from
+v5 Anddress geometry. The retained bounded View range/relation scanners and
+one-shot Edit's private View remain temporary consumers until Gates 4–5 remove
+them. Existing admission/no-follow
 observation, literal matcher, batch source grouping, fixed-scratch staging,
 prospective provenance, Host proof, publication, and Anchor reflection stay
 because they have distinct consumers.

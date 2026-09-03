@@ -5,8 +5,7 @@ use std::fs;
 use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget};
 use backwriter::backwriter::pick::PickOutcome;
 use backwriter::backwriter::search::{
-    SearchOccurrence, SearchOutcome, SearchPosition, SearchQuery, SearchRequest, SearchScope,
-    SearchTarget,
+    SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
 };
 use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
@@ -28,14 +27,14 @@ fn host_runtime(root: &std::path::Path, admission: &str) -> WorkspaceRuntime {
 }
 
 fn exact_file(runtime: &WorkspaceRuntime, path: &str) -> Anddress {
-    let SearchOutcome::Found { mut occurrences } = runtime
+    let SearchOutcome::Found { mut anddresses } = runtime
         .search(&SearchRequest::exact_file(path).unwrap())
         .unwrap()
     else {
         panic!("exact File")
     };
-    assert_eq!(occurrences.len(), 1);
-    occurrences.pop().unwrap().into_anddress()
+    assert_eq!(anddresses.len(), 1);
+    anddresses.pop().unwrap()
 }
 
 fn coordinate(runtime: &WorkspaceRuntime) -> String {
@@ -44,22 +43,14 @@ fn coordinate(runtime: &WorkspaceRuntime) -> String {
         SearchScope::all_admitted(),
         SearchTarget::File,
     );
-    let SearchOutcome::Found { occurrences } = runtime.search(&request).unwrap() else {
+    let SearchOutcome::Found { anddresses } = runtime.search(&request).unwrap() else {
         panic!("coordinate source")
     };
-    occurrences[0].anddress().workspace_coordinate().to_owned()
+    anddresses[0].workspace_coordinate().to_owned()
 }
 
-fn occurrence(anddress: Anddress, line: usize) -> SearchOccurrence {
-    let position = match anddress.target() {
-        AnddressTarget::File => None,
-        AnddressTarget::Line => Some(SearchPosition::Line { line }),
-        AnddressTarget::Paragraph => Some(SearchPosition::Paragraph {
-            start_line: line,
-            end_line: line,
-        }),
-    };
-    SearchOccurrence::new(anddress, position).unwrap()
+fn occurrence(anddress: Anddress, _line: usize) -> Anddress {
+    anddress
 }
 
 #[test]
@@ -118,7 +109,7 @@ fn check_search_and_pick_preserve_order_multiplicity_and_canonical_empty() {
         occurrence(current.clone(), 4),
     ];
     let expected_search = SearchOutcome::Found {
-        occurrences: vec![
+        anddresses: vec![
             search_candidates[0].clone(),
             search_candidates[2].clone(),
             search_candidates[3].clone(),
@@ -126,7 +117,7 @@ fn check_search_and_pick_preserve_order_multiplicity_and_canonical_empty() {
     };
     let checked = workspace
         .check_search(SearchOutcome::Found {
-            occurrences: search_candidates,
+            anddresses: search_candidates,
         })
         .unwrap();
     assert_eq!(checked.filtered, expected_search);
@@ -353,11 +344,11 @@ fn host_search_proof_drives_every_check_form_and_preserves_a_large_mixed_group()
         occurrence(current_file.clone(), 4),
     ];
     let expected_search = SearchOutcome::Found {
-        occurrences: vec![search_inputs[1].clone(), search_inputs[3].clone()],
+        anddresses: vec![search_inputs[1].clone(), search_inputs[3].clone()],
     };
     let checked = host
         .check_search(SearchOutcome::Found {
-            occurrences: search_inputs,
+            anddresses: search_inputs,
         })
         .unwrap();
     assert_eq!(checked.filtered, expected_search);

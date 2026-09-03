@@ -17,10 +17,7 @@ use backwriter::{
     backwriter::{
         anddress::{Anddress, AnddressTarget as PublicAnddressTarget, LineTerminator},
         check::CheckOutcome,
-        search::{
-            SearchOccurrence, SearchOutcome, SearchPosition, SearchQuery, SearchRequest,
-            SearchScope, SearchTarget,
-        },
+        search::{SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget},
         view::ViewOutcome,
     },
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
@@ -155,10 +152,10 @@ fn view_operand(root: &Path, path: &str, target: AnddressTarget) -> String {
         SearchScope::all_admitted(),
         SearchTarget::File,
     );
-    let SearchOutcome::Found { occurrences } = workspace.search(&request).unwrap() else {
+    let SearchOutcome::Found { anddresses } = workspace.search(&request).unwrap() else {
         panic!("coordinate source");
     };
-    let coordinate = occurrences[0].anddress().workspace_coordinate();
+    let coordinate = anddresses[0].workspace_coordinate();
     let source = fs::read(root.join(path)).unwrap_or_default();
     let address = match target {
         AnddressTarget::File => support::file(coordinate, path, &source),
@@ -359,28 +356,30 @@ fn expected_search_json(outcome: &SearchOutcome) -> Vec<u8> {
     let mut output = b"{\"schema\":\"bw.cli.search.v2\",\"outcome\":\"".to_vec();
     match outcome {
         SearchOutcome::Empty => output.extend_from_slice(b"empty\",\"occurrences\":[]}"),
-        SearchOutcome::Found { occurrences } => {
+        SearchOutcome::Found { anddresses } => {
             output.extend_from_slice(b"found\",\"occurrences\":[");
-            for (index, occurrence) in occurrences.iter().enumerate() {
+            for (index, anddress) in anddresses.iter().enumerate() {
                 if index != 0 {
                     output.push(b',');
                 }
-                let anddress = occurrence.anddress();
                 output.extend_from_slice(b"{\"logicalPath\":");
                 serde_json::to_writer(&mut output, anddress.logical_path()).unwrap();
-                match occurrence.position() {
-                    None => output.extend_from_slice(b",\"kind\":\"file\""),
-                    Some(SearchPosition::Line { line }) => {
+                match anddress.target() {
+                    PublicAnddressTarget::File => output.extend_from_slice(b",\"kind\":\"file\""),
+                    PublicAnddressTarget::Line => {
+                        let line = anddress.line_number().unwrap();
                         write!(output, ",\"kind\":\"line\",\"line\":\"{line}\"").unwrap();
                     }
-                    Some(SearchPosition::Paragraph {
-                        start_line,
-                        end_line,
-                    }) => write!(
-                        output,
-                        ",\"kind\":\"paragraph\",\"lineStart\":\"{start_line}\",\"lineEnd\":\"{end_line}\""
-                    )
-                    .unwrap(),
+                    PublicAnddressTarget::Paragraph => {
+                        let lines = anddress.line_range();
+                        let start_line = lines.start + 1;
+                        let end_line = lines.end;
+                        write!(
+                            output,
+                            ",\"kind\":\"paragraph\",\"lineStart\":\"{start_line}\",\"lineEnd\":\"{end_line}\""
+                        )
+                        .unwrap();
+                    }
                 }
                 output.extend_from_slice(b",\"anddress\":");
                 output.extend_from_slice(&anddress.encode().unwrap());
@@ -409,35 +408,35 @@ fn assert_search_json(output: Output, expected: &SearchOutcome) {
     );
     let actual = document["occurrences"].as_array().unwrap();
     let expected = match expected {
-        SearchOutcome::Empty => &[] as &[SearchOccurrence],
-        SearchOutcome::Found { occurrences } => occurrences,
+        SearchOutcome::Empty => &[] as &[Anddress],
+        SearchOutcome::Found { anddresses } => anddresses,
     };
     assert_eq!(actual.len(), expected.len());
     for (actual, expected) in actual.iter().zip(expected) {
-        let anddress = expected.anddress();
-        assert_eq!(actual["logicalPath"], anddress.logical_path());
-        match expected.position() {
-            None => {
+        assert_eq!(actual["logicalPath"], expected.logical_path());
+        match expected.target() {
+            PublicAnddressTarget::File => {
                 assert_eq!(actual["kind"], "file");
                 assert!(actual.get("line").is_none());
                 assert!(actual.get("lineStart").is_none());
                 assert!(actual.get("lineEnd").is_none());
             }
-            Some(SearchPosition::Line { line }) => {
+            PublicAnddressTarget::Line => {
+                let line = expected.line_number().unwrap();
                 assert_eq!(actual["kind"], "line");
                 assert_eq!(actual["line"], line.to_string());
             }
-            Some(SearchPosition::Paragraph {
-                start_line,
-                end_line,
-            }) => {
+            PublicAnddressTarget::Paragraph => {
+                let lines = expected.line_range();
+                let start_line = lines.start + 1;
+                let end_line = lines.end;
                 assert_eq!(actual["kind"], "paragraph");
                 assert_eq!(actual["lineStart"], start_line.to_string());
                 assert_eq!(actual["lineEnd"], end_line.to_string());
             }
         }
         let encoded = serde_json::to_vec(&actual["anddress"]).unwrap();
-        assert_eq!(Anddress::decode(&encoded).unwrap(), *anddress);
+        assert_eq!(Anddress::decode(&encoded).unwrap(), *expected);
     }
 }
 
@@ -997,7 +996,7 @@ fn one_shot_search_json_writer_has_no_value_or_result_clone_path() {
         .split("fn write_pick")
         .next()
         .unwrap();
-    assert!(writer.contains("for (index, occurrence) in occurrences.iter().enumerate()"));
+    assert!(writer.contains("for (index, anddress) in anddresses.iter().enumerate()"));
     assert!(writer.contains("anddress\n                    .encode()"));
     assert!(writer.contains("serde_json::to_writer(&mut stdout, anddress.logical_path())"));
     assert!(!writer.contains("Value"));
