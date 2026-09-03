@@ -48,10 +48,10 @@ not already on `PATH`.
 bw version
 ```
 
-The current source build prints exactly:
+The source-ready, unpublished `0.2.5` build prints exactly:
 
 ```text
-Backwriter 0.2.4
+Backwriter 0.2.5
 ```
 
 ### Update
@@ -70,18 +70,20 @@ exact immutable `0.2.3` manifest and current `0.2.4` manifest; `0.2.2`, `0.2.1`,
 version comparison and adds no version guard.
 
 The product is Backwriter. The source Cargo package and
-library crate are `backwriter` at `0.2.4`; the sole canonical executable and
+library crate are `backwriter` at source-ready, unpublished `0.2.5`; the sole canonical executable and
 external Adapter command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
 official installer remains separate and selects the closed public `0.2.4`
 distribution.
 
-The Cargo package, `bw version`, official distribution, installers, manifest,
-and Update target are published and closed `0.2.4`. The source checkout and
-canonical artifacts share Source Authority revision
-`0ee4dcce14da93f925c27a04d0e79051c83fd124`. Structural-authority Gates 1–8
-are complete, including the v5 hard cut, integrated GNU/musl evidence, exact
-four-target artifacts, and manifest-last 60-file publication. Update performs
-no version comparison and installs or reinstalls the official `0.2.4` release.
+The Cargo package and `bw version` are source-ready, unpublished `0.2.5`;
+production `src/**` is byte-identical to Gate 6 candidate
+`22e6df23755cdc80b299b77be313d307b67bc37f`. Official artifacts, installers,
+manifest, Update target, and the public distribution remain published and
+closed `0.2.4` from Source Authority
+`0ee4dcce14da93f925c27a04d0e79051c83fd124`. Update performs no version
+comparison, so a source-built `0.2.5` command may install or reinstall that
+official `0.2.4` release until a separately authorized Gate 8 closes release
+state.
 
 ## Anddress-first editing
 

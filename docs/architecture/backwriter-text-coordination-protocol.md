@@ -2,8 +2,9 @@
 
 ## 0.2.5 performance-recovery authority
 
-Gates 1 through 6 are complete. Current production and the official release
-remain closed `0.2.4`. The performance target preserves all public v5,
+Gates 1 through 7 are complete. Cargo and `bw version` are source-ready,
+unpublished `0.2.5`; the official release remains closed `0.2.4`. The
+performance target preserves all public v5,
 capability, Runtime, Adapter, failure, and publication meaning under one rule:
 semantics stay unified while execution becomes specialized again.
 
@@ -47,8 +48,9 @@ raw/cursor offset returns, Anchor observation's all-index copy, local
 source/state comparison wrappers, and mutually exclusive Search tier storage.
 One strict owned-source Issuer path now serves typed construction and decode.
 Production G is 304,431 bytes/9,213 lines, within the existing three-percent
-ceiling and without a renewed allowance. The remaining ordered implementation
-gate is fixed evidence/source readiness, followed by separately authorized release.
+ceiling and without a renewed allowance. Fixed A/B/G evidence, complete
+GNU/musl semantics, and the AI workflow make Gate 7 GO without changing
+production `src/**`. The remaining ordered gate is separately authorized release.
 No gate may change v5 fields or output, add another parser or authority, or
 restore a retired carrier, relation scan, or private Edit View.
 

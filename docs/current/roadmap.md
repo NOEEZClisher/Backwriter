@@ -1,9 +1,9 @@
 # Backwriter Roadmap
 
-## In progress: 0.2.5 structural specialization and performance recovery
+## In progress: 0.2.5 release separation
 
 The [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
-closes Gates 1 through 6 without changing release state. The target keeps the
+closes Gates 1 through 7 while keeping release state separate. The target keeps the
 complete closed `0.2.4` v5 meaning and restores specialized hot paths only
 where measurement and reachability show unnecessary work.
 
@@ -21,8 +21,8 @@ where measurement and reachability show unnecessary work.
 6. Consumer reaudit and contraction — complete; dead fallibility, parity,
    indexing, comparison, tier, and source-construction plumbing is removed
    without adding a feature.
-7. Fixed A/B/C evidence and source-readiness GO/NO-GO — only a complete GO may
-   advance source to unpublished `0.2.5`.
+7. Fixed A/B/G evidence and source-readiness GO/NO-GO — complete, GO; Cargo and
+   `bw version` are source-ready, unpublished `0.2.5`.
 8. Artifacts, installers, publication, and release closure — requires separate
    exact Owner authorization.
 
@@ -48,6 +48,16 @@ ceiling of 306,187 bytes/9,222 lines. B remains the target; retained
 Check/View grouping, raw/structural output modes, and result storage have
 distinct current consumers and do not create duplicate authority.
 
+Gate 7 preserves production `src/**` byte-for-byte at G. Fixed A/B/G evidence
+passes every hard gate: sparse G/A is 1.0983/1.1163 at 256 MiB and
+1.0959/1.0984 at 1 GiB; dense G peaks below 86 MiB; CRLF Edit is
+1.0062/1.0324; confirmed unit/receipt/live-Anchor Apply and Untrusted Check
+remain within their A boundaries. B/G v5 output is exact, reusable encoding
+has zero loop allocations, and 200,000-file batch/sequential View output is
+identical. GNU and musl each pass 268 tests, and drift remains Correct 1 / Safe
+Reject 6 / Wrong Apply 0. The only remaining work is separately authorized
+Gate 8 release reconstruction and publication.
+
 Gate 3 keeps one raw same-read Line counter and moves only proven geometry
 consumers onto the structural composition. Its fixed D/A medians are 1.0812
 for Untrusted Check, 1.0582/1.0501/1.0513 for unit/receipt/live-Anchor Range
@@ -69,9 +79,9 @@ closed `0.2.4` production B=`8b20987893ea5ac454c4c0a50d0c470e26b5e650`,
 release Source Authority `0ee4dcce14da93f925c27a04d0e79051c83fd124`,
 and Gate 2 C=`05c50802b7393a213147b8a2b52b2616b4b06bee`. Gate 3 D is that clean
 revision plus only the measured Gate 3 production/test/document delta. Cargo,
-`bw version`, official
-artifacts, Update, and the public distribution remain closed `0.2.4` until
-later gates authorize and pass their distinct boundaries.
+and `bw version` are source-ready, unpublished `0.2.5`; official artifacts,
+Update, and the public distribution remain closed `0.2.4` until Gate 8 is
+separately authorized and passes its distinct boundaries.
 
 ## Completed: 0.2.4 structural-authority hard cut and distribution
 

@@ -13,8 +13,8 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-Search, View, Pick, Anchor, and Check have Rust implementations. Current source
-is published and closed through Gate 8 with the v5 Anddress algebra, wire, shared
+Search, View, Pick, Anchor, and Check have Rust implementations. The published
+`0.2.4` source is closed through Gate 8 with the v5 Anddress algebra, wire, shared
 structural cursor, direct Search result collection, geometry-driven
 single/batch View, and View-free one-shot Edit, with source-state-only Check
 classification. Their direct View source-state/range projection,
@@ -38,13 +38,15 @@ live publication, fresh installation, and explicit public `0.2.3` update are
 complete from Source Authority revision
 `0ee4dcce14da93f925c27a04d0e79051c83fd124`.
 
-## 0.2.5 performance recovery — Gates 1–6 complete
+## 0.2.5 performance recovery — Gates 1–7 complete
 
-Gates 1 through 6 of the
+Gates 1 through 7 of the
 [performance-recovery tracker](docs/tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
 close authority, bulk literal matching, raw/structural observation, canonical
-encoding reuse, and dense pending-result memory. Cargo, `bw version`, artifacts, installers, Update,
-and the public distribution remain published and closed `0.2.4`. The governing
+encoding reuse, dense pending-result memory, consumer contraction, and fixed
+integration evidence. Cargo and `bw version` are source-ready, unpublished
+`0.2.5`; artifacts, installers, Update, and the public distribution remain
+published and closed `0.2.4`. The governing
 rule is: semantics stay unified; execution becomes specialized again.
 
 The target preserves v5 fields, algebra, wire bytes, Search/View/Edit output,
@@ -86,6 +88,15 @@ paths have different error and output consumers. Production G is 304,431 bytes
 and 9,213 lines: -1,727/-48 from F and +7,162/+259 (2.41%/2.89%) from B,
 inside the existing three-percent ceiling without renewing it.
 
+Gate 7 preserves production `src/**` byte-for-byte at G and is GO. GNU and
+musl each pass 268 tests. Crossed A/B/G evidence passes the 1.15 sparse Search,
+145 MiB dense Search, 1.25 CRLF Edit, Untrusted Check, and 256 MiB Apply hard
+gates; canonical B/G v5 output remains exact. Reusable encoding performs zero
+loop allocations, 200,000-file batch/sequential View results agree, Host Check
+retains zero capability I/O, and drift remains Correct 1 / Safe Reject 6 /
+Wrong Apply 0. No conditional cursor mode or shared Paragraph allocation is
+activated.
+
 Gate 2 replaces the sole matcher's byte-at-a-time Runtime caller with checked
 segment matching, preserves KMP partial state across chunks, and stops matcher
 work after a Line, Paragraph, or File has its best tier. The sole structural
@@ -100,8 +111,8 @@ Apply after-state activates it only for a non-File receipt or live non-File
 Anchor. Fixed A/B/C/D evidence passes the Check, View, 256 MiB Apply, CRLF
 Edit, and 134,217,728-short-Line boundaries without changing v5 or output.
 
-The remaining ordered work is fixed evidence/source readiness, then separately
-authorized release. Shared Paragraph allocation is not active. Do not introduce v6,
+The remaining ordered work is the separately authorized Gate 8 release.
+Shared Paragraph allocation is not active. Do not introduce v6,
 change v5 or Adapter output, restore
 retired carriers/scanners/private View, or add a parser, persistent
 state/index/registry, stdin, CLI split, history, relocation, watcher, merge,

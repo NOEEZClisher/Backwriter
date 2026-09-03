@@ -1,13 +1,13 @@
 # Backwriter Current State
 
-## 0.2.5 performance recovery — Gates 1–6 complete
+## 0.2.5 performance recovery — source-ready, unpublished
 
-Gates 1 through 6 are complete under the
+Gates 1 through 7 are complete under the
 [performance-recovery tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
 Gate 2 adds one checked segment operation to the existing literal matcher and
-deletes the Runtime per-byte caller loop. Cargo, `bw version`, artifacts,
-installers, Update, and the official distribution remain published and closed
-`0.2.4`.
+deletes the Runtime per-byte caller loop. Cargo and `bw version` are
+source-ready, unpublished `0.2.5`; artifacts, installers, Update, and the
+official distribution remain published and closed `0.2.4`.
 
 The governing rule is **semantics stay unified; execution becomes specialized
 again**. V5 fields, algebra, canonical bytes, capability and Adapter outputs,
@@ -82,9 +82,23 @@ construction delegates to its strict owned-source path. Production G is
 (2.41%/2.89%) from B. It is below the 306,187-byte/9,222-line ceiling; B remains
 the target, and the retained delta is not a refreshed allowance.
 
-The remaining gates are fixed evidence/source readiness and a separately
-authorized release. No completed gate activates
-`StructuralDemand`, cursor specialization, or shared Paragraph allocation.
+Gate 7 preserves production `src/**` byte-for-byte at G and records a GO. On
+the fixed CPU-0/tmpfs A/B/G comparison, 256 MiB and 1 GiB sparse G/A
+median/p95 ratios are 1.0983/1.1163 and 1.0959/1.0984. The first p95 misses the
+1.10 target but remains below the 1.15 hard ceiling. Dense G peaks at 87,924
+KiB and 87,992 KiB for the two prescribed 1,048,576-result shapes, below the
+130 MiB target, with exact B/G v5 output. CRLF Edit is 1.0062/1.0324 G/A;
+Untrusted Check is 1.0804/1.0689. A repeated full Apply confirmation passes
+unit, receipt, and live-Anchor ratios within 1.10 after one initial receipt p95
+outlier. GNU and musl each pass 268 tests; drift remains Correct 1 / Safe
+Reject 6 / Wrong Apply 0.
+
+Reusable encoding records zero loop allocations for one repeated target,
+1,048,576 Lines, and 1,000,000 Files while preserving exact B/G v5 digests.
+The 200,000-file Search order and batch/sequential View results agree exactly.
+Host Check retains zero capability open/read/hash/cursor work. No completed
+gate activates `StructuralDemand`, cursor specialization, or shared Paragraph
+allocation. The only remaining gate is separately authorized release work.
 
 ## Published and closed 0.2.4 structural authority
 

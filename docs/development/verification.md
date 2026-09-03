@@ -2,19 +2,19 @@
 
 ## 0.2.5 performance-recovery gates
 
-Gate 1 is documentation-only. Gates 2 through 6 replace the sole literal
+Gate 1 is documentation-only. Gates 2 through 7 replace the sole literal
 matcher's per-byte Runtime caller loop with one checked segment operation and
 move raw consumers without structural geometry onto a cursor-free observation
 path, consolidate canonical Anddress encoding, and release dense pending storage.
-Cargo, lockfile, README, toolchain, v5 wire, and Adapter output remain
-unchanged. The
+Gates 2–6 leave Cargo, lockfile, README, toolchain, v5 wire, and Adapter output
+unchanged; Gate 7 advances only source version authority after GO. The
 [tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
 fixes evidence labels, gate order, thresholds, exclusions, and the three
 authority decisions before implementation. Gate 2 passed 258 tests per target;
 Gate 3 passed 261, Gate 4 passed 263, and Gate 5 passes 268 per target.
 All-target check,
 clippy with warnings denied, release build, and offline/locked metadata and
-tree plus rustfmt also pass. Gate 6 retains the 268-test count per target.
+tree plus rustfmt also pass. Gates 6 and 7 retain the 268-test count per target.
 
 Line count remains v5 identity and currentness evidence. Gate 3 retains the
 same-hash/same-length/false-Line-count `NotCurrent` control while proving that
@@ -41,19 +41,42 @@ Gate-specific evidence is cumulative:
   Paragraph, many one-Line Paragraphs, and actual release of pending capacity.
 - Gate 6: one cursor, one Issuer, no retired carrier/relation/private View, no
   duplicate parser/validator/writer, and code-size contraction.
-- Gate 7: complete GNU/musl semantics and fixed A/B/C performance, memory, I/O,
-  output, drift, and code-size evidence before source-readiness GO/NO-GO.
+- Gate 7: complete GNU/musl semantics and fixed A/B/G performance, memory, I/O,
+  output, drift, and code-size evidence; source-readiness is GO.
 - Gate 8: separately authorized artifacts, installers, publication, endpoints,
   update, and release closure.
 
-Fixed gates are C/A sparse target at most 1.10 and ceiling 1.15; 1,048,576-hit
+Fixed gates are G/A sparse target at most 1.10 and ceiling 1.15; 1,048,576-hit
 RSS target at most 130 MiB, soft at most 140 MiB, and hard NO-GO above 145 MiB;
-CRLF Edit C/A target at most 1.20 and hard ceiling 1.25; Host Check zero I/O;
+CRLF Edit G/A target at most 1.20 and hard ceiling 1.25; Host Check zero I/O;
 Untrusted Check, View, and Range Apply boundaries recorded in the tracker;
 exact KAT/output/order and Correct 1 / Safe Reject 6 / Wrong Apply 0; and final
 production no larger than 297,269 bytes/8,954 lines unless growth up to 3
 percent has direct evidence. Any duplicate parser, validator, or writer is a
 hard NO-GO. Native and CLI Search measurements remain separate.
+
+Gate 7 runs on Linux 7.2.2-arch1-1 x86_64, Intel i7-12700K CPU 0 with the
+existing `powersave` governor, `/tmp` tmpfs, `CLOCK_MONOTONIC_RAW`, Rust/Cargo
+1.95.0, one warm-up, and seven balanced crossed A/B/G fresh processes. The
+256 MiB and 1 GiB sparse G/A median/p95 ratios are 1.0983/1.1163 and
+1.0959/1.0984; the first p95 misses the 1.10 target but passes the 1.15 hard
+ceiling. The two 1,048,576-result G shapes peak at 87,924/87,992 KiB with exact
+B/G v5 output. CRLF Edit is 1.0062/1.0324; Untrusted Check is
+1.0804/1.0689. An independent full Apply confirmation puts unit, receipt, and
+live-Anchor G/A median/p95 at 1.0456/1.0425, 1.0481/1.0416, and
+1.0506/1.0376 after one initial receipt p95 outlier.
+
+Reusable G encoding records zero loop allocations for a repeated Line,
+1,048,576 Lines, and 1,000,000 Files and matches B's canonical v5 digests.
+The 200,000-file Search order and batch/sequential View digest are exact. Host
+Check retains zero capability I/O and the approximately one-microsecond class;
+the 134,217,728-Line Untrusted Check G/A result is 1.0733/1.0710. The fixed AI
+flow is Search 1, batch Line-to-Paragraph View 1, receipt Edit 2, final View 1,
+with post-Edit Search, mandatory Check, history, relocation, and retry all
+zero. GNU and musl each pass 268 tests; drift remains Correct 1 / Safe Reject
+6 / Wrong Apply 0. Production stays byte-identical to G at 304,431 bytes and
+9,213 lines. Exact fixtures, commands, samples, digests, I/O, HWM, and
+harness/raw-evidence hashes are recorded in the tracker.
 
 Gate 2 exhaustively compares every binary query through length four and content
 through length six across byte-at-a-time, every segment partition, and whole
@@ -1253,10 +1276,12 @@ Before staging, verify the diff and empty index, confirm repository-root
 Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
-The repository source package, source-built command, closed public
-distribution, and installed release are `0.2.4`; the command prints exactly
-`Backwriter 0.2.4` plus LF. The current installers, manifest, and Update handoff
-select `0.2.4`; exact `0.2.3` remains the only other accepted manifest. Prior
+The repository source package and source-built command are source-ready,
+unpublished `0.2.5`; the command prints exactly `Backwriter 0.2.5` plus LF.
+The closed public distribution, installed release, installers, manifest, and
+Update handoff remain `0.2.4`; exact `0.2.3` remains the only other accepted
+manifest. A source-built `0.2.5` Update may therefore install or reinstall
+official `0.2.4` because Update has no version comparison. Prior
 `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, `0.1.0`, and beta
 versioned files remain immutable. The closed `0.2.1`
 source suite passed 236 GNU-host and 236 musl Rust tests; the closed `0.2.0`

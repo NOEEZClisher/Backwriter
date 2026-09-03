@@ -2,10 +2,11 @@
 
 The active `0.2.5` performance recovery is governed by Principle 19 and its
 [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
-Gates 1 through 6 close authority, bulk literal matching, raw/structural
+Gates 1 through 7 close authority, bulk literal matching, raw/structural
 observation, canonical encoding reuse, dense Search storage, and consumer
-contraction; current source version and the
-official release remain closed `0.2.4`.
+contraction, then fixed integration evidence. Cargo and `bw version` are
+source-ready, unpublished `0.2.5`; the official release remains closed
+`0.2.4`.
 
 The published and closed `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
@@ -148,7 +149,7 @@ the v5 `0.2.4` distribution governed by Principle 18.
     pass for receipt and Anchor candidates. No compatibility path is retained.
     Gate 6 removes the remaining consumer adapters and verifies source-state-only
     Check; Gate 7 changes no production structure and closes integrated GNU,
-    musl, fixed A/V5/B, and AI-workflow evidence before advancing source version.
+    musl, fixed A/B/G, and AI-workflow evidence before advancing source version.
     This consolidation creates no history, relocation, registry, watcher,
     retry, merge, rollback, or implicit workflow.
 19. **Unified semantics permit specialized execution.** Performance recovery

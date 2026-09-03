@@ -1,10 +1,10 @@
 # Backwriter 0.2.5 Structural Specialization and Performance Recovery
 
-Status: Gates 1 through 6 complete. Bulk literal matching, raw/structural
-observation, canonical encoding reuse, dense pending memory, and consumer
-contraction are implemented and verified. Cargo,
-`bw version`, artifacts, installers, Update, and the public distribution
-remain published and closed `0.2.4`.
+Status: Gates 1 through 7 complete; source readiness is GO. Bulk literal
+matching, raw/structural observation, canonical encoding reuse, dense pending
+memory, consumer contraction, and integrated evidence are complete. Cargo and
+`bw version` are source-ready, unpublished `0.2.5`; artifacts, installers,
+Update, and the public distribution remain published and closed `0.2.4`.
 
 This tracker resolves the planning questions preserved in the companion
 [source note](2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery-source.md)
@@ -570,13 +570,230 @@ sequential inner times are 556.213/711.319/675.253 ms and process HWM is
 `44d915394ddf2737598bb281975421dec4906c9910365d6e27f242a2700b47e6`.
 All focused fixtures, raw evidence, binaries, and harness source are removed.
 
-### Gate 7 — fixed evidence and source readiness
+### Gate 7 — fixed evidence and source readiness — complete, GO
 
-Run complete GNU/musl semantics and crossed fixed A/B/C measurement. Record
-source/binary revisions, fixture and harness hashes, CPU conditions, raw
-samples, medians, p95, HWM, I/O, allocations, output hashes, and code-size
-delta. Only a complete GO may advance Cargo, lockfile, README, version KAT, and
-`bw version` to source-ready unpublished `0.2.5`. NO-GO leaves `0.2.4` current.
+Gate 7 changes no production `src/**`. Clean Git exports compare published v4
+A=`195aaa37068122097ecc04d2644642b6afcc6765`, closed `0.2.4`
+B=`8b20987893ea5ac454c4c0a50d0c470e26b5e650`, and contracted candidate
+G=`22e6df23755cdc80b299b77be313d307b67bc37f`. Their release `bw` binaries are
+780,016/800,760/795,312 bytes with SHA-256
+`bd4aee49b531a525cc1375509d3d068e32538c061e84828f797f62101dc64a6e`,
+`68fba45ddee9d481213f5555d77ffa2b2a309e21a1ebc2c12ac45a6f29f2b105`,
+and `90445f1a7f271327deb84bcafdcc87010bd5f1da024bafdac01a636c04a9bd35`.
+A/B lockfiles hash to
+`71462aff768f45fea9d4e730f7ec9c1fca389dde132882049c7eae63acd9fac9`;
+G hashes to
+`8fa6e2baf598162f1173e35ba1a1df455bc4bfff0cd762339f0983576d7fac9d`.
+
+The fixed host is Linux 7.2.2-arch1-1 x86_64 on an Intel i7-12700K, CPU 0,
+existing `powersave` governor, `/tmp` tmpfs, Rust 1.95.0
+`59807616e1fa2540724bfbac14d7976d7e4a3860`, Cargo 1.95.0, and LLVM 22.1.2.
+Harnesses use `CLOCK_MONOTONIC_RAW`; every performance cell has one warm-up
+then seven fresh processes in orders `ABG/GBA/BGA/AGB/GAB/BAG/ABG`. Median is
+sample four after sorting and nearest-rank p95 is sample seven. Native Search,
+CLI Search output, capability inner work, and process HWM remain separate.
+
+The task-local fixture generator source/output SHA-256 values are
+`43ed7c350727c8009e2d07bbc60f3d62e51f94dd6501b20aa131ba249ce04e56`/
+`6e59376fe2c6a364e18ca3b4ed1a8dd919dc108abaf78205e9429db050da9a00`.
+The fixed fixtures are:
+
+| Fixture | Exact bytes or entries | SHA-256 |
+| --- | ---: | --- |
+| sparse 256 MiB | 268,435,456 | `641f7442659ee50a6c5e183fd0a95963deaa21490ac2884215639ea704614d9e` |
+| sparse 1 GiB | 1,073,741,824 | `904c75499d4dc222f3df76ad0c2dcc397e0a163b56ed5c65692f65de7d67a162` |
+| one huge Paragraph | 7,340,032 | `913515a8747b7f1bf66a0e60d4f7d62aee87266faeffbf1aa60509d478c86b8c` |
+| 1,048,576 one-Line Paragraphs | 8,388,608 | `7e0d3b4cb91c4ed44f5a43986c70dca6b2ad8e1b33a214fb0c4dd6f311674464` |
+| 134,217,728 `x\n` Lines | 268,435,456 | `a3978b948296b92171d4b9ae213daf796b3d79e6bc40ccc6f5d3dfc03f66c2e4` |
+| 200,000 one-byte Files | `d000/f000.txt` through `d199/f999.txt` | path transcript `a89a87e469e7226b8ef6e66aa29541e43e0cb8081eeea7c6c0cac3e03b64961b` |
+
+The native Search source/runner/raw hashes are
+`c2a251b4272ce1c509979ad86a00002244214b1cdaebb2865ce79e62de21205f`/
+`a4e8bdb40b225236eeabdad2fbe2b93f6b07cbc8a6b763db64a269e6c1660d20`/
+`41dddcc34c1a87251589ac0fe586746c4c16971de1dda856d8ad7ae4b2266002`;
+its A/B/G binaries hash to
+`9256b41ab063390c10785bd3f26b65291e2660d810ca9231d4c39888849c3577`,
+`168c216ef334694b6c1768435a92e1fac61817131d39f7ac30528001b9e3b052`,
+and `fb968426532db0e1c72f36566d120bf2e1e35d4c1c2f7ac3a183dc2ed7f1fbf0`.
+The exact invocation is `taskset -c 0 <harness> <mode> <absolute-fixture>`.
+
+| Native Search | Results | A median/p95 ms | B median/p95 ms | G median/p95 ms | G/A median/p95 | G peak KiB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| sparse 256 MiB | 1 | 288.525/292.386 | 393.078/414.432 | 316.893/326.381 | 1.0983/1.1163 | 4,164 |
+| sparse 1 GiB | 1 | 1,137.686/1,146.247 | 1,552.835/1,634.016 | 1,246.792/1,259.080 | 1.0959/1.0984 | 4,168 |
+| one huge Paragraph | 1,048,576 | 55.563/57.546 | 138.352/149.968 | 74.340/78.340 | 1.3379/1.3614 | 87,924 |
+| one-Line Paragraphs | 1,048,576 | 58.800/60.600 | 137.866/139.658 | 77.032/78.860 | 1.3101/1.3013 | 87,992 |
+| 200,000 Files | 200,000 | 536.829/541.906 | 561.692/568.090 | 537.663/541.388 | 1.0016/0.9990 | 115,008 |
+
+The sparse semantic digests are
+`50255d71ba5c9cd160f2d59b5aa645362a542b26994257bda3e19e7b9122288a`
+and `14ab908725d29b83707f6e384cecbcae5e5236f4cb94842f6dc1540ab56df192`;
+their B/G exact v5 digests are
+`8ec4c967d2b6043233247a574379c3f4327de6c8ce1e0794ada4d9e69d7ead7a`
+and `bb30a83f9b3975d554eb509878fc38cb7a7747b3c9977e228c0bc409f25982df`.
+The huge/many Paragraph semantic digests are
+`d94e3077a8382b492c3088bf13aa60188d21de3f1785606ad9db36fd15fa3bc7`/
+`e166557ba04fb29ae32422b5e6918cbf23f1a5365ce86db8209ede962fb517a6`;
+B/G exact v5 digests are
+`06fae2ce697682eb4ed7681166bb3f6f56290acead7649766b380f9889978460`/
+`87c3ed3ad92d9dbbdc2566158def048855b3e17fe4782b7a7ff7cb81b2593460`.
+All native `wchar` values are zero. Exact `rchar` is source size plus harness
+accounting; G has 49 additional accounting bytes and no additional source
+pass. The 256 MiB and 1 GiB sparse elapsed-ns samples are:
+
+```text
+256 A 289893739 291878472 288213212 285467091 287996067 292385512 288525289
+256 B 398961990 414431999 391044185 393164810 392354115 393077677 389882050
+256 G 323235683 326381468 316212422 320297235 316893292 315098600 316375448
+1GiB A 1146247327 1137686203 1134400910 1131000386 1137226690 1144565794 1137914033
+1GiB B 1552834928 1550409561 1550161289 1553493349 1560776669 1634015854 1550921862
+1GiB G 1250520125 1245877340 1246781601 1242535198 1250922399 1259080319 1246791861
+```
+
+The CLI process runner source/binary, orchestration, and raw evidence hash to
+`a997ee52260a52d8d60418acac01224b9e862e57b5fadb45c5883fd39b6bc49f`,
+`da1ef7e0168d6625ecb8d44f8e18a72c1279d049512288dd593624b900cb87b9`,
+`4fdf5d4922ddce7f10d7799fad02c72f786d51a02c309201d25d1847e5fc1633`,
+and `3ebee7254a8da42565456e73359229dec62cedc92ee069f293db896738b49293`.
+The exact child argv is `<bw> --workspace <dense-root> --json search line
+needle --source note.txt`. A/B/G median/p95 times are
+446.863/452.965, 898.330/914.377, and 244.151/248.670 ms; peak HWM is
+109,360/166,476/88,212 KiB. A writes 414,856,172 bytes with SHA-256
+`2e17aed191006dcb5e41ec04e5b1bc78d030bb51ddf005d61f5f5cc110bb3cc1`;
+B/G write exact-equal 628,703,142-byte v5 output with SHA-256
+`11f65c4c82a23b4ec3c827b1cdd65ce9ce80f89fd3dfc64550863a3a50999f8f`.
+That output volume is not native engine memory.
+
+The Check/View/Apply harness source/runner/raw evidence hashes are
+`d477b9f64b5dc3496ab69f1a4e8c79425322cbac15e176fa8d9be7c6af414e8d`/
+`0e1ef40413cb68293e57bb00919c038e82448bcf99dbcf0fd046b6f34112d217`/
+`c2b542dd6c070d07b63273f4373a6d3bc39e128afacffe2cde4dd7b8f88bbb97`;
+A/B/G binaries hash to
+`269b6dd136f815dac65174e0fcb2d0804401f930d7e3526411e529927a23a144`,
+`1e1c80646a721ca7eaa6607ab11e0b8d18fb0b9211e79bc47239614c032a532c`,
+and `05e48c3177406322385beb18b910d5b2fecd7c1f4522232745caa203cb407d32`.
+
+| Capability cell | A median/p95 ms | B median/p95 ms | G median/p95 ms | G/A median/p95 |
+| --- | ---: | ---: | ---: | ---: |
+| Host Check | 0.002/0.002 | 0.002/0.003 | 0.001/0.002 | 0.5650/0.9259 |
+| Untrusted Check | 159.390/161.415 | 252.278/252.501 | 172.202/172.533 | 1.0804/1.0689 |
+| Host Line View | 405.969/407.279 | 315.613/316.202 | 316.427/317.328 | 0.7794/0.7791 |
+| Host Paragraph View | 472.054/478.722 | 316.369/316.987 | 316.089/322.304 | 0.6696/0.6733 |
+| Host File View | 317.601/320.531 | 315.840/318.745 | 316.257/320.375 | 0.9958/0.9995 |
+| Untrusted Line View | 800.104/801.539 | 547.558/553.078 | 450.259/452.597 | 0.5628/0.5647 |
+| Untrusted Paragraph View | 816.323/823.000 | 547.421/554.241 | 448.866/455.379 | 0.5499/0.5533 |
+| Untrusted File View | 444.817/447.473 | 549.471/551.248 | 449.371/450.839 | 1.0102/1.0075 |
+| RelationAbsent | 0.007/0.009 | 0.002/0.003 | 0.002/0.004 | 0.3206/0.4232 |
+
+Host Check production structure has zero capability open/read/hash/cursor
+work; the 102 measured `rchar` bytes are the harness's two `/proc/self/io`
+reads. Untrusted Check and every View read exactly 268,435,558 `rchar` bytes
+except A's Host Paragraph View, whose published v4 relation scan reads twice.
+Normalized self/parent/File/RelationAbsent digests agree across A/B/G; exact
+B/G v5 digests also agree.
+
+The 134,217,728-Line Check harness source/runner/raw hashes are
+`3a12834f117e4c2e6d6ca9c013d21d9cb25e5dab0cd5ba1daac7575c78fa52ab`/
+`843c47a3af3c90f940d2befc881c37fa0d45d009466755376340935635c24885`/
+`4db40a63bdce1dfa26319b3cc6195d41cf7ba015e78d3cbc285c7f6063735971`.
+Its A/B/G binaries hash to
+`758142ac27b9908676e4f9017393df3601d491104124819f4915a7161540a980`,
+`d2945786a334087510df3c64382b949eda85b72129e6b03bc1e31738c62c4c54`,
+and `2d1c8410b05216034876f82f37d230a2637c8efbf2fd4c602ea1daaf5badeac5`.
+Untrusted A/B/G median/p95 is 149.339/150.333, 478.224/482.606, and
+160.286/161.012 ms; G/A is 1.0733/1.0710. G Host Check is 0.883/1.336 us.
+
+The first 256 MiB Apply set had one G receipt p95 scheduling outlier:
+G/A was 1.0432/1.1572 while unit was 1.0489/1.1138 and live Anchor
+1.0481/1.0626. Thresholds were not changed. A complete independent confirmation
+using the same seven orders hashes its runner/raw evidence to
+`0d4ae39dc04a02184a09e4fb8fe679dd91bc3ce0be938fc24576751d77464a03`/
+`6d14809c9672a8c18f5bec7c1db72e9e11e30822215d223f9eb8d6004bfc60c8`
+and gives:
+
+| Confirmed 256 MiB Apply | A median/p95 ms | B median/p95 ms | G median/p95 ms | G/A median/p95 |
+| --- | ---: | ---: | ---: | ---: |
+| unit raw-after | 219.980/221.287 | 307.226/318.217 | 230.002/230.688 | 1.0456/1.0425 |
+| Replace receipt | 222.735/228.667 | 307.221/316.836 | 233.440/238.181 | 1.0481/1.0416 |
+| live Anchor | 221.189/225.494 | 307.594/311.521 | 232.371/233.968 | 1.0506/1.0376 |
+
+Every Apply sample has exact 268,435,573 `rchar`, 268,435,461 `wchar`, final
+bytes, and publication outcome. Confirmed G receipt elapsed-ns samples are
+`229681239 233440262 235537476 231645606 238181258 230363459 237909776`.
+Unit Apply has no before cursor; receipt and live non-File Anchor each consume
+at most one prospective after cursor.
+
+The one-shot Edit runner/raw/sample hashes are
+`5991b5bc8c291e6ff55104910e5eef2387f17fb89b1d204c4638a37ecce16bff`/
+`6efcfd8f33e3b9b28d288450e8cf1cab748a2d79b865d375e47689ba6905131d`/
+`8878019fe5c9cb91fb9abae8b0e1b56fa4b536056193e1b1f7e8d3e9e624d0c9`.
+The measured child argv is `<bw> --workspace <fresh-root> edit anddress
+<exact-search-object> 'retry_budget = 5'`; None/LF/CR/CRLF sources all preserve
+their terminator and return one `Changed` receipt. CRLF A/B/G median/p95 is
+2.229/2.293, 2.295/2.335, and 2.243/2.367 ms; G/A is 1.0062/1.0324 and final
+SHA-256 is
+`cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf`.
+Production reachability and its regression retain zero private Search/View/
+Check calls and exactly one `apply_replace`.
+
+The encoder source/runner/raw hashes are
+`067b24634d56cf3a94d094984c6767965ff6a6a69e453065604718565f75113a`/
+`dcce93cf953417d37286bd0ff81d0d492d422920e20fe41f541789b62d4cfa61`/
+`575a60419b43d5357bdddf53deb49b8ee48e102d0fa4c4e8f397c33033c0469a`.
+Its A/B/G binaries hash to
+`c11f6a28e3e4c648cfd6c4b7b3e35502303c8054cfe62449afdb08c91ccd612e`,
+`9b3f1bed2f1df558757711af45e64dfcf5d94ea8e78b105889c831b0d394fd49`,
+and `f4e355270c9263d0e6ebc217298c91bea41bdc637571778e36a3478c67c244ec`.
+The reusable G loop starts with 2,048 bytes of caller capacity and records zero
+allocations in all three cells:
+
+| Encoder | A median/p95 ms; allocations | B median/p95 ms; allocations | G median/p95 ms; allocations | B/G bytes and SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| one Line x 1,000,000 | 579.522/606.457; 20,000,000 | 953.241/958.508; 42,000,000 | 319.200/330.074; 0 | 514,000,000; `a15db4a49ba8d35c3f07affbee7f58a0d9f6c28e0f3c96335a471c8c20b46586` |
+| 1,048,576 Lines | 620.052/621.047; 20,971,520 | 1,044.970/1,060.855; 45,088,626 | 357.503/359.477; 0 | 556,413,862; `06fae2ce697682eb4ed7681166bb3f6f56290acead7649766b380f9889978460` |
+| 1,000,000 Files | 569.543/599.043; 20,000,000 | 491.218/501.230; 17,000,000 | 168.184/169.546; 0 | 299,000,000; `761c0eab0c8471113b1884fb7c7262f0efd5dab31c90e0760e44f3ec6ff87087` |
+
+The 200,000-file View source/runner/raw hashes are
+`82d2410509766a4b73d6d590fd0c10113a1fdbcda372f6f085742587ca940647`/
+`016cad5daabde26a4b41e46bbf7f45d10d1235f606ebd7c5a1e557c1c6f826d1`/
+`95e3f5626c0fc1d234a0c483f6e3add484598604c2ffbb670e381c5b11b8eec9`.
+Its A/B/G binaries hash to
+`9fded1cbaae30d9c8a9b4bb2b8c7d7c1baca8f3f265dc79a7798b9611f70204e`,
+`f641e93b5d740616e95a768eca23a29bb42b318e919f28c3f6e78120eceaf621`,
+and `427cc51172327dc40cec1ad26c2da3a5301ed2760a1ca09f49761911184f1cbf`.
+A/B/G batch medians are 678.278/684.928/670.192 ms; sequential medians are
+653.171/649.999/629.213 ms. Every variant and mode produces exact digest
+`cedf3ed78b9062b8d857ce1025542174c9b1294901e23fa72568d0643afa7e25`,
+preserves order and contents, and retains one accepted observation per source
+in batch. Every measured View has exactly 200,100 `rchar` bytes—one byte per
+source plus 100 harness-accounting bytes—and zero `wchar`. Batch/sequential G
+peak HWM is 159,116/114,860 KiB.
+
+The fixed AI harness source/binary hashes are
+`6a79f7ef85f6ca1158e628d44993aeeea678a6d713c4703d4d02029c95eebe1c`/
+`5dccccaf7a8bd8cbf0f186726c126ffcbe877e75751c20c95423a4139159d78a`.
+It performs Search 1 -> batch Line-to-Paragraph View 1 -> receipt Edit 2 ->
+final View 1, with post-Edit Search, mandatory Check, history, relocation, and
+retry all zero. Final `alpha\nbeta\n` bytes hash to
+`e49c81e2d2f84e259d40e2fb8192f3bcd198b355184845d76d8f58807d0d78ee`.
+
+GNU and musl each pass all 268 tests, all-target check, clippy with warnings
+denied, and release build; offline/locked metadata/tree and rustfmt also pass.
+The suite covers exact v5 KAT/no-v4, Search tiers/order/duplicates, single and
+batch View all-or-none, false-Line-count `NotCurrent`, receipts and writer
+failure, raw Session, Host proof hit/miss/mismatch/invalidation, Anchor
+same-after reflection, stale/foreign/missing/unadmitted/UTF-8/NUL/symlink/
+publication uncertainty, and opaque-v5 mutation diagnostics. Drift remains
+Correct 1 / Safe Reject 6 / Wrong Apply 0. Production remains exactly 304,431
+bytes/9,213 lines, +2.41%/+2.89% over B, with one parser, validator, canonical
+writer, cursor, and Issuer. The 256 MiB sparse p95 misses the 1.10 target at
+1.1163 but passes the fixed 1.15 hard ceiling; every other hard gate passes.
+Gate 7 is therefore GO and advances only Cargo, the root lock entry, README,
+version KAT, and active status to source-ready, unpublished `0.2.5`. After that
+alignment, GNU and musl release binaries both print exact `Backwriter 0.2.5`
+plus LF and pass matching Help, JSON Search-to-Paragraph-View-to-receipt-Edit-
+to-Check/fresh-View, and raw Session Apply smokes. A source-built `0.2.5`
+Update still has no version comparison and may install official `0.2.4`.
 
 ### Gate 8 — separately authorized release
 
@@ -586,14 +803,14 @@ Owner authorization. Gate 7 source readiness does not authorize Gate 8.
 
 ## Fixed acceptance gates
 
-- Sparse native Search uses the fixed 256 MiB and 1 GiB fixtures. C/A target is
+- Sparse native Search uses the fixed 256 MiB and 1 GiB fixtures. G/A target is
   at most 1.10 and the allowed ceiling is 1.15. A result above 1.15 may activate
   only a measured optimization inside the sole cursor; it does not authorize a
   second parser.
-- Dense Search uses exactly 1,048,576 hits. B peak RSS is 166,488 KiB; C target
+- Dense Search uses exactly 1,048,576 hits. B peak RSS is 166,488 KiB; G target
   is at most 130 MiB, soft gate at most 140 MiB, and hard NO-GO above 145 MiB.
   Result count, order, multiplicity, and output digest must be exact.
-- CRLF one-shot Edit C/A target is at most 1.20 and hard ceiling 1.25. It must
+- CRLF one-shot Edit G/A target is at most 1.20 and hard ceiling 1.25. It must
   retain zero private View/Search/Check calls, one `apply_replace`, every Line
   terminator, fresh receipt behavior, stale-old-address rejection, and zero
   Wrong Apply.

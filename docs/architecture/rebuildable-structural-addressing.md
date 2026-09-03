@@ -2,7 +2,7 @@
 
 ## 0.2.5 encoding, attachment, and currentness boundary
 
-Gates 1 through 6 preserve the complete published v5 algebra and wire. Exact
+Gates 1 through 7 preserve the complete published v5 algebra and wire. Exact
 source Line count remains a `SourceIdentity` field and currentness requirement. A typed
 address whose hash and byte length match but whose claimed Line count differs
 from the accepted observation or Host proof remains `NotCurrent`. The raw
@@ -44,6 +44,9 @@ same-source Edit validation, while the sole Runtime source-state comparator
 continues to require SHA-256, byte length, and Line count. No unchecked
 constructor, second validator, or second writer exists. Production G is
 304,431 bytes/9,213 lines, -1,727/-48 from F and +7,162/+259 from B.
+Gate 7 leaves those production bytes unchanged, passes the fixed A/B/G and
+GNU/musl evidence, and advances only Cargo and `bw version` to source-ready,
+unpublished `0.2.5`.
 
 ## Published and closed 0.2.4 v5 target algebra
 
