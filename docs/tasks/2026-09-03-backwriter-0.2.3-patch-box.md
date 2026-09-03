@@ -1,17 +1,16 @@
 # Backwriter 0.2.3 Patch Box
 
-Status: Gates 1–7 complete. Source is ready and unpublished `0.2.3`; Gate 8 is
-pending and requires its own scoped authorization.
+Status: Gates 1–8 complete. `0.2.3` is published and closed.
 
 This tracker records order, evidence, and unresolved implementation choices.
 Normative meaning belongs to the active
 [Protocol](../architecture/backwriter-text-coordination-protocol.md),
 [address model](../architecture/rebuildable-structural-addressing.md),
 [principles](../principles/backwriter-core-principles.md), and
-[CLI authority](../architecture/backwriter-cli-v1.md). The published `0.2.2`
-artifacts, installers, exact 44-file public tree, and service remain the closed
-`0.2.2` baseline. Source Cargo and CLI version advance to unpublished `0.2.3`
-only after Gate 7 GO.
+[CLI authority](../architecture/backwriter-cli-v1.md). The prior `0.2.2`
+artifacts and exact 44-file public tree remain immutable release evidence.
+Source Cargo and CLI version advanced at Gate 7; Gate 8 publishes and closes
+the exact 52-file `0.2.3` distribution.
 
 ## Goal and exclusions
 
@@ -336,14 +335,30 @@ and active status to source-ready, unpublished `0.2.3`. `bw version` is exact
 `Backwriter 0.2.3\n`. Official artifacts, installers, manifest, public root,
 service, and Update remain closed `0.2.2` until Gate 8.
 
-## Gate 8 — separately authorized artifact and publication — pending
+## Gate 8 — artifact and publication — complete
 
-Artifact reconstruction, manifest and installer transition, private
-cross-target verification, publisher preparation, live publication, endpoint
-verification, update, and release closure require separate server and host
-authorization. No earlier gate implies or reserves permission to modify the
-server repository, public 44-file tree, origin service, cloudflared tunnel,
-DNS, actual user HOME, tag, registry, or release service.
+Gate 8A reconstructs the four canonical artifacts from Source Authority
+revision `195aaa37068122097ecc04d2644642b6afcc6765` and fixes the exact
+876-byte manifest with SHA-256
+`876ce79316663faa06cbcd2d374edcc7874e8374b1838f823e52fc623466ea73`.
+Gate 8B prepares exact `0.2.2`/`0.2.3` installer acceptance and the dedicated
+44-to-52-file publisher. Gate 8C passes GNU and musl 256-test suites, 38
+installer, 55 publisher, 12 CMD, and 13 Origin regressions before publication.
+
+The live publisher installs the eight `0.2.3` artifact and sidecar files,
+replaces the POSIX and PowerShell installers, and publishes the manifest last.
+All 40 earlier versioned files and `install.cmd` remain byte- and
+metadata-identical. A second run reuses all 52 files without metadata change.
+Loopback and public HTTPS verify all 52 GET and HEAD paths plus root and unknown
+404 cache boundaries. Isolated fresh install, public `0.2.2` Update, `0.2.3`
+reinstall, and installed Patch Box capability probes pass. Service, listener,
+unit/YAML, credential metadata, tunnel, DNS, and actual user HOME remain
+unchanged.
+
+No earlier gate implied publication authority; Gate 8 used its separate scoped
+server and host authorizations. Tags, GitHub Releases, crates.io, native
+macOS/Windows execution, service changes, tunnel changes, and DNS changes
+remain outside this closure.
 
 ## Phase 1 verification boundary
 

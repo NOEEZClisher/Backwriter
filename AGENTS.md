@@ -23,15 +23,15 @@ implementation uses direct v4 ranges and provenance and is complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
 The closed public `0.1.0` release is the immutable v3 baseline. The published
-and closed `0.2.2` release source, package, and official distribution, the prior
-closed `0.2.1` distribution, and the prior closed public `0.2.0` release use the hard-cutover
+and closed `0.2.3` release source, package, and official distribution, the prior
+closed `0.2.2` and `0.2.1` distributions, and the prior closed public `0.2.0` release use the hard-cutover
 `artext.backwriter-anddress.v4` Rust API and wire. SHA-256, exact source byte
 length, target kind, and `[start, end)` byte range are implemented identity;
 v3 remains only in Git history and immutable `0.1.0` release evidence. The
-canonical four-target `0.2.2` artifacts, manifest, installers, exact 44-file
-live publication, fresh installation, and explicit public `0.2.1` update are
+canonical four-target `0.2.3` artifacts, manifest, installers, exact 52-file
+live publication, fresh installation, and explicit public `0.2.2` update are
 complete from Source Authority revision
-`04b36d9ca9cc725bedeb17231339c67b5f0590ea`.
+`195aaa37068122097ecc04d2644642b6afcc6765`.
 
 `0.2.1` is published and closed. Phases 2 through 6 implement its
 minimal Host-authoritative observation kernel, bounded ordinary View reuse, and
@@ -81,7 +81,8 @@ Edit/Position/Apply is the exact low-level primitive, Session `let ... = edit
 one-shot Anddress-first Edit is the canonical Replace contraction. None is
 internal, deprecated, renamed, aliased, or wrapped by that separation.
 
-`0.2.3` Patch Box Gates 1 through 7 are complete in source. Gate 1 closes
+`0.2.3` Patch Box Gates 1 through 8 are complete and the release is published
+and closed. Gate 1 closes
 authority and the consumer matrix. Gate 2 carries each Search result as one
 `SearchOccurrence` containing its exact v4 Anddress and same-observation
 descriptive position: a one-based Line number, a one-based inclusive Paragraph
@@ -112,10 +113,11 @@ embeds the canonical v4 object directly. Argv remains the sole Content
 transport; literal `--json`, `--raw`, and `--stdin` in the Content position are
 Content, while leading `--raw` remains unsupported. No stdin path was added
 without reproduced consumer, measured payload, or concrete security evidence.
-Gate 7 passes the integrated A/B Dummy and complete GNU/musl semantic matrix;
-the Cargo package and `bw version` are source-ready, unpublished `0.2.3`.
-Official installers, artifacts, manifest, update target, and publication remain
-closed `0.2.2` until separately authorized Gate 8 work.
+Gate 7 passes the integrated A/B Dummy and complete GNU/musl semantic matrix
+and makes the Cargo package and `bw version` source-ready `0.2.3`. Gate 8
+reconstructs the exact four-target release, publishes its manifest last, and
+closes the 52-file distribution without changing Core, Runtime, services,
+tunnel, DNS, or actual user HOME state.
 The ordered
 gates and consumer evidence are tracked in
 [Backwriter 0.2.3 Patch Box](docs/tasks/2026-09-03-backwriter-0.2.3-patch-box.md).
@@ -130,11 +132,11 @@ Native wire,
 AI/Context/Profile, client, MCP, product integration, and external consumer
 work remain outside that cutline. Beyond the completed Session Pick, batch
 Check, Anchor, Edit, Apply, result-binding, Data, Search/View/Check/Edit JSON, raw
-View, Version, Update, and `0.2.2` Anddress-first one-shot Edit slice, every
+View, Version, Update, and `0.2.3` Patch Box Adapter slice, every
 other capability remains deferred Adapter work. `bw update` is an explicit
 user-invoked installer handoff with no version comparison. It installs or
-reinstalls the current official `0.2.2` release through installers that accept
-only the exact closed `0.2.1` and current `0.2.2` manifests; it
+reinstalls the current official `0.2.3` release through installers that accept
+only the exact closed `0.2.2` and current `0.2.3` manifests; it
 creates no daemon, background updater, retry authority, or version-comparison
 engine.
 

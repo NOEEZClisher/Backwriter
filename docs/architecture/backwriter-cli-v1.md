@@ -6,10 +6,10 @@ Search/View/Check/Edit, raw View, Anddress-first one-shot Edit, Session Pick, ba
 Check, Anchor, Edit, Apply, result-binding, and Data modes only. This document follows the Core active
 documents in the authority-reading order.
 The `0.2.2` one-shot Anddress-first Edit execution contract remains closed and
-published Adapter authority. Patch Box Gates 1–7 are source-ready, unpublished
+published Adapter authority. Patch Box Gates 1–8 are published and closed
 `0.2.3` and include the current-source human and JSON receipt output defined
-below. The official installer, Update target, and closed distribution remain
-`0.2.2`.
+below. The official installer, Update target, and closed distribution are
+`0.2.3`.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -90,8 +90,8 @@ including the final LF and no other successful output.
 
 `bw update` downloads the current platform's official installer over HTTPS and
 delegates installation to it. The current official manifest selects the closed
-public `0.2.2` distribution. The installer accepts only the exact `0.2.1` and
-`0.2.2` manifests; `0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired. Update does not
+public `0.2.3` distribution. The installer accepts only the exact `0.2.2` and
+`0.2.3` manifests; `0.2.1`, `0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired. Update does not
 publish a release and performs no local version comparison, retry,
 daemon or background update, and adds no compatibility alias. On Unix it uses a
 private temporary directory, runs the downloaded `install.sh` synchronously
@@ -102,9 +102,8 @@ parent before replacing `bw.exe`. A Windows parent status of `0` means only that
 handoff started successfully; the child owns final installer output, final
 status, replacement, and bootstrap cleanup.
 
-The source-built `0.2.3` command and published `0.2.2` command have no
-version-comparison guard. Invoking Update therefore installs or reinstalls the
-official `0.2.2` release, including from the unpublished `0.2.3` source build.
+The source-built and published `0.2.3` command has no version-comparison guard.
+Invoking Update therefore installs or reinstalls the official `0.2.3` release.
 This boundary does not authorize a guard, retry, rollback, alternate installer,
 or publication.
 
@@ -498,7 +497,7 @@ At Gate 6 the source version became `0.2.2`, while Core, Runtime, v4 wire, and
 then-published `0.2.1` behavior remained unchanged. The subsequent Gate 7
 publication changed only the official distribution boundary to `0.2.2`.
 
-## Source-ready unpublished 0.2.3 Patch Box Adapter direction
+## Published and closed 0.2.3 Patch Box Adapter
 
 Gates 1 through 7 keep one-shot Search, Session Search, stored Search values,
 Check, Pick operands, public Rust callers, and single View consumers coherent
@@ -543,9 +542,9 @@ claim, or automatic capability workflow is part of this Adapter direction.
 Gate 7 confirms the integrated source flow against published `0.2.2`: the v2
 occurrence supplies one embedded v4 object, each changed JSON Edit receipt
 supplies the next fresh object, and View plus a second Edit reuse it without a
-post-Edit Search. The source package and `bw version` are therefore `0.2.3`;
-official artifacts, installers, manifest, Update target, and publication remain
-closed `0.2.2` until Gate 8.
+post-Edit Search. Gate 8 publishes the same verified `0.2.3` source as the
+official four-target artifact set and aligns the installers, manifest, Update
+target, and exact 52-file public distribution at closed `0.2.3`.
 
 ## Implemented Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data
 

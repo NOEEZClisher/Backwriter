@@ -1,18 +1,18 @@
 # Backwriter Roadmap
 
-## In progress: 0.2.3 Patch Box publication
+## Completed: 0.2.3 Patch Box and distribution
 
 The [eight-gate Patch Box tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
 orders an AI-facing information-surface patch without reopening the engine,
-v4 identity, currentness, or the closed `0.2.2` release. Gates 1 through 7 close
+v4 identity, or currentness. Gates 1 through 7 close
 authority, the consumer matrix, same-observation Search position metadata, and
 native single upward View projection plus ordered all-or-nothing batch View
 with per-source observation reuse, then the native Replace receipt, exact
 human/JSON Adapter projection, integrated A/B Dummy, and GNU/musl source
-readiness. Cargo and `bw version` are source-ready, unpublished `0.2.3`; the
-only remaining gate is separately authorized artifact/publication work, while
-the official installer, artifacts, manifest, update target, and public root
-remain closed `0.2.2`.
+readiness. Gate 8 reconstructs the pinned four-target release, publishes the
+manifest last, verifies all 52 loopback and public endpoints plus install and
+update flows, and closes official `0.2.3`. Cargo, `bw version`, installers,
+artifacts, manifest, update target, and public root are aligned at `0.2.3`.
 
 The target flow is Search result information plus an opaque v4 Anddress,
 optional caller-selected View projection, one-shot Replace, and reuse of the
@@ -501,9 +501,9 @@ The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 The target choice and direct build verification are complete. The external
 operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.2` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.3` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
-`04b36d9ca9cc725bedeb17231339c67b5f0590ea`. Linux uses
+`195aaa37068122097ecc04d2644642b6afcc6765`. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
 and `x86_64-apple-darwin` at minimum 10.12. Windows uses
 `x86_64-pc-windows-gnu` and canonical `bw.exe`. Archives, checksum sidecars,
@@ -521,13 +521,13 @@ installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
 Windows build and installer verification make no native-runtime or native-CMD
 claim.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.2`; the sole canonical executable and external Adapter command are `bw`.
+`0.2.3`; the sole canonical executable and external Adapter command are `bw`.
 The public beta.1, beta.2, and beta.3 files remain unchanged immutable
 prior artifacts. The complete stable `0.1.0` Linux/macOS/Windows version
 directory is immutable, the planned matrix is complete, and the stable release
-is closed. The complete `0.2.0`, `0.2.1`, and `0.2.2` version directories are
-likewise immutable; the current installers and manifest select `0.2.2` in the
-exact 44-file public tree.
+is closed. The complete `0.2.0`, `0.2.1`, `0.2.2`, and `0.2.3` version directories are
+likewise immutable; the current installers and manifest select `0.2.3` in the
+exact 52-file public tree.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a target registry,

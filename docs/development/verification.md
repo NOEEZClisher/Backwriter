@@ -1,6 +1,6 @@
 # Verification
 
-## 0.2.3 Patch Box Gates 1–7
+## 0.2.3 Patch Box Gates 1–8
 
 Gate 1 records the direct Search, View, Edit, Check, Data, Session, Pick, and
 writer consumers. Gate 2 implements only the Search observation carrier and
@@ -178,6 +178,39 @@ documents to source-ready, unpublished `0.2.3`; production `src/**`, Core,
 Runtime, v4 wire, toolchain, and dependencies remain byte-identical to the
 Gate 6 parent. Official artifacts, installers, manifest, public root, service,
 and `bw update` remain closed `0.2.2` until Gate 8.
+
+Gate 8 reconstructs the four canonical `0.2.3` artifacts from Source Authority
+revision `195aaa37068122097ecc04d2644642b6afcc6765`, their sidecars, and the
+exact 876-byte manifest with SHA-256
+`876ce79316663faa06cbcd2d374edcc7874e8374b1838f823e52fc623466ea73`.
+Before live publication, GNU and musl each pass all 256 Rust tests and their
+offline/locked all-target check and release build; GNU also passes formatting
+and clippy with warnings denied. The installer, `0.2.3` publisher, CMD, and
+Origin suites pass 38, 55, 12, and 13 regressions respectively.
+
+The exact publisher adds only the eight `releases/0.2.3` files, then replaces
+`install.sh`, `install.ps1`, and the manifest last. All 40 earlier versioned
+files and `install.cmd` retain bytes, inode, mode, owner, size, and timestamps.
+A second publisher execution reuses all 52 files without metadata change.
+Every one of the 52 files passes loopback and public HTTPS GET and HEAD checks
+for exact body or empty HEAD body, length, media type, and cache policy; root
+and unknown paths remain empty no-store 404 responses.
+
+An isolated public fresh install prints exact `Installed Backwriter: 0.2.3`.
+The public `0.2.2` binary Update and a `0.2.3` reinstall print exact `Updated
+Backwriter: 0.2.3`; the installed binary equals the canonical Linux archive
+member. Installed Help, Version, Search v2 position, original embedded v4
+object to JSON Edit receipt to fresh View and next Edit with zero post-Edit
+Search, CRLF preservation, old-address no-publication rejection, Check, raw
+Session Apply, and duplicate-drift Safe Reject probes pass. The actual user
+HOME, PATH, and shell startup files remain unchanged.
+
+Origin and cloudflared PID, InvocationID, restart count, the loopback listener,
+unit and ingress YAML bytes, credential metadata, tunnel UUID and connector,
+and DNS remain unchanged. macOS and Windows receive static cross-build and
+archive verification only; no native macOS, Windows, PowerShell, or CMD
+execution is claimed. No tag, GitHub Release, crates.io publication, cache
+purge, service, tunnel, DNS, route, or credential mutation closes this release.
 
 ## 0.2.2 Anddress-first editing Gates 1–6
 
@@ -774,11 +807,11 @@ Before staging, verify the diff and empty index, confirm repository-root
 Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
-The repository source package and source-built command are `0.2.3`; the latter
-prints exactly `Backwriter 0.2.3` plus LF. The closed public distribution and
-installed release remain `0.2.2` and print `Backwriter 0.2.2` plus LF. The
-current installers, manifest, and Update handoff select `0.2.2`; exact `0.2.1` remains the
-only other accepted manifest. Prior `0.2.1`, `0.2.0`, `0.1.0`, and beta
+The repository source package, source-built command, closed public
+distribution, and installed release are `0.2.3`; the command prints exactly
+`Backwriter 0.2.3` plus LF. The current installers, manifest, and Update handoff
+select `0.2.3`; exact `0.2.2` remains the only other accepted manifest. Prior
+`0.2.2`, `0.2.1`, `0.2.0`, `0.1.0`, and beta
 versioned files remain immutable. The closed `0.2.1`
 source suite passed 236 GNU-host and 236 musl Rust tests; the closed `0.2.0`
 source suite passed 203 GNU-host Rust tests, and the historical `0.1.0` source

@@ -1,7 +1,7 @@
 # Backwriter Principles
 
 The closed public `0.1.0` release remains immutable v3 evidence. Published and
-closed `0.2.2`, the prior published `0.2.1`, and the prior closed public
+closed `0.2.3`, the prior published `0.2.2` and `0.2.1`, and the prior closed public
 `0.2.0` release build implement the
 hard-cutover v4 value/wire with SHA-256; these principles describe the active
 v4 Core contract. The published and closed `0.2.1` target adds
@@ -15,12 +15,12 @@ drift semantics without adding a watcher or supported race.
 The `0.2.2` Gates 1–6 add only the general Adapter contraction in Principle 16
 and its integration evidence; Gate 7 separately closes publication. They
 change no Core, Runtime, or v4 meaning.
-The source-ready, unpublished `0.2.3` Patch Box is governed by Principle 17.
-Gates 1 through 7 close its authority, same-observation Search position carrier, explicit
+The published and closed `0.2.3` Patch Box is governed by Principle 17.
+Gates 1 through 8 close its authority, same-observation Search position carrier, explicit
 single self-or-ancestor View projection, and ordered all-or-nothing batch View
 plus the Replace-only native receipt and its direct human/JSON Adapter
-projection, integrated Dummy, and GNU/musl readiness while leaving v4 identity
-and currentness unchanged. Official release state remains `0.2.2`.
+projection, integrated Dummy, GNU/musl readiness, and release publication while
+leaving v4 identity and currentness unchanged. Official release state is `0.2.3`.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash and length only while its

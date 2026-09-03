@@ -1,10 +1,10 @@
 # Backwriter Anddress and Exact Line Model
 
-Status: normative raw-address authority. Published and closed `0.2.2`, the
-prior published `0.2.1`, and the prior closed public `0.2.0` production release
+Status: normative raw-address authority. Published and closed `0.2.3`, the
+prior published `0.2.2` and `0.2.1`, and the prior closed public `0.2.0` production release
 implement the v4 algebra and hard cutover below. The closed public `0.1.0` v3
 algebra is preserved later in this document only as immutable release evidence;
-it is not accepted by current production code. The source-ready, unpublished
+it is not accepted by current production code. The published and closed
 `0.2.3` Patch Box leaves this v4 algebra and wire byte-identical.
 
 An Anddress describes one target in current structure and carries no past-target
@@ -66,7 +66,7 @@ Line body replacement may append only the terminator observed by that View.
 This creates no alternate locator, content identity, ordinal, context,
 relocation evidence, wire field, equality rule, or compatibility schema.
 
-The in-progress `0.2.3` Patch Box does not change this algebra or wire. Gate 2
+The closed `0.2.3` Patch Box does not change this algebra or wire. Gate 2
 attaches a current one-based Line number or Paragraph inclusive Line range to
 each applicable Search occurrence from that same observation; File has no
 position. This is descriptive information, not an Anddress field, locator,

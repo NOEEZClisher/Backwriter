@@ -1,8 +1,8 @@
 # Backwriter Current State
 
-## Source-ready unpublished 0.2.3 Patch Box
+## Published and closed 0.2.3 Patch Box
 
-Gates 1 through 7 close authority, the consumer matrix, Search observation
+Gates 1 through 8 close authority, the consumer matrix, Search observation
 metadata, native single View projection, and ordered batch View for the `0.2.3`
 Patch Box. It is an AI-facing information-surface
 patch, not an engine-performance project. Search now returns ordered
@@ -16,8 +16,9 @@ Gate 5 adds the Replace-only native receipt seam and reuses its returned fresh
 current Anddress when the confirmed result has one. Gate 6 exposes that result
 through exact human and JSON one-shot Edit output and closes stdin as a
 no-addition decision. Gate 7 closes integrated Dummy and GNU/musl source
-readiness without changing production feature code. Gate 8 remains separately
-authorized artifact and publication work.
+readiness without changing production feature code. Gate 8 reconstructs the
+four exact artifacts and manifest, publishes the 52-file tree manifest-last,
+and closes the official release.
 
 Line Search metadata is the current one-based Line number. Paragraph Search
 metadata is the current one-based inclusive start-to-end Line range. File
@@ -76,11 +77,12 @@ failure, measured payload need, or concrete security requirement for adding a
 stdin reader or EOF state.
 
 The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)
-records the completed carrier, View projections, native Edit receipt, and
-one-shot Adapter output plus integrated source-readiness evidence. Cargo and
-`bw version` are source-ready, unpublished `0.2.3`. Artifacts, installers,
-server, services, tunnel, DNS, public root, `bw update`, and the exact 44-file
-official distribution remain closed `0.2.2` until Gate 8.
+records the completed carrier, View projections, native Edit receipt,
+one-shot Adapter output, integrated source-readiness evidence, and release
+closure. Cargo, `bw version`, artifacts, installers, manifest, public root,
+and `bw update` are published and closed `0.2.3`. The exact public tree has 52
+files. Services, tunnel, DNS, and actual user HOME state were unchanged by
+publication.
 
 ## Version boundary
 
@@ -345,14 +347,14 @@ GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.2` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.3` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses
 `aarch64-apple-darwin` at minimum 11.0 and `x86_64-apple-darwin` at minimum
 10.12. Windows uses `x86_64-pc-windows-gnu` and canonical `bw.exe`. Their
 artifacts, manual-verification checksum sidecars, expanded canonical manifest,
 POSIX and PowerShell installers, and publication are complete from Source
-Authority revision `04b36d9ca9cc725bedeb17231339c67b5f0590ea`. The installer verifies the
+Authority revision `195aaa37068122097ecc04d2644642b6afcc6765`. The installer verifies the
 manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/bw`
 with a same-directory rename, without changing `PATH` or shell startup files.
 Fresh installation prints the installed version and replacement prints the
@@ -367,21 +369,22 @@ macOS and Windows support are based on static cross-build verification without
 native runtime-test or native CMD claims. Linux arm64 remains unsupported, and
 no universal host compatibility is claimed. The public beta.1, beta.2, and
 beta.3 files remain unchanged and immutable. The complete stable `0.1.0`,
-`0.2.0`, `0.2.1`, and current `0.2.2` version directories are immutable, the full
-planned matrix is complete, and the `0.2.2` release is closed; any later
+`0.2.0`, `0.2.1`, and `0.2.2` version directories are immutable. The complete
+current `0.2.3` directory is immutable, its planned matrix is complete, and
+the `0.2.3` release is closed; any later
 platform or version requires separate Owner authority. Tags, GitHub Releases,
 crates.io publication, and GitHub distribution
 remain outside the completed publication.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.2`; the sole canonical executable and external Adapter command are `bw`.
+`0.2.3`; the sole canonical executable and external Adapter command are `bw`.
 There is no current `backwriter` binary, alias, or wrapper. Product prose
 continues to use Backwriter, and persisted Core wire/private-path and
-distribution artifact/domain contracts keep their existing names. `0.2.2`
-publication is closed: the exact 44-file public tree retains all 32 prior
+distribution artifact/domain contracts keep their existing names. `0.2.3`
+publication is closed: the exact 52-file public tree retains all 40 prior
 versioned files and `install.cmd`, while the current installers and manifest
-select `0.2.2` and `bw update` delegates to that official installer. The
-installers accept only the exact closed `0.2.1` and current `0.2.2` manifests;
-`0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired.
+select `0.2.3` and `bw update` delegates to that official installer. The
+installers accept only the exact closed `0.2.2` and current `0.2.3` manifests;
+`0.2.1`, `0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired.
 
 ## Published 0.2.0 authority
 
