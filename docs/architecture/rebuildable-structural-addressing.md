@@ -1,5 +1,51 @@
 # Backwriter Anddress and Exact Line Model
 
+## Unimplemented 0.2.4 v5 target algebra
+
+Published and closed `0.2.3` is immutable v4 evidence. `0.2.4` will hard-cut
+all production callers to `artext.backwriter-anddress.v5`; it will not accept,
+wrap, alias, or execute v4 in parallel.
+
+Every v5 target shares one exact `SourceIdentity`:
+
+```text
+WorkspaceCoordinate + LogicalPath + SourceStateSHA256 + SourceByteLength
+                    + SourceLineCount
+```
+
+The target geometry is:
+
+```text
+File      := [0, SourceByteLength) + SourceLineCount
+Paragraph := [StartByte, EndByte) + FileLineOffset + LineCount
+Line      := [StartByte, EndByte) + Terminator + ParentGeometry
+             + LineOffsetInParent
+```
+
+Offsets and counts are nonnegative exact naturals. `FileLineOffset` is the
+zero-based distance from the File's first Line to the Paragraph's first Line.
+A Paragraph display range is therefore `fileLineOffset + 1` through
+`fileLineOffset + lineCount`. For a Paragraph-parented Line, the absolute
+one-based Line number is `parent.fileLineOffset + lineOffsetInParent + 1`; for
+a File-parented Line it is `lineOffsetInParent + 1`. Terminator is exactly
+None, LF, CR, or CRLF. A nonblank content Line uses its enclosing Paragraph as
+parent. A blank or horizontal-space/tab-only Line uses File as parent.
+
+Raw equality includes the complete flattened v5 value. Source/state relations
+come from the shared `SourceIdentity`; byte containment and overlap come from
+exact ranges; parent/project, Line count/number/range, terminator, and
+projection validity come only from the target geometry. These operations are
+Anddress algebra, not Search metadata, a View relation scan, or capability
+provenance. Reappearing equal bytes may recreate an equal raw value but proves
+no history or continuity.
+
+One private `StructuralCursor` frames all Lines and Paragraphs. One Anddress
+Issuer combines its structural events with completed source identity and is the
+only ordinary-address constructor. The exact v5 JSON field order and exact
+immutable sharing representation are intentionally left to Gate 2, which must
+produce a self-contained wire and one canonical KAT before any consumer
+migration.
+
 Status: normative raw-address authority. Published and closed `0.2.3`, the
 prior published `0.2.2` and `0.2.1`, and the prior closed public `0.2.0` production release
 implement the v4 algebra and hard cutover below. The closed public `0.1.0` v3

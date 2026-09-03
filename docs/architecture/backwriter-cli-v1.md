@@ -1,5 +1,25 @@
 # Backwriter CLI V1
 
+## 0.2.4 follow-up boundary
+
+Phase 1 changes no CLI syntax, output, schema, parser, or executable behavior.
+The published `0.2.3` CLI and its embedded v4 objects remain current and
+immutable. Later `0.2.4` gates must migrate Adapter consumers only after the v5
+Core/Runtime authority exists and must not retain a v4 branch.
+
+The target derives Search Line/Paragraph display positions from v5 Anddress
+geometry instead of `SearchPosition`; derives View self/ancestor projection
+from Anddress instead of a Runtime relation scan; and lets one-shot Line Edit
+read the v5 terminator directly instead of privately invoking View. Search
+querying/order, View output order and all-or-none batch behavior, Edit receipt
+meaning, raw Session Edit/Apply, and existing output/error boundaries remain
+distinct consumers unless their owning gate proves a change necessary.
+
+Exact v5 wire bytes, Search/View/Edit JSON projection, human formatting,
+stdin transport, and splitting `src/bin/bw.rs` are explicit follow-up
+decisions. Phase 1 defines none of them and introduces no alternate command,
+schema, wrapper, compatibility mode, or process lifecycle.
+
 Status: Adapter authority. The completed slices are the canonical `bw`
 executable's standalone Version and Update operations, one-shot human and JSON
 Search/View/Check/Edit, raw View, Anddress-first one-shot Edit, Session Pick, batch

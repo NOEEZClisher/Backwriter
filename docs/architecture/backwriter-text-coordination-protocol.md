@@ -1,5 +1,54 @@
 # Backwriter Protocol
 
+## 0.2.4 structural-authority target
+
+This section is normative for the unimplemented `0.2.4` target. Published and
+closed `0.2.3` remains immutable v4 evidence until the ordered implementation
+gates hard-cut the complete source to `artext.backwriter-anddress.v5`. No gate
+may introduce a v4 decoder, alias, compatibility wrapper, parallel schema, or
+parallel Runtime path.
+
+One source state is `SourceIdentity`: Runtime workspace coordinate, observed
+logical path, complete-source SHA-256, exact byte length, and exact Line count.
+A File target has the full `[0, byteLength)` range and source Line count. A
+Paragraph target has its exact range, zero-based `fileLineOffset`, and
+`lineCount`. A Line target has its exact range and terminator plus a complete
+parent geometry and zero-based `lineOffsetInParent`. A content Line's parent is
+its enclosing Paragraph. A blank or horizontal-space/tab-only Line has no
+Paragraph parent and uses File as parent. Line numbering is derived from this
+geometry and is not a separate Search result fact.
+
+Anddress owns exact source/state relationships, containment, overlap, parent
+and projection, Line counts and numbers, byte ranges, terminator inspection,
+and projection validity. A private `StructuralCursor` is the sole authority for
+CR, LF, CRLF, no-EOL Line framing and blank-line-bounded Paragraph framing. A
+single Anddress Issuer consumes cursor geometry plus completed source identity
+and is the sole ordinary-address construction authority. Exact v5 wire layout
+and the exact in-memory sharing mechanism remain Gate 2 decisions; the wire
+must be self-contained even if implementation shares immutable geometry.
+
+Capabilities retain only their distinct work:
+
+- Search finds literal matches, preserves established tier/order/multiplicity,
+  and asks the Issuer for result addresses.
+- View validates the requested Anddress projection, confirms current source
+  state, and reads the projected exact byte range; it neither finds nor scans
+  for a structural relation.
+- Check reports currentness and does not parse targets.
+- Apply validates an Edit, prepares and publishes the mutation, and consumes
+  prospective cursor/Issuer geometry for any exact resulting address.
+- Anchor remains the sole live Runtime-local Backwriter continuity authority
+  and consumes the same prospective geometry as Apply.
+
+The hard cut removes `SearchPosition`, `SearchOccurrence.position`,
+`LineProjection.line_number`, `ParagraphState.start_line/end_line`, View's
+relation finder, capability-local constructors, and one-shot Edit's private
+View. Existing admission/no-follow observation, literal matcher, batch source
+grouping, fixed-scratch staging, prospective provenance, Host proof,
+publication, and Anchor reflection stay because they have distinct consumers.
+No history, relocation, registry, watcher, retry, merge, rollback, or implicit
+capability order is created.
+
 Status: normative current-only Core/Runtime contract. The closed public `0.1.0`
 release remains immutable v3 evidence. Published and closed `0.2.3`, the prior
 published `0.2.2` and `0.2.1`, and the prior closed public `0.2.0` release use the

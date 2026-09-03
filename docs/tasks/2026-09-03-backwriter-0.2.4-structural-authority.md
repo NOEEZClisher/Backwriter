@@ -1,0 +1,186 @@
+# Backwriter 0.2.4 Structural Authority
+
+Status: Gate 1 authority and consumer baseline defined; implementation has not
+started. Published and closed `0.2.3` remains immutable v4 evidence.
+
+## Objective and boundary
+
+`0.2.4` hard-cuts the complete source to
+`artext.backwriter-anddress.v5`. It centralizes exact source and structural
+geometry in Anddress, replaces four or more Line/Paragraph framers with one
+private `StructuralCursor`, and replaces capability-local address construction
+with one Anddress Issuer. It removes duplicated Search position, View relation,
+and private Edit View work without changing each capability's distinct job.
+
+There is no v4 compatibility decoder, alias, wrapper, parallel wire, or
+parallel Runtime. There is also no history, relocation, registry, watcher,
+retry, merge, rollback, target lineage, or implicit capability workflow. Exact
+wire bytes, immutable geometry sharing, CLI/JSON projection, stdin, and
+`src/bin/bw.rs` splitting remain decisions for their owning later gates.
+
+## Gate 1 — authority and consumer baseline — complete
+
+Current direct consumers establish the contraction boundary:
+
+| Current surface | Actual consumers | 0.2.4 disposition |
+| --- | --- | --- |
+| v4 `SourceIdentity`, `construct_source_identity`, `construct_anddress` | Runtime Search, View, and Apply; encoded objects in CLI, Check, Data, Pick, Anchor, and tests | Replace with v5 source geometry and one Issuer; no capability constructor remains |
+| `SearchOccurrence` plus optional `SearchPosition` | Runtime Search, Check filtering, Data/Session storage and indexing, human/JSON writers | Preserve order/multiplicity and caller ownership; remove the wrapper position after positions derive from Anddress |
+| `FileProjection`, `LineProjection`, `ParagraphProjection`, `ParagraphState` | Runtime Search literal projection | Replace structural framing with `StructuralCursor`; retain literal matcher, tier buckets, ordering, and all-or-none collection |
+| `TargetProjection` | anchored/current target observation | Replace structural framing with `StructuralCursor`; retain one-read source observation and currentness checks |
+| `DirectViewProjection`, `LineRelation`, paragraph boundary scans | ordinary/trusted/anchored single and batch View | Project from validated Anddress geometry, then read the exact range; retain source grouping, one observation, order, duplicates, and all-or-none behavior |
+| `AfterProjector`, `CompletedOutput`, receipt and reflection planning | unit Apply, Replace receipt, Host proof, and live Anchor reflection | Feed prospective bytes through the same cursor/Issuer; retain staging, provenance, publication, proof installation, and reflection |
+| one-shot Edit private `run_view` | Line terminator lookup before `apply_replace` | Remove after v5 Line owns the terminator; raw Session and public Rust Apply remain |
+| Check source grouping and `observe_source` | ordinary/Host currentness reports | Retain; Check needs source identity currentness, not target parsing |
+| Anchor handles and invalidation | sole live Runtime-local continuity | Retain; consume the same prospective v5 geometry as Apply |
+
+The current release stays Cargo/CLI `0.2.3`, v4-only, and fully published. Gate
+1 changes documentation only and reuses the existing GNU/musl 256-test baseline.
+
+## Target v5 algebra
+
+`SourceIdentity` contains workspace coordinate, logical path, complete-source
+SHA-256, exact byte length, and exact Line count. Target geometry is:
+
+- File: full `[0, sourceByteLength)` range and source Line count.
+- Paragraph: exact range, zero-based `fileLineOffset`, and `lineCount`.
+- Line: exact range, None/LF/CR/CRLF terminator, complete parent geometry, and
+  zero-based `lineOffsetInParent`.
+
+A nonblank text Line is parented by its containing Paragraph. A blank or
+horizontal-space/tab-only Line is parented by File. Paragraph display Lines are
+`fileLineOffset + 1` through `fileLineOffset + lineCount`. A Paragraph child
+Line number is `parent.fileLineOffset + lineOffsetInParent + 1`; a File child
+Line number is `lineOffsetInParent + 1`.
+
+Anddress owns `same_source`, `same_state`, containment, overlap, parent,
+projection, Line count, Line number, byte range, terminator, and projection
+validity. Names and exact Rust signatures are Gate 2 decisions; this list fixes
+semantic ownership, not speculative API shape. The self-contained wire may
+flatten immutable geometry that the implementation shares internally.
+
+## Gate 2 — v5 algebra, wire, and Issuer
+
+Acceptance:
+
+- define one canonical v5 value and exact encoding KAT for every target;
+- validate every source/target/range/count/parent/offset/terminator invariant;
+- reject v4 as unsupported with no compatibility or parallel execution path;
+- provide source/state, containment/overlap, parent/projection, Line geometry,
+  range, terminator, and projection-validity algebra;
+- make one crate-private Issuer the sole ordinary-address constructor;
+- prove File/Paragraph/Line geometry sharing without requiring callers to
+  rebuild or reinterpret it.
+
+Fail closed on malformed or inconsistent flattened geometry, arithmetic or
+allocation failure, unsupported version, invalid projection, or any second
+constructor path. Gate 2 decides exact field names/order and in-memory sharing.
+
+## Gate 3 — StructuralCursor, Search, and result contraction
+
+Acceptance:
+
+- one allocation-bounded `StructuralCursor` is the sole CR, LF, CRLF, no-EOL,
+  blank/separator, Line, and Paragraph framer;
+- Search retains literal tiers, deterministic order, duplicates, and
+  all-or-none failure while emitting v5 Anddresses through the Issuer;
+- remove `SearchPosition`, `SearchOccurrence.position`,
+  `LineProjection.line_number`, and `ParagraphState.start_line/end_line`;
+- prove sparse matching on 256 MiB and 1 GiB inputs, one million ordered hits,
+  exact Unicode and terminator geometry, and no whole-source/result duplicate;
+- machine/human position output, if retained, derives only from Anddress.
+
+Any parser disagreement, missing/extra hit, order or multiplicity drift,
+partial result, source reread, arithmetic failure, or v4 residue is a gate
+failure. Exact Search JSON migration belongs to this gate and is not preclosed.
+
+## Gate 4 — View Runtime and single/batch Adapter
+
+Acceptance:
+
+- validate self/ancestor projection from Anddress, then currentness, then read
+  the projected exact byte range;
+- remove `DirectViewProjection`, `LineRelation`, and paragraph boundary scans;
+- preserve single and batch order, duplicates, `RelationAbsent` where the v5
+  algebra permits it, all-or-none behavior, and one observation per source
+  group on proof miss;
+- cover File, Paragraph, text Line, blank/space-tab Line, every terminator,
+  overlapping inputs, A/B/A groups, and 200,000 files;
+- migrate CLI output without a v4 branch or new finder.
+
+Invalid projection, stale state, unavailable source, inconsistent geometry,
+resource failure, or one member failure rejects the required scope without a
+partial batch. Exact CLI/JSON representation is decided here.
+
+## Gate 5 — Edit, Apply, Anchor, and private View removal
+
+Acceptance:
+
+- one-shot Edit obtains Line terminator and target geometry from v5 Anddress
+  and performs no private View;
+- public unit Apply and Replace receipt share the existing executor, staging,
+  prospective hash, provenance, publication, proof installation, and Anchor
+  reflection;
+- prospective bytes use `StructuralCursor` and Issuer once for receipt and
+  Anchor candidates;
+- cover File/Paragraph/Line changes, None/LF/CR/CRLF preservation, no-op,
+  `Changed(Some/None)`, output failure, and old/fresh address currentness;
+- Anchor remains the sole Backwriter continuity exception.
+
+No receipt follows definite failure or `PublicationUncertain`. No reopen,
+post-Search, second parse, history, relocation, retry, or alternate executor is
+allowed.
+
+## Gate 6 — Check and remaining contraction
+
+Acceptance:
+
+- Check compares current source identity without target parsing and preserves
+  ordered/multiplicity-aware reports and Host proof hit/miss/invalidation;
+- Data, Pick, Session, and external Rust consumers migrate to the v5 hard cut;
+- production contains one structural parser, one Issuer, no capability-owned
+  constructor, no Search position wrapper, no View relation finder, and no
+  private Edit View;
+- measure production Rust bytes and explain every material addition; total
+  structure should contract rather than merely move duplication.
+
+Any v4 runtime branch, duplicate parser/constructor, result semantic drift, or
+unexplained code growth is a gate failure.
+
+## Gate 7 — integration, evidence, and source-readiness decision
+
+Acceptance:
+
+- pass complete GNU and musl suites, v5 KAT/no-v4, Search/View/Check/Apply,
+  raw Session, Data/Pick, Host proof, Anchor, admission, and failure matrices;
+- blind duplicate drift remains Correct 1 / Safe Reject 6 / Wrong Apply 0;
+- compare sparse Search, one million hits, 200,000 files, View single/batch,
+  terminator Edit, code size, peak memory, reads, and output equality against
+  fixed clean baselines;
+- record an AI workflow using Search geometry, one batch Line-to-Paragraph
+  projection, and fresh Edit receipt with no redundant JSON indexing, repeated
+  Search/View, mandatory Check, history, relocation, or retry;
+- decide source-ready `0.2.4` GO/NO-GO only after semantics and evidence pass.
+
+Timing is descriptive, not a correctness gate. A failure records evidence and
+leaves Cargo/CLI at `0.2.3`; it does not lower the contract or patch features
+inside the readiness gate.
+
+## Gate 8 — artifacts and publication
+
+Gate 8 requires separate Owner authority. It may reconstruct artifacts,
+manifest, installers, update handoff, and publication only from an accepted
+Gate 7 Source Authority. Phase 1 and Gates 2–7 authorize no artifact, tag,
+release, service, tunnel, DNS, HOME, or live public-root mutation.
+
+Acceptance and fail-closure must be specified from the exact release inputs at
+that time. Existing closed `0.2.3` artifacts and 52-file public tree remain
+immutable throughout earlier gates.
+
+## Fixed exclusions
+
+No gate adds history, predecessor/successor identity, relocation, registry,
+watcher, automatic retry, merge, rollback, persistent index, global snapshot,
+or required capability workflow. Stdin transport and splitting `bw.rs` require
+independent consumer evidence and an owning gate decision; neither is implied
+by structural consolidation.

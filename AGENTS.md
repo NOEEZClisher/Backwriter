@@ -33,6 +33,41 @@ live publication, fresh installation, and explicit public `0.2.2` update are
 complete from Source Authority revision
 `195aaa37068122097ecc04d2644642b6afcc6765`.
 
+## Unimplemented 0.2.4 structural-authority target
+
+The published `0.2.3` source, v4 API/wire, artifacts, installers, and public
+tree are closed immutable evidence. `0.2.4` is an unimplemented target governed
+by the [structural-authority tracker](docs/tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
+Phase 1 changes authority and planning documents only. Cargo, `bw version`, the
+accepted wire, every public API, and runtime behavior remain `0.2.3`/v4 until a
+later gate is separately implemented and accepted.
+
+The target is a hard cut to `artext.backwriter-anddress.v5`, never a v4
+compatibility decoder, alias, wrapper, or parallel Runtime path. Its shared
+`SourceIdentity` owns workspace coordinate, logical path, complete-source
+SHA-256, byte length, and Line count. File owns its full byte range and Line
+count. Paragraph owns its range, zero-based File Line offset, and Line count.
+Line owns its range, exact terminator, parent geometry, and zero-based offset
+inside that parent; a text Line is parented by its Paragraph, while a blank or
+horizontal-space/tab-only Line is parented directly by File.
+
+Anddress owns exact-state and source relationships, containment and overlap,
+parent/projection validation, Line counts and numbers, ranges, and Line
+terminators. One private `StructuralCursor` is the sole Line/Paragraph parser,
+and one Anddress Issuer is the sole construction authority. Search retains
+literal finding, tiers, ordering, and multiplicity; View projects then reads an
+exact range; Check determines currentness; Apply owns mutation and publication;
+Anchor remains the sole Backwriter continuity exception.
+
+The target deletes the Search position wrapper, View relation scan,
+capability-owned address constructors, and one-shot Edit's private View. It
+reuses existing admission/no-follow reads, literal matching, ordered batch
+grouping, staging and prospective provenance, Host proof, publication, and
+Anchor reflection. It adds no history, relocation, registry, watcher, retry,
+merge, or rollback. Exact v5 wire bytes, in-memory geometry sharing, CLI/JSON
+projection, and stdin or `bw.rs` splitting remain follow-up gate decisions, not
+Phase 1 contracts.
+
 `0.2.1` is published and closed. Phases 2 through 6 implement its
 minimal Host-authoritative observation kernel, bounded ordinary View reuse, and
 Check, Apply, and anchored View current-proof reuse plus complete invalidation

@@ -1,5 +1,40 @@
 # Verification
 
+## Planned 0.2.4 structural-authority gates
+
+Phase 1 is documentation-only. It records the current consumer baseline and
+the hard-cut acceptance plan while leaving production Rust, Cargo, tests, CLI,
+wire, and the closed `0.2.3` distribution byte-identical. The existing GNU and
+musl 256-test result remains the semantic baseline; Phase 1 does not claim a
+new test run or implementation result.
+
+Every later implementation gate must reject unsupported/invalid structure
+before source mutation, discard provisional results on failure, leave no
+parallel v4 Runtime path, and preserve the capability-specific error and
+all-or-none contracts. Gate evidence is cumulative:
+
+- Gate 2: exact v5 algebra, source/target geometry, canonical wire KAT, strict
+  no-v4 decode, projection validation, and one construction authority.
+- Gate 3: one `StructuralCursor` for CR/LF/CRLF/no-EOL and Paragraph framing,
+  Search order/multiplicity, sparse large-source Search, one million hits, and
+  absence of positional result duplication.
+- Gate 4: exact self/ancestor View range projection, ordered duplicate
+  single/batch results, one observation per source group, and 200,000-file
+  source grouping without a relation scan.
+- Gate 5: File/Paragraph/Line Replace receipts, every Line terminator,
+  no-op/publication/proof/Anchor behavior, and no private Edit View.
+- Gate 6: Check currentness, Data/Pick/Session consumers, no capability-owned
+  constructor, one structural parser, and measured production-code contraction.
+- Gate 7: complete GNU/musl semantics, blind-duplicate Correct 1 / Safe Reject
+  6 / Wrong Apply 0, AI workflow evidence, sparse/one-million-hit/200,000-file
+  memory measurements, and an explicit source-readiness GO/NO-GO.
+- Gate 8: artifacts, installers, update, publication, and release closure only
+  under separate authority.
+
+Wall-clock results are evidence, not a semantic gate. No gate may infer
+history, relocation, registry, watcher, retry, merge, rollback, or publication
+authority from structural geometry.
+
 ## 0.2.3 Patch Box Gates 1–8
 
 Gate 1 records the direct Search, View, Edit, Check, Data, Session, Pick, and

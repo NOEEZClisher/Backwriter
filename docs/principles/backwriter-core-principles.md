@@ -1,5 +1,9 @@
 # Backwriter Principles
 
+The unimplemented `0.2.4` target is governed by Principle 18 and its
+[eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
+It does not alter the current closed `0.2.3` v4 release during Phase 1.
+
 The closed public `0.1.0` release remains immutable v3 evidence. Published and
 closed `0.2.3`, the prior published `0.2.2` and `0.2.1`, and the prior closed public
 `0.2.0` release build implement the
@@ -113,3 +117,14 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
     Descriptive positions are not selectors or v4 fields; projection is not
     discovery; and a receipt or its Adapter projection creates no predecessor,
     successor, persistence, retry, watcher, or relocation authority.
+18. **Structure has one parser and one address authority.** In the `0.2.4`
+    target, a sole `StructuralCursor` frames Line and Paragraph and a sole
+    Anddress Issuer constructs self-contained v5 values from completed source
+    identity and cursor geometry. Anddress owns state/source relationships,
+    containment, overlap, parent/projection, Line geometry, ranges, and
+    terminators. Search finds, View projects then range-reads, Check checks
+    currentness, Apply publishes mutation, and Anchor alone carries live
+    continuity. Capability-local parsers, constructors, position wrappers,
+    relation scans, and private composition Reads are removed rather than kept
+    as compatibility paths. This consolidation creates no history, relocation,
+    registry, watcher, retry, merge, rollback, or implicit workflow.

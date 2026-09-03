@@ -1,5 +1,37 @@
 # Backwriter Roadmap
 
+## Planned: 0.2.4 structural-authority hard cut
+
+The [0.2.4 tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
+defines eight ordered gates. Phase 1 closes only authority and the current
+consumer baseline; `0.2.3` remains the published, immutable v4 release.
+
+1. Authority and consumer baseline.
+2. v5 algebra, exact wire, and sole Anddress Issuer.
+3. sole `StructuralCursor`, Search migration, and result contraction.
+4. View Runtime plus single/batch Adapter migration.
+5. Edit/Apply/Anchor migration and private View removal.
+6. Check migration, remaining duplication removal, and code contraction.
+7. semantic, AI-workflow, performance, and memory evidence followed by a
+   separate `0.2.4` source-readiness GO/NO-GO.
+8. artifacts, installers, and publication under separate release authority.
+
+The target removes parallel structural bookkeeping rather than layering over
+it. `SourceIdentity` owns source Line count; File, Paragraph, and Line carry
+the exact geometry needed for self/parent projection; Anddress owns structural
+algebra and validation; `StructuralCursor` alone frames Line and Paragraph;
+and one Issuer alone creates ordinary addresses. Search remains the finder,
+View a projection plus exact range read, Check currentness, Apply mutation and
+publication, and Anchor the sole continuity authority.
+
+Each implementation gate must hard-cut its completed surface and fail closed;
+there is no v4 compatibility or parallel Runtime. Acceptance includes sparse
+Search, one million hits, 200,000 files, single/batch View projection,
+terminator-preserving Edit, and blind duplicate drift. Exact v5 wire fields,
+in-memory geometry sharing, CLI/JSON surface, stdin, and `bw.rs` splitting are
+decided only by their owning later gate. History, relocation, registry,
+watcher, retry, merge, rollback, and publication before Gate 8 remain excluded.
+
 ## Completed: 0.2.3 Patch Box and distribution
 
 The [eight-gate Patch Box tracker](../tasks/2026-09-03-backwriter-0.2.3-patch-box.md)

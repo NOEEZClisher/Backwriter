@@ -1,5 +1,37 @@
 # Backwriter Current State
 
+## Target defined: 0.2.4 structural authority, implementation absent
+
+Phase 1 defines the next source target without changing code. Published and
+closed `0.2.3` remains the sole current Cargo/CLI release and immutable v4
+API/wire/distribution. No `0.2.4` Rust API, v5 encoder/decoder, parser, CLI
+schema, artifact, installer, or publication exists yet.
+
+The target hard-cuts to `artext.backwriter-anddress.v5`. Shared
+`SourceIdentity` gains the exact source Line count alongside workspace
+coordinate, logical path, SHA-256, and byte length. File carries full range and
+Line count; Paragraph carries range, zero-based File Line offset, and Line
+count; Line carries range, exact terminator, parent geometry, and zero-based
+Line offset within that parent. Text Lines belong to a Paragraph. Blank and
+horizontal-space/tab-only Lines belong directly to File.
+
+Anddress becomes the authority for source/state relationships, containment,
+overlap, parent and projection, Line count/number/range, terminator, and
+projection validity. A single private `StructuralCursor` becomes the only
+Line/Paragraph parser, and one Anddress Issuer becomes the only construction
+authority. Search keeps finding and order, View projects then range-reads,
+Check checks currentness, Apply mutates and publishes, and Anchor alone owns
+Backwriter continuity.
+
+The planned contraction removes `SearchPosition` and the positional field of
+`SearchOccurrence`, capability-local Line/Paragraph parsers and constructors,
+View's relation scan, and one-shot Edit's private View. Existing matching,
+batch grouping, publication/provenance, Host proof, and Anchor mechanics remain
+their actual consumers. The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
+separates authority, implementation, semantic evidence, version readiness, and
+release approval. Exact v5 wire layout, geometry sharing, CLI/JSON changes, and
+stdin or CLI file splitting are intentionally undecided after Phase 1.
+
 ## Published and closed 0.2.3 Patch Box
 
 Gates 1 through 8 close authority, the consumer matrix, Search observation
