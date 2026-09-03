@@ -385,7 +385,7 @@ The fixed Gate 4 host is Linux 7.2.2-arch1-1 x86_64 on an Intel i7-12700K,
 CPU 0, `powersave`, Rust/Cargo 1.95.0, and tmpfs. After one warm-up, seven
 crossed D/E samples use nearest-rank p95. The dense fixture is 1,048,576 copies
 of `needle\n`, 7,340,032 bytes, SHA-256
-`913515a4e50f1f93c03b21908ff7c47dffed461eabf02b433939256595286b8c`.
+`913515a8747b7f1bf66a0e60d4f7d62aee87266faeffbf1aa60509d478c86b8c`.
 The File fixture has 200,000 one-byte sources named `000000` through
 `199999`; its NUL-separated name-list SHA-256 is
 `e278da996ea260823006584224bc6b9dbbbf9080eabbb70ea2712d8f3874bb66`.
@@ -437,12 +437,71 @@ three-percent direct-evidence allowance and does not renew it. Gate 6 still
 owns contraction to the final baseline target. Gate 4 adds no parser, validator,
 parallel writer, dependency, schema, or compatibility path.
 
-### Gate 5 — chunked pending memory
+### Gate 5 — chunked pending memory — complete
 
-Replace only the dense Search provisional store with a minimal chunked form
-whose consumed storage is actually released, and centralize Paragraph
-attachment. Preserve global indices, cross-chunk Paragraph promotion, result
-tier/order/multiplicity, and all-or-none cleanup.
+Search replaces only its monolithic provisional geometry vector with a
+Search-local store of fixed 16,384-entry chunks plus one global length. Push is
+fallible; Paragraph result start/end remain global indexes; attachment visits
+only the chunks intersecting `[start, end)`. A Paragraph spanning chunks is
+promoted exactly, while a matched separator after its last content Line remains
+a File child. After structural observation and source identity complete, the
+sole Issuer consumes chunks in insertion order and each consumed allocation is
+dropped before the next. Tier buckets, final sort, duplicates, multiplicity,
+all-or-none errors, one cursor, and one Issuer remain unchanged.
+
+One crate-private geometry helper now owns Line-kind recognition, Paragraph
+containment, checked File-to-Paragraph Line offset, parent assignment, and
+pre-mutation invariants. Search maps an impossible attached result to
+`InvalidSource`; Apply keeps non-Line and outside candidates unattached and maps
+invalid prospective geometry through its existing preparation failure. Existing
+receipt and Anchor regressions prove the same prospective state and failure
+boundaries. No second projector, result store, parser, or public surface is
+introduced.
+
+The fixed E/F measurement compares committed Gate 4
+E=`caa17fefa7394553a7fe4edfccea03b64245dd61` with the Gate 5 candidate on
+Linux 7.2.2-arch1-1 x86_64, Intel i7-12700K CPU 0, `powersave`, tmpfs, and
+Rust/Cargo 1.95.0. One warm-up precedes seven crossed fresh processes; `perf`
+duration and `/usr/bin/time` HWM use nearest-rank p95. The huge Paragraph is
+1,048,576 copies of `needle\n`, 7,340,032 bytes, SHA-256
+`913515a8747b7f1bf66a0e60d4f7d62aee87266faeffbf1aa60509d478c86b8c`.
+The many-Paragraph fixture is 1,048,576 copies of `needle\n\n`, 8,388,608
+bytes, SHA-256
+`7e0d3b4cb91c4ed44f5a43986c70dca6b2ad8e1b33a214fb0c4dd6f311674464`.
+
+| Native Line Search | E median/p95 ms | F median/p95 ms | E/F p95 HWM KiB | E/F I/O |
+| --- | ---: | ---: | ---: | ---: |
+| one huge Paragraph | 77.892/79.547 | 89.234/95.662 | 166,192/87,816 | 0/0 |
+| 1,048,576 one-Line Paragraphs | 81.106/86.370 | 92.087/93.502 | 166,200/87,864 | 0/0 |
+
+Both shapes return 1,048,576 results with exact global order and multiplicity.
+Their E/F newline-separated canonical v5 transcript SHA-256 values are
+`8a0757469aaca90c84fb6807037b2d269c8fe277fbf7fe2023f6e4b6cb4ed0a3`
+and `22d7ef161bad25c4d0d86c53b526a5f3a7809bbb4df648336fe8bcb6801c12b9`.
+The same-fixture E/F CLI Search stream is byte-identical at 628,703,142 bytes
+and SHA-256
+`969c02da926c3199a15b4c34506bb059d6044e21ea0c6b157e56a62490927269`;
+the two-item Unicode/CRLF batch View stream is byte-identical at 1,153 bytes and
+SHA-256
+`dd5113b80085326b8da2564432d9b309b864d98bd475d564e77ac0caf639cb75`.
+The harness source is
+`764635b11096c5692bd6f1ad1df9fe62096d9730ba214790d2b0d8c7e0d1938b`;
+raw performance evidence is
+`0abe220fb0e8be1a856f9e408770186049a88e872caafc4099968b1f97f5f245`.
+At maximum load 64 pending chunks exist before issuance; consuming one drops
+16,384 provisional targets before continuing. Both p95 peaks are below 86 MiB,
+well under the 130 MiB target and 140/145 MiB gates. The conditional shared
+Paragraph `Arc` is therefore not tested or introduced. The candidate production
+measure is 306,158 bytes/9,261 lines versus Gate 4's 304,475/9,197 and B's
+297,269/8,954. The byte measure remains within the original cumulative three
+percent envelope; the Line measure does not create a refreshed allowance, and
+Gate 6 still owns contraction to the fixed final target.
+
+GNU and musl each pass all 268 tests, all-target check, clippy with warnings
+denied, and release build. Exact v5 KATs, every terminator and Unicode framing,
+late read/UTF-8/NUL fail-all, receipt/Anchor parity, and Correct 1 / Safe Reject
+6 / Wrong Apply 0 remain green. Cargo, CLI syntax/schema, version, dependency,
+server, public distribution, and release state remain `0.2.4` and unchanged.
 
 ### Gate 6 — consumer reaudit and contraction
 
@@ -525,13 +584,10 @@ Gate 1 changes documentation only. Server, public root, services, cloudflared,
 DNS, tunnel, credentials, actual HOME, artifact, release, and deployment state
 remain outside the target until separately authorized.
 
-## Gate 5 input
+## Gate 6 input
 
-Gate 5 starts from the measured canonical writer and operation-local Adapter
-scratch. It may replace only Search's dense provisional storage with a minimal
-chunked form whose consumed capacity is demonstrably released, and may
-centralize existing Paragraph attachment arithmetic. It must preserve global
-indices, cross-chunk promotion, target tiers, output order and multiplicity,
-all-or-none cleanup, one Issuer, one cursor, exact v5 bytes, and every Gate 4
-consumer digest. Chunk size and any shared Paragraph allocation remain
-measurement decisions rather than preselected architecture.
+Gate 6 starts from the measured 16,384-entry pending chunks and single
+geometry-owned Paragraph attachment helper. It must audit production
+reachability, remove remaining dead or duplicate plumbing, retain every actual
+consumer and exact output, and contract toward the fixed B production target.
+It does not reopen chunk size or shared Paragraph allocation and adds no feature.

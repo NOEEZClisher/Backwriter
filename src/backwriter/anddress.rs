@@ -80,6 +80,51 @@ pub(crate) enum TargetGeometry {
     },
 }
 
+pub(crate) fn attach_line_to_paragraph(
+    geometry: &mut TargetGeometry,
+    paragraph: ParagraphGeometry,
+) -> Result<bool, AnddressError> {
+    let TargetGeometry::Line {
+        byte_start,
+        byte_end,
+        line_offset_in_parent,
+        parent,
+        ..
+    } = *geometry
+    else {
+        return Ok(false);
+    };
+    if byte_start < paragraph.byte_start || byte_end > paragraph.byte_end {
+        return Ok(false);
+    }
+    let Some(parent_offset) = line_offset_in_parent.checked_sub(paragraph.file_line_offset) else {
+        return Err(AnddressError::Invalid);
+    };
+    if byte_start > byte_end
+        || paragraph.byte_start >= paragraph.byte_end
+        || paragraph.line_count == 0
+        || paragraph
+            .file_line_offset
+            .checked_add(paragraph.line_count)
+            .is_none()
+        || parent_offset >= paragraph.line_count
+        || parent != ParentGeometry::File
+    {
+        return Err(AnddressError::Invalid);
+    }
+    let TargetGeometry::Line {
+        line_offset_in_parent,
+        parent,
+        ..
+    } = geometry
+    else {
+        unreachable!("validated Line geometry changed before attachment")
+    };
+    *line_offset_in_parent = parent_offset;
+    *parent = ParentGeometry::Paragraph(paragraph);
+    Ok(true)
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Anddress {
     source: Arc<SourceIdentity>,
@@ -1181,6 +1226,79 @@ mod tests {
         assert!(!line.same_state(&other_source));
         assert!(!line.contains(&other_source));
         assert!(!line.overlaps(&other_source));
+    }
+
+    #[test]
+    fn paragraph_attachment_is_exact_and_never_partially_mutates_one_geometry() {
+        let paragraph = ParagraphGeometry {
+            byte_start: 2,
+            byte_end: 8,
+            file_line_offset: 1,
+            line_count: 3,
+        };
+        let mut line = TargetGeometry::Line {
+            byte_start: 4,
+            byte_end: 6,
+            terminator: LineTerminator::Lf,
+            line_offset_in_parent: 2,
+            parent: ParentGeometry::File,
+        };
+        assert_eq!(attach_line_to_paragraph(&mut line, paragraph), Ok(true));
+        assert!(matches!(
+            line,
+            TargetGeometry::Line {
+                line_offset_in_parent: 1,
+                parent: ParentGeometry::Paragraph(parent),
+                ..
+            } if parent == paragraph
+        ));
+
+        let cases = [
+            (
+                TargetGeometry::Line {
+                    byte_start: 8,
+                    byte_end: 9,
+                    terminator: LineTerminator::None,
+                    line_offset_in_parent: 4,
+                    parent: ParentGeometry::File,
+                },
+                paragraph,
+                Ok(false),
+            ),
+            (TargetGeometry::File, paragraph, Ok(false)),
+            (
+                TargetGeometry::Line {
+                    byte_start: 2,
+                    byte_end: 4,
+                    terminator: LineTerminator::Lf,
+                    line_offset_in_parent: 0,
+                    parent: ParentGeometry::File,
+                },
+                paragraph,
+                Err(AnddressError::Invalid),
+            ),
+            (
+                TargetGeometry::Line {
+                    byte_start: 0,
+                    byte_end: 1,
+                    terminator: LineTerminator::None,
+                    line_offset_in_parent: usize::MAX,
+                    parent: ParentGeometry::File,
+                },
+                ParagraphGeometry {
+                    byte_start: 0,
+                    byte_end: 1,
+                    file_line_offset: usize::MAX,
+                    line_count: 1,
+                },
+                Err(AnddressError::Invalid),
+            ),
+        ];
+        for (mut geometry, parent, expected) in cases {
+            let before = geometry;
+            assert_eq!(attach_line_to_paragraph(&mut geometry, parent), expected);
+            assert_eq!(geometry, before);
+        }
     }
 
     #[test]

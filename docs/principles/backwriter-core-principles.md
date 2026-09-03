@@ -166,3 +166,8 @@ the v5 `0.2.4` distribution governed by Principle 18.
     exact Line count, and chunk delivery. Only actual Line/Paragraph projection
     composes it with the sole cursor; this specialization creates no second
     source read or structural authority.
+    Dense Search pending targets use measured fixed chunks with global indexes;
+    completed observation precedes issuance, and ordered issuance releases each
+    consumed chunk. Search and Apply share one geometry-owned Paragraph
+    attachment helper. Because both dense Paragraph shapes remain below 86 MiB,
+    no shared Paragraph allocation or alternate hierarchy is introduced.

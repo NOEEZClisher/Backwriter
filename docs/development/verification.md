@@ -2,17 +2,18 @@
 
 ## 0.2.5 performance-recovery gates
 
-Gate 1 is documentation-only. Gates 2 through 4 replace the sole literal
+Gate 1 is documentation-only. Gates 2 through 5 replace the sole literal
 matcher's per-byte Runtime caller loop with one checked segment operation and
 move raw consumers without structural geometry onto a cursor-free observation
-path, then consolidate canonical Anddress encoding and proven typed validation.
+path, consolidate canonical Anddress encoding, and release dense pending storage.
 Cargo, lockfile, README, toolchain, v5 wire, and Adapter output remain
 unchanged. The
 [tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
 fixes evidence labels, gate order, thresholds, exclusions, and the three
 authority decisions before implementation. Gate 2 passed 258 tests per target;
-Gate 3 passed 261 and Gate 4 passes 263 per target plus all-target check,
-clippy with warnings denied, and release build. Offline/locked metadata and
+Gate 3 passed 261, Gate 4 passed 263, and Gate 5 passes 268 per target.
+All-target check,
+clippy with warnings denied, release build, and offline/locked metadata and
 tree plus rustfmt also pass.
 
 Line count remains v5 identity and currentness evidence. Gate 3 retains the
@@ -131,6 +132,32 @@ the zero allocation evidence applies only to repeated canonical address
 encoding. Production grows by 12 bytes/31 lines from Gate 3 and remains
 2.42%/2.71% over B, inside but not renewing the existing direct-evidence
 allowance.
+
+Gate 5 compares committed Gate 4 E=`caa17fefa7394553a7fe4edfccea03b64245dd61`
+with F as the exact pending-chunk and attachment candidate. The fixed host uses
+CPU 0, `powersave`, tmpfs, Rust/Cargo 1.95.0, one warm-up, seven crossed fresh
+processes, `perf` duration, `/usr/bin/time` HWM, and nearest-rank p95. The huge
+Paragraph fixture is 1,048,576 copies of `needle\n`, 7,340,032 bytes, SHA-256
+`913515a8747b7f1bf66a0e60d4f7d62aee87266faeffbf1aa60509d478c86b8c`.
+The one-Line Paragraph fixture is 1,048,576 copies of `needle\n\n`, 8,388,608
+bytes, SHA-256
+`7e0d3b4cb91c4ed44f5a43986c70dca6b2ad8e1b33a214fb0c4dd6f311674464`.
+
+| Gate 5 native Search cell | E median/p95 ms | F median/p95 ms | E/F p95 HWM KiB | E/F I/O |
+| --- | ---: | ---: | ---: | ---: |
+| one huge Paragraph | 77.892/79.547 | 89.234/95.662 | 166,192/87,816 | 0/0 |
+| 1,048,576 one-Line Paragraphs | 81.106/86.370 | 92.087/93.502 | 166,200/87,864 | 0/0 |
+
+Both cells return 1,048,576 exact ordered results. Their E/F newline-separated
+canonical v5 transcript SHA-256 values are respectively
+`8a0757469aaca90c84fb6807037b2d269c8fe277fbf7fe2023f6e4b6cb4ed0a3`
+and `22d7ef161bad25c4d0d86c53b526a5f3a7809bbb4df648336fe8bcb6801c12b9`.
+The chosen chunk holds 16,384 pending targets; the largest fixture uses 64
+chunks, and ordered issuance drops each consumed chunk. Both peaks are below
+86 MiB and the 130 MiB target, so the conditional shared Paragraph `Arc` is not
+implemented. The harness source and raw measurement evidence SHA-256 values are
+`764635b11096c5692bd6f1ad1df9fe62096d9730ba214790d2b0d8c7e0d1938b`
+and `0abe220fb0e8be1a856f9e408770186049a88e872caafc4099968b1f97f5f245`.
 
 ## 0.2.4 structural-authority gates
 

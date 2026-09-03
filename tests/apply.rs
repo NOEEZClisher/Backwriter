@@ -193,6 +193,25 @@ fn apply_has_one_executor_with_raw_before_and_demanded_structural_after() {
     assert_eq!(production.matches(".open_admitted_source(").count(), 1);
     assert_eq!(production.matches("pub(super) fn execute(").count(), 1);
     assert_eq!(production.matches("AnddressIssuer::new(").count(), 1);
+    assert_eq!(production.matches("attach_line_to_paragraph(").count(), 1);
+    assert_eq!(
+        include_str!("../src/runtime/search.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap()
+            .matches("attach_line_to_paragraph(")
+            .count(),
+        1
+    );
+    assert_eq!(
+        include_str!("../src/backwriter/anddress.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap()
+            .matches("fn attach_line_to_paragraph(")
+            .count(),
+        1
+    );
     assert_eq!(production.matches("observe_source(source").count(), 1);
     assert_eq!(production.matches("stage_source(&mut source").count(), 1);
     assert!(production.contains("let needs_structural_output = receipt_projection"));

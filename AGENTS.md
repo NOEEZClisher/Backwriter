@@ -38,12 +38,12 @@ live publication, fresh installation, and explicit public `0.2.3` update are
 complete from Source Authority revision
 `0ee4dcce14da93f925c27a04d0e79051c83fd124`.
 
-## 0.2.5 performance recovery — Gates 1–4 complete
+## 0.2.5 performance recovery — Gates 1–5 complete
 
-Gates 1 through 4 of the
+Gates 1 through 5 of the
 [performance-recovery tracker](docs/tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
-close authority, bulk literal matching, raw/structural observation, and
-canonical encoding reuse. Cargo, `bw version`, artifacts, installers, Update,
+close authority, bulk literal matching, raw/structural observation, canonical
+encoding reuse, and dense pending-result memory. Cargo, `bw version`, artifacts, installers, Update,
 and the public distribution remain published and closed `0.2.4`. The governing
 rule is: semantics stay unified; execution becomes specialized again.
 
@@ -69,6 +69,15 @@ success. Existing `encode()` remains and delegates to the same sole writer.
 Search and batch View reuse one operation-local scratch vector; single Edit and
 Check retain their one-address `encode()` use.
 
+Gate 5 replaces only Search's monolithic provisional target vector with fixed
+16,384-entry chunks. Global indexes still attach matched content Lines to the
+exact Paragraph across chunk boundaries; separator matches remain File
+children. After the complete observation establishes one source identity, the
+sole Issuer consumes chunks in order and releases each before continuing.
+Search and Apply share one geometry-owned Line-to-Paragraph attachment helper.
+Measured peak HWM is below 86 MiB for both one huge Paragraph and 1,048,576
+one-Line Paragraphs, so shared Paragraph allocation is not activated.
+
 Gate 2 replaces the sole matcher's byte-at-a-time Runtime caller with checked
 segment matching, preserves KMP partial state across chunks, and stops matcher
 work after a Line, Paragraph, or File has its best tier. The sole structural
@@ -83,9 +92,9 @@ Apply after-state activates it only for a non-File receipt or live non-File
 Anchor. Fixed A/B/C/D evidence passes the Check, View, 256 MiB Apply, CRLF
 Edit, and 134,217,728-short-Line boundaries without changing v5 or output.
 
-The remaining ordered work is chunked pending memory, consumer contraction,
-fixed evidence/source readiness, then separately authorized release. Shared
-Paragraph allocation and chunk size require measurement. Do not introduce v6,
+The remaining ordered work is consumer contraction, fixed evidence/source
+readiness, then separately authorized release. Shared Paragraph allocation is
+not active. Do not introduce v6,
 change v5 or Adapter output, restore
 retired carriers/scanners/private View, or add a parser, persistent
 state/index/registry, stdin, CLI split, history, relocation, watcher, merge,

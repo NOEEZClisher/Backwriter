@@ -2,7 +2,7 @@
 
 ## 0.2.5 performance-recovery authority
 
-Gates 1 through 4 are complete. Current production and the official release
+Gates 1 through 5 are complete. Current production and the official release
 remain closed `0.2.4`. The performance target preserves all public v5,
 capability, Runtime, Adapter, failure, and publication meaning under one rule:
 semantics stay unified while execution becomes specialized again.
@@ -35,12 +35,15 @@ and batch View reuse one operation-local scratch vector without duplicating the
 writer or retaining a second result collection; single-result Edit and Check
 keep their one-address `encode()` calls.
 
-Bulk matching, raw/structural observation, and issuance/encoding are complete.
-The remaining ordered implementation gates are chunked pending memory and
-final consumer contraction, followed by fixed evidence/source readiness and
-separately authorized release. Conditional structural demand, cursor
-specialization, shared Paragraph allocation, and pending chunk size require
-measured evidence.
+Bulk matching, raw/structural observation, issuance/encoding, and dense pending
+memory are complete. Search retains provisional targets in measured fixed
+16,384-entry chunks, preserves global Paragraph ranges across chunks, and
+consumes and releases each chunk in order only after the accepted observation
+and sole Issuer exist. Search and Apply use one geometry-owned
+Line-to-Paragraph attachment helper. Measured peak HWM stays below 86 MiB for
+both dense Paragraph shapes, so shared Paragraph allocation is not used. The
+remaining ordered implementation gates are final consumer contraction and
+fixed evidence/source readiness, followed by separately authorized release.
 No gate may change v5 fields or output, add another parser or authority, or
 restore a retired carrier, relation scan, or private Edit View.
 

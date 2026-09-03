@@ -3,7 +3,7 @@
 use std::cmp::Ordering;
 
 use crate::backwriter::anddress::{
-    AnddressIssuer, LineBodyClass, ParagraphGeometry, ParentGeometry, TargetGeometry,
+    AnddressIssuer, LineBodyClass, ParagraphGeometry, TargetGeometry, attach_line_to_paragraph,
 };
 use crate::backwriter::search::{
     LiteralMatcher, MatchTier, PreparedLiteral, SearchError, SearchOutcome, SearchRequest,
@@ -350,6 +350,73 @@ struct ProvisionalTarget {
     geometry: TargetGeometry,
 }
 
+const PENDING_CHUNK_CAPACITY: usize = 16_384;
+
+#[derive(Default)]
+struct PendingTargets {
+    chunks: Vec<Vec<ProvisionalTarget>>,
+    len: usize,
+}
+
+impl PendingTargets {
+    fn push(&mut self, tier: MatchTier, geometry: TargetGeometry) -> Result<(), SourceScanError> {
+        let next_len = self.len.checked_add(1).ok_or(SourceScanError::Resource)?;
+        if self
+            .chunks
+            .last()
+            .is_none_or(|chunk| chunk.len() == PENDING_CHUNK_CAPACITY)
+        {
+            self.chunks
+                .try_reserve(1)
+                .map_err(|_| SourceScanError::Resource)?;
+            let mut chunk = Vec::new();
+            chunk
+                .try_reserve_exact(PENDING_CHUNK_CAPACITY)
+                .map_err(|_| SourceScanError::Resource)?;
+            self.chunks.push(chunk);
+        }
+        self.chunks
+            .last_mut()
+            .expect("pending chunk was created")
+            .push(ProvisionalTarget { tier, geometry });
+        self.len = next_len;
+        Ok(())
+    }
+
+    fn attach_paragraph(
+        &mut self,
+        start: usize,
+        end: usize,
+        paragraph: ParagraphGeometry,
+    ) -> Result<(), SourceScanError> {
+        if start > end || end > self.len {
+            return Err(SourceScanError::InvalidSource);
+        }
+        if start == end {
+            return Ok(());
+        }
+        let first_chunk = start / PENDING_CHUNK_CAPACITY;
+        let last_chunk = (end - 1) / PENDING_CHUNK_CAPACITY;
+        for chunk_index in first_chunk..=last_chunk {
+            let base = chunk_index * PENDING_CHUNK_CAPACITY;
+            let chunk = self
+                .chunks
+                .get_mut(chunk_index)
+                .ok_or(SourceScanError::InvalidSource)?;
+            let local_start = start.saturating_sub(base);
+            let local_end = (end - base).min(chunk.len());
+            for target in &mut chunk[local_start..local_end] {
+                if !attach_line_to_paragraph(&mut target.geometry, paragraph)
+                    .map_err(|_| SourceScanError::InvalidSource)?
+                {
+                    return Err(SourceScanError::InvalidSource);
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 struct SearchProjection<'a> {
     target: SearchTarget,
     matcher: LiteralMatcher<'a>,
@@ -357,12 +424,7 @@ struct SearchProjection<'a> {
     paragraph_tier: Option<MatchTier>,
     paragraph_result_start: Option<usize>,
     paragraph_result_end: usize,
-    provisional: Vec<ProvisionalTarget>,
-}
-
-enum ProjectionOutcome {
-    File(Option<MatchTier>),
-    Targets(Vec<ProvisionalTarget>),
+    pending: PendingTargets,
 }
 
 fn scan_open_source(
@@ -377,12 +439,6 @@ fn scan_open_source(
     let mut projection = SearchProjection::new(literal, target);
     let state =
         observe_structural(reader, &mut projection).map_err(|_| SearchError::Unavailable)?;
-    let outcome = match target {
-        SearchTarget::File => ProjectionOutcome::File(projection.file_tier),
-        SearchTarget::Paragraph | SearchTarget::Line => {
-            ProjectionOutcome::Targets(projection.provisional)
-        }
-    };
     let issuer = AnddressIssuer::new(
         workspace_coordinate,
         logical_path,
@@ -391,16 +447,16 @@ fn scan_open_source(
         state.line_count,
     )
     .map_err(|_| SearchError::Unavailable)?;
-    match outcome {
-        ProjectionOutcome::File(Some(tier)) => {
+    if target == SearchTarget::File {
+        if let Some(tier) = projection.file_tier {
             let anddress = issuer
                 .issue(TargetGeometry::File)
                 .map_err(|_| SearchError::Unavailable)?;
             push_result(full_line_results, substring_results, tier, anddress)?;
         }
-        ProjectionOutcome::File(None) => {}
-        ProjectionOutcome::Targets(provisional) => {
-            for provisional in provisional {
+    } else {
+        for chunk in projection.pending.chunks {
+            for provisional in chunk {
                 let anddress = issuer
                     .issue(provisional.geometry)
                     .map_err(|_| SearchError::Unavailable)?;
@@ -425,7 +481,7 @@ impl<'a> SearchProjection<'a> {
             paragraph_tier: None,
             paragraph_result_start: None,
             paragraph_result_end: 0,
-            provisional: Vec::new(),
+            pending: PendingTargets::default(),
         }
     }
 }
@@ -476,13 +532,13 @@ impl StructuralSink for SearchProjection<'_> {
             }
             SearchTarget::Line => {
                 if line.body_class == LineBodyClass::Text && self.paragraph_result_start.is_none() {
-                    self.paragraph_result_start = Some(self.provisional.len());
+                    self.paragraph_result_start = Some(self.pending.len);
                 }
                 if let Some(tier) = tier {
-                    push_provisional(&mut self.provisional, tier, line.file_geometry())?;
+                    self.pending.push(tier, line.file_geometry())?;
                 }
                 if line.body_class == LineBodyClass::Text {
-                    self.paragraph_result_end = self.provisional.len();
+                    self.paragraph_result_end = self.pending.len;
                 }
             }
         }
@@ -494,33 +550,18 @@ impl StructuralSink for SearchProjection<'_> {
             SearchTarget::File => {}
             SearchTarget::Paragraph => {
                 if let Some(tier) = self.paragraph_tier.take() {
-                    push_provisional(
-                        &mut self.provisional,
-                        tier,
-                        TargetGeometry::Paragraph(paragraph),
-                    )?;
+                    self.pending
+                        .push(tier, TargetGeometry::Paragraph(paragraph))?;
                 }
             }
             SearchTarget::Line => {
                 if let Some(start) = self.paragraph_result_start.take() {
-                    for provisional in &mut self.provisional[start..self.paragraph_result_end] {
-                        let TargetGeometry::Line {
-                            line_offset_in_parent,
-                            parent,
-                            ..
-                        } = &mut provisional.geometry
-                        else {
-                            return Err(SourceScanError::InvalidSource);
-                        };
-                        *line_offset_in_parent = line_offset_in_parent
-                            .checked_sub(paragraph.file_line_offset)
-                            .ok_or(SourceScanError::InvalidSource)?;
-                        *parent = ParentGeometry::Paragraph(paragraph);
-                    }
+                    self.pending
+                        .attach_paragraph(start, self.paragraph_result_end, paragraph)?;
                 }
             }
         }
-        self.paragraph_result_end = self.provisional.len();
+        self.paragraph_result_end = self.pending.len;
         Ok(())
     }
 }
@@ -529,18 +570,6 @@ fn prefer_tier(best: &mut Option<MatchTier>, tier: MatchTier) {
     if best.is_none_or(|current| tier < current) {
         *best = Some(tier);
     }
-}
-
-fn push_provisional(
-    provisional: &mut Vec<ProvisionalTarget>,
-    tier: MatchTier,
-    geometry: TargetGeometry,
-) -> Result<(), SourceScanError> {
-    provisional
-        .try_reserve(1)
-        .map_err(|_| SourceScanError::Resource)?;
-    provisional.push(ProvisionalTarget { tier, geometry });
-    Ok(())
 }
 
 fn push_result(
@@ -779,6 +808,171 @@ mod tests {
             (None, Some(anddress)) => (MatchTier::Substring, anddress),
             _ => panic!("expected exactly one projected result"),
         }
+    }
+
+    fn pending_line(index: usize) -> TargetGeometry {
+        TargetGeometry::Line {
+            byte_start: index,
+            byte_end: index + 1,
+            terminator: crate::backwriter::anddress::LineTerminator::None,
+            line_offset_in_parent: index,
+            parent: crate::backwriter::anddress::ParentGeometry::File,
+        }
+    }
+
+    #[test]
+    fn pending_chunks_keep_global_ranges_order_and_paragraph_boundaries() {
+        for count in [
+            1,
+            PENDING_CHUNK_CAPACITY - 1,
+            PENDING_CHUNK_CAPACITY,
+            PENDING_CHUNK_CAPACITY + 1,
+        ] {
+            let mut pending = PendingTargets::default();
+            for index in 0..count {
+                pending
+                    .push(
+                        if index % 2 == 0 {
+                            MatchTier::FullLine
+                        } else {
+                            MatchTier::Substring
+                        },
+                        pending_line(index),
+                    )
+                    .unwrap();
+            }
+            assert_eq!(pending.len, count);
+            assert_eq!(pending.chunks.len(), count.div_ceil(PENDING_CHUNK_CAPACITY));
+            assert!(
+                pending
+                    .chunks
+                    .iter()
+                    .take(pending.chunks.len().saturating_sub(1))
+                    .all(|chunk| chunk.len() == PENDING_CHUNK_CAPACITY)
+            );
+            assert_eq!(
+                pending
+                    .chunks
+                    .iter()
+                    .flatten()
+                    .map(|target| target.geometry)
+                    .collect::<Vec<_>>(),
+                (0..count).map(pending_line).collect::<Vec<_>>()
+            );
+        }
+
+        let text_lines = PENDING_CHUNK_CAPACITY + 1;
+        let mut pending = PendingTargets::default();
+        for index in 0..text_lines + 1 {
+            pending
+                .push(MatchTier::FullLine, pending_line(index))
+                .unwrap();
+        }
+        let paragraph = ParagraphGeometry {
+            byte_start: 0,
+            byte_end: text_lines,
+            file_line_offset: 0,
+            line_count: text_lines,
+        };
+        pending.attach_paragraph(0, text_lines, paragraph).unwrap();
+        let flattened = pending.chunks.iter().flatten().collect::<Vec<_>>();
+        for (index, target) in flattened[..text_lines].iter().enumerate() {
+            assert!(matches!(
+                target.geometry,
+                TargetGeometry::Line {
+                    line_offset_in_parent,
+                    parent: crate::backwriter::anddress::ParentGeometry::Paragraph(parent),
+                    ..
+                } if line_offset_in_parent == index && parent == paragraph
+            ));
+        }
+        assert_eq!(flattened[text_lines].geometry, pending_line(text_lines));
+    }
+
+    #[test]
+    fn pending_chunks_attach_many_one_line_paragraphs_without_replaying_prior_chunks() {
+        let count = PENDING_CHUNK_CAPACITY + 1;
+        let mut pending = PendingTargets::default();
+        for index in 0..count {
+            pending
+                .push(MatchTier::Substring, pending_line(index))
+                .unwrap();
+            pending
+                .attach_paragraph(
+                    index,
+                    index + 1,
+                    ParagraphGeometry {
+                        byte_start: index,
+                        byte_end: index + 1,
+                        file_line_offset: index,
+                        line_count: 1,
+                    },
+                )
+                .unwrap();
+        }
+        assert_eq!(pending.chunks.len(), 2);
+        for (index, target) in pending.chunks.iter().flatten().enumerate() {
+            assert!(matches!(
+                target.geometry,
+                TargetGeometry::Line {
+                    line_offset_in_parent: 0,
+                    parent: crate::backwriter::anddress::ParentGeometry::Paragraph(parent),
+                    ..
+                } if parent.file_line_offset == index && parent.line_count == 1
+            ));
+        }
+    }
+
+    #[test]
+    fn pending_resource_boundary_fails_without_adding_or_issuing_a_target() {
+        let mut pending = PendingTargets {
+            chunks: Vec::new(),
+            len: usize::MAX,
+        };
+        assert_eq!(
+            pending.push(MatchTier::FullLine, pending_line(0)),
+            Err(SourceScanError::Resource)
+        );
+        assert!(pending.chunks.is_empty());
+    }
+
+    #[test]
+    fn cross_chunk_full_line_and_substring_tiers_keep_global_order() {
+        let mut source = Vec::new();
+        source
+            .try_reserve_exact((PENDING_CHUNK_CAPACITY + 1) * 9)
+            .unwrap();
+        for index in 0..PENDING_CHUNK_CAPACITY + 1 {
+            source.extend_from_slice(if index % 2 == 0 {
+                b"needle\n"
+            } else {
+                b"xneedle\n"
+            });
+        }
+        let (full, substring) = project_chunked(
+            &source,
+            "needle",
+            SearchTarget::Line,
+            None,
+            READ_BUFFER_SIZE,
+        )
+        .unwrap();
+        assert_eq!(full.len(), PENDING_CHUNK_CAPACITY / 2 + 1);
+        assert_eq!(substring.len(), PENDING_CHUNK_CAPACITY / 2);
+        assert!(
+            full.windows(2)
+                .chain(substring.windows(2))
+                .all(|pair| pair[0].byte_start() < pair[1].byte_start())
+        );
+        assert!(
+            full.iter()
+                .all(|anddress| anddress.line_number().unwrap() % 2 == 1)
+        );
+        assert!(
+            substring
+                .iter()
+                .all(|anddress| anddress.line_number().unwrap() % 2 == 0)
+        );
     }
 
     #[test]

@@ -10,7 +10,8 @@ use cap_std::fs::{Dir, File, OpenOptions};
 use cap_std::fs::{Permissions, PermissionsExt};
 
 use crate::backwriter::anddress::{
-    Anddress, AnddressIssuer, AnddressTarget, ParagraphGeometry, ParentGeometry, TargetGeometry,
+    Anddress, AnddressIssuer, AnddressTarget, ParagraphGeometry, TargetGeometry,
+    attach_line_to_paragraph,
 };
 use crate::backwriter::{
     apply::{ApplyError, EditReceipt},
@@ -407,20 +408,9 @@ impl<'a> AfterProjector<'a> {
             return Ok(());
         }
         for candidate in &mut self.candidates {
-            if let Some(TargetGeometry::Line {
-                byte_start,
-                byte_end,
-                line_offset_in_parent,
-                parent,
-                ..
-            }) = candidate.result.as_mut()
-                && paragraph.byte_start <= *byte_start
-                && *byte_end <= paragraph.byte_end
-            {
-                *line_offset_in_parent = line_offset_in_parent
-                    .checked_sub(paragraph.file_line_offset)
-                    .ok_or(SourceScanError::Resource)?;
-                *parent = ParentGeometry::Paragraph(paragraph);
+            if let Some(geometry) = candidate.result.as_mut() {
+                attach_line_to_paragraph(geometry, paragraph)
+                    .map_err(|_| SourceScanError::Resource)?;
             }
             if candidate.binding.target() == AnddressTarget::Paragraph {
                 candidate.record(candidate.paragraph, TargetGeometry::Paragraph(paragraph));

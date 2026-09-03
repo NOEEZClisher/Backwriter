@@ -1,8 +1,8 @@
 # Backwriter Current State
 
-## 0.2.5 performance recovery — Gates 1–4 complete
+## 0.2.5 performance recovery — Gates 1–5 complete
 
-Gates 1 through 4 are complete under the
+Gates 1 through 5 are complete under the
 [performance-recovery tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
 Gate 2 adds one checked segment operation to the existing literal matcher and
 deletes the Runtime per-byte caller loop. Cargo, `bw version`, artifacts,
@@ -23,7 +23,7 @@ bytes. Exhaustive partition tests and fixed native A/B/C measurements preserve
 count, order, v5 bytes, tiers, terminators, UTF-8/NUL, and fail-all behavior.
 The 256 MiB and 1 GiB C/A median ratios are 1.1389 and 1.1392, below the 1.15
 ceiling but above the 1.10 target. This does not activate conditional cursor
-specialization. Dense peak remains about 166 MiB and belongs to Gate 5.
+specialization.
 
 Gate 1 resolves three planning questions. First, exact source Line count stays
 in v5 identity, observations, Host proof, and currentness. Same-hash,
@@ -53,17 +53,28 @@ Lines. Host Check remains in the approximately one-microsecond class with zero
 capability I/O; Host and Untrusted self-Line View preserve the exact source
 digest. Gate 4 preserves all four v5 KATs and every measured output digest.
 Search and batch View reuse one operation-local encoding scratch; single Edit
-and Check retain their one-address `encode()` path. The complete suite is now
-263 tests. Production is 304,475 bytes and 9,197 lines, only 12 bytes and 31
+and Check retain their one-address `encode()` path. The complete suite is 263
+tests at the Gate 4 boundary. Production there is 304,475 bytes and 9,197 lines, only 12 bytes and 31
 lines above Gate 3 and 2.42%/2.71% above the fixed
 297,269-byte/8,954-line baseline. This remains within the existing
 direct-evidence allowance and does not renew it; later contraction still owns
 the final target.
 
-The remaining gates are chunked pending memory, consumer contraction, fixed
-evidence/source readiness, and a separately authorized release. No completed
-gate fixes `StructuralDemand`, cursor specialization, shared Paragraph
-allocation, or chunk size.
+Gate 5 replaces the monolithic Search provisional vector with measured
+16,384-entry chunks. It retains global result indexes and promotes matched
+content Lines across chunk boundaries while leaving separator matches attached
+to File. Issuance starts only after the complete source observation and source
+identity succeed; it consumes chunks in order and releases each before the next
+one. Search and Apply now use one geometry-owned Paragraph attachment helper,
+while retaining their distinct invalid-source and ordinary unattached-result
+classification. On the fixed CPU-0/tmpfs comparison, peak HWM falls from about
+166 MiB to below 86 MiB for both one huge Paragraph and 1,048,576 one-Line
+Paragraphs. Shared Paragraph allocation is therefore not activated.
+GNU and musl each pass the complete 268-test suite.
+
+The remaining gates are consumer contraction, fixed evidence/source readiness,
+and a separately authorized release. No completed gate activates
+`StructuralDemand`, cursor specialization, or shared Paragraph allocation.
 
 ## Published and closed 0.2.4 structural authority
 

@@ -1,8 +1,8 @@
 # Backwriter Anddress and Exact Line Model
 
-## 0.2.5 encoding and currentness boundary
+## 0.2.5 encoding, attachment, and currentness boundary
 
-Gates 1 through 4 preserve the complete published v5 algebra and wire. Exact
+Gates 1 through 5 preserve the complete published v5 algebra and wire. Exact
 source Line count remains a `SourceIdentity` field and currentness requirement. A typed
 address whose hash and byte length match but whose claimed Line count differs
 from the accepted observation or Host proof remains `NotCurrent`. The raw
@@ -27,6 +27,14 @@ it contains exactly the current fixed-order v5 object and no trailing bytes.
 Existing `encode()` remains and delegates through one newly allocated empty
 vector to the same private emitter. This adds no second wire, builder, JSON
 model, compatibility path, or change to the four canonical KAT byte sequences.
+
+One crate-private geometry helper attaches a provisional File-parented Line to
+an exact containing Paragraph. It alone checks target kind, containment,
+checked Line-offset subtraction, Paragraph count arithmetic, and parent
+assignment before mutation. Search maps impossible observed geometry to its
+invalid-source failure; Apply leaves ordinary non-Line or outside candidates
+unattached and preserves its existing preparation failure boundary. This is
+not new public algebra or wire.
 
 ## Published and closed 0.2.4 v5 target algebra
 

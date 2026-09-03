@@ -3,7 +3,7 @@
 ## In progress: 0.2.5 structural specialization and performance recovery
 
 The [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
-closes Gates 1 through 4 without changing release state. The target keeps the
+closes Gates 1 through 5 without changing release state. The target keeps the
 complete closed `0.2.4` v5 meaning and restores specialized hot paths only
 where measurement and reachability show unnecessary work.
 
@@ -16,8 +16,8 @@ where measurement and reachability show unnecessary work.
    fixed A/B/C/D evidence.
 4. Issuance/encoding — complete; strict boundaries validate once, one canonical
    writer serves `encode`/`encode_into`, and Search/batch View reuse scratch.
-5. Chunked pending memory — release consumed provisional Search storage and
-   centralize Paragraph attachment.
+5. Chunked pending memory — complete; measured fixed chunks release consumed
+   provisional Search storage and one geometry helper owns Paragraph attachment.
 6. Consumer reaudit and contraction — delete remaining dead or duplicate
    plumbing without adding a feature.
 7. Fixed A/B/C evidence and source-readiness GO/NO-GO — only a complete GO may
@@ -31,14 +31,15 @@ validation remain. The sole Issuer validates shared source once and each target
 geometry once. The public encoder reuses a caller
 `Vec<u8>`, clears it, performs checked fallible reserve before writing, leaves
 it empty on error, and preserves exact v5 bytes; existing `encode()` delegates.
-`StructuralDemand`, cursor specialization, shared Paragraph `Arc`, and chunk
-size remain measurement-dependent rather than planned architecture.
+`StructuralDemand`, cursor specialization, and shared Paragraph `Arc` remain
+inactive. Measurement selects 16,384 pending entries per chunk.
 
 Gate 2 preserves exact count, order, tiers, v5 wire, and all-or-none behavior.
 Its 256 MiB and 1 GiB C/A median ratios are 1.1389 and 1.1392; both pass the
 1.15 ceiling, so Gate 3 proceeds without a cursor mode or second parser. The
 1.10 target remains unmet evidence rather than hidden or redefined. The dense
-1,048,576-hit peak remains about 166 MiB for the later pending-memory gate.
+Gate 5 reduces the dense 1,048,576-hit peak from about 166 MiB to below 86 MiB
+for both prescribed Paragraph shapes without changing result bytes.
 
 Gate 3 keeps one raw same-read Line counter and moves only proven geometry
 consumers onto the structural composition. Its fixed D/A medians are 1.0812
