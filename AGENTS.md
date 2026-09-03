@@ -14,10 +14,11 @@ are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. Current source
-is hard-cut through Gate 6 to the v5 Anddress algebra, wire, shared structural
-cursor, direct Search result collection, geometry-driven single/batch View, and
-View-free one-shot Edit, with source-state-only Check classification. Their direct View
-source-state/range projection, target-specific Search literal
+is source-ready through Gate 7 with the v5 Anddress algebra, wire, shared
+structural cursor, direct Search result collection, geometry-driven
+single/batch View, and View-free one-shot Edit, with source-state-only Check
+classification. Their direct View source-state/range projection,
+target-specific Search literal
 projection and exact logical File lookup, Pick predicate semantics, direct
 Anchor target projection and live continuity, and source-state Check batch
 currentness reporting are implemented. Apply V1
@@ -36,17 +37,19 @@ live publication, fresh installation, and explicit public `0.2.2` update are
 complete from Source Authority revision
 `195aaa37068122097ecc04d2644642b6afcc6765`.
 
-## In-progress 0.2.4 structural-authority target
+## Source-ready unpublished 0.2.4 structural-authority target
 
 The published `0.2.3` source, v4 API/wire, artifacts, installers, and public
-tree are closed immutable evidence. `0.2.4` is an in-progress target governed
-by the [structural-authority tracker](docs/tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-Gates 1–6 close authority, v5 algebra/wire, the sole Issuer, the shared
+tree are closed immutable evidence. `0.2.4` is a source-ready, unpublished
+target governed by the [structural-authority tracker](docs/tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
+Gates 1–7 close authority, v5 algebra/wire, the sole Issuer, the shared
 structural cursor, Search result contraction, exact-range View, and Edit/Apply/
 Anchor migration without a private Edit View, plus Check and remaining consumer
-contraction. Cargo and
-`bw version` remain `0.2.3`; artifacts and the published distribution remain
-closed v4 evidence until later gates are separately accepted.
+contraction, and integrated semantic, AI-workflow, and fixed A/V5/B evidence.
+Cargo and `bw version` are `0.2.4`; artifacts, installers, the Update target,
+and the published distribution remain closed `0.2.3` v4 evidence until Gate 8
+is separately accepted. Because Update has no version comparison, a
+source-built `0.2.4` command can install official `0.2.3`.
 
 The target is a hard cut to `artext.backwriter-anddress.v5`, never a v4
 compatibility decoder, alias, wrapper, or parallel Runtime path. Its shared

@@ -2,13 +2,13 @@
 
 ## 0.2.4 structural-authority gates
 
-Gate 1 records the consumer baseline. Gates 2–6 hard-cut current source to v5,
+Gate 1 records the consumer baseline. Gates 2–7 hard-cut current source to v5,
 install the sole Issuer and complete-source structural cursor, and contract
 Search results to direct Anddresses and View to geometry-driven exact-range
 projection, remove one-shot Edit's private View, and close source-state-only
-Check plus direct v5 consumer contraction while leaving Cargo/CLI version and
-the closed `0.2.3` distribution
-unchanged. Exact File, Paragraph, text-Line, and
+Check plus direct v5 consumer contraction, then close integrated source
+readiness. Cargo and `bw version` are unpublished `0.2.4`; the closed `0.2.3`
+distribution, installers, manifest, and Update target remain unchanged. Exact File, Paragraph, text-Line, and
 File-child-Line KATs; strict v4/v3 rejection; source/geometry mutation and
 overflow fail-closure; algebra; shared source identity; every terminator and
 body class; source Line counting; Runtime Search geometry; Apply receipt/Anchor
@@ -17,11 +17,12 @@ matching and Apply publication paths are unchanged. View has no relation or
 Paragraph scan and returns only `Projected { anddress, content }` or
 `RelationAbsent`.
 
-Gate 6 passes the complete suite on both GNU and musl. Both targets pass offline/locked
+Gates 6 and 7 pass the complete suite on both GNU and musl. Both targets pass offline/locked
 all-target check, clippy with warnings denied, and release build; the GNU run
-also records offline/locked metadata and dependency tree plus rustfmt. Cargo,
-lockfile, toolchain, Search/Check/Edit Adapter envelopes, and the `0.2.3`
-executable version are unchanged. View alone hard-cuts to
+also records offline/locked metadata and dependency tree plus rustfmt. Gate 7
+advances only the root package, root lock entry, and version KAT to `0.2.4`;
+toolchain, dependencies, production `src/**`, and Search/View/Check/Edit
+Adapter envelopes are unchanged. View alone hard-cuts to
 `bw.cli.view.v2` for shared single/batch outcome items.
 
 Check validates every input before I/O and groups by workspace coordinate and
@@ -103,6 +104,130 @@ containment/overlap functions are removed in favor of v5 `contains` and
 large no-EOL, scratch-boundary, no-op, currentness, Host proof, Anchor,
 publication failure, output failure, and five-Edit/four-Position raw Session
 regressions remain the behavioral evidence.
+
+Gate 7 exports published v4 A
+`195aaa37068122097ecc04d2644642b6afcc6765`, first-v5 V5
+`f93f44b785961695402eaaffa521cd4de5071bc2`, and candidate B
+`8b20987893ea5ac454c4c0a50d0c470e26b5e650` from clean Git objects under the
+fixed task root `/tmp/backwriter-gate7.8VIlme`. The same locked toolchain,
+fixtures, CPU 0, `CLOCK_MONOTONIC_RAW`, one warm-up, and seven crossed samples
+(`AB/BA/AB/BA/AB/BA/AB`) apply throughout. Binary SHA-256 is
+`bd4aee49b531a525cc1375509d3d068e32538c061e84828f797f62101dc64a6e`
+for A, `6c875cdcf2e1ae60c25b46e34b9840dab40480fbedf451fb35012d9e8feb14ad`
+for V5, and
+`68fba45ddee9d481213f5555d77ffa2b2a309e21a1ebc2c12ac45a6f29f2b105`
+for B. Fixture-generator and Search-runner SHA-256 values are
+`61df1572529a92dc06d319efbc3cd1617e984daed61a610775bb1faa03ca8d6f`
+and `6d942cdb894eefa413592c88fd2d4c2e32b25aba1428d0d2975a4b1556437df7`.
+Input SHA-256 values are
+`641f7442659ee50a6c5e183fd0a95963deaa21490ac2884215639ea704614d9e`
+for the 256 MiB sparse source,
+`904c75499d4dc222f3df76ad0c2dcc397e0a163b56ed5c65692f65de7d67a162`
+for the 1 GiB sparse source,
+`913515a8747b7f1bf66a0e60d4f7d62aee87266faeffbf1aa60509d478c86b8c`
+for the dense source, and
+`08edfc37b84fc8a5e960bb2f9437590cc521c487b9aa098d3841d839e06ebf61`
+for the ordered path/NUL/content contract of the 200,000-file fixture.
+
+Search results are exact and complete:
+
+| Fixture | Results | A median/p95 ms, maxRSS KiB, rchar, output bytes | B median/p95 ms, maxRSS KiB, rchar, output bytes |
+| --- | ---: | --- | --- |
+| 256 MiB sparse | 1 | 277.688/278.691, 10,844, 268,441,917, 453 | 394.048/396.072, 10,856, 268,441,917, 642 |
+| 1 GiB sparse | 1 | 1,083.990/1,086.879, 10,956, 1,073,748,285, 455 | 1,551.261/1,553.824, 10,968, 1,073,748,285, 645 |
+| 1,048,576 dense Lines | 1,048,576 | 541.525/568.415, 109,172, 7,346,493, 414,856,172 | 1,017.803/1,066.878, 166,488, 7,346,493, 628,703,142 |
+| 200,000 one-byte Files | 200,000 | 614.027/623.230, 109,648, 206,461, 74,400,064 | 648.221/657.925, 114,984, 206,461, 72,800,064 |
+
+`rchar` is identical within every A/B row. Sparse maxRSS is source-size
+independent; the dense and many-file differences are explained by the larger
+self-contained v5 geometry, not a second result collection. V5 and B output
+are byte-identical at SHA-256
+`56c62059fb5c0de9e5189bcc72808a280f9d5d5da00be425945b2a8fc5af89d3`,
+`01d9f612a5d5c2220d173bf6e9369cf2f278dd8392787543b334b01954fc5fc6`,
+`b740ea98080fc731b9a11a75190474c5c3487be5fe411007d420bc58a6bb44aa`,
+and `3b8edb97992c30c45720ff87f153cae878be8dece1293e3f78512452a9f610ef`
+for those four fixed-root fixtures. The earlier Gate 3 raw JSON SHA values
+remain preserved evidence for its deleted task root; because workspace
+coordinate is part of every Anddress, Gate 7 records new root-bound values
+rather than misrepresenting a different root as the same byte stream. Raw
+Search evidence SHA-256 is
+`14e6f0137a02456398de9644950967952868dbb782cd583993a38b9e041db293`.
+
+The 200,000-file native View harness confirms ordered `d000/f000.txt` through
+`d199/f999.txt`, exact `x` Content, and batch/sequential equality at semantic
+digest `47142f33ec75709312a40aa34b4b9f9f85ff15df50d76e644b99c29bb289451b`.
+A/B `rchar` is identical at 606,529; median/p95 is
+1,976.203/1,983.647 ms versus 2,018.248/2,064.369 ms, and maxRSS is
+147,620 versus 158,564 KiB. The small View harness proves late Line self,
+Paragraph, File, separator `RelationAbsent`, and duplicate batch equality;
+A/B semantic SHA-256 is
+`237e926aeaca9f6bcdfa779e633eaabe1ab9a31f0b55af30103d65932a2a44d9`
+and V5/B output is byte-identical. Raw View evidence SHA-256 values are
+`ccb80ec6a8d8381d5ed940ce9989b9f1d08fe5e9cfe53aa8af185f51b08d58cf`
+and `2eb8f6e677c629625db52daaf444533c7f08bc01754b918b8b57e4438e2c5262`.
+The many-file runner SHA-256 is
+`f061fd9947b3fc739b6260dca4298d4f8b9502a2778d07bc29dcfe021eb8a97c`;
+its A/V5 and B harness SHA-256 values are
+`3776bac25a81548191201674d97496eb805ed200a87e678994a4e01d3dcf8d86`
+and `3944f839c0facf3c54ef78015415959fa48f16e86a1aa6a9c6ad3d5673ee26f6`.
+The small-View runner SHA-256 is
+`4d15e2e3bb88f9dfd77fe2e4f7e089f7e1e976c1c605ae64b4c518b6719b7751`;
+its A, V5, and B harness SHA-256 values are
+`ef290c86c116bafe43eba8c2baaadce65191a28a02ffe488c18345edfda3edb8`,
+`821d91c905248521fde068fc7d2561d4aa6b52f4c4f4070bc8468a099cf50874`,
+and `75eca9a722549de1c25a25a3108f6938b56dfab400e702413b98ee8a2b8f37e1`.
+The View input SHA-256 is
+`70b89d947ded1c114ef109f8f45e4cd7d5e16497515cc38c6e4e5f1545a6ab78`.
+
+None/LF/CR/CRLF one-shot Edit preserves each exact terminator and gives
+byte-identical V5/B receipts. CRLF A/B median/p95 is 1.187/2.533 ms versus
+1.798/2.771 ms, maxRSS is 11,036 versus 11,040 KiB, and final SHA-256 is
+`cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf`.
+The raw Session Replace/Apply control is byte-identical across A/V5/B and has
+the same final SHA; A/B `rchar` is 6,632 and output SHA-256 is
+`fa25fff17c951881bb024d75d2129bcf8681c13cc54a113cafb5e7c4f74c37e8`.
+Edit runner/evidence SHA-256 values are
+`dbff910d4fa4159bd2b1b56834b44bcc7549028d4e0a3c09d5ad427569c80645`
+and `1c564949ff842ca36ddc6a447c3dd3c596bf5b3d9a498e0fdc0c87128980ac7c`.
+The original input SHA-256 values are
+`7c9bc58081262feba4a5609d4c9f0ae1353edd0d31ae48f92d6a68b1089fe090`
+for None,
+`d35fe0ba542f0e6402a4b323b465c7a13484d702f698adad65945e39d0c50c6f`
+for LF,
+`54a2d1515d7157eca2f57a655558197db1223ee863a46c681b41c0d02e7d3234`
+for CR, and
+`ec43c761c4cd9b113208d4f99b2e912697e414e739e4c60324f4b5ae2c72a3fb`
+for CRLF.
+
+The AI workflow uses five processes and five Adapter/Runtime calls: one Search,
+one two-input Line-to-Paragraph `view_batch`, two `apply_replace` calls, and
+one View of the second fresh receipt. Both Search objects are sliced once from
+the original JSON, the duplicate Paragraph projection is preserved, the first
+fresh receipt drives the second Edit, and the second receipt drives View. It
+uses zero redundant JSON indexing, repeated individual View, post-Edit Search,
+mandatory Check, history, relocation, and retry. A separate old-address Edit
+exits 1 with only `error: current source is unavailable` and publishes no
+bytes. Exact final bytes are `first final\r\nsecond needle\r\n`, SHA-256
+`275b708709f7fbdcbfd6f150a430003dc636ea9a09884a34a110546633e3e5f0`.
+Workflow runner/evidence SHA-256 values are
+`cddb3f9db977569073ee2b80fe72f1c97bca779f224012d715898dd2dec8256b`
+and `4a3ceb5ef477f62f42cecb6e925a159513c19fe8d9f75a87698243fe9dac35b8`.
+The post-version GNU release binary SHA-256 is
+`3a5988d74606ea5307083d5de7f469d4e318f72ac7295c80c3bb6c9687f83e3e`;
+rerunning the same workflow with that binary produces evidence SHA-256
+`03619d573711c8557bc1e19b7930ec4504e34e23ce76996ea75b139b28321f9c`
+and the same final source SHA. Its raw Session control retains output SHA-256
+`fa25fff17c951881bb024d75d2129bcf8681c13cc54a113cafb5e7c4f74c37e8`.
+
+Before and after the version-only change, GNU and musl each pass all 258 tests,
+all-target check, clippy with warnings denied, and release build; metadata,
+dependency tree, and formatting also pass offline/locked. The blind duplicate
+matrix remains Correct 1 / Safe Reject 6 / Wrong Apply 0. Production `src/**`
+is byte-identical to Gate 6, so its recorded 297,269-byte/8,954-line measure
+remains below Gate 1's 302,614 bytes/9,155 lines. Gate 7 is therefore GO and
+advances only the package/root lock version, version KAT, and active status to
+source-ready unpublished `0.2.4`. Official artifacts, installers, manifest,
+Update target, and the 52-file public root remain closed `0.2.3` until Gate 8.
 
 ## 0.2.3 Patch Box Gates 1–8
 

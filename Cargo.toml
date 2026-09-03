@@ -1,6 +1,6 @@
 [package]
 name = "backwriter"
-version = "0.2.3"
+version = "0.2.4"
 description = "Current structural text coordination Core, Runtime, and CLI"
 license = "MIT"
 repository = "https://github.com/NOEEZClisher/Backwriter"

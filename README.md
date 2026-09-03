@@ -51,7 +51,7 @@ bw version
 The current source build prints exactly:
 
 ```text
-Backwriter 0.2.3
+Backwriter 0.2.4
 ```
 
 ### Update
@@ -70,20 +70,22 @@ exact immutable `0.2.2` manifest and current `0.2.3` manifest; `0.2.1`, `0.2.0`,
 version comparison and adds no version guard.
 
 The product is Backwriter. The source Cargo package and
-library crate are `backwriter` at `0.2.3`; the sole canonical executable and
+library crate are `backwriter` at `0.2.4`; the sole canonical executable and
 external Adapter command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
 official installer remains separate and selects the closed public `0.2.3`
 distribution.
 
-The Cargo package, `bw version`, and closed official distribution remain
-`0.2.3`. The source checkout contains the unpublished `0.2.4` v5 Gates 1–6;
-its published `0.2.3`
+The Cargo package and `bw version` are source-ready, unpublished `0.2.4`.
+The closed official distribution, installers, manifest, and Update target
+remain `0.2.3`. The source checkout contains the completed `0.2.4` v5 Gates
+1–7; its published `0.2.3`
 canonical artifacts retain Source Authority revision
 `195aaa37068122097ecc04d2644642b6afcc6765`. Patch Box Gates 1–8 are complete,
 including Search positions, View projection/batching, native Edit receipts,
 exact receipt output, integrated GNU/musl readiness evidence, and the
 manifest-last 52-file publication. Because Update performs no version
-comparison, `bw update` installs or reinstalls the official `0.2.3` release.
+comparison, `bw update` from a source-built `0.2.4` executable installs or
+reinstalls the official `0.2.3` release until Gate 8.
 
 ## Anddress-first editing
 

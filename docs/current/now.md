@@ -1,13 +1,16 @@
 # Backwriter Current State
 
-## In progress: 0.2.4 structural authority, Gate 6 complete
+## Source-ready unpublished 0.2.4 structural authority
 
-Gates 2–6 implement the v5 Rust algebra, canonical wire, sole crate-private
-Issuer, common structural cursor, direct Search result collection, and
-geometry-driven exact-range View and Edit/Apply/Anchor projection.
-Published and closed `0.2.3` remains the sole current Cargo/CLI release
-and immutable v4 distribution; Cargo and `bw version` remain `0.2.3`. There is
-no `0.2.4` artifact, installer, publication, or release claim.
+Gates 2–7 implement and verify the v5 Rust algebra, canonical wire, sole
+crate-private Issuer, common structural cursor, direct Search result
+collection, and geometry-driven exact-range View and Edit/Apply/Anchor
+projection.
+Cargo and `bw version` are source-ready, unpublished `0.2.4`. Published and
+closed `0.2.3` remains the immutable v4 distribution, installer, manifest,
+Update target, and sole official release. There is no `0.2.4` artifact,
+installer, publication, or release claim, and source-built `bw update` may
+install official `0.2.3` because it performs no version comparison.
 
 Current source is hard-cut to `artext.backwriter-anddress.v5`. Shared
 `SourceIdentity` includes the exact source Line count alongside workspace
@@ -50,10 +53,15 @@ byte length, and Line count, and uses matching Host proof without opening the
 source. A nonmatching proof is I/O-free `NotCurrent`; proof miss uses one shared
 observation per source and does not install or mutate proof or Anchor state.
 Data, Pick, and Session already consume the
-direct v5 values, so no adapter or parallel collection was added. The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
+direct v5 values, so no adapter or parallel collection was added. Gate 7
+passes 258 tests on both GNU and musl, the fixed A/V5/B sparse, dense,
+200,000-file, View, and Edit comparisons, the blind-drift 1/6/0 matrix, and
+the exact Search-to-batch-View-to-fresh-receipt workflow without changing
+production `src/**`. The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
 separates authority, implementation, semantic evidence, version readiness, and
-release approval. Integrated semantic and measurement evidence begins at Gate 7;
-stdin and CLI file splitting remain separately owned later decisions.
+release approval. Gate 8 alone owns artifacts, installers, Update alignment,
+publication, and release closure; stdin and CLI file splitting remain
+separately owned later decisions.
 
 ## Published and closed 0.2.3 Patch Box
 

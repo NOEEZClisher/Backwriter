@@ -1,12 +1,13 @@
 # Backwriter Protocol
 
-## 0.2.4 structural-authority target through Gate 6
+## 0.2.4 source-ready structural authority through Gate 7
 
 Gate 2 hard-cuts the source to `artext.backwriter-anddress.v5`. Published and
 closed `0.2.3` remains immutable v4 release evidence. Current decode rejects v4
 and v3 as unsupported; there is no compatibility alias, wrapper, parallel
-schema, or parallel Runtime path. Cargo and `bw version` remain `0.2.3` until
-source readiness.
+schema, or parallel Runtime path. Gate 7 makes Cargo and `bw version`
+source-ready, unpublished `0.2.4`; official artifacts, installers, manifest,
+Update target, and publication remain closed `0.2.3`.
 
 One source state is `SourceIdentity`: Runtime workspace coordinate, observed
 logical path, complete-source SHA-256, exact byte length, and exact Line count.
@@ -64,6 +65,12 @@ and Line count. A matching Host proof performs no source I/O, and a nonmatching
 proof is I/O-free `NotCurrent`; miss or unusable proof falls back to one
 observation per source without mutating proof or Anchor state. Data, Pick, and
 Session carry the same direct v5 values and collections.
+Gate 7 changes no Core, Runtime, wire, capability, or Adapter semantics. Fixed
+clean A/V5/B measurements and complete GNU/musl suites pass, including exact
+Search counts/order/multiplicity, View projections, every Line terminator,
+fresh Edit receipts, Host proof, Anchor, and blind-drift fail-closure. It
+therefore advances only source version authority; Gate 8 remains the separate
+distribution boundary.
 No history, relocation, registry, watcher, retry, merge, rollback, or implicit
 capability order is created.
 

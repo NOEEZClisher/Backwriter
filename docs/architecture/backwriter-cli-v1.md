@@ -1,6 +1,6 @@
 # Backwriter CLI V1
 
-## 0.2.4 boundary through Gate 6
+## 0.2.4 source-ready boundary through Gate 7
 
 Gate 2 changes no CLI syntax, Adapter envelope schema, human formatting,
 parser flow, or executable version. Current source embeds canonical v5 objects
@@ -20,6 +20,11 @@ consumers.
 Gate 6 changes no CLI syntax, schema, writer, status, or error. Check, Data,
 Pick, and Session already consume direct v5 values and collections, so no
 Adapter wrapper or compatibility branch is added.
+Gate 7 changes no capability syntax, schema, writer, status, or error. The
+fixed A/V5/B evidence and complete GNU/musl suites pass, so only the Cargo
+package, `bw version`, its KAT, and active status advance to unpublished
+`0.2.4`. The official installer, manifest, artifacts, Update target, and
+distribution remain closed `0.2.3`.
 
 The v5 wire is fixed by the address authority. Search position duplication,
 View relation work, and one-shot Edit's private View are removed. Stdin
@@ -110,7 +115,7 @@ capability workflow.
 `bw version` writes exactly:
 
 ```text
-Backwriter 0.2.3
+Backwriter 0.2.4
 ```
 
 including the final LF and no other successful output.
@@ -129,8 +134,9 @@ parent before replacing `bw.exe`. A Windows parent status of `0` means only that
 handoff started successfully; the child owns final installer output, final
 status, replacement, and bootstrap cleanup.
 
-The source-built and published `0.2.3` command has no version-comparison guard.
-Invoking Update therefore installs or reinstalls the official `0.2.3` release.
+Neither the source-built `0.2.4` nor published `0.2.3` command has a
+version-comparison guard. Invoking Update therefore installs or reinstalls the
+official `0.2.3` release until Gate 8 aligns distribution authority.
 This boundary does not authorize a guard, retry, rollback, alternate installer,
 or publication.
 

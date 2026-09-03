@@ -1,18 +1,20 @@
 # Backwriter Principles
 
-The in-progress `0.2.4` target is governed by Principle 18 and its
+The source-ready, unpublished `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-Gates 2–6 hard-cut current source to v5, install the sole Issuer and shared
+Gates 2–7 hard-cut current source to v5, install the sole Issuer and shared
 complete-source structural cursor, contract Search results and View, and remove
 one-shot Edit's private View, then confirm source-state-only Check and direct v5
-consumers without altering the closed `0.2.3` v4 release or the Cargo/CLI
-version.
+consumers before integrated source readiness. Cargo and `bw version` are
+unpublished `0.2.4`; the closed `0.2.3` v4 release and distribution remain
+unchanged until Gate 8.
 
 The closed public `0.1.0` release remains immutable v3 evidence. Published and
 closed `0.2.3`, the prior published `0.2.2` and `0.2.1`, and the prior closed public
 `0.2.0` release build implement the
-hard-cutover v4 value/wire with SHA-256; these principles describe the active
-v4 Core contract. The published and closed `0.2.1` target adds
+hard-cutover v4 value/wire with SHA-256; they remain historical release
+evidence while the active source contract is v5. The published and closed
+`0.2.1` target adds
 only the explicitly guarded observation-reuse authority below; Phase 2 provides
 the Host kernel and Search proof installation, and Phase 3 adds bounded ordinary
 View proof consumption. Phase 4 adds Check group classification from matching
@@ -136,5 +138,8 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
     exact Content or `RelationAbsent`. Gate 5 removes the private composition
     View and reuses v5 containment/overlap plus one prospective cursor/Issuer
     pass for receipt and Anchor candidates. No compatibility path is retained.
+    Gate 6 removes the remaining consumer adapters and verifies source-state-only
+    Check; Gate 7 changes no production structure and closes integrated GNU,
+    musl, fixed A/V5/B, and AI-workflow evidence before advancing source version.
     This consolidation creates no history, relocation, registry, watcher,
     retry, merge, rollback, or implicit workflow.
