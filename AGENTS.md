@@ -38,9 +38,9 @@ live publication, fresh installation, and explicit public `0.2.3` update are
 complete from Source Authority revision
 `0ee4dcce14da93f925c27a04d0e79051c83fd124`.
 
-## 0.2.5 performance recovery — Gates 1–5 complete
+## 0.2.5 performance recovery — Gates 1–6 complete
 
-Gates 1 through 5 of the
+Gates 1 through 6 of the
 [performance-recovery tracker](docs/tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
 close authority, bulk literal matching, raw/structural observation, canonical
 encoding reuse, and dense pending-result memory. Cargo, `bw version`, artifacts, installers, Update,
@@ -78,6 +78,14 @@ Search and Apply share one geometry-owned Line-to-Paragraph attachment helper.
 Measured peak HWM is below 86 MiB for both one huge Paragraph and 1,048,576
 one-Line Paragraphs, so shared Paragraph allocation is not activated.
 
+Gate 6 removes infallible builder/output `Result` plumbing, raw/cursor offset
+parity returns, Anchor observation's duplicate index vector, duplicate
+source/state comparison wrappers, one mutually exclusive Search tier field,
+and duplicate Issuer source construction. The retained Check and View grouping
+paths have different error and output consumers. Production G is 304,431 bytes
+and 9,213 lines: -1,727/-48 from F and +7,162/+259 (2.41%/2.89%) from B,
+inside the existing three-percent ceiling without renewing it.
+
 Gate 2 replaces the sole matcher's byte-at-a-time Runtime caller with checked
 segment matching, preserves KMP partial state across chunks, and stops matcher
 work after a Line, Paragraph, or File has its best tier. The sole structural
@@ -92,9 +100,8 @@ Apply after-state activates it only for a non-File receipt or live non-File
 Anchor. Fixed A/B/C/D evidence passes the Check, View, 256 MiB Apply, CRLF
 Edit, and 134,217,728-short-Line boundaries without changing v5 or output.
 
-The remaining ordered work is consumer contraction, fixed evidence/source
-readiness, then separately authorized release. Shared Paragraph allocation is
-not active. Do not introduce v6,
+The remaining ordered work is fixed evidence/source readiness, then separately
+authorized release. Shared Paragraph allocation is not active. Do not introduce v6,
 change v5 or Adapter output, restore
 retired carriers/scanners/private View, or add a parser, persistent
 state/index/registry, stdin, CLI split, history, relocation, watcher, merge,

@@ -3,7 +3,7 @@
 ## In progress: 0.2.5 structural specialization and performance recovery
 
 The [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
-closes Gates 1 through 5 without changing release state. The target keeps the
+closes Gates 1 through 6 without changing release state. The target keeps the
 complete closed `0.2.4` v5 meaning and restores specialized hot paths only
 where measurement and reachability show unnecessary work.
 
@@ -18,8 +18,9 @@ where measurement and reachability show unnecessary work.
    writer serves `encode`/`encode_into`, and Search/batch View reuse scratch.
 5. Chunked pending memory — complete; measured fixed chunks release consumed
    provisional Search storage and one geometry helper owns Paragraph attachment.
-6. Consumer reaudit and contraction — delete remaining dead or duplicate
-   plumbing without adding a feature.
+6. Consumer reaudit and contraction — complete; dead fallibility, parity,
+   indexing, comparison, tier, and source-construction plumbing is removed
+   without adding a feature.
 7. Fixed A/B/C evidence and source-readiness GO/NO-GO — only a complete GO may
    advance source to unpublished `0.2.5`.
 8. Artifacts, installers, publication, and release closure — requires separate
@@ -40,6 +41,12 @@ Its 256 MiB and 1 GiB C/A median ratios are 1.1389 and 1.1392; both pass the
 1.10 target remains unmet evidence rather than hidden or redefined. The dense
 Gate 5 reduces the dense 1,048,576-hit peak from about 166 MiB to below 86 MiB
 for both prescribed Paragraph shapes without changing result bytes.
+
+Gate 6 production G is 304,431 bytes/9,213 lines, -1,727/-48 from F and
++7,162/+259 (2.41%/2.89%) from B. It remains below the fixed three-percent
+ceiling of 306,187 bytes/9,222 lines. B remains the target; retained
+Check/View grouping, raw/structural output modes, and result storage have
+distinct current consumers and do not create duplicate authority.
 
 Gate 3 keeps one raw same-read Line counter and moves only proven geometry
 consumers onto the structural composition. Its fixed D/A medians are 1.0812

@@ -1,8 +1,8 @@
 # Backwriter Current State
 
-## 0.2.5 performance recovery — Gates 1–5 complete
+## 0.2.5 performance recovery — Gates 1–6 complete
 
-Gates 1 through 5 are complete under the
+Gates 1 through 6 are complete under the
 [performance-recovery tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
 Gate 2 adds one checked segment operation to the existing literal matcher and
 deletes the Runtime per-byte caller loop. Cargo, `bw version`, artifacts,
@@ -72,8 +72,18 @@ classification. On the fixed CPU-0/tmpfs comparison, peak HWM falls from about
 Paragraphs. Shared Paragraph allocation is therefore not activated.
 GNU and musl each pass the complete 268-test suite.
 
-The remaining gates are consumer contraction, fixed evidence/source readiness,
-and a separately authorized release. No completed gate activates
+Gate 6 removes false fallibility from raw/structural observation and Apply
+output construction, removes raw/cursor offset parity returns, and drops
+Anchor observation's all-index copy. Existing `Anddress::same_source` and the
+one Runtime source-state comparator replace local source/state/proof wrappers;
+one tier slot serves mutually exclusive File/Paragraph Search, and Issuer
+construction delegates to its strict owned-source path. Production G is
+304,431 bytes/9,213 lines, -1,727/-48 from F and +7,162/+259
+(2.41%/2.89%) from B. It is below the 306,187-byte/9,222-line ceiling; B remains
+the target, and the retained delta is not a refreshed allowance.
+
+The remaining gates are fixed evidence/source readiness and a separately
+authorized release. No completed gate activates
 `StructuralDemand`, cursor specialization, or shared Paragraph allocation.
 
 ## Published and closed 0.2.4 structural authority

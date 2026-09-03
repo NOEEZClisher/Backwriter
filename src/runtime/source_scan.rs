@@ -29,30 +29,21 @@ pub(crate) struct CurrentObservation {
 /// Tracks exact current target evidence without retaining source bytes.
 pub(crate) struct TargetProjection<'a> {
     inputs: &'a [Anddress],
-    indexes: &'a [usize],
     current: Vec<bool>,
 }
 
 impl<'a> TargetProjection<'a> {
-    pub(crate) fn new(
-        inputs: &'a [Anddress],
-        indexes: &'a [usize],
-    ) -> Result<Self, SourceScanError> {
+    pub(crate) fn new(inputs: &'a [Anddress]) -> Result<Self, SourceScanError> {
         let mut current = Vec::new();
         current
             .try_reserve_exact(inputs.len())
             .map_err(|_| SourceScanError::Resource)?;
         current.resize(inputs.len(), false);
-        Ok(Self {
-            inputs,
-            indexes,
-            current,
-        })
+        Ok(Self { inputs, current })
     }
 
     pub(crate) fn finish(&mut self, state: &CurrentObservation) {
-        for &index in self.indexes {
-            let input = &self.inputs[index];
+        for (index, input) in self.inputs.iter().enumerate() {
             let source_matches = input.source_byte_length() == state.byte_length
                 && input.source_line_count() == state.line_count
                 && input.source_state_hash() == state.hash;
@@ -71,8 +62,7 @@ impl<'a> TargetProjection<'a> {
 
 impl StructuralSink for TargetProjection<'_> {
     fn line(&mut self, line: LineSpan) -> Result<(), SourceScanError> {
-        for &index in self.indexes {
-            let input = &self.inputs[index];
+        for (index, input) in self.inputs.iter().enumerate() {
             if input.target() == AnddressTarget::Line
                 && input.byte_start() == line.byte_start
                 && input.byte_end() == line.byte_end
@@ -87,8 +77,7 @@ impl StructuralSink for TargetProjection<'_> {
         &mut self,
         paragraph: crate::backwriter::anddress::ParagraphGeometry,
     ) -> Result<(), SourceScanError> {
-        for &index in self.indexes {
-            let input = &self.inputs[index];
+        for (index, input) in self.inputs.iter().enumerate() {
             if input.target() == AnddressTarget::Paragraph
                 && input.byte_start() == paragraph.byte_start
                 && input.byte_end() == paragraph.byte_end
@@ -118,26 +107,22 @@ pub(crate) struct ObservationBuilder {
 }
 
 impl ObservationBuilder {
-    pub(crate) fn new() -> Result<Self, SourceScanError> {
-        Ok(Self {
+    pub(crate) fn new() -> Self {
+        Self {
             utf8: Utf8Validator::default(),
             hash: Sha256::new(),
             byte_length: 0,
             line_count: 0,
             trailing_cr: false,
             ends_with_terminator: false,
-        })
-    }
-
-    pub(crate) fn byte_offset(&self) -> usize {
-        self.byte_length
+        }
     }
 
     pub(crate) fn push(
         &mut self,
         bytes: &[u8],
         mut on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
-    ) -> Result<usize, SourceScanError> {
+    ) -> Result<(), SourceScanError> {
         let chunk_start = self.byte_length;
         let byte_length = self
             .byte_length
@@ -164,7 +149,7 @@ impl ObservationBuilder {
             self.trailing_cr = last == b'\r';
             self.ends_with_terminator = matches!(last, b'\r' | b'\n');
         }
-        Ok(chunk_start)
+        Ok(())
     }
 
     pub(crate) fn finish(self) -> Result<CurrentObservation, SourceScanError> {
@@ -258,31 +243,25 @@ pub(crate) struct StructuralObservationBuilder {
 }
 
 impl StructuralObservationBuilder {
-    pub(crate) fn new() -> Result<Self, SourceScanError> {
-        Ok(Self {
-            observation: ObservationBuilder::new()?,
+    pub(crate) fn new() -> Self {
+        Self {
+            observation: ObservationBuilder::new(),
             cursor: StructuralCursor::default(),
-        })
+        }
     }
 
     pub(crate) fn byte_offset(&self) -> usize {
-        debug_assert_eq!(self.observation.byte_offset(), self.cursor.byte_offset());
-        self.observation.byte_offset()
+        self.observation.byte_length
     }
 
     pub(crate) fn push(
         &mut self,
         bytes: &[u8],
         sink: &mut impl StructuralSink,
-    ) -> Result<usize, SourceScanError> {
-        let chunk_start = self
-            .observation
+    ) -> Result<(), SourceScanError> {
+        self.observation
             .push(bytes, |bytes, byte_start| sink.source(bytes, byte_start))?;
-        let cursor_start = self.cursor.push(bytes, sink)?;
-        if cursor_start != chunk_start {
-            return Err(SourceScanError::InvalidSource);
-        }
-        Ok(chunk_start)
+        self.cursor.push(bytes, sink)
     }
 
     pub(crate) fn finish(
@@ -290,8 +269,7 @@ impl StructuralObservationBuilder {
         sink: &mut impl StructuralSink,
     ) -> Result<CurrentObservation, SourceScanError> {
         let state = self.observation.finish()?;
-        let (byte_length, line_count) = self.cursor.finish(sink)?;
-        if byte_length != state.byte_length || line_count != state.line_count {
+        if self.cursor.finish(sink)? != state.line_count {
             return Err(SourceScanError::InvalidSource);
         }
         Ok(state)
@@ -351,7 +329,7 @@ pub(crate) fn observe_source(
     reader: &mut impl Read,
     mut on_chunk: impl FnMut(&[u8], usize) -> Result<(), SourceScanError>,
 ) -> Result<CurrentObservation, SourceScanError> {
-    let mut observation = ObservationBuilder::new()?;
+    let mut observation = ObservationBuilder::new();
     let mut scratch = [0_u8; READ_BUFFER_SIZE];
     loop {
         let count = reader
@@ -368,7 +346,7 @@ pub(crate) fn observe_structural(
     reader: &mut impl Read,
     sink: &mut impl StructuralSink,
 ) -> Result<CurrentObservation, SourceScanError> {
-    let mut observation = StructuralObservationBuilder::new()?;
+    let mut observation = StructuralObservationBuilder::new();
     let mut scratch = [0_u8; READ_BUFFER_SIZE];
     loop {
         let count = reader
@@ -545,7 +523,7 @@ mod tests {
                 4,
             ),
         ] {
-            let mut observation = ObservationBuilder::new().unwrap();
+            let mut observation = ObservationBuilder::new();
             for chunk in chunks {
                 observation.push(chunk, |_, _| Ok(())).unwrap();
             }
@@ -708,7 +686,7 @@ mod tests {
     #[test]
     fn raw_checked_state_fails_before_callback_and_structural_cursor_is_singular() {
         let mut callback_count = 0;
-        let mut length_overflow = ObservationBuilder::new().unwrap();
+        let mut length_overflow = ObservationBuilder::new();
         length_overflow.byte_length = usize::MAX;
         assert_eq!(
             length_overflow.push(b"x", |_, _| {
@@ -719,14 +697,14 @@ mod tests {
         );
         assert_eq!(callback_count, 0);
 
-        let mut finish_overflow = ObservationBuilder::new().unwrap();
+        let mut finish_overflow = ObservationBuilder::new();
         finish_overflow.line_count = usize::MAX;
         finish_overflow
             .push(b"x", |_, _| Ok(()))
             .expect("the final unterminated Line owns the overflow");
         assert_eq!(finish_overflow.finish(), Err(SourceScanError::Resource));
 
-        let mut count_overflow = ObservationBuilder::new().unwrap();
+        let mut count_overflow = ObservationBuilder::new();
         count_overflow.line_count = usize::MAX;
         assert_eq!(
             count_overflow.push(b"\n", |_, _| {
@@ -749,6 +727,17 @@ mod tests {
             .next()
             .unwrap();
         assert!(!raw_builder.contains("StructuralCursor"));
+        assert!(!raw_builder.contains("fn byte_offset"));
+        assert!(!raw_builder.contains("pub(crate) fn new() -> Result"));
+        let structural_builder = production
+            .split("pub(crate) struct StructuralObservationBuilder")
+            .nth(1)
+            .unwrap()
+            .split("impl Utf8Validator")
+            .next()
+            .unwrap();
+        assert!(!structural_builder.contains("cursor_start"));
+        assert!(!structural_builder.contains("pub(crate) fn new() -> Result"));
         let raw_observer = production
             .split("pub(crate) fn observe_source")
             .nth(1)
@@ -773,6 +762,6 @@ mod tests {
                 .line_count,
             0
         );
-        assert!(StructuralObservationBuilder::new().is_ok());
+        let _ = StructuralObservationBuilder::new();
     }
 }

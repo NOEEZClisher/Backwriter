@@ -187,11 +187,6 @@ fn compare_source_keys(left: &Anddress, right: &Anddress) -> std::cmp::Ordering 
         })
 }
 
-fn same_source_key(left: &Anddress, right: &Anddress) -> bool {
-    left.workspace_coordinate() == right.workspace_coordinate()
-        && left.logical_path() == right.logical_path()
-}
-
 struct CurrentProof {
     logical_path: String,
     hash: String,

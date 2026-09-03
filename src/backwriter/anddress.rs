@@ -143,16 +143,12 @@ impl AnddressIssuer {
         source_byte_length: usize,
         source_line_count: usize,
     ) -> Result<Self, AnddressError> {
-        let source = SourceIdentity {
+        Self::from_owned_source(SourceIdentity {
             workspace_coordinate: fallible_copy(workspace_coordinate)?,
             logical_path: fallible_copy(logical_path)?,
             source_state_hash: fallible_copy(source_state_hash)?,
             source_byte_length,
             source_line_count,
-        };
-        validate_source(&source)?;
-        Ok(Self {
-            source: Arc::new(source),
         })
     }
 
@@ -1106,6 +1102,15 @@ mod tests {
             .next()
             .unwrap();
         let issuer = production.split("impl AnddressIssuer").nth(1).unwrap();
+        let constructor = issuer
+            .split("pub(crate) fn new")
+            .nth(1)
+            .unwrap()
+            .split("fn from_owned_source")
+            .next()
+            .unwrap();
+        assert_eq!(constructor.matches("from_owned_source").count(), 1);
+        assert!(!constructor.contains("validate_source"));
         let issue = issuer
             .split("pub(crate) fn issue")
             .nth(1)

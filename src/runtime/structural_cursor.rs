@@ -91,16 +91,11 @@ impl Default for StructuralCursor {
 }
 
 impl StructuralCursor {
-    pub(crate) fn byte_offset(&self) -> usize {
-        self.byte_offset
-    }
-
     pub(crate) fn push(
         &mut self,
         bytes: &[u8],
         sink: &mut impl StructuralSink,
-    ) -> Result<usize, SourceScanError> {
-        let chunk_start = self.byte_offset;
+    ) -> Result<(), SourceScanError> {
         self.byte_offset
             .checked_add(bytes.len())
             .ok_or(SourceScanError::Resource)?;
@@ -141,13 +136,13 @@ impl StructuralCursor {
                 self.finish_line(LineTerminator::Lf, sink)?;
             }
         }
-        Ok(chunk_start)
+        Ok(())
     }
 
     pub(crate) fn finish(
         mut self,
         sink: &mut impl StructuralSink,
-    ) -> Result<(usize, usize), SourceScanError> {
+    ) -> Result<usize, SourceScanError> {
         if self.line_started {
             let terminator = if self.pending_cr {
                 LineTerminator::Cr
@@ -157,7 +152,7 @@ impl StructuralCursor {
             self.finish_line(terminator, sink)?;
         }
         self.finish_paragraph(sink)?;
-        Ok((self.byte_offset, self.line_count))
+        Ok(self.line_count)
     }
 
     fn begin_line(&mut self, sink: &mut impl StructuralSink) -> Result<(), SourceScanError> {
@@ -300,7 +295,7 @@ mod tests {
         ] {
             cursor.push(chunk, &mut capture).unwrap();
         }
-        assert_eq!(cursor.finish(&mut capture).unwrap(), (14, 4));
+        assert_eq!(cursor.finish(&mut capture).unwrap(), 4);
         assert_eq!(
             capture.lines,
             [
@@ -355,7 +350,7 @@ mod tests {
             for chunk in source.chunks(8_192) {
                 cursor.push(chunk, &mut capture).unwrap();
             }
-            assert_eq!(cursor.finish(&mut capture).unwrap(), (source.len(), 3));
+            assert_eq!(cursor.finish(&mut capture).unwrap(), 3);
             assert_eq!(capture.lines[0].byte_end, text_length + 2);
             assert_eq!(capture.lines[0].terminator, LineTerminator::Crlf);
             assert_eq!(

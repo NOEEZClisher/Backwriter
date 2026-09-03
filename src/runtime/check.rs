@@ -102,7 +102,7 @@ fn indices(length: usize) -> Result<Vec<usize>, CheckError> {
 fn group_end(inputs: &[Anddress], order: &[usize], start: usize) -> usize {
     let first = &inputs[order[start]];
     let mut end = start + 1;
-    while end < order.len() && super::same_source_key(first, &inputs[order[end]]) {
+    while end < order.len() && first.same_source(&inputs[order[end]]) {
         end += 1;
     }
     end

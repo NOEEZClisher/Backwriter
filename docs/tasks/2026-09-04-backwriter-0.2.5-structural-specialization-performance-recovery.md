@@ -1,7 +1,8 @@
 # Backwriter 0.2.5 Structural Specialization and Performance Recovery
 
-Status: Gates 1 through 4 complete. Bulk literal matching, raw/structural
-observation, and canonical encoding reuse are implemented and verified. Cargo,
+Status: Gates 1 through 6 complete. Bulk literal matching, raw/structural
+observation, canonical encoding reuse, dense pending memory, and consumer
+contraction are implemented and verified. Cargo,
 `bw version`, artifacts, installers, Update, and the public distribution
 remain published and closed `0.2.4`.
 
@@ -37,6 +38,9 @@ not a structural redesign.
   `042cc9e7f6dfe6faf23937367ec02446693a1d2d`.
 - **E** is D plus the exact sampled Gate 4 production delta, SHA-256
   `e2dbdcf529f14009b9a4c6caefc88ace414feae10eaf2c0769b2d8ca471b162c`.
+- **F** is the committed Gate 5 revision
+  `5fbd6886758533ec887a2783de80361cebb60e31`.
+- **G** is F plus only the Gate 6 production contraction.
 
 The B production baseline is 297,269 bytes and 8,954 lines. GNU and musl each
 have a closed 258-test `0.2.4` result.
@@ -503,11 +507,68 @@ late read/UTF-8/NUL fail-all, receipt/Anchor parity, and Correct 1 / Safe Reject
 6 / Wrong Apply 0 remain green. Cargo, CLI syntax/schema, version, dependency,
 server, public distribution, and release state remain `0.2.4` and unchanged.
 
-### Gate 6 — consumer reaudit and contraction
+### Gate 6 — consumer reaudit and contraction — complete
 
-Reaudit production reachability after Gates 2–5, remove dead validation,
-observation, and writer plumbing, and move Search and Apply to one Paragraph
-attachment helper. Add no feature or generic framework.
+The reachability audit removes only carriers or branches with no remaining
+consumer. Raw and structural observation constructors and Apply output
+construction are infallible, so their false `Result` layers disappear.
+`ObservationBuilder::push` and `StructuralCursor::push` no longer return
+duplicate offsets; the raw callback still receives its checked byte start, and
+structural finish returns only the Line count that the raw observation checks.
+Anchor target projection always consumed every input, so its duplicate
+all-index vector and allocation are removed.
+
+`Anddress::same_source` directly serves Check/View grouping and Apply
+same-source validation. The one Runtime source-state comparator serves
+observation and Host-proof checks, while Apply's delegating state/proof wrappers
+are removed. File and Paragraph Search cannot execute in one projection, so
+one best-tier slot replaces two mutually exclusive fields. Crate-private
+Issuer construction delegates source validation and `Arc` creation to the
+same owned-source path used by strict decode.
+
+The audit retains Check's owned-input status grouping and View's projected
+optional-outcome grouping because they have distinct resource errors and
+result restoration consumers. Apply's raw/structural output enum remains
+demanded by File-only versus receipt/live-Anchor after-state work.
+`AfterProjector`, staging/publication/provenance, Host proof, Anchor
+reflection, Gate 2 matcher, raw Line counter, Gate 5 16,384-entry chunks, final
+Search sort, result buckets, and the canonical writer each retain a direct
+behavioral or output consumer.
+
+GNU and musl each pass 268 tests. V5 KAT/no-v4, every terminator and
+8,191/8,192/8,193 boundary, Search tier/order/duplicates, View single/batch
+all-or-none, false-Line-count `NotCurrent`, receipts, publication, Host proof,
+Anchor, and Correct 1 / Safe Reject 6 / Wrong Apply 0 remain green.
+Production G is 304,431 bytes/9,213 lines. That is -1,727/-48 from F and
++7,162/+259 (2.41%/2.89%) from B, below the fixed
+306,187-byte/9,222-line ceiling. B remains the target; the retained difference
+has the consumers above and creates no renewed allowance.
+
+Gate 6 changes source-observation plumbing, so focused current-G measurement
+reuses the Gate 3 256 MiB sparse and 134,217,728-short-Line fixtures, their
+fixed SHA-256 values, CPU 0, `powersave`, `/tmp` tmpfs, one warm-up, and seven
+fresh processes. It does not repeat the full Gate 7 matrix.
+
+| Focused G cell | G median/p95 ms | G/D median/p95 |
+| --- | ---: | ---: |
+| Host Check | 0.001/0.002 | 1.0000/1.0000 |
+| Untrusted Check | 169.623/170.436 | 1.0375/1.0363 |
+| unit raw-after Apply | 233.491/235.467 | 1.0425/1.0321 |
+| receipt Apply | 234.161/235.633 | 1.0476/1.0453 |
+| live-Anchor Apply | 233.390/237.392 | 1.0413/1.0360 |
+| short-Line Check | 171.756/175.116 | 1.0448/1.0618 |
+| CRLF one-shot Edit | 0.954/1.100 | 0.4164/0.4643 |
+
+Every sparse/dense fixture hash, Apply final bytes, and CRLF fixed output hash
+matches. Host Check retains zero capability open/read/hash/cursor work by
+production structure. One focused 200,000 one-byte File run returns exact
+ordered Search results from `d000/f000.txt` through `d199/f999.txt`; batch and
+sequential View both equal all 200,000 addresses and contents. Search/batch/
+sequential inner times are 556.213/711.319/675.253 ms and process HWM is
+159,552 KiB. The task-local harness source/binary SHA-256 values are
+`b8b4114095a9a99f3aa9046b43794e3d31a019e80ea8807e74f5a0831ce04d94`/
+`44d915394ddf2737598bb281975421dec4906c9910365d6e27f242a2700b47e6`.
+All focused fixtures, raw evidence, binaries, and harness source are removed.
 
 ### Gate 7 — fixed evidence and source readiness
 

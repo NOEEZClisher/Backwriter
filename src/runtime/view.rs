@@ -28,13 +28,12 @@ pub(super) fn observe_anchored(
     inputs: &[Anddress],
     capture_focus: Option<(usize, Anddress)>,
 ) -> Result<AnchoredObservation, ObservationError> {
-    let indexes = indices(inputs.len())?;
     let focus = capture_focus.as_ref().map(|(index, _)| *index);
     let capture = capture_focus
         .map(|(_, projected)| RangeCapture::new(projected))
         .transpose()
         .map_err(map_scan_error)?;
-    let targets = TargetProjection::new(inputs, &indexes).map_err(map_scan_error)?;
+    let targets = TargetProjection::new(inputs).map_err(map_scan_error)?;
     let mut observation = AnchoredSink { targets, capture };
     let state = observe_structural(reader, &mut observation).map_err(map_scan_error)?;
     observation.targets.finish(&state);
@@ -153,8 +152,7 @@ fn batch_group_end(projected: &[Option<Anddress>], order: &[usize], start: usize
         .expect("grouped projection exists");
     let mut end = start + 1;
     while end < order.len()
-        && super::same_source_key(
-            first,
+        && first.same_source(
             projected[order[end]]
                 .as_ref()
                 .expect("grouped projection exists"),
@@ -494,17 +492,6 @@ fn append_overlap(
         output.extend_from_slice(overlap);
     }
     Ok(())
-}
-
-fn indices(length: usize) -> Result<Vec<usize>, ObservationError> {
-    let mut indexes = Vec::new();
-    indexes
-        .try_reserve_exact(length)
-        .map_err(|_| ObservationError::Resource)?;
-    for index in 0..length {
-        indexes.push(index);
-    }
-    Ok(indexes)
 }
 
 fn map_scan_error(error: SourceScanError) -> ObservationError {
@@ -953,6 +940,14 @@ mod tests {
             .split("#[cfg(test)]")
             .next()
             .unwrap();
+        let target_projection = source_scan
+            .split("pub(crate) struct TargetProjection")
+            .nth(1)
+            .unwrap()
+            .split("struct Utf8Validator")
+            .next()
+            .unwrap();
+        assert!(!target_projection.contains("indexes"));
         let raw = source_scan
             .split("pub(crate) fn observe_source")
             .nth(1)

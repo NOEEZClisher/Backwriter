@@ -2,8 +2,9 @@
 
 The active `0.2.5` performance recovery is governed by Principle 19 and its
 [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
-Gates 1 through 4 close authority, bulk literal matching, raw/structural
-observation, and canonical encoding reuse; current source version and the
+Gates 1 through 6 close authority, bulk literal matching, raw/structural
+observation, canonical encoding reuse, dense Search storage, and consumer
+contraction; current source version and the
 official release remain closed `0.2.4`.
 
 The published and closed `0.2.4` target is governed by Principle 18 and its
@@ -171,3 +172,9 @@ the v5 `0.2.4` distribution governed by Principle 18.
     consumed chunk. Search and Apply share one geometry-owned Paragraph
     attachment helper. Because both dense Paragraph shapes remain below 86 MiB,
     no shared Paragraph allocation or alternate hierarchy is introduced.
+    Consumer contraction removes only false fallibility, duplicate offset and
+    index carriers, local comparison wrappers, mutually exclusive tier state,
+    and duplicate source construction. Distinct Check/View grouping,
+    raw/structural output modes, and caller-owned result storage remain for
+    their actual consumers. G is 304,431 bytes/9,213 lines, within the original
+    three-percent ceiling and without renewing it.

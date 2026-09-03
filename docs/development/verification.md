@@ -2,7 +2,7 @@
 
 ## 0.2.5 performance-recovery gates
 
-Gate 1 is documentation-only. Gates 2 through 5 replace the sole literal
+Gate 1 is documentation-only. Gates 2 through 6 replace the sole literal
 matcher's per-byte Runtime caller loop with one checked segment operation and
 move raw consumers without structural geometry onto a cursor-free observation
 path, consolidate canonical Anddress encoding, and release dense pending storage.
@@ -14,7 +14,7 @@ authority decisions before implementation. Gate 2 passed 258 tests per target;
 Gate 3 passed 261, Gate 4 passed 263, and Gate 5 passes 268 per target.
 All-target check,
 clippy with warnings denied, release build, and offline/locked metadata and
-tree plus rustfmt also pass.
+tree plus rustfmt also pass. Gate 6 retains the 268-test count per target.
 
 Line count remains v5 identity and currentness evidence. Gate 3 retains the
 same-hash/same-length/false-Line-count `NotCurrent` control while proving that
@@ -158,6 +158,46 @@ chunks, and ordered issuance drops each consumed chunk. Both peaks are below
 implemented. The harness source and raw measurement evidence SHA-256 values are
 `764635b11096c5692bd6f1ad1df9fe62096d9730ba214790d2b0d8c7e0d1938b`
 and `0abe220fb0e8be1a856f9e408770186049a88e872caafc4099968b1f97f5f245`.
+
+Gate 6 verifies that raw and structural builder construction is infallible,
+the source callback still receives the checked byte start, and cursor/result
+Line-count parity remains exact without returning duplicate offsets. Anchor's
+structural target projection no longer allocates an all-input index vector.
+Runtime grouping uses `Anddress::same_source`; source-state comparison remains
+one hash/length/Line-count authority. File and Paragraph Search share one
+mutually exclusive tier slot. Issuer construction uses one owned-source
+validation/`Arc` path. Apply retains its demanded raw-versus-structural output
+mode, but neither output layer returns an impossible construction error.
+
+GNU and musl each pass all 268 tests. Existing tests retain v5 KAT/no-v4,
+8,191/8,192/8,193 raw/structural parity, exact Search tiers/order/duplicates,
+View single/batch all-or-none, false-Line-count `NotCurrent`, receipts,
+publication, Host proof, Anchor, and Correct 1 / Safe Reject 6 / Wrong Apply 0.
+Production G is 304,431 bytes/9,213 lines: -1,727/-48 from F and
++7,162/+259 (2.41%/2.89%) from B, below the 306,187-byte/9,222-line ceiling.
+B remains the target; this gate records no renewed growth allowance.
+
+Because Gate 6 changes source observation plumbing, a focused current-G run
+reuses the Gate 3 256 MiB sparse and short-Line fixtures, exact fixture SHA-256
+values, CPU 0, `powersave`, `/tmp` tmpfs, one warm-up, and seven fresh
+processes. Median/p95 milliseconds are 0.001/0.002 for Host Check,
+169.623/170.436 for Untrusted Check, 233.491/235.467 for unit Apply,
+234.161/235.633 for receipt Apply, 233.390/237.392 for live-Anchor Apply, and
+171.756/175.116 for dense short-Line Check. Relative to D, the nontrivial
+median/p95 ratios are respectively 1.0375/1.0363, 1.0425/1.0321,
+1.0476/1.0453, 1.0413/1.0360, and 1.0448/1.0618. Host Check remains one
+microsecond-class and has zero capability open/read/hash/cursor work by the
+same production structure. Seven fresh CRLF one-shot Edit processes preserve
+the fixed output SHA and record 0.954/1.100 ms median/p95.
+
+The focused 200,000 one-byte File run returns exact paths from
+`d000/f000.txt` through `d199/f999.txt`; Search, batch View, and sequential
+View take 556.213, 711.319, and 675.253 ms with 159,552 KiB process HWM. Batch
+and sequential results equal all 200,000 Search Anddresses and contents in
+order. The task-local harness source and binary SHA-256 values are
+`b8b4114095a9a99f3aa9046b43794e3d31a019e80ea8807e74f5a0831ce04d94`
+and `44d915394ddf2737598bb281975421dec4906c9910365d6e27f242a2700b47e6`;
+all fixtures, evidence files, and harness outputs are removed after the run.
 
 ## 0.2.4 structural-authority gates
 

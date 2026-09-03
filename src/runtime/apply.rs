@@ -20,8 +20,7 @@ use crate::backwriter::{
 use crate::hash::transcript_hex;
 
 use super::{
-    AnchorPlanEntry, CurrentProof, SourceProofEvidence, WorkspaceRuntime, is_backwriter_spill,
-    mark_anchor_collisions,
+    AnchorPlanEntry, CurrentProof, WorkspaceRuntime, is_backwriter_spill, mark_anchor_collisions,
     source_scan::{
         CurrentObservation, ObservationBuilder, READ_BUFFER_SIZE, SourceScanError,
         StructuralObservationBuilder, observe_source, validate_source_exact,
@@ -559,7 +558,7 @@ pub(super) fn execute(
 ) -> Result<Option<EditReceipt>, ApplyError> {
     let (first, second) = operands(edit);
     edit.validate().map_err(map_edit_error)?;
-    if second.is_some_and(|second| !same_coordinate_path(first, second)) {
+    if second.is_some_and(|second| !first.same_source(second)) {
         return Err(ApplyError::InvalidInput);
     }
     if first.workspace_coordinate() != runtime.workspace_coordinate
@@ -572,7 +571,15 @@ pub(super) fn execute(
         .map_err(|_| ApplyError::Unavailable)?;
     let proof = runtime.select_current_proof(first.logical_path());
     if proof.is_some_and(|proof| {
-        !matches_proof(first, &proof) || second.is_some_and(|second| !matches_proof(second, &proof))
+        !super::source_state_matches(&proof.hash, proof.byte_length, proof.line_count, first)
+            || second.is_some_and(|second| {
+                !super::source_state_matches(
+                    &proof.hash,
+                    proof.byte_length,
+                    proof.line_count,
+                    second,
+                )
+            })
     }) {
         return Err(ApplyError::Unavailable);
     }
@@ -580,9 +587,9 @@ pub(super) fn execute(
     runtime.prune_dead_anchors();
     let bindings = same_path_bindings(runtime, first.logical_path())?;
     if proof.is_some_and(|proof| {
-        bindings
-            .iter()
-            .any(|binding| !matches_proof(binding, &proof))
+        bindings.iter().any(|binding| {
+            !super::source_state_matches(&proof.hash, proof.byte_length, proof.line_count, binding)
+        })
     }) {
         runtime.invalidate_source_state(first.logical_path());
         return Err(ApplyError::Unavailable);
@@ -633,16 +640,30 @@ pub(super) fn execute(
                 return Err(ApplyError::Unavailable);
             }
         };
-        if bindings
-            .iter()
-            .any(|binding| !matches_state(binding, &before))
-        {
+        if bindings.iter().any(|binding| {
+            !super::source_state_matches(
+                before.hash.as_bytes(),
+                before.byte_length,
+                before.line_count,
+                binding,
+            )
+        }) {
             runtime.invalidate_source_state(first.logical_path());
             return Err(ApplyError::Unavailable);
         }
-        if !matches_state(first, &before)
-            || second.is_some_and(|second| !matches_state(second, &before))
-        {
+        if !super::source_state_matches(
+            before.hash.as_bytes(),
+            before.byte_length,
+            before.line_count,
+            first,
+        ) || second.is_some_and(|second| {
+            !super::source_state_matches(
+                before.hash.as_bytes(),
+                before.byte_length,
+                before.line_count,
+                second,
+            )
+        }) {
             return Err(ApplyError::Unavailable);
         }
         before.byte_length
@@ -671,7 +692,7 @@ pub(super) fn execute(
         edit_temporary_name(runtime, first.logical_path(), "after")?,
     )?;
     let comparison = staging.open_read()?;
-    let mut output = Output::new(temporary, comparison, projector)?;
+    let mut output = Output::new(temporary, comparison, projector);
     assemble(&staging, edit, geometry, &mut output)?;
     let CompletedOutput {
         mut temporary,
@@ -770,21 +791,6 @@ fn edit_target(edit: &Edit) -> Option<&Anddress> {
     }
 }
 
-fn same_coordinate_path(left: &Anddress, right: &Anddress) -> bool {
-    left.workspace_coordinate() == right.workspace_coordinate()
-        && left.logical_path() == right.logical_path()
-}
-
-fn matches_state(input: &Anddress, state: &CurrentObservation) -> bool {
-    input.source_state_hash() == state.hash
-        && input.source_byte_length() == state.byte_length
-        && input.source_line_count() == state.line_count
-}
-
-fn matches_proof(input: &Anddress, proof: &SourceProofEvidence) -> bool {
-    super::source_state_matches(&proof.hash, proof.byte_length, proof.line_count, input)
-}
-
 #[derive(Clone, Copy)]
 struct Geometry {
     source_length: usize,
@@ -875,13 +881,13 @@ impl<'parent, 'bindings> Output<'parent, 'bindings> {
         temporary: Temporary<'parent>,
         comparison: File,
         projector: Option<AfterProjector<'bindings>>,
-    ) -> Result<Self, ApplyError> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             temporary: Some(temporary),
             comparison,
             identical: true,
-            observation: OutputObservation::new(projector).map_err(map_scan_error)?,
-        })
+            observation: OutputObservation::new(projector),
+        }
     }
 
     fn emit(&mut self, bytes: &[u8], emission: Emission) -> Result<(), ApplyError> {
@@ -925,13 +931,13 @@ enum OutputObservation<'bindings> {
 }
 
 impl<'bindings> OutputObservation<'bindings> {
-    fn new(projector: Option<AfterProjector<'bindings>>) -> Result<Self, SourceScanError> {
+    fn new(projector: Option<AfterProjector<'bindings>>) -> Self {
         match projector {
-            Some(projector) => Ok(Self::Structural {
-                observation: StructuralObservationBuilder::new()?,
+            Some(projector) => Self::Structural {
+                observation: StructuralObservationBuilder::new(),
                 projector,
-            }),
-            None => Ok(Self::Raw(ObservationBuilder::new()?)),
+            },
+            None => Self::Raw(ObservationBuilder::new()),
         }
     }
 

@@ -2,7 +2,7 @@
 
 ## 0.2.5 encoding, attachment, and currentness boundary
 
-Gates 1 through 5 preserve the complete published v5 algebra and wire. Exact
+Gates 1 through 6 preserve the complete published v5 algebra and wire. Exact
 source Line count remains a `SourceIdentity` field and currentness requirement. A typed
 address whose hash and byte length match but whose claimed Line count differs
 from the accepted observation or Host proof remains `NotCurrent`. The raw
@@ -35,6 +35,15 @@ assignment before mutation. Search maps impossible observed geometry to its
 invalid-source failure; Apply leaves ordinary non-Line or outside candidates
 unattached and preserves its existing preparation failure boundary. This is
 not new public algebra or wire.
+
+Gate 6 makes the Issuer's crate-private construction entry delegate to the
+same strict owned-source validation and `Arc` construction used by decode.
+Parent/project operations still clone the already validated shared source.
+`Anddress::same_source` now directly serves Runtime source grouping and
+same-source Edit validation, while the sole Runtime source-state comparator
+continues to require SHA-256, byte length, and Line count. No unchecked
+constructor, second validator, or second writer exists. Production G is
+304,431 bytes/9,213 lines, -1,727/-48 from F and +7,162/+259 from B.
 
 ## Published and closed 0.2.4 v5 target algebra
 

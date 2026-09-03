@@ -420,8 +420,7 @@ impl PendingTargets {
 struct SearchProjection<'a> {
     target: SearchTarget,
     matcher: LiteralMatcher<'a>,
-    file_tier: Option<MatchTier>,
-    paragraph_tier: Option<MatchTier>,
+    best_tier: Option<MatchTier>,
     paragraph_result_start: Option<usize>,
     paragraph_result_end: usize,
     pending: PendingTargets,
@@ -448,7 +447,7 @@ fn scan_open_source(
     )
     .map_err(|_| SearchError::Unavailable)?;
     if target == SearchTarget::File {
-        if let Some(tier) = projection.file_tier {
+        if let Some(tier) = projection.best_tier {
             let anddress = issuer
                 .issue(TargetGeometry::File)
                 .map_err(|_| SearchError::Unavailable)?;
@@ -477,8 +476,7 @@ impl<'a> SearchProjection<'a> {
         Self {
             target,
             matcher: literal.matcher(),
-            file_tier: None,
-            paragraph_tier: None,
+            best_tier: None,
             paragraph_result_start: None,
             paragraph_result_end: 0,
             pending: PendingTargets::default(),
@@ -502,11 +500,8 @@ impl StructuralSink for SearchProjection<'_> {
         _byte_start: usize,
         is_content: bool,
     ) -> Result<(), SourceScanError> {
-        let saturated = match self.target {
-            SearchTarget::File => self.file_tier == Some(MatchTier::FullLine),
-            SearchTarget::Paragraph => self.paragraph_tier == Some(MatchTier::FullLine),
-            SearchTarget::Line => false,
-        };
+        let saturated =
+            self.target != SearchTarget::Line && self.best_tier == Some(MatchTier::FullLine);
         if is_content && !saturated {
             self.matcher
                 .push_segment(bytes)
@@ -520,14 +515,14 @@ impl StructuralSink for SearchProjection<'_> {
         match self.target {
             SearchTarget::File => {
                 if let Some(tier) = tier {
-                    prefer_tier(&mut self.file_tier, tier);
+                    prefer_tier(&mut self.best_tier, tier);
                 }
             }
             SearchTarget::Paragraph => {
                 if line.body_class == LineBodyClass::Text
                     && let Some(tier) = tier
                 {
-                    prefer_tier(&mut self.paragraph_tier, tier);
+                    prefer_tier(&mut self.best_tier, tier);
                 }
             }
             SearchTarget::Line => {
@@ -549,7 +544,7 @@ impl StructuralSink for SearchProjection<'_> {
         match self.target {
             SearchTarget::File => {}
             SearchTarget::Paragraph => {
-                if let Some(tier) = self.paragraph_tier.take() {
+                if let Some(tier) = self.best_tier.take() {
                     self.pending
                         .push(tier, TargetGeometry::Paragraph(paragraph))?;
                 }
@@ -1316,11 +1311,11 @@ mod tests {
         let mut projection = SearchProjection::new(&literal, SearchTarget::File);
         let mut cursor = StructuralCursor::default();
         cursor.push(b"needle\n", &mut projection).unwrap();
-        assert_eq!(projection.file_tier, Some(MatchTier::FullLine));
+        assert_eq!(projection.best_tier, Some(MatchTier::FullLine));
         cursor
             .push(b"ignored\rstill ignored\n", &mut projection)
             .unwrap();
-        assert_eq!(projection.file_tier, Some(MatchTier::FullLine));
+        assert_eq!(projection.best_tier, Some(MatchTier::FullLine));
         cursor.finish(&mut projection).unwrap();
 
         let (full, substring) = project_chunked(
