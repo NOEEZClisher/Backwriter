@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fs;
 
-use backwriter::backwriter::anddress::{Anddress, AnddressTarget};
+use backwriter::backwriter::anddress::Anddress;
 use backwriter::backwriter::check::CheckOutcome;
 use backwriter::backwriter::data::{
     DataError, DataKind, DataName, DataNameError, DataStore, StoreError,
@@ -14,21 +14,14 @@ use backwriter::backwriter::view::ViewOutcome;
 use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
 
+mod support;
+
 fn name(value: &str) -> DataName {
     DataName::new(value.to_owned()).unwrap()
 }
 
 fn address(path: &str) -> Anddress {
-    Anddress::new(
-        &"a".repeat(64),
-        path,
-        &"b".repeat(64),
-        0,
-        AnddressTarget::File,
-        0,
-        0,
-    )
-    .unwrap()
+    support::file(&"a".repeat(64), path, b"")
 }
 
 fn occurrence(value: Anddress) -> SearchOccurrence {

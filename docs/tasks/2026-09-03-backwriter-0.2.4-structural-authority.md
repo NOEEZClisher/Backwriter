@@ -1,7 +1,7 @@
 # Backwriter 0.2.4 Structural Authority
 
-Status: Gate 1 authority and consumer baseline defined; implementation has not
-started. Published and closed `0.2.3` remains immutable v4 evidence.
+Status: Gates 1–2 complete. The source accepts and emits only v5 while Cargo,
+CLI version, and the published closed `0.2.3` distribution remain unchanged.
 
 ## Objective and boundary
 
@@ -14,9 +14,10 @@ and private Edit View work without changing each capability's distinct job.
 
 There is no v4 compatibility decoder, alias, wrapper, parallel wire, or
 parallel Runtime. There is also no history, relocation, registry, watcher,
-retry, merge, rollback, target lineage, or implicit capability workflow. Exact
-wire bytes, immutable geometry sharing, CLI/JSON projection, stdin, and
-`src/bin/bw.rs` splitting remain decisions for their owning later gates.
+retry, merge, rollback, target lineage, or implicit capability workflow. Gate
+2 fixes exact wire bytes and immutable source-identity sharing. CLI/JSON
+presentation contraction, stdin, and `src/bin/bw.rs` splitting remain
+decisions for their owning later gates.
 
 ## Gate 1 — authority and consumer baseline — complete
 
@@ -53,13 +54,13 @@ horizontal-space/tab-only Line is parented by File. Paragraph display Lines are
 Line number is `parent.fileLineOffset + lineOffsetInParent + 1`; a File child
 Line number is `lineOffsetInParent + 1`.
 
-Anddress owns `same_source`, `same_state`, containment, overlap, parent,
-projection, Line count, Line number, byte range, terminator, and projection
-validity. Names and exact Rust signatures are Gate 2 decisions; this list fixes
-semantic ownership, not speculative API shape. The self-contained wire may
-flatten immutable geometry that the implementation shares internally.
+Anddress owns `same_source`, `same_state`, `contains`, `overlaps`, `parent`,
+`projection_valid`, `project`, `line_count`, `line_number`, `range`,
+`line_range`, and `terminator`. These Gate 2 APIs fix semantic ownership
+without defining a capability workflow. The self-contained wire flattens
+target and parent geometry while issued values share immutable source identity.
 
-## Gate 2 — v5 algebra, wire, and Issuer
+## Gate 2 — v5 algebra, wire, and Issuer — complete
 
 Acceptance:
 
@@ -75,6 +76,26 @@ Acceptance:
 Fail closed on malformed or inconsistent flattened geometry, arithmetic or
 allocation failure, unsupported version, invalid projection, or any second
 constructor path. Gate 2 decides exact field names/order and in-memory sharing.
+
+Implemented evidence:
+
+- `SourceIdentity` shares coordinate, path, SHA-256, byte length, and Line
+  count through one `Arc` for all values emitted by one Issuer.
+- File derives full byte/Line ranges; Paragraph stores range, File-Line offset,
+  and nonzero Line count; Line stores range, exact terminator, complete File or
+  Paragraph parent geometry, and parent-relative offset.
+- one validator serves the crate-private Issuer and decoder. Public raw and
+  capability constructors are removed. Search, View, Check, Apply, and Anchor
+  source-state checks include Line count.
+- fixed-order compact KATs cover File, Paragraph, text Line, and File-child
+  separator Line. The decoder rejects v4/v3, malformed/duplicate/missing/
+  unknown/wrong-typed fields, noncanonical decimal, overflow, and inconsistent
+  source or target geometry with the specified error classes.
+- Anddress owns allocation-free source/state, range, containment/overlap,
+  parent/projection, Line count/range/number, and terminator operations.
+- existing Search projections and Apply prospective projection carry v5
+  geometry until Gate 3 replaces their duplicate framing with the sole
+  `StructuralCursor`; literal matching and publication behavior are unchanged.
 
 ## Gate 3 — StructuralCursor, Search, and result contraction
 

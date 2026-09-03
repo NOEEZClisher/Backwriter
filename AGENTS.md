@@ -13,13 +13,14 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-Search, View, Pick, Anchor, and Check have Rust implementations. Their v4
-direct View source-state/range projection, target-specific Search literal
+Search, View, Pick, Anchor, and Check have Rust implementations. Current source
+is hard-cut to the Gate 2 v5 Anddress algebra and wire; their direct View
+source-state/range projection, target-specific Search literal
 projection and exact logical File lookup, Pick predicate semantics, direct
-Anchor target projection and live continuity, and hash/length-only Check batch
+Anchor target projection and live continuity, and source-state Check batch
 currentness reporting are implemented. Apply V1
 semantic/public API/error authority and its single-source Edit Runtime
-implementation uses direct v4 ranges and provenance and is complete. Data V1
+implementation uses direct v5 ranges and provenance and is complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
 The closed public `0.1.0` release is the immutable v3 baseline. The published
@@ -33,14 +34,14 @@ live publication, fresh installation, and explicit public `0.2.2` update are
 complete from Source Authority revision
 `195aaa37068122097ecc04d2644642b6afcc6765`.
 
-## Unimplemented 0.2.4 structural-authority target
+## In-progress 0.2.4 structural-authority target
 
 The published `0.2.3` source, v4 API/wire, artifacts, installers, and public
-tree are closed immutable evidence. `0.2.4` is an unimplemented target governed
+tree are closed immutable evidence. `0.2.4` is an in-progress target governed
 by the [structural-authority tracker](docs/tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-Phase 1 changes authority and planning documents only. Cargo, `bw version`, the
-accepted wire, every public API, and runtime behavior remain `0.2.3`/v4 until a
-later gate is separately implemented and accepted.
+Gates 1–2 close authority, v5 algebra/wire, and the sole Issuer. Cargo and
+`bw version` remain `0.2.3`; artifacts and the published distribution remain
+closed v4 evidence until later gates are separately accepted.
 
 The target is a hard cut to `artext.backwriter-anddress.v5`, never a v4
 compatibility decoder, alias, wrapper, or parallel Runtime path. Its shared
@@ -53,20 +54,23 @@ horizontal-space/tab-only Line is parented directly by File.
 
 Anddress owns exact-state and source relationships, containment and overlap,
 parent/projection validation, Line counts and numbers, ranges, and Line
-terminators. One private `StructuralCursor` is the sole Line/Paragraph parser,
-and one Anddress Issuer is the sole construction authority. Search retains
+terminators. One crate-private Anddress Issuer is now the sole construction
+authority; one shared source identity and allocation-free target/parent
+geometry serve every issued value. The private `StructuralCursor`
+consolidation remains Gate 3. Search retains
 literal finding, tiers, ordering, and multiplicity; View projects then reads an
 exact range; Check determines currentness; Apply owns mutation and publication;
 Anchor remains the sole Backwriter continuity exception.
 
-The target deletes the Search position wrapper, View relation scan,
-capability-owned address constructors, and one-shot Edit's private View. It
+Gate 2 deletes public raw and capability-owned address constructors. Later
+gates delete the Search position wrapper, View relation scan, and one-shot
+Edit's private View. The plan
 reuses existing admission/no-follow reads, literal matching, ordered batch
 grouping, staging and prospective provenance, Host proof, publication, and
 Anchor reflection. It adds no history, relocation, registry, watcher, retry,
-merge, or rollback. Exact v5 wire bytes, in-memory geometry sharing, CLI/JSON
-projection, and stdin or `bw.rs` splitting remain follow-up gate decisions, not
-Phase 1 contracts.
+merge, or rollback. Exact v5 wire bytes and in-memory sharing are closed; CLI/
+JSON presentation contraction and stdin or `bw.rs` splitting remain follow-up
+gate decisions.
 
 `0.2.1` is published and closed. Phases 2 through 6 implement its
 minimal Host-authoritative observation kernel, bounded ordinary View reuse, and
@@ -239,19 +243,18 @@ are preserved evidence, never current authority.
   capability-relatively without following links, and does not scan unselected
   roots.
 - File, Paragraph, and Line are independent target addresses with structural
-  relationships. In v4 they share exact source-state identity, so any source
+  relationships. In v5 they share exact source-state identity, so any source
   byte change invalidates every ordinary Anddress from the prior source state.
-- Current production source uses only `artext.backwriter-anddress.v4`. Do not
-  add v2/v3 compatibility shims, decoders, aliases, migrations, or parallel
-  schemas. Well-formed v3 input is rejected as `UnsupportedVersion`.
-- The `0.2.0` value is `artext.backwriter-anddress.v4`: workspace,
-  logical path, source-state hash, exact byte length, target kind, and one
-  inclusive-start/exclusive-end byte range are ordinary Anddress identity.
-  Target text and ordinal are not v4 identity. The hash algorithm is SHA-256
-  and the compatibility policy is a hard cutover with no v3 production seam.
+- Current production source uses only `artext.backwriter-anddress.v5`. Do not
+  add v4/v3/v2 compatibility shims, decoders, aliases, migrations, or parallel
+  schemas. A recognized non-v5 version is rejected as `UnsupportedVersion`.
+- The v5 source identity is workspace, logical path, source-state SHA-256,
+  exact byte length, and exact Line count. Target identity adds only its
+  validated File, Paragraph, or Line geometry. Target text is not identity.
 - Whole-source bytes and provenance remain private call-local construction
-  context. The v4 SHA-256 and byte length are ordinary source identity, and an
-  Anddress is authority for that exact source state and byte range. This adds
+  context. The v5 SHA-256, byte length, and Line count are ordinary source
+  identity, and an Anddress is authority for that exact source state and byte
+  range. This adds
   no before/after stable-read or second-read guarantee.
 - The Protocol owns the bounded source-memory direction. It removes only
   unnecessary auxiliary materialization proportional to complete Workspace
@@ -260,24 +263,25 @@ are preserved evidence, never current authority.
 - Backwriter Core constructs and provides target Anddress values from an
   accepted current observation. Search delivers them as results; it is not an
   issuer. This creates no target registry, issuance lifecycle, locator reuse,
-  durable identity, or global identity. The optional `0.2.1` proof is only
-  current SHA-256/length evidence, never target lookup or retained results.
+  durable identity, or global identity. The optional Host proof is only
+  current SHA-256/length/Line-count evidence, never target lookup or retained
+  results.
 - The [address model](docs/architecture/rebuildable-structural-addressing.md)
   is the sole detailed raw-locator contract. Its active production algebra is
-  v4 source-state/range identity; the shipped v3 baseline is historical release
+  v5 source-state/structural-geometry identity; shipped v4/v3 values are release
   evidence only. Admission decides construct/use availability, not raw equality.
 - Search and View remain current-only. Default Untrusted Mode permits only
   Protocol-bounded, source-local `CurrentObservation` state during one call.
   Explicit Host-authoritative Mode may retain only the Protocol's Runtime-local,
-  replace-only SHA-256/length proof bound to workspace, admission, source
-  generation, and logical path. Pick remains pure and stateless over
+  replace-only SHA-256/length/Line-count proof bound to workspace, admission,
+  source generation, and logical path. Pick remains pure and stateless over
   caller-provided Anddress values without asserting currentness.
   `WorkspaceRuntime` exposes Search, View, Apply, Check, and anchored Runtime
   execution seams. Runtime retains no ordinary observation, source bytes,
   result, target map, snapshot, lease, or history across calls or selected
   sources. The private Host proof is the sole exception. `CurrentObservation`
-  contains only the current hash and exact byte
-  length and is consumed or discarded before Search opens another source or any
+  contains only the current hash, exact byte length, and exact Line count and
+  is consumed or discarded before Search opens another source or any
   View, Check, Apply, or Anchor call returns. A successful Host Search may
   replace the narrow trusted proof without retaining its projection. Anchor
   may retain only target-local session continuity.
@@ -300,20 +304,20 @@ are preserved evidence, never current authority.
   Missing paths and directories are Empty; the operation creates no empty
   query, synthetic Line or Paragraph, scope traversal, index, or cache.
 - Search's live scan, matching, ordering, all-or-nothing behavior, and
-  no-fixed-limit contract remain valid. It constructs v4 values directly from
-  the current coordinate, logical path, one-read SHA-256/length, kind, and range.
+  no-fixed-limit contract remain valid. It constructs v5 values through the
+  Issuer from the current source identity and exact target/parent geometry.
   Each result is one `SearchOccurrence`; its optional `SearchPosition` is
   descriptive output calculated by the same Line framing pass and is not an
   Anddress field or matching/currentness input.
   Search owns no registry, persistent identity, mutation lifecycle, or result
   store.
-- In the v4 target, Search remains the only target finder. It computes the
+- In the v5 source, Search remains the only target finder. It computes the
   source-state hash during its one source read, without a separate hash pass,
   and its File, Paragraph, and Line projections retain only target-required
-  matching and range state before constructing exact byte ranges. View validates
-  source hash and length while capturing the caller range, Check compares only
-  source hash and length, and Apply enforces the hash
-  precondition before patching the public v4 range directly;
+  matching and structural geometry before Issuer construction. View validates
+  source identity while capturing the caller range, Check compares only source
+  identity, and Apply enforces that identity before patching the public v5
+  range directly;
   none searches, reparses to relocate, context-matches, or retries an old
   target. Any source-state change invalidates an ordinary Anddress. Only Anchor
   may transform a live range arithmetically across a Backwriter-owned Apply.
@@ -376,7 +380,7 @@ are preserved evidence, never current authority.
   selector.
   Line may project to Line, Paragraph, or File; Paragraph to Paragraph or File;
   File only to File. Downward requests are `InvalidInput` before source I/O.
-  A successful target outcome contains its projected current v4 Anddress and
+  A successful target outcome contains its projected current v5 Anddress and
   exact Content; Line-to-Paragraph without a containing current Paragraph is
   the normal `ViewOutcome::RelationAbsent` result. Batch preserves order,
   duplicates, and per-item outcomes, returns all results or none, and groups
@@ -387,15 +391,15 @@ are preserved evidence, never current authority.
   retained source/result/relation state, registry, cache, history, snapshot, or
   lease. Pick may supply the input, but View neither calls Pick nor proves Pick
   provenance; explicit selection is the caller's responsibility.
-- View's admitted no-follow one-read access checks v4 coordinate/path,
-  source-state hash/length, and exact range, constructing related results from
+- View's admitted no-follow one-read access checks v5 coordinate/path,
+  source-state hash/length/Line count, and exact range, constructing related results from
   the same read.
 - Arbitrary range selection, descendants, and partial behavior are post-V1 owner
   decisions. View does not classify input state; Check does not change View.
 - **Check V1** has closed semantic/API/type/report authority and a stateless
   result/history contract. Default execution remains the `0.2.0` observation
   path. A Host-authoritative matching path proof classifies every occurrence in
-  that source group by hash and length without filesystem access; mismatches do
+  that source group by hash, length, and Line count without filesystem access; mismatches do
   not fall back or alter proof. The optional trusted current proof is the sole
   cross-call exception and is not a Check result store. **Data V1**
   semantic/public API/type/error authority and Rust implementation are complete.
@@ -406,8 +410,8 @@ are preserved evidence, never current authority.
   transfers to no capability. Block is historical wording for the existing
   blank-line-bounded Paragraph and introduces no type, alias, variant, or wire
   value.
-- Implemented v4 raw File, Paragraph, and Line equality follows exact workspace,
-  path, source SHA-256, byte length, target kind, and byte-range algebra. It
+- Implemented v5 raw File, Paragraph, and Line equality follows exact source
+  identity plus target and parent geometry. It
   makes no continuity, survivor, relocation, or historical-identity claim.
 
 ## Search execution contract

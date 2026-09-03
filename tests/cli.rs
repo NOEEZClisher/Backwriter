@@ -579,7 +579,7 @@ fn canonical_binary_help_and_default_workspace_search() {
     assert!(help_stdout.contains("[--json] search"));
     assert!(help_stdout.contains("[--json] check"));
     assert!(help_stdout.contains("[--json|--raw] view"));
-    assert!(help_stdout.contains("edit anddress <encoded-v4-Anddress> <content>"));
+    assert!(help_stdout.contains("edit anddress <encoded-v5-Anddress> <content>"));
     assert!(help_stdout.contains("  bw version\n"));
     assert!(help_stdout.contains("  bw update\n"));
     assert!(help.stderr.is_empty());
@@ -811,7 +811,7 @@ fn human_output_hides_raw_anddress_and_preserves_space_query() {
 }
 
 #[test]
-fn one_shot_search_json_streams_exact_v4_objects_for_every_target() {
+fn one_shot_search_json_streams_exact_v5_objects_for_every_target() {
     let root = tempfile::tempdir().unwrap();
     write(
         root.path(),
@@ -866,11 +866,15 @@ fn one_shot_search_json_streams_exact_v4_objects_for_every_target() {
     let document: Value = serde_json::from_slice(&line.stdout).unwrap();
     for value in document["occurrences"].as_array().unwrap() {
         let anddress = &value["anddress"];
-        assert_eq!(anddress["version"], "artext.backwriter-anddress.v4");
+        assert_eq!(anddress["version"], "artext.backwriter-anddress.v5");
         assert!(anddress.get("sourceStateHash").is_some());
         assert!(anddress.get("sourceByteLength").is_some());
+        assert!(anddress.get("sourceLineCount").is_some());
         assert!(anddress.get("byteStart").is_some());
         assert!(anddress.get("byteEnd").is_some());
+        assert!(anddress.get("terminator").is_some());
+        assert!(anddress.get("lineOffsetInParent").is_some());
+        assert!(anddress.get("parentKind").is_some());
         assert!(anddress.get("ordinal").is_none());
         assert!(anddress.get("exactExtent").is_none());
     }
@@ -1201,7 +1205,7 @@ fn view_file_paragraph_and_line_preserve_exact_human_bytes() {
 }
 
 #[test]
-fn one_shot_view_json_streams_exact_v4_objects_and_preserves_human_output() {
+fn one_shot_view_json_streams_exact_v5_objects_and_preserves_human_output() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "coordinate.txt", "coordinate\n");
     write(
@@ -1864,7 +1868,7 @@ fn one_shot_edit_output_failure_reports_exit_one_after_publication_without_retry
 }
 
 #[test]
-fn one_shot_check_json_preserves_raw_status_and_filtered_v4_values() {
+fn one_shot_check_json_preserves_raw_status_and_filtered_v5_values() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "coordinate.txt", "coordinate\n");
     write(root.path(), "note.txt", "file\n\nparagraph\nline\n");

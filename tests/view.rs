@@ -1043,7 +1043,7 @@ fn view_accepts_raw_empty_range_and_rejects_invalid_text_wrong_coordinate_and_no
 }
 
 #[test]
-fn separator_line_has_no_paragraph_and_raw_paragraph_range_is_exact() {
+fn separator_line_has_no_paragraph() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
@@ -1052,17 +1052,6 @@ fn separator_line_has_no_paragraph_and_raw_paragraph_range_is_exact() {
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
 
-    assert!(matches!(
-        workspace.view(&address(
-            coordinate.clone(),
-            "note.txt",
-            source,
-            AnddressTarget::Paragraph,
-            1,
-            1,
-        ), AnddressTarget::Paragraph),
-        Ok(ViewOutcome::Paragraph { text, .. }) if text.is_empty()
-    ));
     let ViewOutcome::Line { paragraph, .. } = workspace
         .view(
             &address(coordinate, "note.txt", source, AnddressTarget::Line, 4, 7),

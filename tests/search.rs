@@ -1,12 +1,16 @@
 use std::fs;
 
-use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget};
+use backwriter::backwriter::anddress::{
+    ANDDRESS_VERSION, Anddress, AnddressTarget, LineTerminator,
+};
 use backwriter::backwriter::search::{
     SearchError, SearchInputError, SearchOccurrence, SearchOccurrenceError, SearchOutcome,
     SearchPosition, SearchQuery, SearchRequest, SearchScope, SearchScopeEntry, SearchTarget,
 };
 use backwriter::runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime};
 use tempfile::tempdir;
+
+mod support;
 
 fn runtime(root: &std::path::Path) -> WorkspaceRuntime {
     WorkspaceRuntime::open(
@@ -62,8 +66,7 @@ fn exact_file_address(runtime: &WorkspaceRuntime, logical_path: &str) -> Anddres
 #[test]
 fn public_occurrences_validate_position_kind_and_preserve_ownership() {
     let workspace = "a".repeat(64);
-    let hash = "b".repeat(64);
-    let address = |target| Anddress::new(&workspace, "note.txt", &hash, 4, target, 0, 4).unwrap();
+    let address = |target| support::address(&workspace, "note.txt", b"text", target, 0, 4);
     let file = address(AnddressTarget::File);
     let paragraph = address(AnddressTarget::Paragraph);
     let line = address(AnddressTarget::Line);
@@ -165,6 +168,19 @@ fn search_projects_exact_source_state_and_byte_ranges() {
     assert_eq!((lines[1].byte_start(), lines[1].byte_end()), (18, 24));
     assert_eq!((lines[2].byte_start(), lines[2].byte_end()), (8, 17));
     assert!(lines.iter().all(|value| value.source_byte_length() == 24));
+    assert!(lines.iter().all(|value| value.source_line_count() == 4));
+    assert_eq!(
+        lines.iter().map(Anddress::line_number).collect::<Vec<_>>(),
+        vec![Some(1), Some(4), Some(2)]
+    );
+    assert_eq!(
+        lines.iter().map(Anddress::terminator).collect::<Vec<_>>(),
+        vec![
+            Some(LineTerminator::Crlf),
+            Some(LineTerminator::None),
+            Some(LineTerminator::Lf),
+        ]
+    );
     assert!(
         lines
             .windows(2)
@@ -174,14 +190,29 @@ fn search_projects_exact_source_state_and_byte_ranges() {
     assert_eq!(
         paragraphs
             .iter()
-            .map(|value| (value.target(), value.byte_start(), value.byte_end()))
+            .map(|value| (
+                value.target(),
+                value.range(),
+                value.line_range(),
+                value.line_count(),
+            ))
             .collect::<Vec<_>>(),
         vec![
-            (AnddressTarget::Paragraph, 0, 17),
-            (AnddressTarget::Paragraph, 18, 24),
+            (AnddressTarget::Paragraph, 0..17, 0..2, 2),
+            (AnddressTarget::Paragraph, 18..24, 3..4, 1),
         ]
     );
-    assert_eq!(found(&workspace, "needle", SearchTarget::File).len(), 1);
+    for (line, expected_parent) in lines.iter().zip([
+        paragraphs[0].clone(),
+        paragraphs[1].clone(),
+        paragraphs[0].clone(),
+    ]) {
+        assert_eq!(line.parent(), Some(expected_parent));
+    }
+    let files = found(&workspace, "needle", SearchTarget::File);
+    assert_eq!(files.len(), 1);
+    assert_eq!(files[0].range(), 0..24);
+    assert_eq!(files[0].line_range(), 0..4);
 }
 
 #[test]
@@ -314,38 +345,20 @@ fn exact_file_lookup_reuses_path_admission_and_source_safety() {
 #[test]
 fn wire_is_flat_strict_and_version_priority_is_explicit() {
     let coordinate = "a".repeat(64);
-    let hash = "b".repeat(64);
-    let address = Anddress::new(
-        &coordinate,
-        "note.txt",
-        &hash,
-        2,
-        AnddressTarget::Line,
-        0,
-        2,
-    )
-    .unwrap();
+    let hash = support::source_hash(b"b\n");
+    let address = support::line(&coordinate, "note.txt", b"b\n", 0);
     assert_eq!(
         String::from_utf8(address.encode().unwrap()).unwrap(),
         format!(
-            "{{\"version\":\"{}\",\"workspaceCoordinate\":\"{}\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"{}\",\"sourceByteLength\":\"2\",\"kind\":\"line\",\"byteStart\":\"0\",\"byteEnd\":\"2\"}}",
+            "{{\"version\":\"{}\",\"workspaceCoordinate\":\"{}\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"{}\",\"sourceByteLength\":\"2\",\"sourceLineCount\":\"1\",\"kind\":\"line\",\"byteStart\":\"0\",\"byteEnd\":\"2\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"0\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"2\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"1\"}}",
             ANDDRESS_VERSION, coordinate, hash,
         )
     );
-    let file = Anddress::new(
-        &coordinate,
-        "note.txt",
-        &hash,
-        2,
-        AnddressTarget::File,
-        0,
-        2,
-    )
-    .unwrap();
+    let file = support::file(&coordinate, "note.txt", b"b\n");
     assert_eq!(
         Anddress::decode(
             format!(
-                r#"{{ "byteEnd" : "2", "kind" : "file", "logicalPath" : "note.txt", "workspaceCoordinate" : "{coordinate}", "version" : "{ANDDRESS_VERSION}", "sourceStateHash" : "{hash}", "sourceByteLength" : "2", "byteStart" : "0" }}"#
+                r#"{{ "kind" : "file", "logicalPath" : "note.txt", "workspaceCoordinate" : "{coordinate}", "version" : "{ANDDRESS_VERSION}", "sourceStateHash" : "{hash}", "sourceLineCount" : "1", "sourceByteLength" : "2" }}"#
             )
             .as_bytes(),
         )
@@ -356,39 +369,38 @@ fn wire_is_flat_strict_and_version_priority_is_explicit() {
         Anddress::decode(br#"{"version":"old","kind":null}"#),
         Err(backwriter::backwriter::anddress::AnddressError::UnsupportedVersion)
     );
-    assert_eq!(Anddress::decode(br#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","logicalPath":"note.txt","kind":"file","version":"artext.backwriter-anddress.v3"}"#), Err(backwriter::backwriter::anddress::AnddressError::Encoding));
-    assert_eq!(Anddress::decode(br#"{"version":"artext.backwriter-anddress.v3","workspaceCoordinate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","logicalPath":"note.txt","kind":"line","ordinal":"0","exactExtent":"x"}"#), Err(backwriter::backwriter::anddress::AnddressError::UnsupportedVersion));
+    assert_eq!(Anddress::decode(br#"{"version":"artext.backwriter-anddress.v4","workspaceCoordinate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","logicalPath":"note.txt","kind":"file","version":"artext.backwriter-anddress.v4"}"#), Err(backwriter::backwriter::anddress::AnddressError::Encoding));
+    for version in [
+        "artext.backwriter-anddress.v4",
+        "artext.backwriter-anddress.v3",
+    ] {
+        assert_eq!(
+            Anddress::decode(format!(r#"{{"version":"{version}"}}"#).as_bytes()),
+            Err(backwriter::backwriter::anddress::AnddressError::UnsupportedVersion)
+        );
+    }
 }
 
 #[test]
 fn wire_rejects_missing_unknown_wrong_type_and_noncanonical_ranges() {
     use backwriter::backwriter::anddress::AnddressError;
     let base = format!(
-        "{{\"version\":\"{ANDDRESS_VERSION}\",\"workspaceCoordinate\":\"{}\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"{}\",\"sourceByteLength\":\"2\",",
+        "{{\"version\":\"{ANDDRESS_VERSION}\",\"workspaceCoordinate\":\"{}\",\"logicalPath\":\"note.txt\",\"sourceStateHash\":\"{}\",\"sourceByteLength\":\"2\",\"sourceLineCount\":\"1\",",
         "a".repeat(64),
         "b".repeat(64)
     );
     assert_eq!(
-        Anddress::decode(
-            format!("{base}\"kind\":null,\"byteStart\":\"0\",\"byteEnd\":\"2\"}}").as_bytes()
-        ),
+        Anddress::decode(format!("{base}\"kind\":null}}").as_bytes()),
         Err(AnddressError::Encoding)
     );
     assert_eq!(
-        Anddress::decode(
-            format!(
-                "{base}\"kind\":\"file\",\"byteStart\":\"0\",\"byteEnd\":\"2\",\"unknown\":\"x\"}}"
-            )
-            .as_bytes()
-        ),
+        Anddress::decode(format!("{base}\"kind\":\"file\",\"unknown\":\"x\"}}").as_bytes()),
         Err(AnddressError::Encoding)
     );
     for encoded in [
-        format!("{base}\"kind\":\"file\",\"byteStart\":\"0\"}}"),
-        format!("{base}\"kind\":0,\"byteStart\":\"0\",\"byteEnd\":\"2\"}}"),
-        format!(
-            "{base}\"kind\":\"file\",\"kind\":\"file\",\"byteStart\":\"0\",\"byteEnd\":\"2\"}}"
-        ),
+        format!("{base}\"kind\":\"paragraph\",\"byteStart\":\"0\"}}"),
+        format!("{base}\"kind\":0}}"),
+        format!("{base}\"kind\":\"file\",\"kind\":\"file\"}}"),
     ] {
         assert_eq!(
             Anddress::decode(encoded.as_bytes()),
@@ -404,7 +416,7 @@ fn wire_rejects_missing_unknown_wrong_type_and_noncanonical_ranges() {
         assert_eq!(
             Anddress::decode(
                 format!(
-                    "{base}\"kind\":\"line\",\"byteStart\":\"{start}\",\"byteEnd\":\"{end}\"}}"
+                    "{base}\"kind\":\"line\",\"byteStart\":\"{start}\",\"byteEnd\":\"{end}\",\"terminator\":\"none\",\"lineOffsetInParent\":\"0\",\"parentKind\":\"file\"}}"
                 )
                 .as_bytes()
             ),
@@ -419,7 +431,7 @@ fn wire_ignores_large_invalid_values_without_materializing_them() {
 
     let large = "x".repeat(65_536);
     let valid = format!(
-        r#"{{"version":"{}","workspaceCoordinate":"{}","logicalPath":"note.txt","sourceStateHash":"{}","sourceByteLength":"0","kind":"file","byteStart":"0","byteEnd":"0""#,
+        r#"{{"version":"{}","workspaceCoordinate":"{}","logicalPath":"note.txt","sourceStateHash":"{}","sourceByteLength":"0","sourceLineCount":"0","kind":"file""#,
         ANDDRESS_VERSION,
         "a".repeat(64),
         "b".repeat(64),
@@ -532,6 +544,10 @@ fn search_matches_separator_as_line_and_file_but_not_paragraph() {
     assert_eq!(lines.len(), 1);
     assert_eq!(lines[0].target(), AnddressTarget::Line);
     assert_eq!((lines[0].byte_start(), lines[0].byte_end()), (5, 8));
+    assert_eq!(lines[0].terminator(), Some(LineTerminator::Cr));
+    assert_eq!(lines[0].line_number(), Some(2));
+    assert_eq!(lines[0].parent().unwrap().target(), AnddressTarget::File);
+    assert_eq!(lines[0].project(AnddressTarget::Paragraph).unwrap(), None);
     assert!(found(&workspace, " \t", SearchTarget::Paragraph).is_empty());
     assert_eq!(found(&workspace, " \t", SearchTarget::File).len(), 1);
 }

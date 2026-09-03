@@ -1,8 +1,9 @@
 # Backwriter Principles
 
-The unimplemented `0.2.4` target is governed by Principle 18 and its
+The in-progress `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-It does not alter the current closed `0.2.3` v4 release during Phase 1.
+Gate 2 hard-cuts current source to v5 without altering the closed `0.2.3` v4
+release or the Cargo/CLI version.
 
 The closed public `0.1.0` release remains immutable v3 evidence. Published and
 closed `0.2.3`, the prior published `0.2.2` and `0.2.1`, and the prior closed public
@@ -27,10 +28,10 @@ projection, integrated Dummy, GNU/musl readiness, and release publication while
 leaving v4 identity and currentness unchanged. Official release state is `0.2.3`.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
-   Untrusted Mode keeps one source observation's hash and length only while its
+   Untrusted Mode keeps one source observation's hash, length, and Line count only while its
    capability call runs; Search separately retains only target-required
    boundaries and provisional ranges. Host-authoritative Mode may retain only
-   replace-only current SHA-256/length proof records under the Protocol's
+   replace-only current SHA-256/length/Line-count proof records under the Protocol's
    complete writer guard. Neither mode retains an observation object, bytes,
    target map, results, or history.
 2. **Backwriter is not Git.** It establishes current structure only and does not
@@ -40,10 +41,10 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
 3. **Search is the only capability that finds a target.** It discovers exact
    current ranges and computes the source hash during the same retained read.
    It performs no separate hash pass and creates no persistent index.
-4. **An Anddress authorizes exact state and range.** A v4 ordinary Anddress
-   identifies workspace, logical path, source hash, byte length, kind, and
-   `[start, end)`. The source hash is final currentness authority; target text
-   and ordinal are not identity.
+4. **An Anddress authorizes exact state and geometry.** A v5 ordinary Anddress
+   identifies workspace, logical path, source hash, byte length, Line count,
+   and exact File, Paragraph, or Line geometry. The source hash is final
+   currentness authority; target text is not identity.
 5. **Ordinary addresses do not relocate.** A changed source invalidates an
    ordinary Anddress. View, Check, and Apply never search, reparse, or
    context-match to move an old target after external change. Ordinary View and
@@ -55,13 +56,13 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
    `.artext/other` is ordinary source. Unsaved editor buffers remain outside
    Core, and source-visible does not promise durability, retry, or a second
    read.
-7. **Capability responsibility stays narrow.** View validates source hash and
-   length and returns exact caller-range bytes. Check compares only source hash
-   and length; a trusted path proof may supply that comparison without source
+7. **Capability responsibility stays narrow.** View validates source identity
+   and returns exact caller-range bytes. Check compares only source hash,
+   length, and Line count; a trusted path proof may supply that comparison without source
    access for the complete group. Apply requires the exact source state before
    direct range splice preparation and publication; a matching trusted proof
    may remove only its before hash work, and confirmed changed publication may
-   retain only the already computed after hash/length. None is a target finder.
+   retain only the already computed after hash/length/Line count. None is a target finder.
 8. **Pick is pure input selection.** Pick preserves an input-order subsequence
    of valid caller-provided Anddress values without Runtime or Workspace access,
    currentness, relation discovery, or retained result state.
@@ -75,16 +76,16 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
    I/O. Anchor adds no history, persistence, watcher, or generic transition
    engine.
 10. **Current observation is bounded and ephemeral.** The private
-    `CurrentObservation` holds only one selected source's hash and byte length
+    `CurrentObservation` holds only one selected source's hash, byte length, and Line count
     until the current Search, View, Check, Apply, or Anchor consumer discards
-    it. A trusted proof may copy only that completed hash/length identity and
+    it. A trusted proof may copy only that completed source identity and
     binding; it is not the observation. Neither is a whole-source buffer, parse
     tree, complete Line collection, Search result, history, persistent index,
     relocation context, or full workspace cache.
 11. **Search remains all-or-nothing.** Invalid text or actual allocation/I/O
     failure discards the whole result. Existing live traversal, exact File
     lookup, deterministic ordering, and no-fixed-limit behavior remain baseline
-    constraints for the v4 cutover.
+    constraints for the v5 cutover.
 12. **Check result semantics remain stateless.** Check creates no result store
     or latest slot; Runtime stores no `CurrentObservation` across calls. A
     trusted proof hit classifies one path group without filesystem access and
@@ -102,7 +103,7 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
     state. Apply is their only execution boundary and must enforce the ordinary
     Anddress source-state precondition before publication.
 16. **General Adapter editing contracts existing primitives.** The implemented
-    `0.2.2` one-shot form accepts an encoded v4 Anddress and new Content, then
+    one-shot form accepts an encoded v5 Anddress and new Content, then
     privately composes decode, View, `Edit::Replace`, and Apply. Only Line body
     replacement uses View's current terminator; File and Paragraph remain exact
     Content. This hides optional caller bookkeeping without adding a Core
@@ -114,15 +115,16 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
     current state. Ordered batch View groups exact source keys only to reuse one
     direct source observation, then restores input order and duplicates; it
     creates neither cross-target relation state nor partial results.
-    Descriptive positions are not selectors or v4 fields; projection is not
+    Descriptive positions are not selectors or v5 fields; projection is not
     discovery; and a receipt or its Adapter projection creates no predecessor,
     successor, persistence, retry, watcher, or relocation authority.
-18. **Structure has one parser and one address authority.** In the `0.2.4`
-    target, a sole `StructuralCursor` frames Line and Paragraph and a sole
-    Anddress Issuer constructs self-contained v5 values from completed source
-    identity and cursor geometry. Anddress owns state/source relationships,
+18. **Structure has one parser and one address authority.** Gate 2 installs the
+    sole crate-private Anddress Issuer and self-contained v5 value. One shared
+    source identity plus complete target/parent geometry now owns state/source
+    relationships,
     containment, overlap, parent/projection, Line geometry, ranges, and
-    terminators. Search finds, View projects then range-reads, Check checks
+    terminators. Gate 3 will consolidate Line and Paragraph framing into the
+    sole `StructuralCursor`. Search finds, View projects then range-reads, Check checks
     currentness, Apply publishes mutation, and Anchor alone carries live
     continuity. Capability-local parsers, constructors, position wrappers,
     relation scans, and private composition Reads are removed rather than kept

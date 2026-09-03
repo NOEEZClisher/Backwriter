@@ -63,7 +63,7 @@ fn occurrence(anddress: Anddress, line: usize) -> SearchOccurrence {
 }
 
 #[test]
-fn check_reports_current_removed_and_unavailable_v4_addresses() {
+fn check_reports_current_removed_and_unavailable_v5_addresses() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();
@@ -293,7 +293,7 @@ fn check_marks_every_target_removed_after_any_source_state_change() {
 }
 
 #[test]
-fn check_outputs_only_canonical_v4_addresses() {
+fn check_outputs_only_canonical_v5_addresses() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();

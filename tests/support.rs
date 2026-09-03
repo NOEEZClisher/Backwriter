@@ -119,14 +119,102 @@ pub fn address(
     byte_start: usize,
     byte_end: usize,
 ) -> Anddress {
-    Anddress::new(
-        workspace_coordinate,
-        logical_path,
-        &source_hash(source),
+    let lines = line_spans(source);
+    let source_fields = format!(
+        r#""version":"artext.backwriter-anddress.v5","workspaceCoordinate":{},"logicalPath":{},"sourceStateHash":"{}","sourceByteLength":"{}","sourceLineCount":"{}","kind":"{}""#,
+        serde_json::to_string(workspace_coordinate).unwrap(),
+        serde_json::to_string(logical_path).unwrap(),
+        source_hash(source),
         source.len(),
-        target,
-        byte_start,
-        byte_end,
-    )
-    .unwrap()
+        lines.len(),
+        match target {
+            AnddressTarget::File => "file",
+            AnddressTarget::Paragraph => "paragraph",
+            AnddressTarget::Line => "line",
+        },
+    );
+    let geometry = match target {
+        AnddressTarget::File => String::new(),
+        AnddressTarget::Paragraph => {
+            let (file_line_offset, line_count) = paragraph_geometry(source, byte_start, byte_end);
+            format!(
+                r#","byteStart":"{byte_start}","byteEnd":"{byte_end}","fileLineOffset":"{file_line_offset}","lineCount":"{line_count}""#
+            )
+        }
+        AnddressTarget::Line => {
+            let exact = lines
+                .iter()
+                .position(|&(start, end)| start == byte_start && end == byte_end);
+            let file_line_offset = exact.unwrap_or_else(|| {
+                lines
+                    .iter()
+                    .position(|&(_, end)| byte_start < end)
+                    .unwrap_or_else(|| lines.len().saturating_sub(1))
+            });
+            let terminator = exact
+                .map(|_| line_terminator(&source[byte_start..byte_end]))
+                .unwrap_or("none");
+            let paragraph = exact.and_then(|line_index| {
+                line_body(&source[byte_start..byte_end])
+                    .iter()
+                    .any(|byte| !matches!(byte, b' ' | b'\t'))
+                    .then(|| containing_paragraph(source, line_index))
+            });
+            match paragraph {
+                Some((parent_start, parent_end, parent_offset, parent_count)) => format!(
+                    r#","byteStart":"{byte_start}","byteEnd":"{byte_end}","terminator":"{terminator}","lineOffsetInParent":"{}","parentKind":"paragraph","parentByteStart":"{parent_start}","parentByteEnd":"{parent_end}","parentFileLineOffset":"{parent_offset}","parentLineCount":"{parent_count}""#,
+                    file_line_offset - parent_offset,
+                ),
+                None => format!(
+                    r#","byteStart":"{byte_start}","byteEnd":"{byte_end}","terminator":"{terminator}","lineOffsetInParent":"{file_line_offset}","parentKind":"file""#
+                ),
+            }
+        }
+    };
+    Anddress::decode(format!("{{{source_fields}{geometry}}}").as_bytes()).unwrap()
+}
+
+fn paragraph_geometry(source: &[u8], start: usize, end: usize) -> (usize, usize) {
+    let lines = line_spans(source);
+    let first = lines
+        .iter()
+        .position(|&(line_start, _)| line_start == start)
+        .unwrap_or(0);
+    let count = lines[first..]
+        .iter()
+        .take_while(|&&(_, line_end)| line_end <= end)
+        .count()
+        .max(1);
+    (first, count)
+}
+
+fn containing_paragraph(source: &[u8], line_index: usize) -> (usize, usize, usize, usize) {
+    let lines = line_spans(source);
+    let is_text = |index: usize| {
+        let (start, end) = lines[index];
+        line_body(&source[start..end])
+            .iter()
+            .any(|byte| !matches!(byte, b' ' | b'\t'))
+    };
+    let mut first = line_index;
+    while first != 0 && is_text(first - 1) {
+        first -= 1;
+    }
+    let mut last = line_index + 1;
+    while last < lines.len() && is_text(last) {
+        last += 1;
+    }
+    (lines[first].0, lines[last - 1].1, first, last - first)
+}
+
+fn line_terminator(line: &[u8]) -> &'static str {
+    if line.ends_with(b"\r\n") {
+        "crlf"
+    } else if line.ends_with(b"\r") {
+        "cr"
+    } else if line.ends_with(b"\n") {
+        "lf"
+    } else {
+        "none"
+    }
 }

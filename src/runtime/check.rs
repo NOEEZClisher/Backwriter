@@ -169,7 +169,14 @@ fn classify_group<T: CheckedValue>(
         return Ok(());
     }
     if let Some(proof) = runtime.select_current_proof(exemplar.logical_path()) {
-        classify_source_state(&proof.hash, proof.byte_length, inputs, group, statuses);
+        classify_source_state(
+            &proof.hash,
+            proof.byte_length,
+            proof.line_count,
+            inputs,
+            group,
+            statuses,
+        );
         return Ok(());
     }
     let mut file = match runtime.open_admitted_source(exemplar.logical_path()) {
@@ -197,6 +204,7 @@ fn classify_observed_source<T: CheckedValue>(
             classify_source_state(
                 state.hash.as_bytes(),
                 state.byte_length,
+                state.line_count,
                 inputs,
                 group,
                 statuses,
@@ -214,13 +222,14 @@ fn classify_observed_source<T: CheckedValue>(
 fn classify_source_state<T: CheckedValue>(
     hash: &[u8],
     byte_length: usize,
+    line_count: usize,
     inputs: &[T],
     group: &[usize],
     statuses: &mut [Currentness],
 ) {
     for &index in group {
         let input = inputs[index].anddress();
-        statuses[index] = if super::source_state_matches(hash, byte_length, input) {
+        statuses[index] = if super::source_state_matches(hash, byte_length, line_count, input) {
             Currentness::Current
         } else {
             Currentness::NotCurrent
@@ -356,18 +365,88 @@ mod tests {
     }
 
     fn address(bytes: &[u8], target: AnddressTarget, start: usize, end: usize) -> Anddress {
+        use crate::backwriter::anddress::{
+            AnddressIssuer, ParagraphGeometry, ParentGeometry, TargetGeometry,
+        };
+
         let mut hash = Sha256::new();
         hash.update(bytes);
-        Anddress::new(
+        let line_count = test_line_count(bytes);
+        let issuer = AnddressIssuer::new(
             &"0".repeat(64),
             "source.txt",
             &hash.finish().to_hex(),
             bytes.len(),
-            target,
-            start,
-            end,
+            line_count,
         )
-        .unwrap()
+        .unwrap();
+        issuer
+            .issue(match target {
+                AnddressTarget::File => TargetGeometry::File,
+                AnddressTarget::Paragraph => TargetGeometry::Paragraph(ParagraphGeometry {
+                    byte_start: start,
+                    byte_end: end,
+                    file_line_offset: 0,
+                    line_count,
+                }),
+                AnddressTarget::Line => TargetGeometry::Line {
+                    byte_start: start,
+                    byte_end: end,
+                    terminator: test_terminator(&bytes[start..end]),
+                    line_offset_in_parent: test_line_offset(bytes, start),
+                    parent: ParentGeometry::File,
+                },
+            })
+            .unwrap()
+    }
+
+    fn test_line_count(bytes: &[u8]) -> usize {
+        let mut count = 0;
+        let mut cursor = 0;
+        while cursor < bytes.len() {
+            count += 1;
+            while cursor < bytes.len() && !matches!(bytes[cursor], b'\r' | b'\n') {
+                cursor += 1;
+            }
+            if bytes.get(cursor) == Some(&b'\r') && bytes.get(cursor + 1) == Some(&b'\n') {
+                cursor += 2;
+            } else if cursor < bytes.len() {
+                cursor += 1;
+            }
+        }
+        count
+    }
+
+    fn test_terminator(bytes: &[u8]) -> crate::backwriter::anddress::LineTerminator {
+        use crate::backwriter::anddress::LineTerminator;
+        if bytes.ends_with(b"\r\n") {
+            LineTerminator::Crlf
+        } else if bytes.ends_with(b"\r") {
+            LineTerminator::Cr
+        } else if bytes.ends_with(b"\n") {
+            LineTerminator::Lf
+        } else {
+            LineTerminator::None
+        }
+    }
+
+    fn test_line_offset(bytes: &[u8], start: usize) -> usize {
+        let mut offset = 0;
+        let mut cursor = 0;
+        while cursor < start {
+            match bytes[cursor] {
+                b'\r' if bytes.get(cursor + 1) == Some(&b'\n') => {
+                    cursor += 2;
+                    offset += 1;
+                }
+                b'\r' | b'\n' => {
+                    cursor += 1;
+                    offset += 1;
+                }
+                _ => cursor += 1,
+            }
+        }
+        offset
     }
 
     fn all_target_kinds() -> Vec<Anddress> {
@@ -381,22 +460,24 @@ mod tests {
     }
 
     fn runtime_address(runtime: &WorkspaceRuntime, bytes: &[u8]) -> Anddress {
+        use crate::backwriter::anddress::{AnddressIssuer, TargetGeometry};
+
         let mut hash = Sha256::new();
         hash.update(bytes);
-        Anddress::new(
+        AnddressIssuer::new(
             &runtime.workspace_coordinate,
             "source.txt",
             &hash.finish().to_hex(),
             bytes.len(),
-            AnddressTarget::File,
-            0,
-            bytes.len(),
+            test_line_count(bytes),
         )
+        .unwrap()
+        .issue(TargetGeometry::File)
         .unwrap()
     }
 
     #[test]
-    fn one_byte_reads_compare_only_source_hash_and_length() {
+    fn one_byte_reads_compare_only_source_hash_length_and_line_count() {
         let bytes = "é€🦀\r\nnext\rthird".as_bytes();
         let inputs = vec![
             address(bytes, AnddressTarget::File, 0, bytes.len()),
@@ -452,11 +533,22 @@ mod tests {
     }
 
     #[test]
-    fn mixed_geometry_is_current_and_hash_mismatch_is_not_current() {
+    fn mixed_geometry_is_current_and_source_state_mismatch_is_not_current() {
         let source = format!("{}\n", "x".repeat(READ_BUFFER_SIZE * 3));
         let mut mismatched = source.clone();
         mismatched.pop();
         mismatched.push('!');
+        let file = address(source.as_bytes(), AnddressTarget::File, 0, source.len());
+        let wrong_line_count = crate::backwriter::anddress::AnddressIssuer::new(
+            file.workspace_coordinate(),
+            file.logical_path(),
+            file.source_state_hash(),
+            file.source_byte_length(),
+            file.source_line_count() + 1,
+        )
+        .unwrap()
+        .issue(crate::backwriter::anddress::TargetGeometry::File)
+        .unwrap();
         let raw = address(
             source.as_bytes(),
             AnddressTarget::Paragraph,
@@ -464,7 +556,7 @@ mod tests {
             source.len() - 1,
         );
         let inputs = vec![
-            address(source.as_bytes(), AnddressTarget::File, 0, source.len()),
+            file,
             raw.clone(),
             address(source.as_bytes(), AnddressTarget::Line, 7, 7),
             address(
@@ -473,9 +565,10 @@ mod tests {
                 0,
                 mismatched.len(),
             ),
+            wrong_line_count,
             raw,
         ];
-        let group = [0, 1, 2, 3, 4];
+        let group = [0, 1, 2, 3, 4, 5];
         let mut statuses = vec![Currentness::NotCurrent; inputs.len()];
         let mut observed = FixtureReader {
             bytes: source.as_bytes(),
@@ -494,6 +587,7 @@ mod tests {
                 Currentness::Current,
                 Currentness::Current,
                 Currentness::Current,
+                Currentness::NotCurrent,
                 Currentness::NotCurrent,
                 Currentness::Current,
             ]
@@ -518,7 +612,7 @@ mod tests {
             WorkspaceRuntime::open_host_authoritative(fixture.path(), admission()).unwrap();
         unusable
             .install_search_proofs(vec![
-                CurrentProof::new("source.txt", "short".to_owned(), bytes.len()).unwrap(),
+                CurrentProof::new("source.txt", "short".to_owned(), bytes.len(), 1).unwrap(),
             ])
             .unwrap();
         let input = runtime_address(&unusable, bytes);
@@ -537,6 +631,7 @@ mod tests {
                     "source.txt",
                     input.source_state_hash().to_owned(),
                     input.source_byte_length(),
+                    input.source_line_count(),
                 )
                 .unwrap(),
             ])

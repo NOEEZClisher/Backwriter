@@ -185,17 +185,18 @@ fn assert_no_apply_temp(directory: &std::path::Path) {
 fn apply_has_one_edit_seam_and_one_source_observation() {
     let runtime = include_str!("../src/runtime.rs");
     let apply = include_str!("../src/runtime/apply.rs");
+    let production = apply.split("#[cfg(test)]").next().unwrap();
 
     assert_eq!(runtime.matches("pub fn apply(").count(), 1);
     assert_eq!(runtime.matches("pub fn apply_replace(").count(), 1);
     assert!(runtime.contains("edit: &Edit"));
     assert!(!runtime.contains("apply_edit"));
     assert!(!runtime.contains("apply_anchored"));
-    assert_eq!(apply.matches(".open_admitted_source(").count(), 1);
-    assert_eq!(apply.matches("pub(super) fn execute(").count(), 1);
-    assert_eq!(apply.matches("construct_source_identity(").count(), 1);
-    assert_eq!(apply.matches("observe_source(source").count(), 1);
-    assert_eq!(apply.matches("stage_source(&mut source").count(), 1);
+    assert_eq!(production.matches(".open_admitted_source(").count(), 1);
+    assert_eq!(production.matches("pub(super) fn execute(").count(), 1);
+    assert_eq!(production.matches("AnddressIssuer::new(").count(), 1);
+    assert_eq!(production.matches("observe_source(source").count(), 1);
+    assert_eq!(production.matches("stage_source(&mut source").count(), 1);
     let trusted = apply
         .split_once("fn stage_source_trusted")
         .map(|(_, trusted)| trusted)
@@ -431,35 +432,39 @@ fn apply_replace_returns_exact_line_and_paragraph_results() {
             prefix.len(),
             prefix.len() + before.len(),
         );
-        let fresh = support::address(
-            file.workspace_coordinate(),
-            "note.txt",
-            after_source.as_bytes(),
-            PublicAnddressTarget::Line,
-            prefix.len(),
-            prefix.len() + after.len(),
-        );
+        let fresh = (!after.is_empty()).then(|| {
+            support::address(
+                file.workspace_coordinate(),
+                "note.txt",
+                after_source.as_bytes(),
+                PublicAnddressTarget::Line,
+                prefix.len(),
+                prefix.len() + after.len(),
+            )
+        });
         assert_eq!(
             workspace.apply_replace(&Edit::Replace {
                 target,
                 content: content.to_owned(),
             }),
             Ok(EditReceipt::Changed {
-                anddress: Some(fresh.clone())
+                anddress: fresh.clone()
             })
         );
         assert_eq!(
             fs::read(root.join("note.txt")).unwrap(),
             after_source.as_bytes()
         );
-        assert_eq!(
-            workspace.check(fresh.clone()).unwrap().filtered,
-            Some(fresh.clone())
-        );
-        assert!(matches!(
-            workspace.view(&fresh, PublicAnddressTarget::Line),
-            Ok(ViewOutcome::Line { anddress, .. }) if anddress == fresh
-        ));
+        if let Some(fresh) = fresh {
+            assert_eq!(
+                workspace.check(fresh.clone()).unwrap().filtered,
+                Some(fresh.clone())
+            );
+            assert!(matches!(
+                workspace.view(&fresh, PublicAnddressTarget::Line),
+                Ok(ViewOutcome::Line { anddress, .. }) if anddress == fresh
+            ));
+        }
         assert_no_apply_temp(root);
     }
 
@@ -910,7 +915,7 @@ fn exact_file_lookup_enables_start_and_end_insert_into_empty_files() {
 }
 
 #[test]
-fn v4_drift_matrix_has_one_correct_apply_and_no_wrong_publication_in_both_modes() {
+fn v5_drift_matrix_has_one_correct_apply_and_no_wrong_publication_in_both_modes() {
     const ORIGINAL: &[u8] = b"header\nneedle\nneedle\nfooter\n";
     const CORRECT: &[u8] = b"header\nneedle\nTARGET\nfooter\n";
     let cells: [(&str, &[u8], bool); 7] = [
@@ -1014,7 +1019,7 @@ fn v4_drift_matrix_has_one_correct_apply_and_no_wrong_publication_in_both_modes(
 }
 
 #[test]
-fn v4_duplicate_paragraph_drift_fails_without_wrong_publication_in_both_modes() {
+fn v5_duplicate_paragraph_drift_fails_without_wrong_publication_in_both_modes() {
     for host_mode in [false, true] {
         let fixture = tempdir().unwrap();
         let root = fixture.path().join("workspace");
@@ -1943,7 +1948,7 @@ fn v3_apply_operand_is_rejected_before_runtime_access() {
 }
 
 #[test]
-fn apply_uses_raw_v4_ranges_without_structural_relocation() {
+fn apply_uses_raw_v5_ranges_without_structural_relocation() {
     let fixture = tempdir().unwrap();
     let root = fixture.path().join("workspace");
     fs::create_dir(&root).unwrap();

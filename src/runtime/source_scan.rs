@@ -18,6 +18,7 @@ pub(crate) enum SourceScanError {
 pub(crate) struct CurrentObservation {
     pub(crate) hash: String,
     pub(crate) byte_length: usize,
+    pub(crate) line_count: usize,
 }
 
 /// Tracks exact current target evidence without retaining source bytes.
@@ -95,6 +96,7 @@ impl<'a> TargetProjection<'a> {
         for &index in self.indexes {
             let input = &self.inputs[index];
             let source_matches = input.source_byte_length() == state.byte_length
+                && input.source_line_count() == state.line_count
                 && input.source_state_hash() == state.hash;
             if !source_matches {
                 self.current[index] = false;
@@ -174,6 +176,9 @@ struct Utf8Validator {
 struct SourceTextBuilder {
     utf8: Utf8Validator,
     byte_length: usize,
+    line_count: usize,
+    line_started: bool,
+    pending_cr: bool,
 }
 
 /// Incremental source-policy and exact-state accumulator shared by retained
@@ -198,10 +203,11 @@ impl ObservationBuilder {
     }
 
     pub(crate) fn finish(self) -> Result<CurrentObservation, SourceScanError> {
-        let byte_length = self.source.finish()?;
+        let (byte_length, line_count) = self.source.finish()?;
         Ok(CurrentObservation {
             hash: self.hash.finish().to_hex(),
             byte_length,
+            line_count,
         })
     }
 }
@@ -211,6 +217,31 @@ impl SourceTextBuilder {
         if !self.utf8.push(bytes) {
             return Err(SourceScanError::InvalidSource);
         }
+        for &byte in bytes {
+            if self.pending_cr {
+                self.line_count = self
+                    .line_count
+                    .checked_add(1)
+                    .ok_or(SourceScanError::Resource)?;
+                self.pending_cr = false;
+                self.line_started = false;
+                if byte == b'\n' {
+                    continue;
+                }
+            }
+            self.line_started = true;
+            match byte {
+                b'\r' => self.pending_cr = true,
+                b'\n' => {
+                    self.line_count = self
+                        .line_count
+                        .checked_add(1)
+                        .ok_or(SourceScanError::Resource)?;
+                    self.line_started = false;
+                }
+                _ => {}
+            }
+        }
         let chunk_start = self.byte_length;
         self.byte_length = self
             .byte_length
@@ -219,11 +250,18 @@ impl SourceTextBuilder {
         Ok(chunk_start)
     }
 
-    fn finish(self) -> Result<usize, SourceScanError> {
-        self.utf8
-            .finish()
-            .then_some(self.byte_length)
-            .ok_or(SourceScanError::InvalidSource)
+    fn finish(self) -> Result<(usize, usize), SourceScanError> {
+        if !self.utf8.finish() {
+            return Err(SourceScanError::InvalidSource);
+        }
+        let line_count = if self.pending_cr || self.line_started {
+            self.line_count
+                .checked_add(1)
+                .ok_or(SourceScanError::Resource)?
+        } else {
+            self.line_count
+        };
+        Ok((self.byte_length, line_count))
     }
 }
 
@@ -323,7 +361,7 @@ pub(crate) fn validate_source_exact(
     if reader.read(&mut extra).map_err(|_| SourceScanError::Read)? != 0 {
         return Err(SourceScanError::InvalidSource);
     }
-    let actual = source.finish()?;
+    let (actual, _) = source.finish()?;
     (actual == expected_length)
         .then_some(())
         .ok_or(SourceScanError::InvalidSource)
@@ -333,7 +371,7 @@ pub(crate) fn validate_source_exact(
 mod tests {
     use std::io::{self, Read};
 
-    use super::{READ_BUFFER_SIZE, SourceScanError, validate_source_exact};
+    use super::{ObservationBuilder, READ_BUFFER_SIZE, SourceScanError, validate_source_exact};
 
     struct CountingReader {
         bytes: Vec<u8>,
@@ -416,5 +454,31 @@ mod tests {
             Err(SourceScanError::Read)
         );
         assert_eq!(failed.returned, 5);
+    }
+
+    #[test]
+    fn observation_counts_cr_lf_crlf_and_no_eol_across_chunks() {
+        for (chunks, expected_length, expected_lines) in [
+            (vec![b"".as_slice()], 0, 0),
+            (vec![b"\n".as_slice()], 1, 1),
+            (vec![b"\r".as_slice(), b"\n".as_slice()], 2, 1),
+            (
+                vec![
+                    b"one\r".as_slice(),
+                    b"\n\n \t\r".as_slice(),
+                    b"last".as_slice(),
+                ],
+                13,
+                4,
+            ),
+        ] {
+            let mut observation = ObservationBuilder::new().unwrap();
+            for chunk in chunks {
+                observation.push(chunk).unwrap();
+            }
+            let state = observation.finish().unwrap();
+            assert_eq!(state.byte_length, expected_length);
+            assert_eq!(state.line_count, expected_lines);
+        }
     }
 }

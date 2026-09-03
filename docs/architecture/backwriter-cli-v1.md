@@ -1,11 +1,12 @@
 # Backwriter CLI V1
 
-## 0.2.4 follow-up boundary
+## 0.2.4 Gate 2 boundary
 
-Phase 1 changes no CLI syntax, output, schema, parser, or executable behavior.
-The published `0.2.3` CLI and its embedded v4 objects remain current and
-immutable. Later `0.2.4` gates must migrate Adapter consumers only after the v5
-Core/Runtime authority exists and must not retain a v4 branch.
+Gate 2 changes no CLI syntax, Adapter envelope schema, human formatting,
+parser flow, or executable version. Current source embeds canonical v5 objects
+where existing Search, View, Check, Edit, Data, and Session surfaces carry an
+Anddress. The published `0.2.3` CLI and its embedded v4 objects remain immutable
+release evidence. There is no source v4 decoder or parallel Adapter branch.
 
 The target derives Search Line/Paragraph display positions from v5 Anddress
 geometry instead of `SearchPosition`; derives View self/ancestor projection
@@ -15,10 +16,12 @@ querying/order, View output order and all-or-none batch behavior, Edit receipt
 meaning, raw Session Edit/Apply, and existing output/error boundaries remain
 distinct consumers unless their owning gate proves a change necessary.
 
-Exact v5 wire bytes, Search/View/Edit JSON projection, human formatting,
-stdin transport, and splitting `src/bin/bw.rs` are explicit follow-up
-decisions. Phase 1 defines none of them and introduces no alternate command,
-schema, wrapper, compatibility mode, or process lifecycle.
+The v5 wire is fixed by the address authority. Removing duplicated
+`SearchPosition`, View relation work, and one-shot Edit's private View—and any
+corresponding JSON/human presentation contraction—belongs to Gates 3–5. Stdin
+transport and splitting `src/bin/bw.rs` remain explicit later decisions. Gate
+2 introduces no alternate command, envelope schema, wrapper, compatibility
+mode, or process lifecycle.
 
 Status: Adapter authority. The completed slices are the canonical `bw`
 executable's standalone Version and Update operations, one-shot human and JSON

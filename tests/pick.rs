@@ -1,6 +1,8 @@
 use backwriter::backwriter::anddress::{Anddress, AnddressTarget};
 use backwriter::backwriter::pick::{PickOutcome, PickPredicate, PickTargetKind, pick};
 
+mod support;
+
 fn address(path: &str, target: AnddressTarget) -> Anddress {
     address_at("a".repeat(64), path, target)
 }
@@ -10,7 +12,7 @@ fn address_at(coordinate: String, path: &str, target: AnddressTarget) -> Anddres
         AnddressTarget::File => (0, 2),
         AnddressTarget::Paragraph | AnddressTarget::Line => (0, 2),
     };
-    Anddress::new(&coordinate, path, &"c".repeat(64), 2, target, start, end).unwrap()
+    support::address(&coordinate, path, b"cc", target, start, end)
 }
 
 #[test]
@@ -92,29 +94,13 @@ fn pick_all_empty_and_target_kinds_preserve_only_matching_candidates() {
 }
 
 #[test]
-fn pick_one_of_requires_the_complete_v4_value() {
+fn pick_one_of_requires_the_complete_v5_value() {
     let reference = address("a.txt", AnddressTarget::Line);
     let different_kind = address("a.txt", AnddressTarget::File);
-    let different_range = Anddress::new(
-        &"a".repeat(64),
-        "a.txt",
-        &"c".repeat(64),
-        3,
-        AnddressTarget::Line,
-        1,
-        3,
-    )
-    .unwrap();
-    let different_hash = Anddress::new(
-        &"a".repeat(64),
-        "a.txt",
-        &"d".repeat(64),
-        2,
-        AnddressTarget::Line,
-        0,
-        2,
-    )
-    .unwrap();
+    let different_range =
+        support::address(&"a".repeat(64), "a.txt", b"ccc", AnddressTarget::Line, 1, 3);
+    let different_hash =
+        support::address(&"a".repeat(64), "a.txt", b"dd", AnddressTarget::Line, 0, 2);
     let different_coordinate = address_at("b".repeat(64), "a.txt", AnddressTarget::Line);
     let different_path = address("b.txt", AnddressTarget::Line);
     assert_eq!(

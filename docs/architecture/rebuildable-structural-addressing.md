@@ -1,10 +1,12 @@
 # Backwriter Anddress and Exact Line Model
 
-## Unimplemented 0.2.4 v5 target algebra
+## Implemented 0.2.4 Gate 2 v5 target algebra
 
-Published and closed `0.2.3` is immutable v4 evidence. `0.2.4` will hard-cut
-all production callers to `artext.backwriter-anddress.v5`; it will not accept,
-wrap, alias, or execute v4 in parallel.
+The source is hard-cut to `artext.backwriter-anddress.v5`. Published and closed
+`0.2.3` remains immutable v4 release evidence; current decode returns
+`UnsupportedVersion` for v4 and v3 and has no compatibility alias, wrapper, or
+parallel execution path. Cargo and `bw version` remain `0.2.3` until the later
+source-readiness gate.
 
 Every v5 target shares one exact `SourceIdentity`:
 
@@ -39,14 +41,42 @@ Anddress algebra, not Search metadata, a View relation scan, or capability
 provenance. Reappearing equal bytes may recreate an equal raw value but proves
 no history or continuity.
 
-One private `StructuralCursor` frames all Lines and Paragraphs. One Anddress
-Issuer combines its structural events with completed source identity and is the
-only ordinary-address constructor. The exact v5 JSON field order and exact
-immutable sharing representation are intentionally left to Gate 2, which must
-produce a self-contained wire and one canonical KAT before any consumer
-migration.
+One crate-private `AnddressIssuer` is the only ordinary-address constructor;
+decode and issue pass through the same source/geometry validator. Addresses
+issued for one observed source share one `Arc<SourceIdentity>`. Target geometry
+is allocation-free and a Line stores its complete File or Paragraph parent
+geometry, so `parent` and `project` neither parse nor reconstruct source
+structure. The later `StructuralCursor` consolidation remains Gate 3.
 
-Status: normative raw-address authority. Published and closed `0.2.3`, the
+The encoder emits one compact object with this fixed field order:
+
+```text
+common    version, workspaceCoordinate, logicalPath, sourceStateHash,
+          sourceByteLength, sourceLineCount, kind
+File      <common only>
+Paragraph <common>, byteStart, byteEnd, fileLineOffset, lineCount
+Line      <common>, byteStart, byteEnd, terminator, lineOffsetInParent,
+          parentKind
+Line/Paragraph parent additionally: parentByteStart, parentByteEnd,
+          parentFileLineOffset, parentLineCount
+```
+
+All lengths, ranges, counts, and offsets are canonical unsigned-decimal JSON
+strings. `terminator` is `none`, `lf`, `cr`, or `crlf`; `parentKind` is `file`
+or `paragraph`. File-parent Lines carry no unused Paragraph fields. Unknown,
+duplicate, missing, wrong-typed, or target-inapplicable fields and
+noncanonical or overflowing decimals are `Encoding`; a recognized non-v5
+version is `UnsupportedVersion`; inconsistent source or geometry is `Invalid`;
+fallible construction/encoding allocation is `Resource`.
+
+The public allocation-free algebra is `same_source`, `same_state`, `contains`,
+`overlaps`, `parent`, `projection_valid`, `project`, `range`, `line_count`,
+`line_range`, `line_number`, and `terminator`. Line ranges are zero-based
+half-open File-Line ranges; Line numbers are one-based. A downward projection
+returns `Invalid`; Line-to-Paragraph for a File-parent Line is valid but
+returns `None`.
+
+Status: implemented Gate 2 raw-address authority. Published and closed `0.2.3`, the
 prior published `0.2.2` and `0.2.1`, and the prior closed public `0.2.0` production release
 implement the v4 algebra and hard cutover below. The closed public `0.1.0` v3
 algebra is preserved later in this document only as immutable release evidence;

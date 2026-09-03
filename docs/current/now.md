@@ -1,36 +1,38 @@
 # Backwriter Current State
 
-## Target defined: 0.2.4 structural authority, implementation absent
+## In progress: 0.2.4 structural authority, Gate 2 complete
 
-Phase 1 defines the next source target without changing code. Published and
-closed `0.2.3` remains the sole current Cargo/CLI release and immutable v4
-API/wire/distribution. No `0.2.4` Rust API, v5 encoder/decoder, parser, CLI
-schema, artifact, installer, or publication exists yet.
+Gate 2 implements the v5 Rust algebra, canonical wire, and sole crate-private
+Issuer. Published and closed `0.2.3` remains the sole current Cargo/CLI release
+and immutable v4 distribution; Cargo and `bw version` remain `0.2.3`. There is
+no `0.2.4` artifact, installer, publication, or release claim.
 
-The target hard-cuts to `artext.backwriter-anddress.v5`. Shared
-`SourceIdentity` gains the exact source Line count alongside workspace
+Current source is hard-cut to `artext.backwriter-anddress.v5`. Shared
+`SourceIdentity` includes the exact source Line count alongside workspace
 coordinate, logical path, SHA-256, and byte length. File carries full range and
 Line count; Paragraph carries range, zero-based File Line offset, and Line
 count; Line carries range, exact terminator, parent geometry, and zero-based
 Line offset within that parent. Text Lines belong to a Paragraph. Blank and
 horizontal-space/tab-only Lines belong directly to File.
 
-Anddress becomes the authority for source/state relationships, containment,
+Anddress is now the authority for source/state relationships, containment,
 overlap, parent and projection, Line count/number/range, terminator, and
-projection validity. A single private `StructuralCursor` becomes the only
-Line/Paragraph parser, and one Anddress Issuer becomes the only construction
-authority. Search keeps finding and order, View projects then range-reads,
-Check checks currentness, Apply mutates and publishes, and Anchor alone owns
-Backwriter continuity.
+projection validity. One validator serves decode and the sole crate-private
+Issuer. Issued targets share one immutable source identity, while the v5 wire
+is self-contained and omits unused geometry. Runtime Search and prospective
+Apply output now carry exact parent/range/count/offset/terminator geometry
+without changing matching, ordering, staging, publication, proof, or Anchor
+semantics.
 
-The planned contraction removes `SearchPosition` and the positional field of
-`SearchOccurrence`, capability-local Line/Paragraph parsers and constructors,
+The remaining contraction starts with Gate 3. It removes `SearchPosition` and
+the positional field of `SearchOccurrence`, capability-local Line/Paragraph
+parsers and constructors,
 View's relation scan, and one-shot Edit's private View. Existing matching,
 batch grouping, publication/provenance, Host proof, and Anchor mechanics remain
 their actual consumers. The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
 separates authority, implementation, semantic evidence, version readiness, and
-release approval. Exact v5 wire layout, geometry sharing, CLI/JSON changes, and
-stdin or CLI file splitting are intentionally undecided after Phase 1.
+release approval. CLI/JSON presentation contraction, stdin, and CLI file
+splitting remain later-gate decisions.
 
 ## Published and closed 0.2.3 Patch Box
 
@@ -318,11 +320,11 @@ cross-build evidence without native execution claims.
 
 | Letter | Word | Current status |
 | --- | --- | --- |
-| S | Search | Rust implementation with one-read target-specific v4 projection and exact File lookup. |
-| V | View | Rust implementation with direct v4 exact-source/range projection. |
-| P | Pick | Rust implementation over complete v4 values. |
+| S | Search | Rust implementation with one-read target-specific v5 projection and exact File lookup. |
+| V | View | Rust implementation with direct v5 exact-source/range projection. |
+| P | Pick | Rust implementation over complete v5 values. |
 | A | Anchor | Rust implementation with Runtime-local live continuity. |
-| C | Check | Rust implementation with v4 hash/length-only batch currentness reporting. |
+| C | Check | Rust implementation with v5 source-state batch currentness reporting. |
 | D | Data | Rust implementation with V1 typed caller-owned storage. |
 | E | Edit | V1 values and single-source Apply Runtime implementation. |
 | unassigned | Apply | V1 public authority and Runtime implementation complete. |
@@ -351,7 +353,7 @@ exposes only its report counts. Session Anchor creates an opaque Runtime-local
 handle, views it through the existing anchored seam, and invalidates only its
 logical source. One-shot Search, View, Check, and Edit JSON stream compact Adapter
 envelopes without creating a Core wire; related or filtered values are exact
-existing v4 Anddress objects. Raw View is an explicit Adapter exact-text
+existing v5 Anddress objects. Raw View is an explicit Adapter exact-text
 projection and creates no Core wire or new View meaning. Data transfers exact
 clones from explicit Session values into the existing typed Core store and reads
 them back without capability execution.

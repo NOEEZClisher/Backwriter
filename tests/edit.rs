@@ -5,17 +5,10 @@ use backwriter::backwriter::{
     edit::{Edit, EditError, Position},
 };
 
+mod support;
+
 fn address(target: AnddressTarget) -> Anddress {
-    Anddress::new(
-        &"a".repeat(64),
-        "note.txt",
-        &"b".repeat(64),
-        4,
-        target,
-        0,
-        4,
-    )
-    .unwrap()
+    support::address(&"a".repeat(64), "note.txt", b"line", target, 0, 4)
 }
 
 fn file() -> Anddress {
@@ -215,16 +208,14 @@ fn content_is_exact_and_only_rejects_nul() {
 
 #[test]
 fn move_and_copy_do_not_add_relational_or_size_constraints() {
-    let other_source = Anddress::new(
+    let other_source = support::address(
         &"a".repeat(64),
         "other.txt",
-        &"b".repeat(64),
-        4,
+        b"line",
         AnddressTarget::Line,
         0,
         4,
-    )
-    .unwrap();
+    );
     for edit in [
         Edit::Move {
             target: paragraph(),

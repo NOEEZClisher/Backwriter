@@ -1,12 +1,20 @@
 # Verification
 
-## Planned 0.2.4 structural-authority gates
+## 0.2.4 structural-authority gates
 
-Phase 1 is documentation-only. It records the current consumer baseline and
-the hard-cut acceptance plan while leaving production Rust, Cargo, tests, CLI,
-wire, and the closed `0.2.3` distribution byte-identical. The existing GNU and
-musl 256-test result remains the semantic baseline; Phase 1 does not claim a
-new test run or implementation result.
+Gate 1 records the consumer baseline. Gate 2 hard-cuts current source to v5
+while leaving Cargo/CLI version and the closed `0.2.3` distribution unchanged.
+Its exact File, Paragraph, text-Line, and File-child-Line KATs; strict v4/v3
+rejection; source/geometry mutation and overflow fail-closure; algebra; shared
+source identity; source Line counting; Runtime Search geometry; Apply receipt/
+Anchor projection; and existing semantic regressions are executable tests.
+Search matching and Apply publication paths are unchanged.
+
+Gate 2 passes 257 tests on both GNU and musl. Both targets pass offline/locked
+all-target check, clippy with warnings denied, and release build; the GNU run
+also records offline/locked metadata and dependency tree plus rustfmt. Cargo,
+lockfile, toolchain, Adapter envelope schemas, and the `0.2.3` executable
+version are unchanged.
 
 Every later implementation gate must reject unsupported/invalid structure
 before source mutation, discard provisional results on failure, leave no

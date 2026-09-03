@@ -3,7 +3,8 @@
 use std::cmp::Ordering;
 
 use crate::backwriter::anddress::{
-    AnddressTarget, LineBodyClass, construct_anddress, construct_source_identity,
+    AnddressIssuer, LineBodyClass, LineTerminator, ParagraphGeometry, ParentGeometry,
+    TargetGeometry,
 };
 use crate::backwriter::search::{
     LiteralMatcher, MatchTier, PreparedLiteral, SearchError, SearchOccurrence, SearchOutcome,
@@ -96,14 +97,16 @@ fn execute_exact_file(
             return Err(SearchError::Unavailable);
         }
     };
-    let source = construct_source_identity(
+    let issuer = AnddressIssuer::new(
         &runtime.workspace_coordinate,
         logical_path,
         &state.hash,
         state.byte_length,
+        state.line_count,
     )
     .map_err(|_| SearchError::Unavailable)?;
-    let anddress = construct_anddress(&source, AnddressTarget::File, 0, state.byte_length)
+    let anddress = issuer
+        .issue(TargetGeometry::File)
         .map_err(|_| SearchError::Unavailable)?;
     let occurrence = SearchOccurrence::new(anddress, None).map_err(|_| SearchError::Unavailable)?;
     let mut occurrences = Vec::new();
@@ -111,7 +114,12 @@ fn execute_exact_file(
         .try_reserve_exact(1)
         .map_err(|_| SearchError::Unavailable)?;
     occurrences.push(occurrence);
-    let proof = CurrentProof::new(logical_path, state.hash, state.byte_length)?;
+    let proof = CurrentProof::new(
+        logical_path,
+        state.hash,
+        state.byte_length,
+        state.line_count,
+    )?;
     let mut proofs = Vec::new();
     proofs
         .try_reserve_exact(1)
@@ -329,7 +337,7 @@ impl SearchExecutor<'_> {
                 return Err(error);
             }
         };
-        let proof = CurrentProof::new(path, state.hash, state.byte_length)?;
+        let proof = CurrentProof::new(path, state.hash, state.byte_length, state.line_count)?;
         self.proofs
             .try_reserve(1)
             .map_err(|_| SearchError::Unavailable)?;
@@ -348,9 +356,7 @@ struct ParagraphState {
 
 struct ProvisionalTarget {
     tier: MatchTier,
-    target: AnddressTarget,
-    byte_start: usize,
-    byte_end: usize,
+    geometry: TargetGeometry,
     position: SearchPosition,
 }
 
@@ -368,6 +374,12 @@ struct LineProjection<'a> {
     line_started: bool,
     line_number: usize,
     pending_cr: bool,
+    body_class: LineBodyClass,
+    paragraph_start: usize,
+    paragraph_end: usize,
+    paragraph_file_line_offset: usize,
+    paragraph_line_count: usize,
+    paragraph_result_start: Option<usize>,
     provisional: Vec<ProvisionalTarget>,
 }
 
@@ -426,16 +438,18 @@ fn scan_open_source(
             (state, ProjectionOutcome::Targets(projection.provisional))
         }
     };
-    let source = construct_source_identity(
+    let issuer = AnddressIssuer::new(
         workspace_coordinate,
         logical_path,
         &state.hash,
         state.byte_length,
+        state.line_count,
     )
     .map_err(|_| SearchError::Unavailable)?;
     match outcome {
         ProjectionOutcome::File(Some(tier)) => {
-            let anddress = construct_anddress(&source, AnddressTarget::File, 0, state.byte_length)
+            let anddress = issuer
+                .issue(TargetGeometry::File)
                 .map_err(|_| SearchError::Unavailable)?;
             let occurrence =
                 SearchOccurrence::new(anddress, None).map_err(|_| SearchError::Unavailable)?;
@@ -444,13 +458,9 @@ fn scan_open_source(
         ProjectionOutcome::File(None) => {}
         ProjectionOutcome::Targets(provisional) => {
             for provisional in provisional {
-                let anddress = construct_anddress(
-                    &source,
-                    provisional.target,
-                    provisional.byte_start,
-                    provisional.byte_end,
-                )
-                .map_err(|_| SearchError::Unavailable)?;
+                let anddress = issuer
+                    .issue(provisional.geometry)
+                    .map_err(|_| SearchError::Unavailable)?;
                 let occurrence = SearchOccurrence::new(anddress, Some(provisional.position))
                     .map_err(|_| SearchError::Unavailable)?;
                 push_result(
@@ -539,6 +549,12 @@ impl<'a> LineProjection<'a> {
             line_started: false,
             line_number: 0,
             pending_cr: false,
+            body_class: LineBodyClass::Empty,
+            paragraph_start: 0,
+            paragraph_end: 0,
+            paragraph_file_line_offset: 0,
+            paragraph_line_count: 0,
+            paragraph_result_start: None,
             provisional: Vec::new(),
         }
     }
@@ -552,11 +568,11 @@ impl<'a> LineProjection<'a> {
             let byte_start = chunk_start + cursor;
             if self.pending_cr {
                 if bytes[cursor] == b'\n' {
-                    self.finish_line(byte_start + 1)?;
+                    self.finish_line(byte_start + 1, LineTerminator::Crlf)?;
                     cursor += 1;
                     continue;
                 }
-                self.finish_line(byte_start)?;
+                self.finish_line(byte_start, LineTerminator::Cr)?;
             }
             self.begin_line(byte_start)?;
 
@@ -576,6 +592,7 @@ impl<'a> LineProjection<'a> {
                     .unwrap_or(remaining.len())
             };
             self.add_content_length(span_length)?;
+            self.include_body(&remaining[..span_length]);
             cursor += span_length;
             if cursor == bytes.len() {
                 break;
@@ -588,12 +605,13 @@ impl<'a> LineProjection<'a> {
                     cursor += 1;
                 }
                 b'\n' => {
-                    self.finish_line(chunk_start + cursor + 1)?;
+                    self.finish_line(chunk_start + cursor + 1, LineTerminator::Lf)?;
                     cursor += 1;
                 }
                 _ => {
                     self.add_content_length(1)?;
                     self.matcher.push_content_byte(byte);
+                    self.include_body(&[byte]);
                     cursor += 1;
                 }
             }
@@ -603,9 +621,14 @@ impl<'a> LineProjection<'a> {
 
     fn finish(&mut self, source_byte_length: usize) -> Result<(), SourceScanError> {
         if self.line_started {
-            self.finish_line(source_byte_length)?;
+            let terminator = if self.pending_cr {
+                LineTerminator::Cr
+            } else {
+                LineTerminator::None
+            };
+            self.finish_line(source_byte_length, terminator)?;
         }
-        Ok(())
+        self.close_line_paragraph()
     }
 
     fn begin_line(&mut self, byte_start: usize) -> Result<(), SourceScanError> {
@@ -622,14 +645,37 @@ impl<'a> LineProjection<'a> {
         Ok(())
     }
 
-    fn finish_line(&mut self, byte_end: usize) -> Result<(), SourceScanError> {
-        if let Some(tier) = self.matcher.finish_at_length(self.line_content_length) {
+    fn finish_line(
+        &mut self,
+        byte_end: usize,
+        terminator: LineTerminator,
+    ) -> Result<(), SourceScanError> {
+        let tier = self.matcher.finish_at_length(self.line_content_length);
+        if self.body_class == LineBodyClass::Text {
+            if self.paragraph_result_start.is_none() {
+                self.paragraph_start = self.line_start;
+                self.paragraph_file_line_offset = self.line_number - 1;
+                self.paragraph_result_start = Some(self.provisional.len());
+            }
+            self.paragraph_end = byte_end;
+            self.paragraph_line_count = self
+                .paragraph_line_count
+                .checked_add(1)
+                .ok_or(SourceScanError::Resource)?;
+        } else {
+            self.close_line_paragraph()?;
+        }
+        if let Some(tier) = tier {
             push_provisional(
                 &mut self.provisional,
                 tier,
-                AnddressTarget::Line,
-                self.line_start,
-                byte_end,
+                TargetGeometry::Line {
+                    byte_start: self.line_start,
+                    byte_end,
+                    terminator,
+                    line_offset_in_parent: self.line_number - 1,
+                    parent: ParentGeometry::File,
+                },
                 SearchPosition::Line {
                     line: self.line_number,
                 },
@@ -637,6 +683,35 @@ impl<'a> LineProjection<'a> {
         }
         self.line_started = false;
         self.pending_cr = false;
+        self.body_class = LineBodyClass::Empty;
+        Ok(())
+    }
+
+    fn close_line_paragraph(&mut self) -> Result<(), SourceScanError> {
+        let Some(start) = self.paragraph_result_start.take() else {
+            return Ok(());
+        };
+        let paragraph = ParagraphGeometry {
+            byte_start: self.paragraph_start,
+            byte_end: self.paragraph_end,
+            file_line_offset: self.paragraph_file_line_offset,
+            line_count: self.paragraph_line_count,
+        };
+        for provisional in &mut self.provisional[start..] {
+            let TargetGeometry::Line {
+                line_offset_in_parent,
+                parent,
+                ..
+            } = &mut provisional.geometry
+            else {
+                return Err(SourceScanError::InvalidSource);
+            };
+            *line_offset_in_parent = line_offset_in_parent
+                .checked_sub(paragraph.file_line_offset)
+                .ok_or(SourceScanError::InvalidSource)?;
+            *parent = ParentGeometry::Paragraph(paragraph);
+        }
+        self.paragraph_line_count = 0;
         Ok(())
     }
 
@@ -646,6 +721,14 @@ impl<'a> LineProjection<'a> {
             .checked_add(length)
             .ok_or(SourceScanError::Resource)?;
         Ok(())
+    }
+
+    fn include_body(&mut self, bytes: &[u8]) {
+        if bytes.iter().any(|byte| !matches!(byte, b' ' | b'\t')) {
+            self.body_class = LineBodyClass::Text;
+        } else if !bytes.is_empty() && self.body_class == LineBodyClass::Empty {
+            self.body_class = LineBodyClass::HorizontalWhitespace;
+        }
     }
 }
 
@@ -745,9 +828,12 @@ impl<'a> ParagraphProjection<'a> {
             push_provisional(
                 &mut self.provisional,
                 tier,
-                AnddressTarget::Paragraph,
-                paragraph.byte_start,
-                paragraph.byte_end,
+                TargetGeometry::Paragraph(ParagraphGeometry {
+                    byte_start: paragraph.byte_start,
+                    byte_end: paragraph.byte_end,
+                    file_line_offset: paragraph.start_line - 1,
+                    line_count: paragraph.end_line - paragraph.start_line + 1,
+                }),
                 SearchPosition::Paragraph {
                     start_line: paragraph.start_line,
                     end_line: paragraph.end_line,
@@ -767,9 +853,7 @@ fn prefer_tier(best: &mut Option<MatchTier>, tier: MatchTier) {
 fn push_provisional(
     provisional: &mut Vec<ProvisionalTarget>,
     tier: MatchTier,
-    target: AnddressTarget,
-    byte_start: usize,
-    byte_end: usize,
+    geometry: TargetGeometry,
     position: SearchPosition,
 ) -> Result<(), SourceScanError> {
     provisional
@@ -777,9 +861,7 @@ fn push_provisional(
         .map_err(|_| SourceScanError::Resource)?;
     provisional.push(ProvisionalTarget {
         tier,
-        target,
-        byte_start,
-        byte_end,
+        geometry,
         position,
     });
     Ok(())
@@ -1417,7 +1499,7 @@ mod tests {
             .next()
             .unwrap();
         assert!(
-            scan.find("let source = construct_source_identity")
+            scan.find("let issuer = AnddressIssuer::new")
                 > scan.find("let (state, outcome) = match target")
         );
     }

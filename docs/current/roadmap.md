@@ -1,13 +1,14 @@
 # Backwriter Roadmap
 
-## Planned: 0.2.4 structural-authority hard cut
+## In progress: 0.2.4 structural-authority hard cut
 
 The [0.2.4 tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
-defines eight ordered gates. Phase 1 closes only authority and the current
-consumer baseline; `0.2.3` remains the published, immutable v4 release.
+defines eight ordered gates. Gates 1–2 close authority, the consumer baseline,
+v5 algebra, canonical wire, and sole Issuer; `0.2.3` remains the published,
+immutable v4 release and current Cargo/CLI version.
 
-1. Authority and consumer baseline.
-2. v5 algebra, exact wire, and sole Anddress Issuer.
+1. Authority and consumer baseline — complete.
+2. v5 algebra, exact wire, and sole Anddress Issuer — complete.
 3. sole `StructuralCursor`, Search migration, and result contraction.
 4. View Runtime plus single/batch Adapter migration.
 5. Edit/Apply/Anchor migration and private View removal.
@@ -24,12 +25,14 @@ and one Issuer alone creates ordinary addresses. Search remains the finder,
 View a projection plus exact range read, Check currentness, Apply mutation and
 publication, and Anchor the sole continuity authority.
 
-Each implementation gate must hard-cut its completed surface and fail closed;
-there is no v4 compatibility or parallel Runtime. Acceptance includes sparse
+Each implementation gate hard-cuts its completed surface and fails closed.
+Gate 2 accepts only v5, shares one source identity across issued targets, and
+stores complete allocation-free target/parent geometry. There is no v4
+compatibility or parallel Runtime. Remaining acceptance includes sparse
 Search, one million hits, 200,000 files, single/batch View projection,
-terminator-preserving Edit, and blind duplicate drift. Exact v5 wire fields,
-in-memory geometry sharing, CLI/JSON surface, stdin, and `bw.rs` splitting are
-decided only by their owning later gate. History, relocation, registry,
+terminator-preserving Edit, and blind duplicate drift. CLI/JSON presentation,
+stdin, and `bw.rs` splitting are decided only by their owning later gate.
+History, relocation, registry,
 watcher, retry, merge, rollback, and publication before Gate 8 remain excluded.
 
 ## Completed: 0.2.3 Patch Box and distribution

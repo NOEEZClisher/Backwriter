@@ -1,9 +1,6 @@
 //! Runtime-owned bounded-memory Apply preparation and one-shot publication.
 
-use std::{
-    io::{Read, Seek, SeekFrom, Write},
-    sync::Arc,
-};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 use cap_fs_ext::{
     FollowSymlinks, OpenOptionsFollowExt, OpenOptionsMaybeDirExt, OpenOptionsSyncExt,
@@ -13,7 +10,8 @@ use cap_std::fs::{Dir, File, OpenOptions};
 use cap_std::fs::{Permissions, PermissionsExt};
 
 use crate::backwriter::anddress::{
-    Anddress, AnddressTarget, SourceIdentity, construct_anddress, construct_source_identity,
+    Anddress, AnddressIssuer, AnddressTarget, LineTerminator, ParagraphGeometry, ParentGeometry,
+    TargetGeometry,
 };
 use crate::backwriter::{
     apply::{ApplyError, EditReceipt},
@@ -232,7 +230,7 @@ struct Candidate<'a> {
     source_member: bool,
     line: Markers,
     paragraph: Markers,
-    result: Option<(usize, usize)>,
+    result: Option<TargetGeometry>,
     multiple: bool,
 }
 
@@ -249,7 +247,7 @@ impl<'a> Candidate<'a> {
         }
     }
 
-    fn record(&mut self, markers: Markers, range: (usize, usize)) {
+    fn record(&mut self, markers: Markers, geometry: TargetGeometry) {
         if self.multiple {
             return;
         }
@@ -265,7 +263,7 @@ impl<'a> Candidate<'a> {
             self.result = None;
             self.multiple = true;
         } else {
-            self.result = Some(range);
+            self.result = Some(geometry);
         }
     }
 }
@@ -281,11 +279,14 @@ struct AfterProjector<'a> {
     candidates: Vec<Candidate<'a>>,
     byte_offset: usize,
     line_start: usize,
+    line_offset: usize,
     line_started: bool,
     pending_cr: bool,
     line_has_text: bool,
     paragraph_start: usize,
     paragraph_end: usize,
+    paragraph_file_line_offset: usize,
+    paragraph_line_count: usize,
     in_paragraph: bool,
 }
 
@@ -309,11 +310,14 @@ impl<'a> AfterProjector<'a> {
             candidates,
             byte_offset: 0,
             line_start: 0,
+            line_offset: 0,
             line_started: false,
             pending_cr: false,
             line_has_text: false,
             paragraph_start: 0,
             paragraph_end: 0,
+            paragraph_file_line_offset: 0,
+            paragraph_line_count: 0,
             in_paragraph: false,
         })
     }
@@ -325,28 +329,33 @@ impl<'a> AfterProjector<'a> {
                 if byte == b'\n' {
                     self.mark(emission, index)?;
                     self.advance()?;
-                    self.finish_line();
+                    self.finish_line(LineTerminator::Crlf)?;
                     continue;
                 }
-                self.finish_line();
+                self.finish_line(LineTerminator::Cr)?;
             }
             self.begin_line(byte_start);
             self.mark(emission, index)?;
             self.advance()?;
             match byte {
                 b'\r' => self.pending_cr = true,
-                b'\n' => self.finish_line(),
+                b'\n' => self.finish_line(LineTerminator::Lf)?,
                 _ => self.line_has_text |= !matches!(byte, b' ' | b'\t'),
             }
         }
         Ok(())
     }
 
-    fn finish(mut self) -> Result<Vec<Option<(usize, usize)>>, ApplyError> {
+    fn finish(mut self) -> Result<Vec<Option<TargetGeometry>>, ApplyError> {
         if self.line_started {
-            self.finish_line();
+            let terminator = if self.pending_cr {
+                LineTerminator::Cr
+            } else {
+                LineTerminator::None
+            };
+            self.finish_line(terminator)?;
         }
-        self.finish_paragraph();
+        self.finish_paragraph()?;
         let mut results = Vec::new();
         results
             .try_reserve_exact(self.candidates.len())
@@ -412,17 +421,25 @@ impl<'a> AfterProjector<'a> {
         Ok(())
     }
 
-    fn finish_line(&mut self) {
-        let range = (self.line_start, self.byte_offset);
+    fn finish_line(&mut self, terminator: LineTerminator) -> Result<(), ApplyError> {
+        let geometry = TargetGeometry::Line {
+            byte_start: self.line_start,
+            byte_end: self.byte_offset,
+            terminator,
+            line_offset_in_parent: self.line_offset,
+            parent: ParentGeometry::File,
+        };
         for candidate in &mut self.candidates {
             if candidate.binding.target() == AnddressTarget::Line {
-                candidate.record(candidate.line, range);
+                candidate.record(candidate.line, geometry);
             }
         }
         if self.line_has_text {
             if !self.in_paragraph {
                 self.in_paragraph = true;
                 self.paragraph_start = self.line_start;
+                self.paragraph_file_line_offset = self.line_offset;
+                self.paragraph_line_count = 0;
                 for candidate in &mut self.candidates {
                     if !candidate.multiple {
                         candidate.paragraph = Markers::default();
@@ -430,30 +447,60 @@ impl<'a> AfterProjector<'a> {
                 }
             }
             self.paragraph_end = self.byte_offset;
+            self.paragraph_line_count = self
+                .paragraph_line_count
+                .checked_add(1)
+                .ok_or(ApplyError::Unavailable)?;
             for candidate in &mut self.candidates {
                 if !candidate.multiple {
                     candidate.paragraph.include(candidate.line);
                 }
             }
         } else {
-            self.finish_paragraph();
+            self.finish_paragraph()?;
         }
+        self.line_offset = self
+            .line_offset
+            .checked_add(1)
+            .ok_or(ApplyError::Unavailable)?;
         self.line_started = false;
         self.pending_cr = false;
         self.line_has_text = false;
+        Ok(())
     }
 
-    fn finish_paragraph(&mut self) {
+    fn finish_paragraph(&mut self) -> Result<(), ApplyError> {
         if !self.in_paragraph {
-            return;
+            return Ok(());
         }
-        let range = (self.paragraph_start, self.paragraph_end);
+        let paragraph = ParagraphGeometry {
+            byte_start: self.paragraph_start,
+            byte_end: self.paragraph_end,
+            file_line_offset: self.paragraph_file_line_offset,
+            line_count: self.paragraph_line_count,
+        };
         for candidate in &mut self.candidates {
+            if let Some(TargetGeometry::Line {
+                byte_start,
+                byte_end,
+                line_offset_in_parent,
+                parent,
+                ..
+            }) = candidate.result.as_mut()
+                && paragraph.byte_start <= *byte_start
+                && *byte_end <= paragraph.byte_end
+            {
+                *line_offset_in_parent = line_offset_in_parent
+                    .checked_sub(paragraph.file_line_offset)
+                    .ok_or(ApplyError::Unavailable)?;
+                *parent = ParentGeometry::Paragraph(paragraph);
+            }
             if candidate.binding.target() == AnddressTarget::Paragraph {
-                candidate.record(candidate.paragraph, range);
+                candidate.record(candidate.paragraph, TargetGeometry::Paragraph(paragraph));
             }
         }
         self.in_paragraph = false;
+        Ok(())
     }
 }
 
@@ -507,9 +554,8 @@ fn ranges_overlap(left: &Anddress, right: &Anddress) -> bool {
 fn reflection_plan(
     runtime: &WorkspaceRuntime,
     path: &str,
-    state: &CurrentObservation,
-    source: &Arc<SourceIdentity>,
-    candidates: Vec<Option<(usize, usize)>>,
+    issuer: &AnddressIssuer,
+    candidates: Vec<Option<TargetGeometry>>,
 ) -> Result<Vec<AnchorPlanEntry>, ApplyError> {
     let mut plan = Vec::new();
     plan.try_reserve_exact(runtime.anchors.len())
@@ -520,20 +566,17 @@ fn reflection_plan(
             plan.push(AnchorPlanEntry::Preserve);
         } else if binding.anddress.target() == AnddressTarget::File {
             plan.push(AnchorPlanEntry::Rebind {
-                anddress: construct_anddress(source, AnddressTarget::File, 0, state.byte_length)
+                anddress: issuer
+                    .issue(TargetGeometry::File)
                     .map_err(|_| ApplyError::Unavailable)?,
                 collides: false,
             });
         } else {
             match candidates.next().expect("same-path candidate is prepared") {
-                Some((byte_start, byte_end)) => plan.push(AnchorPlanEntry::Rebind {
-                    anddress: construct_anddress(
-                        source,
-                        binding.anddress.target(),
-                        byte_start,
-                        byte_end,
-                    )
-                    .map_err(|_| ApplyError::Unavailable)?,
+                Some(geometry) => plan.push(AnchorPlanEntry::Rebind {
+                    anddress: issuer
+                        .issue(geometry)
+                        .map_err(|_| ApplyError::Unavailable)?,
                     collides: false,
                 }),
                 None => plan.push(AnchorPlanEntry::Remove),
@@ -546,25 +589,16 @@ fn reflection_plan(
 }
 
 fn changed_receipt(
-    target: &Anddress,
-    source: &Arc<SourceIdentity>,
-    projected_range: Option<(usize, usize)>,
-    edit: &Edit,
-    geometry: Geometry,
-    after_length: usize,
+    issuer: &AnddressIssuer,
+    projected_geometry: Option<TargetGeometry>,
+    target: AnddressTarget,
 ) -> Result<EditReceipt, ApplyError> {
-    let range = match target.target() {
-        AnddressTarget::File => Some((0, after_length)),
-        AnddressTarget::Paragraph => projected_range,
-        AnddressTarget::Line => projected_range.or_else(|| match edit {
-            Edit::Replace { content, .. } if content.is_empty() => {
-                geometry.target.map(|(start, _)| (start, start))
-            }
-            _ => None,
-        }),
+    let geometry = match target {
+        AnddressTarget::File => Some(TargetGeometry::File),
+        AnddressTarget::Paragraph | AnddressTarget::Line => projected_geometry,
     };
-    let anddress = range
-        .map(|(start, end)| construct_anddress(source, target.target(), start, end))
+    let anddress = geometry
+        .map(|geometry| issuer.issue(geometry))
         .transpose()
         .map_err(|_| ApplyError::Unavailable)?;
     Ok(EditReceipt::Changed { anddress })
@@ -728,7 +762,7 @@ pub(super) fn execute(
         }));
     }
 
-    let receipt_range = receipt_projection
+    let receipt_geometry = receipt_projection
         .then(|| candidates.pop().expect("receipt projection is last"))
         .flatten();
 
@@ -739,37 +773,23 @@ pub(super) fn execute(
         .permissions()
         .mode()
         & 0o777;
-    let after_length = after.byte_length;
-    let after_source = construct_source_identity(
+    let after_issuer = AnddressIssuer::new(
         &runtime.workspace_coordinate,
         first.logical_path(),
         &after.hash,
-        after_length,
+        after.byte_length,
+        after.line_count,
     )
     .map_err(|_| ApplyError::Unavailable)?;
     let receipt = receipt_target
-        .map(|target| {
-            changed_receipt(
-                target,
-                &after_source,
-                receipt_range,
-                edit,
-                geometry,
-                after_length,
-            )
-        })
+        .map(|target| changed_receipt(&after_issuer, receipt_geometry, target.target()))
         .transpose()?;
-    let plan = reflection_plan(
-        runtime,
-        first.logical_path(),
-        &after,
-        &after_source,
-        candidates,
-    )?;
+    let plan = reflection_plan(runtime, first.logical_path(), &after_issuer, candidates)?;
     let next_proof = runtime.prepare_current_proof_installation(
         first.logical_path(),
         after.hash,
-        after_length,
+        after.byte_length,
+        after.line_count,
     )?;
     staging.remove()?;
     finish_publication(
@@ -831,11 +851,13 @@ fn same_coordinate_path(left: &Anddress, right: &Anddress) -> bool {
 }
 
 fn matches_state(input: &Anddress, state: &CurrentObservation) -> bool {
-    input.source_state_hash() == state.hash && input.source_byte_length() == state.byte_length
+    input.source_state_hash() == state.hash
+        && input.source_byte_length() == state.byte_length
+        && input.source_line_count() == state.line_count
 }
 
 fn matches_proof(input: &Anddress, proof: &SourceProofEvidence) -> bool {
-    super::source_state_matches(&proof.hash, proof.byte_length, input)
+    super::source_state_matches(&proof.hash, proof.byte_length, proof.line_count, input)
 }
 
 #[derive(Clone, Copy)]
@@ -920,7 +942,7 @@ struct Output<'parent, 'bindings> {
 struct CompletedOutput<'parent> {
     temporary: Temporary<'parent>,
     observation: CurrentObservation,
-    candidates: Vec<Option<(usize, usize)>>,
+    candidates: Vec<Option<TargetGeometry>>,
     identical: bool,
 }
 
@@ -1139,8 +1161,10 @@ mod apply_tests {
             edit::Edit,
             view::ViewOutcome,
         },
-        hash::Sha256,
-        runtime::{AdmissionRoot, CurrentProof, WorkspaceAdmission, WorkspaceRuntime},
+        runtime::{
+            AdmissionRoot, CurrentProof, WorkspaceAdmission, WorkspaceRuntime,
+            source_scan::observe_source,
+        },
     };
 
     use super::{
@@ -1182,17 +1206,19 @@ mod apply_tests {
     }
 
     fn file(runtime: &WorkspaceRuntime, bytes: &[u8]) -> Anddress {
-        let mut hash = Sha256::new();
-        hash.update(bytes);
-        Anddress::new(
+        use crate::backwriter::anddress::{AnddressIssuer, TargetGeometry};
+
+        let mut reader = bytes;
+        let state = observe_source(&mut reader, |_, _| Ok(())).unwrap();
+        AnddressIssuer::new(
             &runtime.workspace_coordinate,
             "note.txt",
-            &hash.finish().to_hex(),
-            bytes.len(),
-            AnddressTarget::File,
-            0,
-            bytes.len(),
+            &state.hash,
+            state.byte_length,
+            state.line_count,
         )
+        .unwrap()
+        .issue(TargetGeometry::File)
         .unwrap()
     }
 
@@ -1296,6 +1322,7 @@ mod apply_tests {
                         "note.txt",
                         target.source_state_hash().to_owned(),
                         target.source_byte_length(),
+                        target.source_line_count(),
                     )
                     .unwrap(),
                 ])

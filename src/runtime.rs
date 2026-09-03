@@ -161,10 +161,18 @@ enum CurrentProofMatch {
 struct SourceProofEvidence {
     hash: [u8; 64],
     byte_length: usize,
+    line_count: usize,
 }
 
-fn source_state_matches(hash: &[u8], byte_length: usize, input: &Anddress) -> bool {
-    hash == input.source_state_hash().as_bytes() && byte_length == input.source_byte_length()
+fn source_state_matches(
+    hash: &[u8],
+    byte_length: usize,
+    line_count: usize,
+    input: &Anddress,
+) -> bool {
+    hash == input.source_state_hash().as_bytes()
+        && byte_length == input.source_byte_length()
+        && line_count == input.source_line_count()
 }
 
 fn compare_source_keys(left: &Anddress, right: &Anddress) -> std::cmp::Ordering {
@@ -187,14 +195,25 @@ struct CurrentProof {
     logical_path: String,
     hash: String,
     byte_length: usize,
+    line_count: usize,
 }
 
 impl CurrentProof {
-    fn new(logical_path: &str, hash: String, byte_length: usize) -> Result<Self, SearchError> {
-        Self::prepare(logical_path, hash, byte_length).ok_or(SearchError::Unavailable)
+    fn new(
+        logical_path: &str,
+        hash: String,
+        byte_length: usize,
+        line_count: usize,
+    ) -> Result<Self, SearchError> {
+        Self::prepare(logical_path, hash, byte_length, line_count).ok_or(SearchError::Unavailable)
     }
 
-    fn prepare(logical_path: &str, hash: String, byte_length: usize) -> Option<Self> {
+    fn prepare(
+        logical_path: &str,
+        hash: String,
+        byte_length: usize,
+        line_count: usize,
+    ) -> Option<Self> {
         let mut owned_path = String::new();
         owned_path.try_reserve_exact(logical_path.len()).ok()?;
         owned_path.push_str(logical_path);
@@ -202,6 +221,7 @@ impl CurrentProof {
             logical_path: owned_path,
             hash,
             byte_length,
+            line_count,
         })
     }
 }
@@ -467,7 +487,14 @@ impl WorkspaceRuntime {
 
     fn match_current_proof(&self, input: &Anddress) -> CurrentProofMatch {
         match self.select_current_proof(input.logical_path()) {
-            Some(proof) if source_state_matches(&proof.hash, proof.byte_length, input) => {
+            Some(proof)
+                if source_state_matches(
+                    &proof.hash,
+                    proof.byte_length,
+                    proof.line_count,
+                    input,
+                ) =>
+            {
                 CurrentProofMatch::Matching
             }
             Some(_) => CurrentProofMatch::Mismatched,
@@ -494,6 +521,7 @@ impl WorkspaceRuntime {
         Some(SourceProofEvidence {
             hash,
             byte_length: proof.byte_length,
+            line_count: proof.line_count,
         })
     }
 
@@ -548,7 +576,8 @@ impl WorkspaceRuntime {
             }) {
                 Ok(index)
                     if current[index].hash != proof.hash
-                        || current[index].byte_length != proof.byte_length =>
+                        || current[index].byte_length != proof.byte_length
+                        || current[index].line_count != proof.line_count =>
                 {
                     current[index] = proof;
                 }
@@ -564,12 +593,13 @@ impl WorkspaceRuntime {
         path: &str,
         hash: String,
         byte_length: usize,
+        line_count: usize,
     ) -> Result<Option<CurrentProof>, ApplyError> {
         if self.authority == ObservationAuthority::Untrusted {
             return Ok(None);
         }
-        let proof =
-            CurrentProof::prepare(path, hash, byte_length).ok_or(ApplyError::Unavailable)?;
+        let proof = CurrentProof::prepare(path, hash, byte_length, line_count)
+            .ok_or(ApplyError::Unavailable)?;
         let current = match self.current_proofs.get_mut() {
             Ok(current) => current,
             Err(poisoned) => {
@@ -735,16 +765,31 @@ mod tests {
         byte_start: usize,
         byte_end: usize,
     ) -> crate::backwriter::anddress::Anddress {
-        crate::backwriter::anddress::Anddress::new(
-            &"a".repeat(64),
-            path,
-            &"b".repeat(64),
-            10,
-            target,
-            byte_start,
-            byte_end,
-        )
-        .unwrap()
+        use crate::backwriter::anddress::{
+            AnddressIssuer, ParagraphGeometry, ParentGeometry, TargetGeometry,
+        };
+
+        let issuer = AnddressIssuer::new(&"a".repeat(64), path, &"b".repeat(64), 10, 1).unwrap();
+        issuer
+            .issue(match target {
+                crate::backwriter::anddress::AnddressTarget::File => TargetGeometry::File,
+                crate::backwriter::anddress::AnddressTarget::Paragraph => {
+                    TargetGeometry::Paragraph(ParagraphGeometry {
+                        byte_start,
+                        byte_end,
+                        file_line_offset: 0,
+                        line_count: 1,
+                    })
+                }
+                crate::backwriter::anddress::AnddressTarget::Line => TargetGeometry::Line {
+                    byte_start,
+                    byte_end,
+                    terminator: crate::backwriter::anddress::LineTerminator::None,
+                    line_offset_in_parent: 0,
+                    parent: ParentGeometry::File,
+                },
+            })
+            .unwrap()
     }
 
     #[test]
@@ -873,8 +918,8 @@ mod tests {
         .unwrap();
         runtime
             .install_search_proofs(vec![
-                CurrentProof::new("first.txt", "a".repeat(64), 1).unwrap(),
-                CurrentProof::new("second.txt", "b".repeat(64), 2).unwrap(),
+                CurrentProof::new("first.txt", "a".repeat(64), 1, 1).unwrap(),
+                CurrentProof::new("second.txt", "b".repeat(64), 2, 1).unwrap(),
             ])
             .unwrap();
         let first = crate::backwriter::anchor::Anchedress::new();
@@ -900,7 +945,7 @@ mod tests {
                 &mut runtime,
                 "first.txt",
                 Vec::new(),
-                Some(CurrentProof::new("first.txt", "c".repeat(64), 3).unwrap()),
+                Some(CurrentProof::new("first.txt", "c".repeat(64), 3, 1).unwrap()),
                 Err(crate::backwriter::apply::ApplyError::PublicationUncertain),
             ),
             Err(crate::backwriter::apply::ApplyError::PublicationUncertain)

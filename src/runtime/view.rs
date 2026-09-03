@@ -2,7 +2,7 @@
 
 use std::io::{Read, Seek, SeekFrom};
 
-use crate::backwriter::anddress::{Anddress, AnddressTarget, LineTerminator, construct_anddress};
+use crate::backwriter::anddress::{Anddress, AnddressTarget, LineTerminator};
 use crate::backwriter::view::{ViewError, ViewOutcome, validate_request};
 
 use super::{
@@ -142,7 +142,12 @@ fn execute_batch_group(
     match runtime.select_current_proof(path) {
         Some(proof) => {
             if group.iter().any(|&index| {
-                !super::source_state_matches(&proof.hash, proof.byte_length, &inputs[index])
+                !super::source_state_matches(
+                    &proof.hash,
+                    proof.byte_length,
+                    proof.line_count,
+                    &inputs[index],
+                )
             }) {
                 return Err(ViewError::Unavailable);
             }
@@ -179,7 +184,12 @@ fn observe_direct_batch(
         Ok(())
     })?;
     if group.iter().any(|&index| {
-        !super::source_state_matches(state.hash.as_bytes(), state.byte_length, &inputs[index])
+        !super::source_state_matches(
+            state.hash.as_bytes(),
+            state.byte_length,
+            state.line_count,
+            &inputs[index],
+        )
     }) {
         return Err(SourceScanError::InvalidSource);
     }
@@ -253,7 +263,10 @@ pub(super) fn observe_direct(
     let state = observe_source(reader, |bytes, chunk_start| {
         capture.push(bytes, chunk_start)
     })?;
-    if input.source_byte_length() != state.byte_length || input.source_state_hash() != state.hash {
+    if input.source_byte_length() != state.byte_length
+        || input.source_line_count() != state.line_count
+        || input.source_state_hash() != state.hash
+    {
         return Err(SourceScanError::InvalidSource);
     }
     capture.finish(state.byte_length)
@@ -970,8 +983,13 @@ fn target_address(
     byte_start: usize,
     byte_end: usize,
 ) -> Result<Anddress, SourceScanError> {
-    construct_anddress(input.source_identity(), target, byte_start, byte_end)
-        .map_err(|_| SourceScanError::Resource)
+    let address = input
+        .project(target)
+        .map_err(|_| SourceScanError::InvalidSource)?
+        .ok_or(SourceScanError::InvalidSource)?;
+    (address.byte_start() == byte_start && address.byte_end() == byte_end)
+        .then_some(address)
+        .ok_or(SourceScanError::InvalidSource)
 }
 
 #[cfg(test)]
@@ -1065,18 +1083,134 @@ mod tests {
     }
 
     fn address(bytes: &[u8], target: AnddressTarget, start: usize, end: usize) -> Anddress {
+        use crate::backwriter::anddress::{
+            AnddressIssuer, ParagraphGeometry, ParentGeometry, TargetGeometry,
+        };
+
         let mut hash = Sha256::new();
         hash.update(bytes);
-        Anddress::new(
+        let spans = test_line_spans(bytes);
+        let issuer = AnddressIssuer::new(
             &"0".repeat(64),
             "source.txt",
             &hash.finish().to_hex(),
             bytes.len(),
-            target,
-            start,
-            end,
+            spans.len(),
         )
-        .unwrap()
+        .unwrap();
+        issuer
+            .issue(match target {
+                AnddressTarget::File => TargetGeometry::File,
+                AnddressTarget::Paragraph => {
+                    let first = spans
+                        .iter()
+                        .position(|&(line_start, _)| line_start == start)
+                        .unwrap_or(0);
+                    let line_count = spans[first..]
+                        .iter()
+                        .take_while(|&&(_, line_end)| line_end <= end)
+                        .count()
+                        .max(1);
+                    TargetGeometry::Paragraph(ParagraphGeometry {
+                        byte_start: start,
+                        byte_end: end,
+                        file_line_offset: first,
+                        line_count,
+                    })
+                }
+                AnddressTarget::Line => {
+                    let line_index = spans
+                        .iter()
+                        .position(|&(line_start, line_end)| line_start == start && line_end == end)
+                        .unwrap_or(0);
+                    let body = test_line_body(&bytes[start..end]);
+                    let parent = if body.iter().any(|byte| !matches!(byte, b' ' | b'\t')) {
+                        let mut first = line_index;
+                        while first != 0 && test_line_is_text(bytes, spans[first - 1]) {
+                            first -= 1;
+                        }
+                        let mut after = line_index + 1;
+                        while after < spans.len() && test_line_is_text(bytes, spans[after]) {
+                            after += 1;
+                        }
+                        ParentGeometry::Paragraph(ParagraphGeometry {
+                            byte_start: spans[first].0,
+                            byte_end: spans[after - 1].1,
+                            file_line_offset: first,
+                            line_count: after - first,
+                        })
+                    } else {
+                        ParentGeometry::File
+                    };
+                    let line_offset_in_parent = match parent {
+                        ParentGeometry::File => line_index,
+                        ParentGeometry::Paragraph(paragraph) => {
+                            line_index - paragraph.file_line_offset
+                        }
+                    };
+                    TargetGeometry::Line {
+                        byte_start: start,
+                        byte_end: end,
+                        terminator: test_terminator(&bytes[start..end]),
+                        line_offset_in_parent,
+                        parent,
+                    }
+                }
+            })
+            .unwrap()
+    }
+
+    fn test_line_spans(bytes: &[u8]) -> Vec<(usize, usize)> {
+        let mut spans = Vec::new();
+        let mut start = 0;
+        let mut cursor = 0;
+        while cursor < bytes.len() {
+            match bytes[cursor] {
+                b'\r' if bytes.get(cursor + 1) == Some(&b'\n') => {
+                    cursor += 2;
+                    spans.push((start, cursor));
+                    start = cursor;
+                }
+                b'\r' | b'\n' => {
+                    cursor += 1;
+                    spans.push((start, cursor));
+                    start = cursor;
+                }
+                _ => cursor += 1,
+            }
+        }
+        if start < bytes.len() {
+            spans.push((start, bytes.len()));
+        }
+        spans
+    }
+
+    fn test_line_is_text(bytes: &[u8], span: (usize, usize)) -> bool {
+        test_line_body(&bytes[span.0..span.1])
+            .iter()
+            .any(|byte| !matches!(byte, b' ' | b'\t'))
+    }
+
+    fn test_terminator(bytes: &[u8]) -> LineTerminator {
+        if bytes.ends_with(b"\r\n") {
+            LineTerminator::Crlf
+        } else if bytes.ends_with(b"\r") {
+            LineTerminator::Cr
+        } else if bytes.ends_with(b"\n") {
+            LineTerminator::Lf
+        } else {
+            LineTerminator::None
+        }
+    }
+
+    fn test_line_body(bytes: &[u8]) -> &[u8] {
+        if bytes.ends_with(b"\r\n") {
+            &bytes[..bytes.len() - 2]
+        } else if bytes.ends_with(b"\r") || bytes.ends_with(b"\n") {
+            &bytes[..bytes.len() - 1]
+        } else {
+            bytes
+        }
     }
 
     #[test]
@@ -1561,12 +1695,40 @@ mod tests {
     }
 
     #[test]
-    fn trusted_and_fallback_projection_match_for_every_scalar_aligned_range() {
+    fn trusted_and_fallback_projection_match_for_exact_v5_targets() {
         let source = "α\r\n \t\nb\rc\n\n끝";
-        let mut boundaries: Vec<_> = source.char_indices().map(|(index, _)| index).collect();
-        boundaries.push(source.len());
-        for target in [AnddressTarget::Paragraph, AnddressTarget::Line] {
-            let projections: &[AnddressTarget] = match target {
+        let bytes = source.as_bytes();
+        let spans = test_line_spans(bytes);
+        let mut targets: Vec<_> = spans
+            .iter()
+            .map(|&(start, end)| address(bytes, AnddressTarget::Line, start, end))
+            .collect();
+        let mut paragraph_start = None;
+        let mut paragraph_end = 0;
+        for &span in &spans {
+            if test_line_is_text(bytes, span) {
+                paragraph_start.get_or_insert(span.0);
+                paragraph_end = span.1;
+            } else if let Some(start) = paragraph_start.take() {
+                targets.push(address(
+                    bytes,
+                    AnddressTarget::Paragraph,
+                    start,
+                    paragraph_end,
+                ));
+            }
+        }
+        if let Some(start) = paragraph_start {
+            targets.push(address(
+                bytes,
+                AnddressTarget::Paragraph,
+                start,
+                paragraph_end,
+            ));
+        }
+
+        for input in targets {
+            let projections: &[AnddressTarget] = match input.target() {
                 AnddressTarget::Paragraph => &[AnddressTarget::Paragraph, AnddressTarget::File],
                 AnddressTarget::Line => &[
                     AnddressTarget::Line,
@@ -1575,42 +1737,17 @@ mod tests {
                 ],
                 AnddressTarget::File => unreachable!(),
             };
-            for (start_index, &start) in boundaries.iter().enumerate() {
-                for &end in &boundaries[start_index..] {
-                    let input = address(source.as_bytes(), target, start, end);
-                    for &projection in projections {
-                        let expected =
-                            observe_direct(&mut Cursor::new(source.as_bytes()), &input, projection)
-                                .unwrap();
-                        let actual = observe_trusted(
-                            &mut Cursor::new(source.as_bytes()),
-                            &input,
-                            projection,
-                        )
-                        .unwrap_or_else(|error| panic!("{target:?} {start}..{end}: {error:?}"));
-                        assert_eq!(
-                            actual, expected,
-                            "{target:?}->{projection:?} {start}..{end}"
-                        );
-                    }
-                }
+            for &projection in projections {
+                let expected = observe_direct(&mut Cursor::new(bytes), &input, projection).unwrap();
+                let actual = observe_trusted(&mut Cursor::new(bytes), &input, projection).unwrap();
+                assert_eq!(actual, expected, "{:?}->{projection:?}", input.target());
             }
         }
 
-        let file = address(source.as_bytes(), AnddressTarget::File, 0, source.len());
+        let file = address(bytes, AnddressTarget::File, 0, source.len());
         assert_eq!(
-            observe_trusted(
-                &mut Cursor::new(source.as_bytes()),
-                &file,
-                AnddressTarget::File
-            )
-            .unwrap(),
-            observe_direct(
-                &mut Cursor::new(source.as_bytes()),
-                &file,
-                AnddressTarget::File
-            )
-            .unwrap()
+            observe_trusted(&mut Cursor::new(bytes), &file, AnddressTarget::File).unwrap(),
+            observe_direct(&mut Cursor::new(bytes), &file, AnddressTarget::File).unwrap()
         );
     }
 
@@ -1634,19 +1771,19 @@ mod tests {
 
         let fixture = tempfile::tempdir().unwrap();
         let runtime = host_runtime(fixture.path());
-        let input = Anddress::new(
+        let input = crate::backwriter::anddress::AnddressIssuer::new(
             &runtime.workspace_coordinate,
             "missing.txt",
             &"b".repeat(64),
             1,
-            AnddressTarget::File,
-            0,
             1,
         )
+        .unwrap()
+        .issue(crate::backwriter::anddress::TargetGeometry::File)
         .unwrap();
         runtime
             .install_search_proofs(vec![
-                CurrentProof::new("missing.txt", "a".repeat(64), 1).unwrap(),
+                CurrentProof::new("missing.txt", "a".repeat(64), 1, 1).unwrap(),
             ])
             .unwrap();
 
@@ -1656,15 +1793,15 @@ mod tests {
         );
         assert_eq!(runtime.current_proofs.lock().unwrap().len(), 1);
 
-        let matching = Anddress::new(
+        let matching = crate::backwriter::anddress::AnddressIssuer::new(
             &runtime.workspace_coordinate,
             "missing.txt",
             &"a".repeat(64),
             1,
-            AnddressTarget::File,
-            0,
             1,
         )
+        .unwrap()
+        .issue(crate::backwriter::anddress::TargetGeometry::File)
         .unwrap();
         assert_eq!(
             runtime.view(&matching, matching.target()),
@@ -1673,19 +1810,19 @@ mod tests {
         assert!(runtime.current_proofs.lock().unwrap().is_empty());
 
         std::fs::write(fixture.path().join("short.txt"), b"on").unwrap();
-        let short = Anddress::new(
+        let short = crate::backwriter::anddress::AnddressIssuer::new(
             &runtime.workspace_coordinate,
             "short.txt",
             &"c".repeat(64),
             3,
-            AnddressTarget::File,
-            0,
-            3,
+            1,
         )
+        .unwrap()
+        .issue(crate::backwriter::anddress::TargetGeometry::File)
         .unwrap();
         runtime
             .install_search_proofs(vec![
-                CurrentProof::new("short.txt", "c".repeat(64), 3).unwrap(),
+                CurrentProof::new("short.txt", "c".repeat(64), 3, 1).unwrap(),
             ])
             .unwrap();
         assert_eq!(
@@ -1697,20 +1834,31 @@ mod tests {
         let unicode = "aéz".as_bytes();
         std::fs::write(fixture.path().join("cut.txt"), unicode).unwrap();
         let file = address(unicode, AnddressTarget::File, 0, unicode.len());
-        let cut = Anddress::new(
+        let cut = crate::backwriter::anddress::AnddressIssuer::new(
             &runtime.workspace_coordinate,
             "cut.txt",
             file.source_state_hash(),
             unicode.len(),
-            AnddressTarget::Line,
-            2,
-            3,
+            1,
         )
+        .unwrap()
+        .issue(crate::backwriter::anddress::TargetGeometry::Line {
+            byte_start: 2,
+            byte_end: 3,
+            terminator: LineTerminator::None,
+            line_offset_in_parent: 0,
+            parent: crate::backwriter::anddress::ParentGeometry::File,
+        })
         .unwrap();
         runtime
             .install_search_proofs(vec![
-                CurrentProof::new("cut.txt", cut.source_state_hash().to_owned(), unicode.len())
-                    .unwrap(),
+                CurrentProof::new(
+                    "cut.txt",
+                    cut.source_state_hash().to_owned(),
+                    unicode.len(),
+                    1,
+                )
+                .unwrap(),
             ])
             .unwrap();
         assert_eq!(
@@ -1720,19 +1868,19 @@ mod tests {
         assert_eq!(runtime.current_proofs.lock().unwrap().len(), 1);
 
         std::fs::write(fixture.path().join("resource.txt"), b"").unwrap();
-        let resource = Anddress::new(
+        let resource = crate::backwriter::anddress::AnddressIssuer::new(
             &runtime.workspace_coordinate,
             "resource.txt",
             &"d".repeat(64),
             usize::MAX,
-            AnddressTarget::File,
-            0,
-            usize::MAX,
+            1,
         )
+        .unwrap()
+        .issue(crate::backwriter::anddress::TargetGeometry::File)
         .unwrap();
         runtime
             .install_search_proofs(vec![
-                CurrentProof::new("resource.txt", "d".repeat(64), usize::MAX).unwrap(),
+                CurrentProof::new("resource.txt", "d".repeat(64), usize::MAX, 1).unwrap(),
             ])
             .unwrap();
         assert_eq!(
@@ -1741,7 +1889,7 @@ mod tests {
         );
         runtime
             .install_search_proofs(vec![
-                CurrentProof::new("resource.txt", "d".repeat(64), usize::MAX).unwrap(),
+                CurrentProof::new("resource.txt", "d".repeat(64), usize::MAX, 1).unwrap(),
             ])
             .unwrap();
         assert_eq!(
