@@ -1,6 +1,6 @@
 # Backwriter CLI V1
 
-## 0.2.4 boundary through Gate 4
+## 0.2.4 boundary through Gate 5
 
 Gate 2 changes no CLI syntax, Adapter envelope schema, human formatting,
 parser flow, or executable version. Current source embeds canonical v5 objects
@@ -12,14 +12,14 @@ Gate 3 derives Search Line/Paragraph display positions from v5 Anddress
 geometry, removes the Core `SearchPosition`/`SearchOccurrence` carriers, and
 keeps the Adapter-only Search v2 envelope byte-exact. Gate 4 derives View
 self/ancestor projection from Anddress instead of a Runtime relation scan and
-hard-cuts machine View to `bw.cli.view.v2`. One-shot Line Edit still privately
-invokes View until Gate 5. Search querying/order, View output order and
-all-or-none batch behavior, Edit receipt meaning, raw Session Edit/Apply, and
-existing output/error boundaries remain distinct consumers.
+hard-cuts machine View to `bw.cli.view.v2`. Gate 5 takes one-shot Line Edit's
+terminator directly from v5 and removes its private View. Search querying/order,
+View output order and all-or-none batch behavior, Edit receipt meaning, raw
+Session Edit/Apply, and existing output/error boundaries remain distinct
+consumers.
 
-The v5 wire is fixed by the address authority. Search position duplication and
-View relation work are removed; one-shot Edit's private View belongs to Gate 5.
-Stdin
+The v5 wire is fixed by the address authority. Search position duplication,
+View relation work, and one-shot Edit's private View are removed. Stdin
 transport and splitting `src/bin/bw.rs` remain explicit later decisions. Gate
 2 introduces no alternate command, envelope schema, wrapper, compatibility
 mode, or process lifecycle.
@@ -57,7 +57,7 @@ distribution artifact/domain names are unchanged contracts.
 CLI V1 execution has two intended forms:
 
 - One-shot invokes one Adapter command and exits without retaining a result;
-  the Anddress-first Edit command contracts its named View and Apply calls.
+  the Anddress-first Edit command contracts v5 target geometry with Apply.
 - The Session retains one `WorkspaceRuntime`, one explicit caller-owned
   `DataStore`, and CLI-local Search/Pick/Anddress/Edit/View/Check values plus
   non-aliasing owning Anchedress handles until EOF or `exit`.
@@ -364,17 +364,18 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json]
 This is the canonical general editing form. It accepts one host argv Content
 value and optional leading JSON output selection. Search or Pick may provide the encoded v5
 Anddress to a caller, but the CLI requires no caller-visible View, Check,
-Session binding, index, or Core Edit value. It opens one ordinary Untrusted
-Runtime, reuses the existing strict v5 decoder, privately calls Runtime View,
-constructs one existing `Edit::Replace`, and calls Runtime's Replace-only
-receipt seam on that same Runtime. Patch Box Gate 6 passes that native result
-to one direct writer. It adds no request type, Core wire, retained state, or
-automatic capability handoff.
+Session binding, index, or Core Edit value. It reuses the strict v5 decoder,
+prepares target-specific Content from the decoded geometry, constructs one
+existing `Edit::Replace`, validates it, opens one ordinary Untrusted Runtime,
+and calls Runtime's Replace-only receipt seam. It performs zero View calls and
+passes the native result to the existing direct writer. It adds no request
+type, Core wire, retained state, or automatic capability handoff.
 
 For File and Paragraph, `<content>` is the exact replacement string and retains
 the existing NUL rejection. For Line, it is body-only Content and any NUL, CR,
-or LF is a usage error. The Adapter appends exactly the current None, LF, CR,
-or CRLF terminator reported by the private View. It performs no other escape
+or LF is a usage error. The Adapter appends exactly the None, LF, CR, or CRLF
+terminator carried by the decoded v5 Line; Apply then confirms that exact source
+state. It performs no other escape
 decoding, trimming, normalization, separator insertion, or target conversion.
 The positional values `--json`, `--raw`, and `--stdin` follow those same rules
 exactly. Leading global `--json edit ...` selects JSON; leading `--raw` is a
@@ -383,8 +384,8 @@ usage error, and any token after the required Content is an extra operand.
 Human success exits `0` after writing exactly one of these LF-terminated rows:
 
 ```text
-Unchanged\t<canonical-v4-Anddress>
-Changed\t<canonical-v4-Anddress>
+Unchanged\t<canonical-v5-Anddress>
+Changed\t<canonical-v5-Anddress>
 Changed\tNone
 ```
 
@@ -394,25 +395,25 @@ confirmed Paragraph publication with zero or multiple resulting Paragraphs,
 not no-op or failure. JSON success writes one compact Adapter object and LF:
 
 ```text
-{"schema":"bw.cli.edit.v1","outcome":"unchanged","anddress":<v4-object>}
-{"schema":"bw.cli.edit.v1","outcome":"changed","anddress":<v4-object-or-null>}
+{"schema":"bw.cli.edit.v1","outcome":"unchanged","anddress":<v5-object>}
+{"schema":"bw.cli.edit.v1","outcome":"changed","anddress":<v5-object-or-null>}
 ```
 
 Key order is `schema`, `outcome`, `anddress`. The writer calls
 `Anddress::encode()` once before its first stdout write, then embeds those
 canonical bytes directly in either form without a JSON `Value`, reserialization,
-clone, or second result collection. CLI grammar, v4 decode/validation other than
+clone, or second result collection. CLI grammar, v5 decode/validation other than
 resource exhaustion, and invalid Content are usage errors: the existing usage
 reporter writes `error: <message>`, one blank line, the complete usage text, and
 one final LF to stderr, then exits `2`. Target-specific Content rejection uses
 the existing `Edit input is invalid` message. Decoder resource exhaustion,
-Runtime View or Apply failure, and stdout failure are execution errors: the
+Runtime Apply failure, and stdout failure are execution errors: the
 existing execution reporter writes exactly `error: <message>` plus LF to stderr
-and exits `1`. Existing View/Apply error text and Apply variants are retained,
+and exits `1`. Existing Apply error text and variants are retained,
 including `current source is unavailable` and `source replacement result is
-uncertain`; mutation that leaves a nonmatching source state between the private
-View and Apply reports the former broad `Unavailable`, never a new
-`NotCurrent`. Apply failure writes zero stdout bytes and returns no receipt.
+uncertain`; a nonmatching decoded source state reports the former broad
+`Unavailable`, never a new `NotCurrent`. Apply failure writes zero stdout bytes
+and returns no receipt.
 Address encoding is complete before any success byte. A write or flush failure
 after Apply exits `1`; publication or no-op is already determined and partial
 stdout is possible, so the Adapter does not roll back or retry.
@@ -441,7 +442,10 @@ failure, measured payload need, or concrete security requirement can reopen an
 Owner decision for one additional transport. No future syntax or implementation
 is reserved here.
 
-### Gate 4 default flow and raw Session comparison
+### Published 0.2.2 Gate 4 default flow and raw Session comparison
+
+The following comparison preserves the closed v4 release evidence; its private
+View is not part of the current v5 one-shot implementation.
 
 The default caller flow is JSON Search followed by one-shot Edit. The caller
 selects one occurrence from the Search envelope's `occurrences` array and
@@ -500,7 +504,7 @@ No time or speed advantage is claimed. The task-local JSON extraction used to
 verify exact object transfer is test evidence, not an installed tool, wrapper,
 schema, or README dependency. Neither path authorizes automatic retry.
 
-### Gate 5 retained surface separation
+### Published 0.2.2 Gate 5 retained surface separation
 
 Consumer reaudit retains the existing raw Session and canonical one-shot forms
 as different Adapter responsibilities. Raw Session exposes all five Core Edit

@@ -3,9 +3,10 @@
 ## In progress: 0.2.4 structural-authority hard cut
 
 The [0.2.4 tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
-defines eight ordered gates. Gates 1–4 close authority, the consumer baseline,
+defines eight ordered gates. Gates 1–5 close authority, the consumer baseline,
 v5 algebra, canonical wire, sole Issuer, complete-source structural cursor,
-direct Search result collection, and geometry-driven exact-range View;
+direct Search result collection, geometry-driven exact-range View, and
+View-free Edit/Apply/Anchor projection;
 `0.2.3` remains the published, immutable v4 release and current Cargo/CLI
 version.
 
@@ -13,7 +14,7 @@ version.
 2. v5 algebra, exact wire, and sole Anddress Issuer — complete.
 3. sole `StructuralCursor`, Search migration, and result contraction — complete.
 4. View Runtime plus single/batch Adapter migration — complete.
-5. Edit/Apply/Anchor migration and private View removal.
+5. Edit/Apply/Anchor migration and private View removal — complete.
 6. Check migration, remaining duplication removal, and code contraction.
 7. semantic, AI-workflow, performance, and memory evidence followed by a
    separate `0.2.4` source-readiness GO/NO-GO.
@@ -34,9 +35,12 @@ complete-source framing through one cursor, returns Anddresses directly from
 Search, and preserves human/JSON position output by deriving it from v5
 geometry. Gate 4 removes View-owned relation scans and uses one minimal
 `Projected` result plus `RelationAbsent`; its `bw.cli.view.v2` Adapter handles
-single and JSON batch projection through one item writer. There is no v4
-compatibility or parallel Runtime. Remaining acceptance includes 200,000 files,
-terminator-preserving Edit, and blind duplicate drift. Later Adapter
+single and JSON batch projection through one item writer. Gate 5 obtains Line
+terminators directly from v5, removes the one-shot private View, and shares the
+existing Apply executor plus one prospective cursor/Issuer pass across unit
+Apply, Replace receipt, Host proof, and Anchor reflection. There is no v4
+compatibility or parallel Runtime. Remaining acceptance includes Check
+contraction and blind duplicate drift. Later Adapter
 contraction, stdin, and `bw.rs` splitting are decided only by their owning
 gates.
 History, relocation, registry,

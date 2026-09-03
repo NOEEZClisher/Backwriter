@@ -283,18 +283,26 @@ struct AfterProjector<'a> {
 }
 
 impl<'a> AfterProjector<'a> {
-    fn new(bindings: &'a [Anddress], edit: &Edit) -> Result<Self, ApplyError> {
-        let relations = source_relations(edit, bindings)?;
+    fn new(
+        bindings: &'a [Anddress],
+        receipt_target: Option<&'a Anddress>,
+        edit: &Edit,
+    ) -> Result<Self, ApplyError> {
         let count = bindings
             .iter()
             .filter(|binding| binding.target() != AnddressTarget::File)
-            .count();
+            .count()
+            .checked_add(usize::from(
+                receipt_target.is_some_and(|target| target.target() != AnddressTarget::File),
+            ))
+            .ok_or(ApplyError::Unavailable)?;
         let mut candidates = Vec::new();
         candidates
             .try_reserve_exact(count)
             .map_err(|_| ApplyError::Unavailable)?;
-        for (binding, (relation, source_member)) in bindings.iter().zip(relations) {
+        for binding in bindings.iter().chain(receipt_target) {
             if binding.target() != AnddressTarget::File {
+                let (relation, source_member) = source_relation(edit, binding);
                 candidates.push(Candidate::new(binding, relation, source_member));
             }
         }
@@ -455,51 +463,31 @@ impl StructuralSink for AfterProjector<'_> {
     }
 }
 
-fn source_relations(
-    edit: &Edit,
-    bindings: &[Anddress],
-) -> Result<Vec<(Relation, bool)>, ApplyError> {
+fn source_relation(edit: &Edit, binding: &Anddress) -> (Relation, bool) {
     let target = edit_target(edit);
-    let mut relations = Vec::new();
-    relations
-        .try_reserve_exact(bindings.len())
-        .map_err(|_| ApplyError::Unavailable)?;
-    for binding in bindings {
-        let Some(target) = target else {
-            relations.push((Relation::Outside, false));
-            continue;
-        };
-        let binding_contains = contains(binding, target);
-        let target_contains = contains(target, binding);
-        let overlaps = ranges_overlap(binding, target);
-        let source_member = binding_contains || target_contains || overlaps;
-        let binding_is_container = binding_contains
-            && !(target_contains
-                && binding.target() == AnddressTarget::Line
-                && target.target() == AnddressTarget::Paragraph);
-        let relation = if binding_is_container {
-            Relation::Containing
-        } else if !source_member {
-            Relation::Outside
-        } else {
-            match edit {
-                Edit::Move { .. } => Relation::Containing,
-                Edit::Copy { .. } => Relation::Outside,
-                Edit::Replace { .. } | Edit::Delete { .. } => Relation::Nested,
-                Edit::Insert { .. } => Relation::Outside,
-            }
-        };
-        relations.push((relation, source_member));
-    }
-    Ok(relations)
-}
-
-fn contains(outer: &Anddress, inner: &Anddress) -> bool {
-    outer.byte_start() <= inner.byte_start() && inner.byte_end() <= outer.byte_end()
-}
-
-fn ranges_overlap(left: &Anddress, right: &Anddress) -> bool {
-    left.byte_start() < right.byte_end() && right.byte_start() < left.byte_end()
+    let Some(target) = target else {
+        return (Relation::Outside, false);
+    };
+    let binding_contains = binding.contains(target);
+    let target_contains = target.contains(binding);
+    let source_member = binding_contains || target_contains || binding.overlaps(target);
+    let binding_is_container = binding_contains
+        && !(target_contains
+            && binding.target() == AnddressTarget::Line
+            && target.target() == AnddressTarget::Paragraph);
+    let relation = if binding_is_container {
+        Relation::Containing
+    } else if !source_member {
+        Relation::Outside
+    } else {
+        match edit {
+            Edit::Move { .. } => Relation::Containing,
+            Edit::Copy { .. } => Relation::Outside,
+            Edit::Replace { .. } | Edit::Delete { .. } => Relation::Nested,
+            Edit::Insert { .. } => Relation::Outside,
+        }
+    };
+    (relation, source_member)
 }
 
 fn reflection_plan(
@@ -600,7 +588,7 @@ pub(super) fn execute(
     }
 
     runtime.prune_dead_anchors();
-    let mut bindings = same_path_bindings(runtime, first.logical_path())?;
+    let bindings = same_path_bindings(runtime, first.logical_path())?;
     if proof.is_some_and(|proof| {
         bindings
             .iter()
@@ -681,17 +669,7 @@ pub(super) fn execute(
 
     let receipt_projection =
         receipt_target.is_some_and(|target| target.target() != AnddressTarget::File);
-    if receipt_projection {
-        bindings
-            .try_reserve(1)
-            .map_err(|_| ApplyError::Unavailable)?;
-        bindings.push(
-            receipt_target
-                .expect("non-File receipt target is present")
-                .clone(),
-        );
-    }
-    let projector = AfterProjector::new(&bindings, edit)?;
+    let projector = AfterProjector::new(&bindings, receipt_target, edit)?;
     let temporary = Temporary::create(
         &parent,
         edit_temporary_name(runtime, first.logical_path(), "after")?,

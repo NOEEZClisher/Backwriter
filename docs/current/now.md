@@ -1,10 +1,10 @@
 # Backwriter Current State
 
-## In progress: 0.2.4 structural authority, Gate 4 complete
+## In progress: 0.2.4 structural authority, Gate 5 complete
 
-Gates 2–4 implement the v5 Rust algebra, canonical wire, sole crate-private
+Gates 2–5 implement the v5 Rust algebra, canonical wire, sole crate-private
 Issuer, common structural cursor, direct Search result collection, and
-geometry-driven exact-range View.
+geometry-driven exact-range View and Edit/Apply/Anchor projection.
 Published and closed `0.2.3` remains the sole current Cargo/CLI release
 and immutable v4 distribution; Cargo and `bw version` remain `0.2.3`. There is
 no `0.2.4` artifact, installer, publication, or release claim.
@@ -36,13 +36,18 @@ every request first uses `Anddress::project`, then confirms currentness and
 returns only `ViewOutcome::Projected { anddress, content }` or
 `RelationAbsent`. Single and batch CLI View share the hard-cut
 `bw.cli.view.v2` item writer; batch requires JSON plus one explicit `--as`
-projection. Existing human/raw single output remains byte-identical. Remaining
-contraction starts with Gate 5's one-shot Edit private View. Existing matching,
-batch grouping, publication/provenance, Host proof, and Anchor mechanics remain
-their actual consumers. The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
+projection. Existing human/raw single output remains byte-identical. Gate 5
+removes one-shot Edit's private View: strict v5 decode supplies target geometry
+and the exact Line terminator, invalid Line Content fails before Runtime access,
+and Apply remains the sole currentness and publication boundary. Public unit
+Apply, Replace receipts, Host proof, and Anchor reflection share the existing
+executor and one prospective `StructuralCursor`/Issuer pass; local range
+helpers and a separate relation allocation are gone in favor of v5
+`contains`/`overlaps`. Existing matching, batch grouping, publication, proof,
+and Anchor mechanics retain their actual consumers. The [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md)
 separates authority, implementation, semantic evidence, version readiness, and
-release approval. Remaining Edit contraction, stdin, and CLI file splitting
-remain later-gate decisions.
+release approval. Check and remaining structural contraction begin at Gate 6;
+stdin and CLI file splitting remain separately owned later decisions.
 
 ## Published and closed 0.2.3 Patch Box
 

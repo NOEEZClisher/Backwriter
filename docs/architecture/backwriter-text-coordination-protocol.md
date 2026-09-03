@@ -1,6 +1,6 @@
 # Backwriter Protocol
 
-## 0.2.4 structural-authority target through Gate 3
+## 0.2.4 structural-authority target through Gate 5
 
 Gate 2 hard-cuts the source to `artext.backwriter-anddress.v5`. Published and
 closed `0.2.3` remains immutable v4 release evidence. Current decode rejects v4
@@ -49,9 +49,12 @@ Capabilities retain only their distinct work:
 Gate 2 removes public raw and capability-local address constructors. Gate 3
 removes Search's occurrence/position carrier and duplicate complete-source
 structural projections. Human and machine Search positions derive only from
-v5 Anddress geometry. Gate 4 removes the bounded View range/relation scanners;
-one-shot Edit's private View remains a temporary consumer until Gate 5 removes
-it. Existing admission/no-follow
+v5 Anddress geometry. Gate 4 removes the bounded View range/relation scanners.
+Gate 5 removes one-shot Edit's private View and uses the decoded v5 Line
+terminator before the sole Apply currentness/publication boundary. Unit Apply,
+Replace receipts, Host proof, and Anchor reflection share one executor and one
+prospective cursor/Issuer pass; Apply's provenance uses v5 containment and
+overlap instead of local range helpers. Existing admission/no-follow
 observation, literal matcher, batch source grouping, fixed-scratch staging,
 prospective provenance, Host proof, publication, and Anchor reflection stay
 because they have distinct consumers.
@@ -495,13 +498,15 @@ input Anddress without publication. Prepublication failure and
 `PublicationUncertain` produce no successful receipt or fresh address.
 
 Fresh-result construction reuses Apply's already computed prospective-after
-hash and length, direct range projection, publication boundary, and Anchor
-reflection plan. It must not run a CLI post-Search, reread the published
+hash, length, Line count, candidate projection, publication boundary, and
+Anchor reflection plan. The one-shot Adapter obtains Line terminator geometry
+from the decoded v5 target and does not call View. It must not run a CLI
+post-Search, reread the published
 source, guess a target, or infer relocation. The receipt creates no
 predecessor, successor, survivor, history, rollback, watcher, retry, registry,
 or persistent identity. The one-shot Adapter writes the receipt as one exact
 human `Unchanged`/`Changed` row or the Adapter-only `bw.cli.edit.v1` object.
-Both forms directly embed the canonical v4 object when one exists; changed
+Both forms directly embed the canonical v5 object when one exists; changed
 Paragraph publication without one uses human `None` or JSON `null`. Apply
 failure writes no success bytes. Address encoding completes before the first
 write, while a later stream failure cannot undo the already determined no-op

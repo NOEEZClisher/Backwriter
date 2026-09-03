@@ -193,8 +193,15 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
     assert_eq!(production.matches(".open_admitted_source(").count(), 1);
     assert_eq!(production.matches("pub(super) fn execute(").count(), 1);
     assert_eq!(production.matches("AnddressIssuer::new(").count(), 1);
+    assert_eq!(production.matches(".finish_structural(").count(), 1);
     assert_eq!(production.matches("observe_source(source").count(), 1);
     assert_eq!(production.matches("stage_source(&mut source").count(), 1);
+    assert!(production.contains("binding.contains(target)"));
+    assert!(production.contains("target.contains(binding)"));
+    assert!(production.contains("binding.overlaps(target)"));
+    assert!(!production.contains("fn contains("));
+    assert!(!production.contains("fn ranges_overlap("));
+    assert!(!production.contains("fn source_relations("));
     let trusted = apply
         .split_once("fn stage_source_trusted")
         .map(|(_, trusted)| trusted)
@@ -250,9 +257,13 @@ fn apply_has_one_edit_seam_and_one_source_observation() {
     assert!(reflection < prepared_proof);
     assert!(prepared_proof < publication);
     assert!(publication < execute.rfind("Ok(receipt)").unwrap());
+    assert!(execute.contains("AfterProjector::new(&bindings, receipt_target, edit)"));
+    assert!(!execute.contains("bindings.push("));
+    assert!(!execute.contains("receipt_target.clone()"));
     assert!(!execute[..validation].contains("invalidate_current_proof"));
     assert!(!execute.contains("current_proofs.lock"));
     assert!(!execute.contains("search("));
+    assert!(!execute.contains(".view("));
 
     let source_scan = include_str!("../src/runtime/source_scan.rs");
     let exact_validation = source_scan

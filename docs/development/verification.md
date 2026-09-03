@@ -2,10 +2,11 @@
 
 ## 0.2.4 structural-authority gates
 
-Gate 1 records the consumer baseline. Gates 2–4 hard-cut current source to v5,
+Gate 1 records the consumer baseline. Gates 2–5 hard-cut current source to v5,
 install the sole Issuer and complete-source structural cursor, and contract
 Search results to direct Anddresses and View to geometry-driven exact-range
-projection while leaving Cargo/CLI version and the closed `0.2.3` distribution
+projection, then remove one-shot Edit's private View while leaving Cargo/CLI
+version and the closed `0.2.3` distribution
 unchanged. Exact File, Paragraph, text-Line, and
 File-child-Line KATs; strict v4/v3 rejection; source/geometry mutation and
 overflow fail-closure; algebra; shared source identity; every terminator and
@@ -15,7 +16,7 @@ matching and Apply publication paths are unchanged. View has no relation or
 Paragraph scan and returns only `Projected { anddress, content }` or
 `RelationAbsent`.
 
-Gate 4 passes the complete suite on both GNU and musl. Both targets pass offline/locked
+Gate 5 passes the complete suite on both GNU and musl. Both targets pass offline/locked
 all-target check, clippy with warnings denied, and release build; the GNU run
 also records offline/locked metadata and dependency tree plus rustfmt. Cargo,
 lockfile, toolchain, Search/Check/Edit Adapter envelopes, and the `0.2.3`
@@ -73,6 +74,23 @@ obtains 200,000 ordered File Search results from `d000/f000.txt` through
 returns exactly 200,000 ordered `Projected` outcomes whose Anddresses equal the
 inputs and whose Content is `x`. The harness, its generated workspace, and its
 build output are removed after verification.
+
+Gate 5 keeps the 258-test count while strengthening existing Apply and CLI
+regressions. One-shot Edit now proves strict v5 decode, Line terminator lookup,
+Content validation, and `Edit::Replace` validation before Runtime open, followed
+by exactly one `apply_replace` call and zero View/Search/Check calls. An invalid
+Line body remains a usage error even when the source is missing, proving that
+the rejected command performs no source I/O.
+
+Apply retains one public unit seam, one Replace receipt seam, and one internal
+executor. Its prospective output uses one `finish_structural` pass and one
+`AnddressIssuer`; receipt and same-path Anchor candidates enter that same
+`AfterProjector`. A separate relation vector, receipt-target clone, and local
+containment/overlap functions are removed in favor of v5 `contains` and
+`overlaps`. Existing File/Paragraph/Line, every terminator, Unicode, empty and
+large no-EOL, scratch-boundary, no-op, currentness, Host proof, Anchor,
+publication failure, output failure, and five-Edit/four-Position raw Session
+regressions remain the behavioral evidence.
 
 ## 0.2.3 Patch Box Gates 1–8
 

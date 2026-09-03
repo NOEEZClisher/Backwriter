@@ -1718,6 +1718,16 @@ fn one_shot_edit_rejects_line_break_content_without_touching_source() {
         assert!(text(output.stderr).contains("Edit input is invalid"));
         assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"old\r\n");
     }
+
+    fs::remove_file(root.path().join("note.txt")).unwrap();
+    let output = run(
+        root.path(),
+        &["edit", "anddress", &operand, "still\ninvalid"],
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    assert!(text(output.stderr).contains("Edit input is invalid"));
+    assert!(!root.path().join("note.txt").exists());
 }
 
 #[test]
@@ -1794,7 +1804,7 @@ fn one_shot_edit_maps_stale_missing_and_unadmitted_sources_to_execution_failure(
 }
 
 #[test]
-fn one_shot_edit_exact_noop_preserves_bytes_and_inode_and_reuses_existing_seams() {
+fn one_shot_edit_exact_noop_uses_v5_geometry_and_shared_apply_without_view() {
     for json in [false, true] {
         let root = tempfile::tempdir().unwrap();
         write(root.path(), "coordinate.txt", "coordinate\n");
@@ -1828,20 +1838,21 @@ fn one_shot_edit_exact_noop_preserves_bytes_and_inode_and_reuses_existing_seams(
         .unwrap()
         .0;
     let decode = edit.find("decode_anddress(encoded)").unwrap();
-    let open = edit.find("open_runtime(workspace, admissions)").unwrap();
-    let view = edit
-        .find("run_view(&runtime, &anddress, anddress.target())")
-        .unwrap();
+    let terminator = edit.find("anddress.terminator()").unwrap();
     let construct = edit.find("Edit::Replace").unwrap();
     let validate = edit.find("edit.validate()").unwrap();
+    let open = edit.find("open_runtime(workspace, admissions)").unwrap();
     let apply = edit.find(".apply_replace(&edit)").unwrap();
     let write = edit.find("write_edit(receipt, output)").unwrap();
-    assert!(decode < open);
-    assert!(open < view);
-    assert!(view < construct);
+    assert!(decode < terminator);
+    assert!(terminator < construct);
     assert!(construct < validate);
+    assert!(validate < open);
     assert!(validate < apply);
+    assert!(open < apply);
     assert!(apply < write);
+    assert!(!edit.contains("run_view"));
+    assert!(!edit.contains(".view("));
     assert!(!edit.contains("run_search"));
     assert!(!edit.contains("run_check"));
     assert_eq!(edit.matches("open_runtime").count(), 1);

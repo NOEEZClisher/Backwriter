@@ -14,9 +14,9 @@ are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. Current source
-is hard-cut through Gate 4 to the v5 Anddress algebra, wire, shared structural
-cursor, direct Search result collection, and geometry-driven single/batch View;
-their direct View
+is hard-cut through Gate 5 to the v5 Anddress algebra, wire, shared structural
+cursor, direct Search result collection, geometry-driven single/batch View, and
+View-free one-shot Edit. Their direct View
 source-state/range projection, target-specific Search literal
 projection and exact logical File lookup, Pick predicate semantics, direct
 Anchor target projection and live continuity, and source-state Check batch
@@ -41,8 +41,9 @@ complete from Source Authority revision
 The published `0.2.3` source, v4 API/wire, artifacts, installers, and public
 tree are closed immutable evidence. `0.2.4` is an in-progress target governed
 by the [structural-authority tracker](docs/tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-Gates 1–4 close authority, v5 algebra/wire, the sole Issuer, the shared
-structural cursor, Search result contraction, and exact-range View. Cargo and
+Gates 1–5 close authority, v5 algebra/wire, the sole Issuer, the shared
+structural cursor, Search result contraction, exact-range View, and Edit/Apply/
+Anchor migration without a private Edit View. Cargo and
 `bw version` remain `0.2.3`; artifacts and the published distribution remain
 closed v4 evidence until later gates are separately accepted.
 
@@ -71,8 +72,11 @@ exception.
 Gate 2 deletes public raw and capability-owned address constructors. Gate 3
 deletes the Search position/occurrence wrappers and duplicate complete-source
 framers. Gate 4 deletes View's relation/range scanners and hard-cuts its native
-and Adapter results to the projected v5 address plus exact Content. Later gates
-delete one-shot Edit's private View. The plan
+and Adapter results to the projected v5 address plus exact Content. Gate 5
+deletes one-shot Edit's private View: the Adapter prepares Line Content from
+the decoded v5 terminator before Runtime access, while `apply` and
+`apply_replace` share one executor and prospective cursor/Issuer pass for
+receipt and Anchor candidates. The plan
 reuses existing admission/no-follow reads, literal matching, ordered batch
 grouping, staging and prospective provenance, Host proof, publication, and
 Anchor reflection. It adds no history, relocation, registry, watcher, retry,

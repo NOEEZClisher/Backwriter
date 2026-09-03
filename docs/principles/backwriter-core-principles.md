@@ -2,10 +2,10 @@
 
 The in-progress `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
-Gates 2–3 hard-cut current source to v5, install the sole Issuer and shared
-complete-source structural cursor, and contract Search results to direct
-Anddresses without altering the closed `0.2.3` v4 release or the Cargo/CLI
-version.
+Gates 2–5 hard-cut current source to v5, install the sole Issuer and shared
+complete-source structural cursor, contract Search results and View, and remove
+one-shot Edit's private View without altering the closed `0.2.3` v4 release or
+the Cargo/CLI version.
 
 The closed public `0.1.0` release remains immutable v3 evidence. Published and
 closed `0.2.3`, the prior published `0.2.2` and `0.2.1`, and the prior closed public
@@ -106,9 +106,10 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
     Anddress source-state precondition before publication.
 16. **General Adapter editing contracts existing primitives.** The implemented
     one-shot form accepts an encoded v5 Anddress and new Content, then
-    privately composes decode, View, `Edit::Replace`, and Apply. Only Line body
-    replacement uses View's current terminator; File and Paragraph remain exact
-    Content. This hides optional caller bookkeeping without adding a Core
+    prepares `Edit::Replace` directly from decoded target geometry and calls
+    Apply. Only Line body replacement appends the terminator carried by its v5
+    Anddress; File and Paragraph remain exact Content. Apply alone confirms
+    currentness. This hides optional caller bookkeeping without adding a Core
     workflow, target finder, state machine, relocation, retry, or error alias.
 17. **Information surfaces do not become identity or history.** Search may
     describe a hit's current Line position from the same source observation,
@@ -131,7 +132,8 @@ leaving v4 identity and currentness unchanged. Official release state is `0.2.3`
     projects then range-reads, Check checks currentness, Apply publishes
     mutation, and Anchor alone carries live continuity. Gate 4 removes bounded
     View relation/range scans and returns only the projected v5 address plus
-    exact Content or `RelationAbsent`; Gate 5 owns the private composition
-    View. No compatibility path is retained. This consolidation
-    creates no history, relocation, registry, watcher, retry, merge, rollback,
-    or implicit workflow.
+    exact Content or `RelationAbsent`. Gate 5 removes the private composition
+    View and reuses v5 containment/overlap plus one prospective cursor/Issuer
+    pass for receipt and Anchor candidates. No compatibility path is retained.
+    This consolidation creates no history, relocation, registry, watcher,
+    retry, merge, rollback, or implicit workflow.

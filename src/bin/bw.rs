@@ -532,14 +532,7 @@ fn execute_edit(
     }
 
     let anddress = decode_anddress(encoded)?;
-    let mut runtime = open_runtime(workspace, admissions)?;
-    let outcome = run_view(&runtime, &anddress, anddress.target())?;
-    if let ViewOutcome::Projected {
-        anddress: projected,
-        ..
-    } = outcome
-        && projected.target() == AnddressTarget::Line
-    {
+    if let Some(terminator) = anddress.terminator() {
         if content
             .as_bytes()
             .iter()
@@ -547,10 +540,7 @@ fn execute_edit(
         {
             return Err(map_edit_error(EditError::InvalidInput));
         }
-        let terminator = match projected
-            .terminator()
-            .expect("a projected Line has a terminator")
-        {
+        let terminator = match terminator {
             LineTerminator::None => "",
             LineTerminator::Lf => "\n",
             LineTerminator::Cr => "\r",
@@ -567,6 +557,7 @@ fn execute_edit(
         content,
     };
     edit.validate().map_err(map_edit_error)?;
+    let mut runtime = open_runtime(workspace, admissions)?;
     let receipt = runtime
         .apply_replace(&edit)
         .map_err(|error: ApplyError| CliError::execution(error.to_string()))?;

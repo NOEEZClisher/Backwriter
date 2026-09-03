@@ -1,6 +1,6 @@
 # Backwriter 0.2.4 Structural Authority
 
-Status: Gates 1–3 complete. The source accepts and emits only v5 while Cargo,
+Status: Gates 1–5 complete. The source accepts and emits only v5 while Cargo,
 CLI version, and the published closed `0.2.3` distribution remain unchanged.
 
 ## Objective and boundary
@@ -192,7 +192,7 @@ Closure:
   input-equal projected Anddresses and exact `x` Content for every outcome;
   the harness and generated files are removed after the run.
 
-## Gate 5 — Edit, Apply, Anchor, and private View removal
+## Gate 5 — Edit, Apply, Anchor, and private View removal — complete
 
 Acceptance:
 
@@ -210,6 +210,28 @@ Acceptance:
 No receipt follows definite failure or `PublicationUncertain`. No reopen,
 post-Search, second parse, history, relocation, retry, or alternate executor is
 allowed.
+
+Closure:
+
+- one-shot Edit now performs v5 decode, target-specific Content preparation,
+  `Edit::Replace` validation, Runtime open, and one `apply_replace` call in that
+  order. A Line appends the terminator carried by its decoded v5 geometry and
+  rejects NUL/CR/LF before Runtime access; File and Paragraph remain exact
+  Content. There is no private View, Search, Check, or second target lookup;
+- unit `apply` and Replace `apply_replace` retain one internal executor. One
+  prospective `StructuralCursor` pass produces the after hash, length, Line
+  count, and every receipt/Anchor candidate, and one `AnddressIssuer` emits the
+  resulting current addresses before publication;
+- the projector accepts borrowed same-path Anchor bindings and the optional
+  receipt target directly. It removes a second relation allocation and receipt
+  target clone, and uses v5 `contains`/`overlaps` instead of local range helpers;
+- direct and assembled no-op preserve the original receipt address, bytes,
+  inode, Host proof, and Anchor. Changed File, exact Line, and unique Paragraph
+  results retain `Some`; Paragraph zero/multiple results retain `None`;
+- existing definite/uncertain failure, proof/Anchor invalidation, old/fresh
+  currentness, raw five-Edit/four-Position Session, Unicode, every terminator,
+  scratch-boundary, large no-EOL, duplicate-drift, and writer-failure
+  regressions remain green with 258 tests on GNU and musl.
 
 ## Gate 6 — Check and remaining contraction
 
