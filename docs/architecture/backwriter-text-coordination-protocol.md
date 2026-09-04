@@ -1,6 +1,6 @@
 # Backwriter Protocol
 
-## 0.2.6 operational Adapter boundary — Gates 1–6 authority
+## 0.2.6 operational Adapter boundary — Gates 1–7 authority
 
 Gate 1 changes no Core or Runtime contract. Existing `WorkspaceRuntime`
 seams are the default: one-shot Replace reuses `apply_replace`, raw `apply`
@@ -63,6 +63,11 @@ fresh ref → Check. It is caller convenience, not a
 protocol-required lifecycle
 or capability order. The [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
 owns the remaining decisions and gates.
+
+Gate 7 changes no protocol contract. It records candidate/N-1, blind,
+trained-use, and external evidence, and documents the existing quoted Shell
+token form for whitespace-containing literals or Content. Gate 8 alone may
+decide source readiness.
 
 ## 0.2.5 performance-recovery authority
 

@@ -1,12 +1,13 @@
 # Backwriter Current State
 
-## 0.2.6 operational Adapter and verification contraction — Gates 1–6 complete
+## 0.2.6 operational Adapter and verification contraction — Gates 1–7 complete
 
 Gate 1 records the approved Adapter boundary, Gate 2 closes command-local help,
 and Gate 3 closes actionable usage failures and one-shot Edit stdin Content.
 Gate 4 closes Line body replacement and separates it from advanced raw exact
 extent replacement. Gate 5 adds shell-local numeric references and high-level
-Replace, and Gate 6 adds ordered batch Check in the
+Replace, Gate 6 adds ordered batch Check, and Gate 7 closes candidate/N-1,
+blind, trained-use, and external verification in the
 [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).
 The governing rule is **explain what to type, what happens, and what comes
 back**. Gate 6 adds only the narrow ordered Check Runtime seam and Adapter
@@ -33,8 +34,9 @@ input order and duplicates, and issues fresh slots only for Current inputs.
 `@N` does not collide with named raw bindings; `let name = @N` creates an
 existing named Anddress alias. One-shot JSON Check is `bw.cli.check.v2` and
 preserves one Current, NotCurrent, or Unavailable outcome per input; a batch
-requires JSON while single human output remains one status line. The future
-sequence is verification/docs contraction, then source readiness. Core Search
+requires JSON while single human output remains one status line. The public
+shell guidance now quotes whitespace-containing query and Content arguments.
+The future sequence is source readiness only. Core Search
 and one-shot Search output, v5 values/wire, raw Session, `apply_replace`, and
 existing Check seam meanings remain fixed. Candidate execution
 compares with `0.2.5`; inherited GNU/musl 268-test evidence and `Correct 1 /

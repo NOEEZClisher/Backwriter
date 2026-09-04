@@ -144,6 +144,15 @@ check @2 @3
 exit
 ```
 
+Quote one direct-shell query or replacement argument when it contains
+whitespace; the quotes are shell syntax and are not part of the exact literal
+or replacement Content:
+
+```text
+search line "duplicate = one"
+replace @1 "duplicate = two"
+```
+
 Successful direct `search` and projected direct `view` append `@N` references
 in output order, including duplicates. Direct `check <REF>...` resolves every
 reference before Runtime access, writes one Current/NotCurrent/Unavailable

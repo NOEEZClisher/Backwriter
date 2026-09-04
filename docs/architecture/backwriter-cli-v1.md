@@ -1,13 +1,15 @@
 # Backwriter CLI V1
 
-## 0.2.6 operational Adapter authority — Gates 1–6 complete
+## 0.2.6 operational Adapter authority — Gates 1–7 complete
 
 The planned operational target explains what to type, what happens, and what
 comes back. Gate 1 changes no command, parser, output, error, version, or
 process behavior; Gate 2 adds help, Gate 3 adds actionable usage presentation
 plus the exclusive one-shot Edit `--stdin` Content selector, Gate 4 closes
 Line body replacement against the existing advanced raw exact-extent consumer,
-and Gate 5 adds shell-local numeric references plus high-level Replace.
+Gate 5 adds shell-local numeric references plus high-level Replace, Gate 6
+adds ordered batch Check, and Gate 7 closes its verification/documentation
+contraction.
 Top-level help covers only global
 syntax, capabilities, and additional help. Command help uses `NAME`, `USAGE`,
 `DESCRIPTION`, `ARGUMENTS`, `OPTIONS`, `WHAT HAPPENS`, `OUTPUT`, `EXAMPLES`,
@@ -32,9 +34,13 @@ or View appends one process-local numeric `@N` reference per projected
 Anddress; direct Replace emits a fresh reference only when its receipt has one;
 direct Check emits one only for each Current input. `@N` is distinct from raw
 `@name` and `@name[index]`, while `let name = @N` creates an ordinary named
-Anddress alias. Ordered batch Check is bounded Adapter work under the
+Anddress alias. Quote a direct-shell query or replacement argument containing
+whitespace; the quotes are shell syntax, not literal Content. Ordered batch
+Check is bounded Adapter work under the
 [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md),
-not new Core wire, identity, persistence, or lifecycle behavior.
+not new Core wire, identity, persistence, or lifecycle behavior. Gate 7 adds no
+CLI parser or output change; it records only the candidate/N-1 and public-use
+evidence before Gate 8 source readiness.
 
 ## 0.2.5 encoder reuse and release boundary
 

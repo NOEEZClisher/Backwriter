@@ -2,37 +2,24 @@
 
 ## 0.2.6 operational Adapter and verification-contraction authority
 
-Gate 1 is documentation-only and reused the N-1 `0.2.5` GNU/musl result of 268
-tests because Rust, Cargo, lockfile, toolchain, tests, and CLI behavior were
-byte-identical. Gate 2 adds exact top-level and seven command-help KATs,
-section-order checks, sole-operand checks, no-Runtime-opening checks, and a Unix
-fake-curl control that proves `update --help` does not start download. The three
-Gate 2 CLI regressions bring both complete GNU and musl suites to 271 passing
-tests. Gate 3 adds exact actionable-error KATs, argv/stdin parity for File,
-Paragraph, and None/LF/CR/CRLF Line Content, invalid-stdin/nonpublication, and
-a multi-reader-chunk Content control; both complete suites now pass 275 tests.
-Gate 4 adds exact Line NUL/CR/LF/CRLF rejection codes with source and Unix inode
-preservation, File/Paragraph NUL closure, and a raw exact-range terminator and
-multiline matrix with separate Apply. Gate 5 adds six CLI regressions for
-append-only `@N` slot order/duplicates, named-alias collision boundaries,
-canonical malformed numeric rejection before Runtime access, RelationAbsent and
-failed Search non-consumption, File/Paragraph/Line receipt states, stale old
-slot rejection, fresh follow-up use, and every Line terminator. Gate 6 adds
-exact one-shot `bw.cli.check.v2` Current/NotCurrent/Unavailable bytes,
-mixed-source/same-source/duplicate ordering, malformed pre-I/O batch rejection,
-public ordered status parity, and direct-shell Current-only reference issuance
-with slot preservation after failure. The complete GNU and musl suites now pass
-285 tests. Raw named Session Edit/Apply and raw aggregate batch Check remain
-separate controls. Gate 7 may contract tests/docs only after its blind Dummy,
-Genie, and external-evidence audit.
+Gates 1–6 retain one test authority for exact Help/usage/JSON KATs, stdin and
+Line terminators, shell references/Replace, ordered Check, raw Session, and the
+inherited v5/Search/currentness/publication/Host-proof/Anchor boundaries. GNU
+and musl each pass 285 tests; `Correct 1 / Safe Reject 6 / Wrong Apply 0` is
+unchanged.
 
-New execution comparison is candidate versus `0.2.5` only. N-2 and older
-releases use preserved task, revision, and raw evidence; three-version execution
-is exceptional evidence for an explicit regression recovery or two-step
-migration. Every Gate preserves v5 KATs, Search tier/order/duplicates,
-currentness/publication boundaries, and `Correct 1 / Safe Reject 6 / Wrong
-Apply 0`. The tracker defines the exact future evidence without changing the
-closed Search performance suite.
+Gate 7 executes candidate `c78e07f242035230e8b071d583491ac633f58d29` only
+against clean exported N-1 `a9b47b06e0c4ac4c3058332f85a2885f47edd53a`.
+Blind Dummy, public-only Genie, and external `grep`/`cat`/`sed`/Git controls
+close the duplicate/Paragraph, Line-body, fresh-reference, ordered-Check, and
+stale-precondition evidence. The final Genie flow uses Search once, batch View,
+Replace, immediate fresh-ref Check, and final View with no raw-v5 or raw
+Edit/Apply operation. Its final fixture SHA-256 is
+`084d54d2f243db7d40c11e841f57e00bcf862e41bc5e4af1ef474dedc30c5adc`.
+
+This active section now records only current controls and Gate 7 results.
+Detailed task evidence remains in the tracker and older task records; N-2 and
+older releases are not executed without an explicit recovery or migration need.
 
 ## 0.2.5 performance-recovery gates
 

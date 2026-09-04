@@ -1,8 +1,9 @@
 # Backwriter 0.2.6 Operational Adapter & Verification Contraction
 
-Status: Gates 1–6 complete — authority, command-local help, actionable
+Status: Gates 1–7 complete — authority, command-local help, actionable
 errors/stdin, the Line body/advanced exact-extent boundary, shell-local
-references plus high-level Replace, and ordered batch Check. `0.2.5` remains the closed source,
+references plus high-level Replace, ordered batch Check, and verification/
+documentation contraction. `0.2.5` remains the closed source,
 package, CLI, installer, artifact, and public distribution. This tracker is
 execution authority; its companion [source note](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-source.md)
 and [roadmap](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-roadmap.md)
@@ -132,15 +133,62 @@ Direct shell Check resolves all refs first, reserves once, then issues one fresh
 numeric ref per Current occurrence only. Raw Session Check forms and aggregate
 report output remain byte-identical.
 
-## Gate 7 — verification and documentation contraction
+## Gate 7 — verification and documentation contraction — complete
 
-Audit inherited and new evidence before deleting tests or prose. Candidate
-execution compares only with N-1 `0.2.5`; N-2/older comparisons use task/SHA/raw
-evidence except for an explicitly justified regression recovery or two-step
-migration. Blind Dummy, Genie, and external evidence requirements must be
-closed before contraction. Preserve v5 KATs, Search tier/order/duplicates,
-currentness/publication failure controls, and `Correct 1 / Safe Reject 6 /
-Wrong Apply 0`.
+Candidate `c78e07f242035230e8b071d583491ac633f58d29` is compared only with a
+task-local clean export of N-1 `0.2.5`
+`a9b47b06e0c4ac4c3058332f85a2885f47edd53a`; no checkout and no N-2 binary
+are used. The common duplicate/Paragraph fixture covers Help, usage failure,
+stdin, Line body, shell references/Replace, and ordered Check. Candidate has
+command-local Help, real stdin Content, direct numeric references, and ordered
+Check; N-1 has neither command-local Help nor direct numeric-reference flow and
+accepts `--stdin` as literal Content. This is descriptive Adapter evidence, not
+a Search, wire, or performance comparison.
+
+The blind packet contains only the candidate binary, fixture, and `bw --help`
+plus command Help. Its transcript records duplicate Line Search, Paragraph
+View, Line body `retry_budget = 3` to `retry_budget = 5`, fresh value reuse, and
+two-current JSON batch Check. The final SHA-256 is
+`271f454f74b7d04bf1a252feced3f3bdafa6754ac74c9d0f4391b419fe79675b`; it uses
+17 tool calls, four unexpected CLI failures, zero manual raw-v5 constructions,
+and zero terminator mistakes, within the 29/5 limits.
+
+The trained packet is restricted to `bw --help`, `bw help shell`, and the
+README's Anddress-first, shell-reference, and CLI sections. A preliminary
+public-only trial exposed missing quoting guidance for whitespace. The README
+now documents the existing quoted token form; the final first timed flow is:
+
+```text
+search line "duplicate = one"
+view @0 @1 @2
+replace @4 "duplicate = two"
+check @6 @1
+view @6
+```
+
+It has one Search, batch View, one Line-body Replace, immediate fresh-reference
+reuse, batch Check, and final View. Old `@1` is `NotCurrent` without rebind;
+post-Edit Search, raw-v5, raw Edit/Apply, individual Check retry, terminator
+mistake, and unexpected Backwriter failure are zero. The final SHA-256 is
+`084d54d2f243db7d40c11e841f57e00bcf862e41bc5e4af1ef474dedc30c5adc`; its n=1
+elapsed record is 0.00 seconds, with difficulty/cognitive-load/confidence-risk
+ratings `0/1/0` on the required 0–2 scale.
+
+The external control stages the three-file duplicate/context fixture in a
+task-local Git repository, uses `grep`, `cat`, and `sed` to make the three
+`retry_budget = 3` to `retry_budget = 5` edits, then uses Git to inspect them.
+All three final files have SHA-256
+`73f090df1b5679f05bdddebeef9fec5b30e5fb7a87b8648e6ec6dff70c5cb31c`. A stale
+old-text precondition fails and `git diff --exit-code` reports the pending
+change, so the control performs no second write. It is not a winner, speed, or
+release gate.
+
+The audit retains every production test: v5 KAT, Search tier/order/duplicates,
+exact Help/error/JSON KAT, stdin/terminator, refs, ordered Check, Host proof,
+Anchor, currentness/publication, and distinct error boundaries have independent
+consumers. `verification.md` removes 13 superseded Gate 1–6 lines in favor of
+the current controls and tracker evidence. Production Rust, Cargo, lockfile,
+and toolchain remain byte-identical to Gate 6.
 
 ## Gate 8 — source readiness
 

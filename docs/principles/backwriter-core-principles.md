@@ -6,7 +6,8 @@ Gate 1 is authority only, Gate 2 adds one command-local help authority, Gate 3
 adds private actionable usage presentation plus one-shot Edit stdin Content,
 Gate 4 closes the one-shot Line body and advanced raw exact-extent boundary,
 and Gate 5 closes process-local shell references plus high-level Replace, while
-Gate 6 closes ordered batch Check. Its
+Gate 6 closes ordered batch Check, and Gate 7 closes only the evidence and
+documentation contraction. Its
 rule is **explain what to type, what happens, and what comes back**. It adds no
 Core/Runtime behavior or required workflow and
 retains closed `0.2.5` Search/v5/raw-Session meaning. Stable usage codes belong
@@ -20,7 +21,9 @@ the advanced caller-owned exact-range operation. Gate 5 references are
 append-only process-local Adapter RAM and only carry existing typed Anddresses;
 they are not target identity, provenance, history,
 relocation, retry, or persistence. Ordered Check preserves status per input and
-reuses existing Runtime grouping without adding Core lifecycle state. Candidate evidence compares with `0.2.5`,
+reuses existing Runtime grouping without adding Core lifecycle state. Gate 7
+records only candidate-versus-`0.2.5` execution, public-only blind/trained use,
+and external evidence; it adds no Core or Runtime behavior. Candidate evidence compares with `0.2.5`,
 while the inherited 268-test GNU/musl result and `Correct 1 / Safe Reject 6 /
 Wrong Apply 0` remain controls.
 
