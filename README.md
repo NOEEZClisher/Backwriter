@@ -140,11 +140,14 @@ wire or persistent identity:
 search line needle
 view @0
 replace @1 replacement
+check @2 @3
 exit
 ```
 
 Successful direct `search` and projected direct `view` append `@N` references
-in output order, including duplicates. `replace @N <content>` uses the same
+in output order, including duplicates. Direct `check <REF>...` resolves every
+reference before Runtime access, writes one Current/NotCurrent/Unavailable
+state per input, and appends a fresh slot only for Current. `replace @N <content>` uses the same
 target-aware Content rules as one-shot Edit and appends a fresh reference for
 `Unchanged` or `Changed` when the receipt has an Anddress; `Changed\tNone`
 adds none. Slots are zero-based canonical unsigned decimals, append-only, and
@@ -182,7 +185,7 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     view anddress <encoded-v5-Anddress>... [--as <line|paragraph|file>]
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
-    check anddress <encoded-v5-Anddress>
+    check anddress <encoded-v5-Anddress>...
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw
     view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
@@ -211,11 +214,14 @@ text. Missing paths and directories return Empty; the form has no scope
 selectors or synthetic content query. View decodes v5 Anddresses and projects
 each to itself or one ancestor before reading its exact content. A single input
 defaults to self projection. `--as` chooses one target kind; multiple inputs
-require both `--json` and `--as`. Check decodes one v5 Anddress and writes only
-`Current`, `NotCurrent`, or `Unavailable`. Search, View, Check, and Edit `--json`
+require both `--json` and `--as`. Check decodes every v5 operand before Runtime
+access. One human input writes `Current`, `NotCurrent`, or `Unavailable`; a
+batch requires `--json` and preserves one outcome per input. Search, View,
+Check, and Edit `--json`
 write compact Adapter objects with exact embedded v5 Anddress objects where
 applicable; each is an Adapter schema, not a second Core wire. View uses the
-hard-cut `bw.cli.view.v2` outcomes array for both single and batch results.
+hard-cut `bw.cli.view.v2` outcomes array for both single and batch results;
+Check uses the hard-cut `bw.cli.check.v2` ordered outcomes array.
 Raw View is an explicit Adapter exact-text mode that reuses the ordinary View
 projection without a Core wire or changed View meaning.
 Human Search, View, and Check keep their existing projections; human Edit
@@ -232,7 +238,7 @@ handle only through `let <name> = anchor create <anddress-ref>`, views it throug
 `view anchored @<name>`, and can invalidate its logical source with `anchor
 invalidate-source <logical-path>`. One-shot Data and Anchor are intentionally
 unsupported because their DataStore and live-handle contracts require Session
-lifetime. One-shot Pick, batch Check, raw Edit-object transport, and a separate
+lifetime. One-shot Pick, raw Edit-object transport, and a separate
 Apply transport await collection or Edit transport schema authority. The
 distinct Anddress-first one-shot Edit above is implemented. Raw output other
 than one-shot View and further Session behavior remain deferred.

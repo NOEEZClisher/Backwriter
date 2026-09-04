@@ -1,13 +1,13 @@
 # Backwriter Protocol
 
-## 0.2.6 operational Adapter boundary — Gates 1–5 authority
+## 0.2.6 operational Adapter boundary — Gates 1–6 authority
 
 Gate 1 changes no Core or Runtime contract. Existing `WorkspaceRuntime`
 seams are the default: one-shot Replace reuses `apply_replace`, raw `apply`
 and raw Session retain their public/advanced roles, and existing `check`,
 `check_search`, and `check_pick` retain their current input meanings. Gate 6
-may add a narrow ordered batch Check seam only after evidence proves those three
-cannot represent the Adapter input without changing their semantics.
+adds `check_batch(&[Anddress])` because those filtered/report seams cannot
+represent the Adapter's one-status-per-input order without semantic change.
 
 Gate 2 adds no protocol command or parser model. The handwritten Adapter parser
 recognizes `bw --help`/`bw help` and the exact `bw help X`/`bw X --help` pairs
@@ -47,8 +47,10 @@ sets; `RelationAbsent` and failure append none. Direct Replace validates
 target-aware Content, reserves its possible fresh slot before `apply_replace`,
 and appends only `Unchanged` or `Changed(Some)` receipt values. `Changed(None)`
 has no reference. `let name = @N` clones a reference into the existing named
-Anddress binding. The vector ends at Session EOF and is neither identity,
-provenance, history, persistence, nor a required capability order.
+Anddress binding. Direct Check resolves all refs before source I/O, uses the
+ordered batch seam, and reserves/append fresh slots only for Current inputs.
+The vector ends at Session EOF and is neither identity, provenance, history,
+persistence, nor a required capability order.
 
 Search remains its exact `0.2.5` contract: matcher, structural path,
 traversal, order, tiers, storage, `SearchOutcome`, `bw.cli.search.v2`, v5
@@ -57,7 +59,7 @@ process-local Adapter RAM only; they create no Core identity,
 provenance, relocation, history, retry, transaction, CAS/lock, or rollback.
 
 The Adapter's normal shell convenience flow is Search → ref → View → Replace →
-fresh ref; batch Check remains future work. It is caller convenience, not a
+fresh ref → Check. It is caller convenience, not a
 protocol-required lifecycle
 or capability order. The [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
 owns the remaining decisions and gates.
@@ -703,8 +705,8 @@ The implemented `0.2.0` Runtime execution seams are
 `WorkspaceRuntime::view(&Anddress, AnddressTarget)`,
 `WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`,
-`WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
-`check_pick(PickOutcome)`. Across calls, Search, View, Pick, Check, and Apply
+`WorkspaceRuntime::check(Anddress)`, `check_batch(&[Anddress])`,
+`check_search(SearchOutcome)`, and `check_pick(PickOutcome)`. Across calls, Search, View, Pick, Check, and Apply
 retain no ordinary observation object, source cache, result store, index,
 snapshot, lease, registry, or authenticity state. Search enumerates admitted
 Workspace Source deterministically through retained capability-relative
@@ -876,12 +878,13 @@ automatic Store, has no latest slot, and performs no automatic update.
 
 The completed one-shot Search, View, Check, and Edit JSON projections are
 Adapter-only. Their compact envelopes identify `bw.cli.search.v2`,
-`bw.cli.view.v2`, `bw.cli.check.v1`, and `bw.cli.edit.v1`. Search identifies each result by logical path, target
+`bw.cli.view.v2`, `bw.cli.check.v2`, and `bw.cli.edit.v1`. Search identifies each result by logical path, target
 kind, applicable current Line number or Paragraph Line range, and its directly
 embedded encoded v5 Anddress object. View uses one ordered `outcomes` array for
 single and batch requests; each item is either `projected` with the exact v5
 Anddress and Content or `relation-absent`. Check embeds its filtered v5
-Anddress object directly when present. Edit embeds the one native receipt
+Anddress object directly for Current or Unavailable input and uses `null` for
+NotCurrent. Edit embeds the one native receipt
 address directly or uses `null`. They create no Core wire, value model,
 Search/View/Check/Edit state, result collection, or capability workflow. The
 published `0.2.2` Search v1 envelope remains immutable release evidence, not a

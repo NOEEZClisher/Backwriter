@@ -1,6 +1,6 @@
 # Backwriter CLI V1
 
-## 0.2.6 operational Adapter authority — Gates 1–5 complete
+## 0.2.6 operational Adapter authority — Gates 1–6 complete
 
 The planned operational target explains what to type, what happens, and what
 comes back. Gate 1 changes no command, parser, output, error, version, or
@@ -29,10 +29,10 @@ Replace remains body-only, preserves its existing terminator, rejects NUL as
 exact UTF-8 and the NUL policy. Raw Session `Edit::Replace` plus separate Apply
 remains the ADVANCED caller-owned exact-extent surface. A direct shell Search
 or View appends one process-local numeric `@N` reference per projected
-Anddress; direct Replace emits a fresh reference only when its receipt has one.
-`@N` is distinct from raw `@name` and `@name[index]`, while `let name = @N`
-creates an ordinary named Anddress alias. Ordered batch Check remains future
-bounded Adapter work under the
+Anddress; direct Replace emits a fresh reference only when its receipt has one;
+direct Check emits one only for each Current input. `@N` is distinct from raw
+`@name` and `@name[index]`, while `let name = @N` creates an ordinary named
+Anddress alias. Ordered batch Check is bounded Adapter work under the
 [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md),
 not new Core wire, identity, persistence, or lifecycle behavior.
 
@@ -382,36 +382,33 @@ The complete syntax for this slice is:
 ```text
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     check anddress <encoded-v5-Anddress>
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+    check anddress <encoded-v5-Anddress>...
 ```
 
-Check shares View's one-value v5 Anddress decoding and global workspace and
-admission parsing. It passes the decoded value directly to
-`WorkspaceRuntime::check`; it introduces no CLI input schema, request, wrapper,
-alias, or retained result. The only successful human outputs are one of
-`Current`, `NotCurrent`, or `Unavailable`, followed by one newline. They map
-the one-input Check report exactly and never display an address or report member.
-All three are successful Check outcomes. Invalid input is a usage error; Runtime,
-Check resource, and stdout errors are execution errors. One-shot `check search`,
-`check pick`, and extra operands are usage errors in this slice.
+Check decodes every v5 operand before opening Runtime, then passes the borrowed
+ordered collection to `WorkspaceRuntime::check_batch`. It introduces no request,
+wrapper, alias, or retained result. One human operand writes exactly `Current`,
+`NotCurrent`, or `Unavailable` plus LF and never displays an address. Multiple
+operands require `--json`. Every decoded input has one successful status; invalid
+or unsupported input makes the complete operation a usage failure before source
+I/O. One-shot `check search` and `check pick` remain unavailable forms.
 
 ### JSON Check projection
 
-With the global `--json` flag, Check decodes one v5 Anddress, calls the existing
-Runtime Check seam once, and writes exactly one compact UTF-8 JSON value followed
-by one LF. Its schema is Adapter-only, not a Core wire. Its fixed key orders are:
+With the global `--json` flag, Check writes exactly one compact UTF-8 JSON value
+followed by one LF. Its schema is Adapter-only, not a Core wire. Its fixed key
+order is:
 
 ```json
-{"schema":"bw.cli.check.v1","status":"current","filtered":<exact-v5-Anddress-object>}
-{"schema":"bw.cli.check.v1","status":"not-current","filtered":null}
-{"schema":"bw.cli.check.v1","status":"unavailable","filtered":<exact-v5-Anddress-object>}
+{"schema":"bw.cli.check.v2","outcomes":[{"status":"current","anddress":<exact-v5-Anddress-object>},{"status":"not-current","anddress":null},{"status":"unavailable","anddress":<exact-v5-Anddress-object>}]}
 ```
 
-The JSON and human writers share the existing raw one-input Check-report
-classification. `current` and `unavailable` contain the exact existing filtered
-v5 `Anddress::encode()` object; `not-current` contains only `filtered:null`.
-An inconsistent report/filtered combination is an execution error before either
-writer emits output. The writer keeps no JSON `Value`, cloned `CheckOutcome`, or
-result collection. The human Check projection is unchanged.
+The outcomes array preserves input order and duplicates. `current` and
+`unavailable` contain the exact input v5 object; `not-current` contains only
+`anddress:null`. One scratch buffer is reused with `encode_into`; the writer
+keeps no JSON `Value`, cloned Check outcome, or second result collection. Raw
+Session Check keeps its existing aggregate report output.
 
 ## Implemented one-shot Anddress-first Edit
 

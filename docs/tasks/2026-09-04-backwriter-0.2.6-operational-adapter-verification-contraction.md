@@ -1,8 +1,8 @@
 # Backwriter 0.2.6 Operational Adapter & Verification Contraction
 
-Status: Gates 1–5 complete — authority, command-local help, actionable
-errors/stdin, the Line body/advanced exact-extent boundary, and shell-local
-references plus high-level Replace. `0.2.5` remains the closed source,
+Status: Gates 1–6 complete — authority, command-local help, actionable
+errors/stdin, the Line body/advanced exact-extent boundary, shell-local
+references plus high-level Replace, and ordered batch Check. `0.2.5` remains the closed source,
 package, CLI, installer, artifact, and public distribution. This tracker is
 execution authority; its companion [source note](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-source.md)
 and [roadmap](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-roadmap.md)
@@ -119,13 +119,18 @@ prior slots and source. No Core/Runtime API, wire, registry, persistence,
 history, retry, or lifecycle is added. The normal convenience flow is Search →
 ref → View → Replace → fresh ref; raw Session remains ADVANCED.
 
-## Gate 6 — ordered batch Check Adapter
+## Gate 6 — ordered batch Check Adapter — complete
 
-Preserve input order, duplicates, and one output state per input. Validate the
-whole batch before I/O; one malformed member is a usage failure for the whole
-operation. Freeze an exact JSON KAT. Add a narrow ordered batch Check Runtime
-seam only if evidence proves that `check`, `check_search`, and `check_pick`
-cannot represent the Adapter need without semantic change.
+`WorkspaceRuntime::check_batch(&[Anddress])` exposes the existing grouped
+classifier's ordered `Current`, `NotCurrent`, and `Unavailable` states without
+changing `check`, `check_search`, or `check_pick` filtering/report meaning.
+Every input is decoded or resolved before Runtime access. One-shot JSON hard
+cuts to `bw.cli.check.v2`, one outcomes array preserving input order and
+duplicates; Current/Unavailable embed the input v5 object and NotCurrent uses
+`null`. Human Check remains a one-input status line, while batch requires JSON.
+Direct shell Check resolves all refs first, reserves once, then issues one fresh
+numeric ref per Current occurrence only. Raw Session Check forms and aggregate
+report output remain byte-identical.
 
 ## Gate 7 — verification and documentation contraction
 

@@ -17,10 +17,14 @@ multiline matrix with separate Apply. Gate 5 adds six CLI regressions for
 append-only `@N` slot order/duplicates, named-alias collision boundaries,
 canonical malformed numeric rejection before Runtime access, RelationAbsent and
 failed Search non-consumption, File/Paragraph/Line receipt states, stale old
-slot rejection, fresh follow-up use, and every Line terminator. The complete
-GNU and musl suites now pass 282 tests. Raw named Session Edit/Apply remains a
-separate control. Gate 6 must add its own batch-Check evidence; Gate 7 may
-contract tests/docs only after its blind Dummy, Genie, and external-evidence audit.
+slot rejection, fresh follow-up use, and every Line terminator. Gate 6 adds
+exact one-shot `bw.cli.check.v2` Current/NotCurrent/Unavailable bytes,
+mixed-source/same-source/duplicate ordering, malformed pre-I/O batch rejection,
+public ordered status parity, and direct-shell Current-only reference issuance
+with slot preservation after failure. The complete GNU and musl suites now pass
+285 tests. Raw named Session Edit/Apply and raw aggregate batch Check remain
+separate controls. Gate 7 may contract tests/docs only after its blind Dummy,
+Genie, and external-evidence audit.
 
 New execution comparison is candidate versus `0.2.5` only. N-2 and older
 releases use preserved task, revision, and raw evidence; three-version execution

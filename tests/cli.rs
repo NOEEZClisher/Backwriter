@@ -16,7 +16,7 @@ use std::{
 use backwriter::{
     backwriter::{
         anddress::{Anddress, AnddressTarget as PublicAnddressTarget},
-        check::CheckOutcome,
+        check::{CheckOutcome, CheckStatus},
         search::{SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget},
         view::ViewOutcome,
     },
@@ -38,7 +38,7 @@ CAPABILITIES
   search   Discover current File, Paragraph, or Line Anddresses.
   view     Read one or more current Anddresses.
   edit     Replace one current Anddress.
-  check    Check one current Anddress.
+  check    Check one or more current Anddresses.
   shell    Run advanced raw Session commands.
   version  Print the Backwriter version.
   update   Run the installed-platform updater.
@@ -168,33 +168,35 @@ const EDIT_CONTENT_NUL_CAUSE: &str = "Edit Content must not contain NUL.";
 const EDIT_LINE_BODY_CAUSE: &str = "Line Edit accepts body Content only. Backwriter preserves the existing Line terminator automatically. Exact extent replacement is available through advanced raw Session Edit/Apply.";
 
 const CHECK_HELP_KAT: &str = r#"NAME
-  bw check - check one current v5 Anddress
+  bw check - check one or more current v5 Anddresses
 
 USAGE
-  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v5-Anddress>
+  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v5-Anddress>
+  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json check anddress <encoded-v5-Anddress>...
 
 DESCRIPTION
-  Checks the current state of one caller-provided v5 Anddress.
+  Checks the current state of caller-provided v5 Anddresses in input order.
 
 ARGUMENTS
   anddress                  Required input form.
-  <encoded-v5-Anddress>     One canonical v5 object.
+  <encoded-v5-Anddress>     One or more canonical v5 objects.
 
 OPTIONS
   --workspace, --admit, and --json must precede check.
-  No command-local options are available.
+  Multiple inputs require --json. No command-local options are available.
 
 WHAT HAPPENS
-  Opens the Runtime after input validation and reports currentness for that one target.
+  Validates every input before opening the Runtime, then reports one currentness state per input.
 
 OUTPUT
-  Human output writes one state. --json writes the existing one-shot Check envelope.
+  One human input writes one state. --json writes the fixed bw.cli.check.v2 envelope.
 
 EXAMPLES
   bw check anddress '<v5-Anddress>'
+  bw --json check anddress '<v5-Anddress>' '<v5-Anddress>'
 
 FAILURES
-  Invalid input is a usage failure. Unavailable source or Runtime failure exits 1.
+  Invalid input or a non-JSON batch is a usage failure. Runtime failure exits 1.
 
 SEE ALSO
   bw help search
@@ -208,7 +210,7 @@ USAGE
   bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 
 DESCRIPTION
-  Reads commands from standard input until exit. Direct search, view, and replace use session-local numeric Anddress references. Raw bindings and raw capability composition remain the advanced surface.
+  Reads commands from standard input until exit. Direct search, view, replace, and check use session-local numeric Anddress references. Raw bindings and raw capability composition remain the advanced surface.
 
 ARGUMENTS
   None.
@@ -218,16 +220,17 @@ OPTIONS
   --json and --raw are unavailable.
 
 WHAT HAPPENS
-  A successful direct search or view emits append-only @N references. Direct replace uses one reference and emits a fresh reference when one exists. References end with this shell process. Raw let, Pick, View, Check, Anchor, Edit, Apply, and Data retain their existing grammar.
+  A successful direct search, view, or current check emits append-only @N references. Direct replace uses one reference and emits a fresh reference when one exists. References end with this shell process. Raw let, Pick, View, Check, Anchor, Edit, Apply, and Data retain their existing grammar.
 
 OUTPUT
-  Direct references write @N, target kind, and location. Raw commands write their existing human result.
+  Direct references write @N, target kind, and location. Direct Check writes one state per input. Raw commands write their existing human result.
 
 EXAMPLES
   bw shell
   search line needle
   view @0
   replace @1 replacement
+  check @2 @3
   let hits = search line needle
   view anddress @hits[0]
   exit
@@ -600,34 +603,54 @@ fn raw_check_status(outcome: &CheckOutcome<Option<Anddress>>) -> &'static str {
     }
 }
 
-fn expected_check_json(outcome: &CheckOutcome<Option<Anddress>>) -> Vec<u8> {
-    let mut output = b"{\"schema\":\"bw.cli.check.v1\",\"status\":\"".to_vec();
-    output.extend_from_slice(raw_check_status(outcome).as_bytes());
-    output.extend_from_slice(b"\",\"filtered\":");
-    if let Some(filtered) = &outcome.filtered {
-        output.extend_from_slice(&filtered.encode().unwrap());
-    } else {
-        output.extend_from_slice(b"null");
+fn expected_check_json(inputs: &[Anddress], statuses: &[CheckStatus]) -> Vec<u8> {
+    assert_eq!(inputs.len(), statuses.len());
+    let mut output = b"{\"schema\":\"bw.cli.check.v2\",\"outcomes\":[".to_vec();
+    for (index, (input, status)) in inputs.iter().zip(statuses).enumerate() {
+        if index != 0 {
+            output.push(b',');
+        }
+        let label = match status {
+            CheckStatus::Current => "current",
+            CheckStatus::NotCurrent => "not-current",
+            CheckStatus::Unavailable => "unavailable",
+        };
+        output.extend_from_slice(b"{\"status\":\"");
+        output.extend_from_slice(label.as_bytes());
+        output.extend_from_slice(b"\",\"anddress\":");
+        if *status == CheckStatus::NotCurrent {
+            output.extend_from_slice(b"null");
+        } else {
+            output.extend_from_slice(&input.encode().unwrap());
+        }
+        output.push(b'}');
     }
-    output.extend_from_slice(b"}\n");
+    output.extend_from_slice(b"]}\n");
     output
 }
 
-fn assert_check_json(output: Output, expected: &CheckOutcome<Option<Anddress>>, input: &Anddress) {
+fn assert_check_json(output: Output, inputs: &[Anddress], statuses: &[CheckStatus]) {
     assert!(output.status.success());
-    assert_eq!(output.stdout, expected_check_json(expected));
+    assert_eq!(output.stdout, expected_check_json(inputs, statuses));
     assert!(output.stderr.is_empty());
 
     let document: Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(document["schema"], "bw.cli.check.v1");
-    assert_eq!(document["status"], raw_check_status(expected));
-    match &expected.filtered {
-        Some(filtered) => {
-            let encoded = serde_json::to_vec(&document["filtered"]).unwrap();
-            assert_eq!(Anddress::decode(&encoded).unwrap(), *filtered);
-            assert_eq!(filtered, input);
+    assert_eq!(document["schema"], "bw.cli.check.v2");
+    let outcomes = document["outcomes"].as_array().unwrap();
+    assert_eq!(outcomes.len(), inputs.len());
+    for ((input, status), outcome) in inputs.iter().zip(statuses).zip(outcomes) {
+        let label = match status {
+            CheckStatus::Current => "current",
+            CheckStatus::NotCurrent => "not-current",
+            CheckStatus::Unavailable => "unavailable",
+        };
+        assert_eq!(outcome["status"], label);
+        if *status == CheckStatus::NotCurrent {
+            assert!(outcome["anddress"].is_null());
+        } else {
+            let encoded = serde_json::to_vec(&outcome["anddress"]).unwrap();
+            assert_eq!(Anddress::decode(&encoded).unwrap(), *input);
         }
-        None => assert!(document["filtered"].is_null()),
     }
 }
 
@@ -952,9 +975,9 @@ fn one_shot_usage_errors_have_exact_command_local_codes_usage_and_hints() {
         "bw help edit",
     );
     assert_actionable_usage(
-        run(root.path(), &["check", "anddress", &operand, "extra"]),
-        "check.extra_operand",
-        "check accepts exactly one anddress operand",
+        run(root.path(), &["check", "anddress", &operand, &operand]),
+        "check.output_unsupported",
+        "checking multiple Anddresses requires --json",
         CHECK_HELP_KAT,
         "bw help check",
     );
@@ -2672,7 +2695,7 @@ fn one_shot_edit_output_failure_reports_exit_one_after_publication_without_retry
 }
 
 #[test]
-fn one_shot_check_json_preserves_raw_status_and_filtered_v5_values() {
+fn one_shot_check_json_v2_preserves_ordered_v5_statuses() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "coordinate.txt", "coordinate\n");
     write(root.path(), "note.txt", "file\n\nparagraph\nline\n");
@@ -2707,11 +2730,17 @@ fn one_shot_check_json_preserves_raw_status_and_filtered_v5_values() {
         )
         .unwrap();
         let expected = workspace.check(input.clone()).unwrap();
+        let status = match raw_check_status(&expected) {
+            "current" => CheckStatus::Current,
+            "not-current" => CheckStatus::NotCurrent,
+            "unavailable" => CheckStatus::Unavailable,
+            _ => unreachable!(),
+        };
 
         assert_check_json(
             run(root.path(), &["--json", "check", "anddress", &operand]),
-            &expected,
-            &input,
+            std::slice::from_ref(&input),
+            std::slice::from_ref(&status),
         );
         let human_status = match raw_check_status(&expected) {
             "current" => "Current",
@@ -2727,6 +2756,82 @@ fn one_shot_check_json_preserves_raw_status_and_filtered_v5_values() {
 }
 
 #[test]
+fn one_shot_check_json_v2_preserves_mixed_order_duplicates_and_all_input_validation() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "current.txt", "current\n");
+    write(root.path(), "stale.txt", "stale\n");
+    write(root.path(), "broken.txt", "broken\n");
+    let current =
+        Anddress::decode(view_operand(root.path(), "current.txt", AnddressTarget::File).as_bytes())
+            .unwrap();
+    let stale =
+        Anddress::decode(view_operand(root.path(), "stale.txt", AnddressTarget::File).as_bytes())
+            .unwrap();
+    let unavailable =
+        Anddress::decode(view_operand(root.path(), "broken.txt", AnddressTarget::File).as_bytes())
+            .unwrap();
+    write(root.path(), "stale.txt", "changed\n");
+    fs::write(root.path().join("broken.txt"), b"broken\0").unwrap();
+    let inputs = vec![
+        current.clone(),
+        stale.clone(),
+        unavailable.clone(),
+        current.clone(),
+    ];
+    let operands: Vec<String> = inputs
+        .iter()
+        .map(|input| String::from_utf8(input.encode().unwrap()).unwrap())
+        .collect();
+    let workspace = WorkspaceRuntime::open(
+        root.path(),
+        WorkspaceAdmission::new([AdmissionRoot::new(".").unwrap()]).unwrap(),
+    )
+    .unwrap();
+    let statuses = workspace.check_batch(&inputs).unwrap();
+    assert_eq!(
+        statuses,
+        vec![
+            CheckStatus::Current,
+            CheckStatus::NotCurrent,
+            CheckStatus::Unavailable,
+            CheckStatus::Current,
+        ]
+    );
+    assert_check_json(
+        run(
+            root.path(),
+            &[
+                "--json",
+                "check",
+                "anddress",
+                &operands[0],
+                &operands[1],
+                &operands[2],
+                &operands[3],
+            ],
+        ),
+        &inputs,
+        &statuses,
+    );
+
+    let missing_root = root.path().join("missing-root");
+    let output = Command::new(binary())
+        .args([
+            "--workspace",
+            missing_root.to_str().unwrap(),
+            "--json",
+            "check",
+            "anddress",
+            &operands[0],
+            "{",
+        ])
+        .output()
+        .unwrap();
+    assert_usage(output);
+}
+
+#[test]
 fn one_shot_check_json_rejects_invalid_forms_and_keeps_fail_closed_writer() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "coordinate.txt", "coordinate\n");
@@ -2739,9 +2844,10 @@ fn one_shot_check_json_rejects_invalid_forms_and_keeps_fail_closed_writer() {
     assert_usage(run(root.path(), &["check", "anddress", &operand, "--json"]));
     assert_usage(run(root.path(), &["--json", "check", "search", "value"]));
     assert_usage(run(root.path(), &["--json", "check", "pick", "value"]));
+    assert_usage(run(root.path(), &["check", "anddress", &operand, &operand]));
     assert_usage(run(
         root.path(),
-        &["--json", "check", "anddress", &operand, "extra"],
+        &["--json", "check", "anddress", &operand, "{"],
     ));
     assert_usage(run(root.path(), &["--json", "check", "anddress", "{"]));
 
@@ -2761,10 +2867,11 @@ fn one_shot_check_json_rejects_invalid_forms_and_keeps_fail_closed_writer() {
         .split("enum SessionValue")
         .next()
         .unwrap();
-    assert!(writer.contains("raw_check_status(outcome)?"));
+    assert!(writer.contains("bw.cli.check.v2"));
+    assert!(writer.contains("encode_into(&mut scratch)"));
     assert!(!writer.contains("Value"));
     assert!(!writer.contains(".clone()"));
-    assert!(!writer.contains("collect("));
+    assert!(!writer.contains("bw.cli.check.v1"));
     assert!(!writer.contains("Vec<CheckOutcome"));
     assert!(!source.contains("write_check(outcome.clone())"));
 }
@@ -3200,6 +3307,32 @@ fn session_batch_check_reports_search_and_pick_counts_without_changing_bindings(
         b"Found 3\n0\tLine\tcurrent.txt:1\n1\tLine\tremoved.txt:1\n2\tLine\tunavailable.txt:1\nChecked 3\nCurrent 1\nNotCurrent 1\nUnavailable 1\nSelected 3\n0\tLine\tcurrent.txt:0-7\n1\tLine\tremoved.txt:0-7\n2\tLine\tunavailable.txt:0-7\nChecked 3\nCurrent 1\nNotCurrent 1\nUnavailable 1\nSelected 3\n0\tLine\tcurrent.txt:0-7\n1\tLine\tremoved.txt:0-7\n2\tLine\tunavailable.txt:0-7\n"
     );
     assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn shell_direct_check_preserves_input_statuses_and_only_issues_current_references() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "current.txt", "needle\n");
+    write(root.path(), "stale.txt", "needle\n");
+    write(root.path(), "unavailable.txt", "needle\n");
+
+    let output = run_shell_after_initial_output(
+        root.path(),
+        "search line needle\n",
+        3,
+        || {
+            write(root.path(), "stale.txt", "changed\n");
+            fs::write(root.path().join("unavailable.txt"), b"needle\0").unwrap();
+        },
+        "check @0 @1 @2 @0\ncheck @00 @0\nview @3 @4 @5\nview @3 @4\nexit\n",
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(
+        output.stdout,
+        b"@0\tLine\tcurrent.txt:1\n@1\tLine\tstale.txt:1\n@2\tLine\tunavailable.txt:1\n@3\tCurrent\tLine\tcurrent.txt:1\nNotCurrent\nUnavailable\n@4\tCurrent\tLine\tcurrent.txt:1\n@5\tLine\tcurrent.txt:1\n@6\tLine\tcurrent.txt:1\n"
+    );
+    let stderr = text(output.stderr);
+    assert!(stderr.contains("numeric reference must be canonical"));
 }
 
 #[test]

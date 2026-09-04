@@ -23,7 +23,7 @@ use thiserror::Error;
 use crate::backwriter::anchor::{Anchedress, AnchorError, AnchorOutcome};
 use crate::backwriter::anddress::{Anddress, AnddressTarget};
 use crate::backwriter::apply::{ApplyError, EditReceipt};
-use crate::backwriter::check::{CheckError, CheckOutcome};
+use crate::backwriter::check::{CheckError, CheckOutcome, CheckStatus};
 use crate::backwriter::edit::Edit;
 use crate::backwriter::pick::PickOutcome;
 use crate::backwriter::search::{SearchError, SearchOutcome, SearchRequest};
@@ -341,6 +341,11 @@ impl WorkspaceRuntime {
     /// Checks one caller-provided target against current admitted Workspace Source.
     pub fn check(&self, input: Anddress) -> Result<CheckOutcome<Option<Anddress>>, CheckError> {
         check::check_one(self, input)
+    }
+
+    /// Checks ordered caller-provided targets, preserving one status per input occurrence.
+    pub fn check_batch(&self, inputs: &[Anddress]) -> Result<Vec<CheckStatus>, CheckError> {
+        check::check_batch(self, inputs)
     }
 
     /// Checks a Search outcome without interpreting its query or payload provenance.

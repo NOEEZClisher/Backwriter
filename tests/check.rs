@@ -3,6 +3,7 @@ mod support;
 use std::fs;
 
 use backwriter::backwriter::anddress::{ANDDRESS_VERSION, Anddress, AnddressTarget};
+use backwriter::backwriter::check::CheckStatus;
 use backwriter::backwriter::pick::PickOutcome;
 use backwriter::backwriter::search::{
     SearchOutcome, SearchQuery, SearchRequest, SearchScope, SearchTarget,
@@ -77,6 +78,32 @@ fn check_reports_current_removed_and_unavailable_v5_addresses() {
         assert_eq!(result.filtered, Some(unavailable.clone()));
         assert_eq!(result.report.unavailable(), &[unavailable]);
     }
+}
+
+#[test]
+fn check_batch_preserves_each_input_status_order_and_duplicate() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path().join("workspace");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("seed.txt"), b"seed\n").unwrap();
+    fs::write(root.join("current.txt"), b"current\n").unwrap();
+    let workspace = runtime(&root, ".");
+    let coordinate = coordinate(&workspace);
+    fs::write(root.join("broken.txt"), b"broken\0").unwrap();
+    let current = support::file(&coordinate, "current.txt", b"current\n");
+    let stale = support::file(&coordinate, "current.txt", b"stale\n");
+    let unavailable = support::file(&coordinate, "broken.txt", b"broken\0");
+    let inputs = vec![current.clone(), stale, unavailable, current.clone()];
+
+    assert_eq!(
+        workspace.check_batch(&inputs).unwrap(),
+        vec![
+            CheckStatus::Current,
+            CheckStatus::NotCurrent,
+            CheckStatus::Unavailable,
+            CheckStatus::Current,
+        ]
+    );
 }
 
 #[test]

@@ -22,7 +22,7 @@ use backwriter::{
         anchor::{Anchedress, AnchorError, AnchorOutcome},
         anddress::{Anddress, AnddressError, AnddressTarget, LineTerminator},
         apply::{ApplyError, EditReceipt},
-        check::{CheckOutcome, CheckReport},
+        check::{CheckOutcome, CheckReport, CheckStatus},
         data::{DataError, DataKind, DataName, DataStore, StoreError},
         edit::{Edit, EditError, Position},
         pick::{PickError, PickOutcome, PickPredicate, PickTargetKind, pick},
@@ -34,7 +34,7 @@ use backwriter::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const TOP_LEVEL_HELP: &str = "USAGE\n  bw [GLOBAL OPTIONS] <command> [command options and operands]\n  bw help [<command>]\n\nGLOBAL OPTIONS\n  --workspace ABSOLUTE_PATH  Select an absolute workspace before the command.\n  --admit LOGICAL_PATH       Admit a logical root before the command; repeatable.\n  --json                     Select JSON output where the command supports it.\n  --raw                      Select raw View output only.\n\nCAPABILITIES\n  search   Discover current File, Paragraph, or Line Anddresses.\n  view     Read one or more current Anddresses.\n  edit     Replace one current Anddress.\n  check    Check one current Anddress.\n  shell    Run advanced raw Session commands.\n  version  Print the Backwriter version.\n  update   Run the installed-platform updater.\n\nPick, Anchor, Apply, and Data have no one-shot command; use bw shell.\n\nADDITIONAL HELP\n  bw help <command>\n\nGlobal options precede the command. Canonical output options are documented only in that position.";
+const TOP_LEVEL_HELP: &str = "USAGE\n  bw [GLOBAL OPTIONS] <command> [command options and operands]\n  bw help [<command>]\n\nGLOBAL OPTIONS\n  --workspace ABSOLUTE_PATH  Select an absolute workspace before the command.\n  --admit LOGICAL_PATH       Admit a logical root before the command; repeatable.\n  --json                     Select JSON output where the command supports it.\n  --raw                      Select raw View output only.\n\nCAPABILITIES\n  search   Discover current File, Paragraph, or Line Anddresses.\n  view     Read one or more current Anddresses.\n  edit     Replace one current Anddress.\n  check    Check one or more current Anddresses.\n  shell    Run advanced raw Session commands.\n  version  Print the Backwriter version.\n  update   Run the installed-platform updater.\n\nPick, Anchor, Apply, and Data have no one-shot command; use bw shell.\n\nADDITIONAL HELP\n  bw help <command>\n\nGlobal options precede the command. Canonical output options are documented only in that position.";
 
 const SEARCH_HELP: &str = "NAME\n  bw search - discover current Anddresses by exact literal Line content or logical File path\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n\nDESCRIPTION\n  Searches admitted Workspace Source. Literal queries are case-sensitive and match exact Line content without normalization.\n\nARGUMENTS\n  <line|paragraph|file>  Returned target kind.\n  <query>                Nonempty literal query.\n  /file <logical-path>   Exact logical File lookup.\n\nOPTIONS\n  --workspace, --admit, and --json must precede search.\n  --source LOGICAL_PATH and --subtree LOGICAL_PATH narrow a literal search scope.\n\nWHAT HAPPENS\n  Opens the Runtime, scans admitted source once per selected source, and returns all-or-nothing current results.\n\nOUTPUT\n  Human output lists matches. --json writes the fixed bw.cli.search.v2 envelope.\n\nEXAMPLES\n  bw search line needle --source note.txt\n  bw --json search paragraph needle\n  bw search /file note.txt\n\nFAILURES\n  Invalid request or scope is a usage failure. Unavailable source or Runtime failure exits 1.\n\nSEE ALSO\n  bw help view\n  bw help shell";
 
@@ -42,9 +42,9 @@ const VIEW_HELP: &str = "NAME\n  bw view - project current content from one or m
 
 const EDIT_HELP: &str = "NAME\n  bw edit - replace one current v5 Anddress\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> <content>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> --stdin\n\nDESCRIPTION\n  Replaces exactly one current File, Paragraph, or Line target through the Runtime Replace seam.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One canonical v5 object.\n  <content>                  One positional replacement string.\n  --stdin                    Read replacement Content from standard input through EOF.\n\nOPTIONS\n  --workspace, --admit, and --json must precede edit.\n  --stdin is the exclusive Content selector; use standard input to pass literal --stdin Content.\n\nWHAT HAPPENS\n  Validates the Anddress, reads selected standard input before Runtime access, preserves an existing Line terminator automatically, then applies one Replace.\n\nOUTPUT\n  Human output writes the receipt outcome and fresh Anddress when present. --json writes bw.cli.edit.v1.\n\nEXAMPLES\n  bw edit anddress '<v5-Anddress>' 'replacement'\n  printf '%s' 'replacement' | bw edit anddress '<v5-Anddress>' --stdin\n\nFAILURES\n  Invalid input is a usage failure. Standard-input, stale, unavailable, or publication failure exits 1.\n\nSEE ALSO\n  bw help view\n  bw help check";
 
-const CHECK_HELP: &str = "NAME\n  bw check - check one current v5 Anddress\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v5-Anddress>\n\nDESCRIPTION\n  Checks the current state of one caller-provided v5 Anddress.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One canonical v5 object.\n\nOPTIONS\n  --workspace, --admit, and --json must precede check.\n  No command-local options are available.\n\nWHAT HAPPENS\n  Opens the Runtime after input validation and reports currentness for that one target.\n\nOUTPUT\n  Human output writes one state. --json writes the existing one-shot Check envelope.\n\nEXAMPLES\n  bw check anddress '<v5-Anddress>'\n\nFAILURES\n  Invalid input is a usage failure. Unavailable source or Runtime failure exits 1.\n\nSEE ALSO\n  bw help search\n  bw help shell";
+const CHECK_HELP: &str = "NAME\n  bw check - check one or more current v5 Anddresses\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v5-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json check anddress <encoded-v5-Anddress>...\n\nDESCRIPTION\n  Checks the current state of caller-provided v5 Anddresses in input order.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One or more canonical v5 objects.\n\nOPTIONS\n  --workspace, --admit, and --json must precede check.\n  Multiple inputs require --json. No command-local options are available.\n\nWHAT HAPPENS\n  Validates every input before opening the Runtime, then reports one currentness state per input.\n\nOUTPUT\n  One human input writes one state. --json writes the fixed bw.cli.check.v2 envelope.\n\nEXAMPLES\n  bw check anddress '<v5-Anddress>'\n  bw --json check anddress '<v5-Anddress>' '<v5-Anddress>'\n\nFAILURES\n  Invalid input or a non-JSON batch is a usage failure. Runtime failure exits 1.\n\nSEE ALSO\n  bw help search\n  bw help shell";
 
-const SHELL_HELP: &str = "NAME\n  bw shell - run one local reference session and advanced raw Session commands\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nDESCRIPTION\n  Reads commands from standard input until exit. Direct search, view, and replace use session-local numeric Anddress references. Raw bindings and raw capability composition remain the advanced surface.\n\nARGUMENTS\n  None.\n\nOPTIONS\n  --workspace and --admit must precede shell.\n  --json and --raw are unavailable.\n\nWHAT HAPPENS\n  A successful direct search or view emits append-only @N references. Direct replace uses one reference and emits a fresh reference when one exists. References end with this shell process. Raw let, Pick, View, Check, Anchor, Edit, Apply, and Data retain their existing grammar.\n\nOUTPUT\n  Direct references write @N, target kind, and location. Raw commands write their existing human result.\n\nEXAMPLES\n  bw shell\n  search line needle\n  view @0\n  replace @1 replacement\n  let hits = search line needle\n  view anddress @hits[0]\n  exit\n\nFAILURES\n  Invalid shell grammar is a usage failure. Runtime and source failures exit 1.\n\nSEE ALSO\n  bw help search\n  bw help edit";
+const SHELL_HELP: &str = "NAME\n  bw shell - run one local reference session and advanced raw Session commands\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nDESCRIPTION\n  Reads commands from standard input until exit. Direct search, view, replace, and check use session-local numeric Anddress references. Raw bindings and raw capability composition remain the advanced surface.\n\nARGUMENTS\n  None.\n\nOPTIONS\n  --workspace and --admit must precede shell.\n  --json and --raw are unavailable.\n\nWHAT HAPPENS\n  A successful direct search, view, or current check emits append-only @N references. Direct replace uses one reference and emits a fresh reference when one exists. References end with this shell process. Raw let, Pick, View, Check, Anchor, Edit, Apply, and Data retain their existing grammar.\n\nOUTPUT\n  Direct references write @N, target kind, and location. Direct Check writes one state per input. Raw commands write their existing human result.\n\nEXAMPLES\n  bw shell\n  search line needle\n  view @0\n  replace @1 replacement\n  check @2 @3\n  let hits = search line needle\n  view anddress @hits[0]\n  exit\n\nFAILURES\n  Invalid shell grammar is a usage failure. Runtime and source failures exit 1.\n\nSEE ALSO\n  bw help search\n  bw help edit";
 
 const UPDATE_HELP: &str = "NAME\n  bw update - run the installed-platform updater\n\nUSAGE\n  bw update\n\nDESCRIPTION\n  Downloads and hands off to the canonical installer for the current platform.\n\nARGUMENTS\n  None.\n\nOPTIONS\n  None.\n\nWHAT HAPPENS\n  Performs the existing update download and installer handoff.\n\nOUTPUT\n  The installer owns its output.\n\nEXAMPLES\n  bw update\n\nFAILURES\n  Any option or operand is a usage failure. Download, installer, or platform failure exits 1.\n\nSEE ALSO\n  bw help version";
 
@@ -1091,19 +1091,32 @@ fn execute_check(
             "check requires the anddress input form",
         ));
     }
+    let mut anddresses = Vec::new();
     let encoded = required_text(&mut arguments, "check anddress").map_err(promote_check_usage)?;
-    if arguments.next().is_some() {
+    anddresses
+        .try_reserve(1)
+        .map_err(|_| CliError::execution("Check input allocation failed"))?;
+    anddresses.push(decode_anddress(encoded).map_err(promote_check_usage)?);
+    for encoded in arguments {
+        anddresses
+            .try_reserve(1)
+            .map_err(|_| CliError::execution("Check input allocation failed"))?;
+        anddresses.push(
+            decode_anddress(utf8(encoded, "check anddress").map_err(promote_check_usage)?)
+                .map_err(promote_check_usage)?,
+        );
+    }
+    if anddresses.len() != 1 && output != OutputMode::Json {
         return Err(check_usage(
-            "check.extra_operand",
-            "check accepts exactly one anddress operand",
+            "check.output_unsupported",
+            "checking multiple Anddresses requires --json",
         ));
     }
-    let anddress = decode_anddress(encoded).map_err(promote_check_usage)?;
     let runtime = open_runtime(workspace, admissions, Some("check"))?;
-    let outcome = run_check(&runtime, anddress)?;
+    let statuses = run_check_batch(&runtime, &anddresses)?;
     match output {
-        OutputMode::Human => write_check(&outcome),
-        OutputMode::Json => write_check_json(&outcome),
+        OutputMode::Human => write_check_status(statuses[0]),
+        OutputMode::Json => write_check_json(&anddresses, &statuses),
         OutputMode::Raw => unreachable!(),
     }
 }
@@ -1143,6 +1156,15 @@ fn run_check(
 ) -> Result<CheckOutcome<Option<Anddress>>, CliError> {
     runtime
         .check(anddress)
+        .map_err(|error| CliError::execution(error.to_string()))
+}
+
+fn run_check_batch(
+    runtime: &WorkspaceRuntime,
+    anddresses: &[Anddress],
+) -> Result<Vec<CheckStatus>, CliError> {
+    runtime
+        .check_batch(anddresses)
         .map_err(|error| CliError::execution(error.to_string()))
 }
 
@@ -1459,7 +1481,26 @@ fn raw_check_status(outcome: &CheckOutcome<Option<Anddress>>) -> Result<&'static
 }
 
 fn write_check(outcome: &CheckOutcome<Option<Anddress>>) -> Result<(), CliError> {
-    let status = raw_check_status(outcome)?;
+    write_check_status(check_status_from_outcome(outcome)?)
+}
+
+fn check_status_from_outcome(
+    outcome: &CheckOutcome<Option<Anddress>>,
+) -> Result<CheckStatus, CliError> {
+    match raw_check_status(outcome)? {
+        "Current" => Ok(CheckStatus::Current),
+        "NotCurrent" => Ok(CheckStatus::NotCurrent),
+        "Unavailable" => Ok(CheckStatus::Unavailable),
+        _ => unreachable!(),
+    }
+}
+
+fn write_check_status(status: CheckStatus) -> Result<(), CliError> {
+    let status = match status {
+        CheckStatus::Current => "Current",
+        CheckStatus::NotCurrent => "NotCurrent",
+        CheckStatus::Unavailable => "Unavailable",
+    };
     let mut stdout = BufWriter::new(io::stdout().lock());
     writeln!(stdout, "{status}").map_err(|error| CliError::stream(error.to_string()))?;
     stdout
@@ -1467,37 +1508,53 @@ fn write_check(outcome: &CheckOutcome<Option<Anddress>>) -> Result<(), CliError>
         .map_err(|error| CliError::stream(error.to_string()))
 }
 
-fn write_check_json(outcome: &CheckOutcome<Option<Anddress>>) -> Result<(), CliError> {
-    let status = match raw_check_status(outcome)? {
-        "Current" => "current",
-        "NotCurrent" => "not-current",
-        "Unavailable" => "unavailable",
-        _ => unreachable!(),
-    };
+fn write_check_json(inputs: &[Anddress], statuses: &[CheckStatus]) -> Result<(), CliError> {
+    if inputs.len() != statuses.len() {
+        return Err(CliError::execution("inconsistent ordered Check results"));
+    }
     let mut stdout = BufWriter::new(io::stdout().lock());
     stdout
-        .write_all(b"{\"schema\":\"bw.cli.check.v1\",\"status\":\"")
+        .write_all(b"{\"schema\":\"bw.cli.check.v2\",\"outcomes\":[")
         .map_err(|error| CliError::stream(error.to_string()))?;
-    stdout
-        .write_all(status.as_bytes())
-        .map_err(|error| CliError::stream(error.to_string()))?;
-    stdout
-        .write_all(b"\",\"filtered\":")
-        .map_err(|error| CliError::stream(error.to_string()))?;
-    if let Some(filtered) = &outcome.filtered {
-        let encoded = filtered
-            .encode()
-            .map_err(|error| CliError::execution(error.to_string()))?;
+    let mut scratch = Vec::new();
+    for (index, (input, status)) in inputs.iter().zip(statuses).enumerate() {
+        if index != 0 {
+            stdout
+                .write_all(b",")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+        }
+        let label = match status {
+            CheckStatus::Current => "current",
+            CheckStatus::NotCurrent => "not-current",
+            CheckStatus::Unavailable => "unavailable",
+        };
         stdout
-            .write_all(&encoded)
+            .write_all(b"{\"status\":\"")
             .map_err(|error| CliError::stream(error.to_string()))?;
-    } else {
         stdout
-            .write_all(b"null")
+            .write_all(label.as_bytes())
+            .map_err(|error| CliError::stream(error.to_string()))?;
+        stdout
+            .write_all(b"\",\"anddress\":")
+            .map_err(|error| CliError::stream(error.to_string()))?;
+        if *status == CheckStatus::NotCurrent {
+            stdout
+                .write_all(b"null")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+        } else {
+            input
+                .encode_into(&mut scratch)
+                .map_err(|error| CliError::execution(error.to_string()))?;
+            stdout
+                .write_all(&scratch)
+                .map_err(|error| CliError::stream(error.to_string()))?;
+        }
+        stdout
+            .write_all(b"}")
             .map_err(|error| CliError::stream(error.to_string()))?;
     }
     stdout
-        .write_all(b"}\n")
+        .write_all(b"]}\n")
         .map_err(|error| CliError::stream(error.to_string()))?;
     stdout
         .flush()
@@ -1619,7 +1676,7 @@ fn execute_session_command(
             Ok(SessionControl::Continue)
         }
         "check" => {
-            execute_session_check(runtime, bindings, tokens)?;
+            execute_session_check(runtime, bindings, refs, tokens)?;
             Ok(SessionControl::Continue)
         }
         "anchor" => {
@@ -2695,6 +2752,7 @@ fn write_session_status(status: &str) -> Result<(), CliError> {
 fn execute_session_check(
     runtime: &mut WorkspaceRuntime,
     bindings: &[SessionBinding],
+    refs: &mut Vec<Anddress>,
     tokens: &[String],
 ) -> Result<(), CliError> {
     match required_token(tokens, 1, "check input form")? {
@@ -2734,10 +2792,68 @@ fn execute_session_check(
             };
             write_batch_check(&report)
         }
-        _ => Err(CliError::usage(
-            "check requires the anddress, search, or pick input form",
-        )),
+        _ => execute_session_ref_check(runtime, bindings, refs, &tokens[1..]),
     }
+}
+
+fn execute_session_ref_check(
+    runtime: &WorkspaceRuntime,
+    bindings: &[SessionBinding],
+    refs: &mut Vec<Anddress>,
+    references: &[String],
+) -> Result<(), CliError> {
+    if references.is_empty() {
+        return Err(CliError::usage("check requires at least one reference"));
+    }
+    let mut inputs = Vec::new();
+    inputs
+        .try_reserve_exact(references.len())
+        .map_err(|_| CliError::execution("Session Check allocation failed"))?;
+    for reference in references {
+        inputs.push(resolve_session_ref(bindings, refs, reference)?);
+    }
+    let statuses = run_check_batch(runtime, &inputs)?;
+    let current_count = statuses
+        .iter()
+        .filter(|status| **status == CheckStatus::Current)
+        .count();
+    let start = reserve_session_refs(refs, current_count)?;
+    for (input, status) in inputs.iter().zip(&statuses) {
+        if *status == CheckStatus::Current {
+            refs.push(input.clone());
+        }
+    }
+    write_session_check(start, &inputs, &statuses)
+}
+
+fn write_session_check(
+    first_slot: usize,
+    inputs: &[Anddress],
+    statuses: &[CheckStatus],
+) -> Result<(), CliError> {
+    if inputs.len() != statuses.len() {
+        return Err(CliError::execution("inconsistent ordered Check results"));
+    }
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    let mut slot = first_slot;
+    for (input, status) in inputs.iter().zip(statuses) {
+        match status {
+            CheckStatus::Current => {
+                write_session_ref_line(&mut stdout, slot, Some("Current"), input)
+                    .map_err(|error| CliError::stream(error.to_string()))?;
+                slot = slot
+                    .checked_add(1)
+                    .ok_or_else(|| CliError::execution("Session reference slot overflow"))?;
+            }
+            CheckStatus::NotCurrent => writeln!(stdout, "NotCurrent")
+                .map_err(|error| CliError::stream(error.to_string()))?,
+            CheckStatus::Unavailable => writeln!(stdout, "Unavailable")
+                .map_err(|error| CliError::stream(error.to_string()))?,
+        }
+    }
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
 }
 
 fn write_batch_check(report: &CheckReport) -> Result<(), CliError> {

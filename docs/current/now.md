@@ -1,17 +1,18 @@
 # Backwriter Current State
 
-## 0.2.6 operational Adapter and verification contraction — Gates 1–5 complete
+## 0.2.6 operational Adapter and verification contraction — Gates 1–6 complete
 
 Gate 1 records the approved Adapter boundary, Gate 2 closes command-local help,
 and Gate 3 closes actionable usage failures and one-shot Edit stdin Content.
 Gate 4 closes Line body replacement and separates it from advanced raw exact
-extent replacement. Gate 5 adds only shell-local numeric references and
-high-level Replace in the
+extent replacement. Gate 5 adds shell-local numeric references and high-level
+Replace, and Gate 6 adds ordered batch Check in the
 [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).
 The governing rule is **explain what to type, what happens, and what comes
-back**. No implementation, version, artifact, installer, publication, Core, or
-Runtime change occurs here: `0.2.5` remains the closed source and public
-distribution.
+back**. Gate 6 adds only the narrow ordered Check Runtime seam and Adapter
+writers; version, artifact, installer, publication, v5 wire, Search, and other
+capability meanings remain unchanged. `0.2.5` remains the closed source and
+public distribution.
 
 `bw --help` equals `bw help`; `bw help X` equals `bw X --help` for Search,
 View, Edit, Check, Shell, Update, and Version. Each command page uses fixed
@@ -27,15 +28,19 @@ caller-provided exact range bytes and a separate publication step; no exact
 one-shot form exists. One `bw shell` process owns append-only `@N` references:
 direct Search and View issue them, direct Replace consumes one and issues a
 fresh one only when its receipt has an Anddress, and `Changed\tNone` issues
-none. `@N` does not collide with named raw bindings; `let name = @N` creates an
-existing named Anddress alias. The future sequence is ordered batch Check,
-verification/docs contraction, then source readiness. Core Search and one-shot
-Search output, v5 values/wire, raw Session, `apply_replace`, and current Check
-seams remain fixed. Candidate execution
+none. Direct Check resolves every reference before Runtime access, preserves
+input order and duplicates, and issues fresh slots only for Current inputs.
+`@N` does not collide with named raw bindings; `let name = @N` creates an
+existing named Anddress alias. One-shot JSON Check is `bw.cli.check.v2` and
+preserves one Current, NotCurrent, or Unavailable outcome per input; a batch
+requires JSON while single human output remains one status line. The future
+sequence is verification/docs contraction, then source readiness. Core Search
+and one-shot Search output, v5 values/wire, raw Session, `apply_replace`, and
+existing Check seam meanings remain fixed. Candidate execution
 compares with `0.2.5`; inherited GNU/musl 268-test evidence and `Correct 1 /
 Safe Reject 6 / Wrong Apply 0` remain required controls. Gate 2 adds three CLI
-regressions, and Gate 3 adds four, so the complete GNU and musl suites each
-pass 275 tests.
+regressions, Gate 3 adds four, Gate 5 adds six, and Gate 6 adds three, so the
+complete GNU and musl suites each pass 285 tests.
 
 ## 0.2.5 performance recovery — published and closed
 

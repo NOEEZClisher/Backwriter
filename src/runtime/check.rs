@@ -5,16 +5,9 @@ use super::{
     source_scan::{SourceScanError, observe_source},
 };
 use crate::backwriter::anddress::Anddress;
-use crate::backwriter::check::{CheckError, CheckOutcome, CheckReport};
+use crate::backwriter::check::{CheckError, CheckOutcome, CheckReport, CheckStatus};
 use crate::backwriter::pick::PickOutcome;
 use crate::backwriter::search::SearchOutcome;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum Currentness {
-    Current,
-    NotCurrent,
-    Unavailable,
-}
 
 pub(super) fn check_one(
     runtime: &WorkspaceRuntime,
@@ -25,10 +18,11 @@ pub(super) fn check_one(
         .try_reserve_exact(1)
         .map_err(|_| CheckError::Resource)?;
     inputs.push(input);
+    let statuses = execute_batch(runtime, &inputs)?;
     let CheckOutcome {
         mut filtered,
         report,
-    } = execute_batch(runtime, inputs)?;
+    } = finish(inputs, statuses)?;
     Ok(CheckOutcome {
         filtered: filtered.pop(),
         report,
@@ -43,7 +37,8 @@ pub(super) fn check_search(
         SearchOutcome::Empty => Vec::new(),
         SearchOutcome::Found { anddresses } => anddresses,
     };
-    let CheckOutcome { filtered, report } = execute_batch(runtime, inputs)?;
+    let statuses = execute_batch(runtime, &inputs)?;
+    let CheckOutcome { filtered, report } = finish(inputs, statuses)?;
     Ok(CheckOutcome {
         filtered: search_outcome(filtered),
         report,
@@ -58,17 +53,25 @@ pub(super) fn check_pick(
         PickOutcome::Empty => Vec::new(),
         PickOutcome::Selected { anddresses } => anddresses,
     };
-    let CheckOutcome { filtered, report } = execute_batch(runtime, inputs)?;
+    let statuses = execute_batch(runtime, &inputs)?;
+    let CheckOutcome { filtered, report } = finish(inputs, statuses)?;
     Ok(CheckOutcome {
         filtered: pick_outcome(filtered),
         report,
     })
 }
 
+pub(super) fn check_batch(
+    runtime: &WorkspaceRuntime,
+    inputs: &[Anddress],
+) -> Result<Vec<CheckStatus>, CheckError> {
+    execute_batch(runtime, inputs)
+}
+
 fn execute_batch(
     runtime: &WorkspaceRuntime,
-    inputs: Vec<Anddress>,
-) -> Result<CheckOutcome<Vec<Anddress>>, CheckError> {
+    inputs: &[Anddress],
+) -> Result<Vec<CheckStatus>, CheckError> {
     let mut order = indices(inputs.len())?;
     order.sort_unstable_by(|left, right| {
         super::compare_source_keys(&inputs[*left], &inputs[*right])
@@ -77,15 +80,15 @@ fn execute_batch(
     statuses
         .try_reserve_exact(inputs.len())
         .map_err(|_| CheckError::Resource)?;
-    statuses.resize(inputs.len(), Currentness::NotCurrent);
+    statuses.resize(inputs.len(), CheckStatus::NotCurrent);
 
     let mut start = 0;
     while start < order.len() {
-        let end = group_end(&inputs, &order, start);
-        classify_group(runtime, &inputs, &order[start..end], &mut statuses)?;
+        let end = group_end(inputs, &order, start);
+        classify_group(runtime, inputs, &order[start..end], &mut statuses)?;
         start = end;
     }
-    finish(inputs, statuses)
+    Ok(statuses)
 }
 
 fn indices(length: usize) -> Result<Vec<usize>, CheckError> {
@@ -112,17 +115,17 @@ fn classify_group(
     runtime: &WorkspaceRuntime,
     inputs: &[Anddress],
     group: &[usize],
-    statuses: &mut [Currentness],
+    statuses: &mut [CheckStatus],
 ) -> Result<(), CheckError> {
     let exemplar = &inputs[group[0]];
     if exemplar.workspace_coordinate() != runtime.workspace_coordinate
         || is_backwriter_spill(exemplar.logical_path())
     {
-        set_group(statuses, group, Currentness::NotCurrent);
+        set_group(statuses, group, CheckStatus::NotCurrent);
         return Ok(());
     }
     if runtime.selected_root(exemplar.logical_path()).is_err() {
-        set_group(statuses, group, Currentness::NotCurrent);
+        set_group(statuses, group, CheckStatus::NotCurrent);
         return Ok(());
     }
     if let Some(proof) = runtime.select_current_proof(exemplar.logical_path()) {
@@ -139,11 +142,11 @@ fn classify_group(
     let mut file = match runtime.open_admitted_source(exemplar.logical_path()) {
         Ok(file) => file,
         Err(DirectoryAccessError::Unadmitted | DirectoryAccessError::NotCurrent) => {
-            set_group(statuses, group, Currentness::NotCurrent);
+            set_group(statuses, group, CheckStatus::NotCurrent);
             return Ok(());
         }
         Err(DirectoryAccessError::Unavailable) => {
-            set_group(statuses, group, Currentness::Unavailable);
+            set_group(statuses, group, CheckStatus::Unavailable);
             return Ok(());
         }
     };
@@ -154,7 +157,7 @@ fn classify_observed_source(
     reader: &mut impl std::io::Read,
     inputs: &[Anddress],
     group: &[usize],
-    statuses: &mut [Currentness],
+    statuses: &mut [CheckStatus],
 ) -> Result<(), CheckError> {
     match observe_source(reader, |_, _| Ok(())) {
         Ok(state) => {
@@ -169,7 +172,7 @@ fn classify_observed_source(
             Ok(())
         }
         Err(SourceScanError::Read | SourceScanError::InvalidSource) => {
-            set_group(statuses, group, Currentness::Unavailable);
+            set_group(statuses, group, CheckStatus::Unavailable);
             Ok(())
         }
         Err(SourceScanError::Resource) => Err(CheckError::Resource),
@@ -182,19 +185,19 @@ fn classify_source_state(
     line_count: usize,
     inputs: &[Anddress],
     group: &[usize],
-    statuses: &mut [Currentness],
+    statuses: &mut [CheckStatus],
 ) {
     for &index in group {
         let input = &inputs[index];
         statuses[index] = if super::source_state_matches(hash, byte_length, line_count, input) {
-            Currentness::Current
+            CheckStatus::Current
         } else {
-            Currentness::NotCurrent
+            CheckStatus::NotCurrent
         };
     }
 }
 
-fn set_group(statuses: &mut [Currentness], group: &[usize], status: Currentness) {
+fn set_group(statuses: &mut [CheckStatus], group: &[usize], status: CheckStatus) {
     for &index in group {
         statuses[index] = status;
     }
@@ -202,14 +205,14 @@ fn set_group(statuses: &mut [Currentness], group: &[usize], status: Currentness)
 
 fn finish(
     inputs: Vec<Anddress>,
-    statuses: Vec<Currentness>,
+    statuses: Vec<CheckStatus>,
 ) -> Result<CheckOutcome<Vec<Anddress>>, CheckError> {
     let (current_count, removed_count, unavailable_count) = statuses.iter().fold(
         (0_usize, 0_usize, 0_usize),
         |(current_count, removed_count, unavailable_count), status| match status {
-            Currentness::Current => (current_count + 1, removed_count, unavailable_count),
-            Currentness::NotCurrent => (current_count, removed_count + 1, unavailable_count),
-            Currentness::Unavailable => (current_count, removed_count, unavailable_count + 1),
+            CheckStatus::Current => (current_count + 1, removed_count, unavailable_count),
+            CheckStatus::NotCurrent => (current_count, removed_count + 1, unavailable_count),
+            CheckStatus::Unavailable => (current_count, removed_count, unavailable_count + 1),
         },
     );
     let mut filtered = Vec::new();
@@ -226,11 +229,11 @@ fn finish(
         .map_err(|_| CheckError::Resource)?;
     for (input, status) in inputs.into_iter().zip(statuses) {
         match status {
-            Currentness::Current => {
+            CheckStatus::Current => {
                 filtered.push(input);
             }
-            Currentness::NotCurrent => removed.push(input),
-            Currentness::Unavailable => {
+            CheckStatus::NotCurrent => removed.push(input),
+            CheckStatus::Unavailable => {
                 unavailable.push(input.clone());
                 filtered.push(input);
             }
@@ -444,12 +447,12 @@ mod tests {
             address(bytes, AnddressTarget::Line, 16, 21),
         ];
         let group = [0, 1, 2, 3, 4];
-        let mut statuses = vec![Currentness::NotCurrent; inputs.len()];
+        let mut statuses = vec![CheckStatus::NotCurrent; inputs.len()];
         let mut source = reader(bytes, None);
 
         classify_observed_source(&mut source, &inputs, &group, &mut statuses).unwrap();
 
-        assert_eq!(statuses, vec![Currentness::Current; inputs.len()]);
+        assert_eq!(statuses, vec![CheckStatus::Current; inputs.len()]);
         assert!(source.returned_eof);
     }
 
@@ -463,12 +466,12 @@ mod tests {
         ] {
             let inputs = all_target_kinds();
             let group = [0, 1, 2, 3];
-            let mut statuses = vec![Currentness::NotCurrent; inputs.len()];
+            let mut statuses = vec![CheckStatus::NotCurrent; inputs.len()];
             let mut source = reader(bytes, failure);
 
             classify_observed_source(&mut source, &inputs, &group, &mut statuses).unwrap();
 
-            assert_eq!(statuses, vec![Currentness::Unavailable; inputs.len()]);
+            assert_eq!(statuses, vec![CheckStatus::Unavailable; inputs.len()]);
         }
     }
 
@@ -481,12 +484,12 @@ mod tests {
             25,
         )];
         let group = [0];
-        let mut statuses = vec![Currentness::NotCurrent];
+        let mut statuses = vec![CheckStatus::NotCurrent];
         let mut source = reader(b"valid prefix then failure", Some(12));
 
         classify_observed_source(&mut source, &inputs, &group, &mut statuses).unwrap();
 
-        assert_eq!(statuses, vec![Currentness::Unavailable]);
+        assert_eq!(statuses, vec![CheckStatus::Unavailable]);
     }
 
     #[test]
@@ -526,7 +529,7 @@ mod tests {
             raw,
         ];
         let group = [0, 1, 2, 3, 4, 5];
-        let mut statuses = vec![Currentness::NotCurrent; inputs.len()];
+        let mut statuses = vec![CheckStatus::NotCurrent; inputs.len()];
         let mut observed = FixtureReader {
             bytes: source.as_bytes(),
             cursor: 0,
@@ -541,12 +544,12 @@ mod tests {
         assert_eq!(
             statuses,
             [
-                Currentness::Current,
-                Currentness::Current,
-                Currentness::Current,
-                Currentness::NotCurrent,
-                Currentness::NotCurrent,
-                Currentness::Current,
+                CheckStatus::Current,
+                CheckStatus::Current,
+                CheckStatus::Current,
+                CheckStatus::NotCurrent,
+                CheckStatus::NotCurrent,
+                CheckStatus::Current,
             ]
         );
         assert!(observed.returned_eof);
@@ -628,9 +631,13 @@ mod tests {
         assert!(!production.contains("validate_one"));
         assert_eq!(
             production
-                .matches("execute_batch(runtime, inputs)?")
+                .matches("execute_batch(runtime, &inputs)?")
                 .count(),
             3
+        );
+        assert_eq!(
+            production.matches("execute_batch(runtime, inputs)").count(),
+            1
         );
         assert!(production.contains("Err(SourceScanError::Resource) => Err(CheckError::Resource)"));
         assert_eq!(production.matches("observe_source(").count(), 1);

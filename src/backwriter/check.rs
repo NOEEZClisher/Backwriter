@@ -4,6 +4,14 @@ use thiserror::Error;
 
 use crate::backwriter::anddress::Anddress;
 
+/// The currentness of one input occurrence in an ordered Check batch.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CheckStatus {
+    Current,
+    NotCurrent,
+    Unavailable,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CheckOutcome<T> {
     pub filtered: T,

@@ -13,13 +13,13 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.2.6 operational Adapter authority — Gates 1–5 complete
+## 0.2.6 operational Adapter authority — Gates 1–6 complete
 
 The `0.2.6` operational Adapter and verification-contraction authority is
 documentation-only at Gate 1, command-local help at Gate 2, actionable
 usage errors plus one-shot Edit standard-input Content at Gate 3, the Line
-body/advanced exact-extent boundary at Gate 4, and shell-local references plus
-high-level Replace at Gate 5. The
+body/advanced exact-extent boundary at Gate 4, shell-local references plus
+high-level Replace at Gate 5, and ordered batch Check at Gate 6. The
 governing rule is: **explain what to type, what happens, and what comes back.**
 It retains the closed `0.2.5` Core,
 Runtime, v5 wire, Core Search behavior, one-shot Search output/performance, raw Session, and public
@@ -43,7 +43,8 @@ it may carry caller-provided terminators or multiline bytes. One-shot adds no
 exact flag, override, View/Search/Check call, second executor, or retry.
 Shell-local numeric references are append-only `Vec<Anddress>` values owned by
 one `bw shell` process. Direct Search and View issue them; direct Replace
-consumes one and issues a fresh result only when the receipt has one. `@N` is
+consumes one and issues a fresh result only when the receipt has one; direct
+Check issues a fresh reference for each Current input only. `@N` is
 distinct from named raw bindings, and `let name = @N` clones it into the
 existing named Anddress binding. They are not a Core lifecycle, persistent
 identity, relocation, history,
@@ -563,8 +564,8 @@ are preserved evidence, never current authority.
   `WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)`,
   `WorkspaceRuntime::apply(&mut self, &Edit)`, and
   `WorkspaceRuntime::apply_replace(&mut self, &Edit)`,
-  `WorkspaceRuntime::check(Anddress)`, `check_search(SearchOutcome)`, and
-  `check_pick(PickOutcome)`.
+`WorkspaceRuntime::check(Anddress)`, `check_batch(&[Anddress])`,
+`check_search(SearchOutcome)`, and `check_pick(PickOutcome)`.
   `WorkspaceRuntime::open_host_authoritative` explicitly selects Host mode;
   `WorkspaceRuntime::invalidate_source` is its pre-mutation source boundary.
   There is no public Runtime enumeration or listing API. Core owns the validated
