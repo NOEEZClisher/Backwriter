@@ -1,6 +1,6 @@
 # Backwriter Protocol
 
-## 0.2.6 operational Adapter boundary — Gates 1–2 authority
+## 0.2.6 operational Adapter boundary — Gates 1–3 authority
 
 Gate 1 changes no Core or Runtime contract. Existing `WorkspaceRuntime`
 seams are the default: one-shot Replace reuses `apply_replace`, raw `apply`
@@ -14,6 +14,19 @@ recognizes `bw --help`/`bw help` and the exact `bw help X`/`bw X --help` pairs
 for Search, View, Edit, Check, Shell, Update, and Version before any Runtime
 open, source I/O, or Update network operation. Help uses fixed command-local
 sections and describes only the already implemented parser forms.
+
+Gate 3 fixes one Adapter-only error presentation for top-level and one-shot
+forms: `error[stable.code]`, exact cause, the canonical usage extracted from the
+same command help page, and a command-local help hint. It keeps exit `2` and
+empty stdout for usage failure, while Runtime/current-source/stream failures
+retain exit `1` and their existing messages. Raw Session grammar and reporting
+are unchanged. One-shot Edit now selects exactly one Content source: its
+positional UTF-8 argument or `--stdin` in that position. It validates the full
+argv and v5 Anddress, reads stdin through EOF as UTF-8, then opens Runtime and
+reuses the existing Replace/receipt writer. File and Paragraph Content is exact;
+Line rejects NUL/CR/LF and preserves the decoded current terminator. This adds
+no Core/Runtime seam, JSON schema, executor, retry, or stdin transport for raw
+Session.
 
 Search remains its exact `0.2.5` contract: matcher, structural path,
 traversal, order, tiers, storage, `SearchOutcome`, `bw.cli.search.v2`, v5

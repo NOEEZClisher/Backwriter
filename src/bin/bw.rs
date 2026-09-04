@@ -4,7 +4,7 @@ use std::{
     env,
     ffi::OsString,
     fs::{self, OpenOptions},
-    io::{self, BufRead, BufWriter, Write},
+    io::{self, BufRead, BufWriter, Read, Write},
     path::{Path, PathBuf},
     process::{Command, ExitCode},
     time::{SystemTime, UNIX_EPOCH},
@@ -40,7 +40,7 @@ const SEARCH_HELP: &str = "NAME\n  bw search - discover current Anddresses by ex
 
 const VIEW_HELP: &str = "NAME\n  bw view - project current content from one or more v5 Anddresses\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json view anddress <encoded-v5-Anddress>... --as <line|paragraph|file>\n\nDESCRIPTION\n  Validates current source state and projects the requested target relation from caller-provided v5 Anddresses.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One or more canonical v5 objects.\n\nOPTIONS\n  --workspace, --admit, --json, and --raw must precede view.\n  --as selects line, paragraph, or file and must be last. Batch View requires --json and --as.\n\nWHAT HAPPENS\n  Opens the Runtime after input validation and returns the requested current projection.\n\nOUTPUT\n  One human or raw View writes content. JSON writes the fixed bw.cli.view.v2 envelope.\n\nEXAMPLES\n  bw view anddress '<v5-Anddress>'\n  bw --raw view anddress '<v5-Line-Anddress>'\n  bw --json view anddress '<v5-Anddress>' --as paragraph\n\nFAILURES\n  Invalid input or unsupported output form is a usage failure. Unavailable or stale source exits 1.\n\nSEE ALSO\n  bw help search\n  bw help check";
 
-const EDIT_HELP: &str = "NAME\n  bw edit - replace one current v5 Anddress\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> <content>\n\nDESCRIPTION\n  Replaces exactly one current File, Paragraph, or Line target through the Runtime Replace seam.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One canonical v5 object.\n  <content>                  One positional replacement string.\n\nOPTIONS\n  --workspace, --admit, and --json must precede edit.\n  No command-local options are available.\n\nWHAT HAPPENS\n  Validates input, preserves an existing Line terminator automatically, then applies one Replace.\n\nOUTPUT\n  Human output writes the receipt outcome and fresh Anddress when present. --json writes bw.cli.edit.v1.\n\nEXAMPLES\n  bw edit anddress '<v5-Anddress>' 'replacement'\n\nFAILURES\n  Invalid input is a usage failure. Stale, unavailable, or publication failure exits 1.\n\nSEE ALSO\n  bw help view\n  bw help check";
+const EDIT_HELP: &str = "NAME\n  bw edit - replace one current v5 Anddress\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> <content>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> --stdin\n\nDESCRIPTION\n  Replaces exactly one current File, Paragraph, or Line target through the Runtime Replace seam.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One canonical v5 object.\n  <content>                  One positional replacement string.\n  --stdin                    Read replacement Content from standard input through EOF.\n\nOPTIONS\n  --workspace, --admit, and --json must precede edit.\n  --stdin is the exclusive Content selector; use standard input to pass literal --stdin Content.\n\nWHAT HAPPENS\n  Validates the Anddress, reads selected standard input before Runtime access, preserves an existing Line terminator automatically, then applies one Replace.\n\nOUTPUT\n  Human output writes the receipt outcome and fresh Anddress when present. --json writes bw.cli.edit.v1.\n\nEXAMPLES\n  bw edit anddress '<v5-Anddress>' 'replacement'\n  printf '%s' 'replacement' | bw edit anddress '<v5-Anddress>' --stdin\n\nFAILURES\n  Invalid input is a usage failure. Standard-input, stale, unavailable, or publication failure exits 1.\n\nSEE ALSO\n  bw help view\n  bw help check";
 
 const CHECK_HELP: &str = "NAME\n  bw check - check one current v5 Anddress\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v5-Anddress>\n\nDESCRIPTION\n  Checks the current state of one caller-provided v5 Anddress.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One canonical v5 object.\n\nOPTIONS\n  --workspace, --admit, and --json must precede check.\n  No command-local options are available.\n\nWHAT HAPPENS\n  Opens the Runtime after input validation and reports currentness for that one target.\n\nOUTPUT\n  Human output writes one state. --json writes the existing one-shot Check envelope.\n\nEXAMPLES\n  bw check anddress '<v5-Anddress>'\n\nFAILURES\n  Invalid input is a usage failure. Unavailable source or Runtime failure exits 1.\n\nSEE ALSO\n  bw help search\n  bw help shell";
 
@@ -57,6 +57,12 @@ const INSTALL_PS1_URL: &str = "https://backwriter.pentagration.com/install.ps1";
 
 enum CliError {
     Usage(String),
+    ActionableUsage {
+        code: &'static str,
+        message: String,
+        help: &'static str,
+        hint: &'static str,
+    },
     Execution(String),
     Stream(String),
 }
@@ -193,13 +199,36 @@ impl CliError {
         Self::Execution(message.into())
     }
 
+    fn top_usage(code: &'static str, message: impl Into<String>) -> Self {
+        Self::ActionableUsage {
+            code,
+            message: message.into(),
+            help: TOP_LEVEL_HELP,
+            hint: "bw --help",
+        }
+    }
+
+    fn command_usage(
+        code: &'static str,
+        message: impl Into<String>,
+        help: &'static str,
+        hint: &'static str,
+    ) -> Self {
+        Self::ActionableUsage {
+            code,
+            message: message.into(),
+            help,
+            hint,
+        }
+    }
+
     fn stream(message: impl Into<String>) -> Self {
         Self::Stream(message.into())
     }
 
     fn exit_code(&self) -> ExitCode {
         match self {
-            Self::Usage(_) => ExitCode::from(2),
+            Self::Usage(_) | Self::ActionableUsage { .. } => ExitCode::from(2),
             Self::Execution(_) | Self::Stream(_) => ExitCode::FAILURE,
         }
     }
@@ -210,11 +239,47 @@ impl CliError {
             Self::Usage(message) => {
                 let _ = writeln!(stderr, "error: {message}\n\n{TOP_LEVEL_HELP}");
             }
+            Self::ActionableUsage {
+                code,
+                message,
+                help,
+                hint,
+            } => {
+                let _ = writeln!(
+                    stderr,
+                    "error[{code}]:\n{message}\n\nusage:\n{}\n\nhint:\nrun `{hint}`",
+                    canonical_usage(help)
+                );
+            }
             Self::Execution(message) | Self::Stream(message) => {
                 let _ = writeln!(stderr, "error: {message}");
             }
         }
     }
+}
+
+fn canonical_usage(help: &str) -> &str {
+    let usage = help
+        .split_once("USAGE\n")
+        .expect("all help pages contain USAGE")
+        .1;
+    usage.split_once("\n\n").map_or(usage, |(usage, _)| usage)
+}
+
+fn search_usage(code: &'static str, message: impl Into<String>) -> CliError {
+    CliError::command_usage(code, message, SEARCH_HELP, "bw help search")
+}
+
+fn view_usage(code: &'static str, message: impl Into<String>) -> CliError {
+    CliError::command_usage(code, message, VIEW_HELP, "bw help view")
+}
+
+fn edit_usage(code: &'static str, message: impl Into<String>) -> CliError {
+    CliError::command_usage(code, message, EDIT_HELP, "bw help edit")
+}
+
+fn check_usage(code: &'static str, message: impl Into<String>) -> CliError {
+    CliError::command_usage(code, message, CHECK_HELP, "bw help check")
 }
 
 fn main() -> ExitCode {
@@ -241,38 +306,52 @@ fn execute() -> Result<ExitCode, CliError> {
     let mut capability = first;
     loop {
         let Some(argument) = capability else {
-            return Err(CliError::usage("missing capability"));
+            return Err(CliError::top_usage("command.missing", "missing capability"));
         };
-        let argument = utf8(argument, "argument")?;
+        let argument = utf8(argument, "argument")
+            .map_err(|error| promote_top_usage(error, "global.argument_utf8"))?;
         match argument.as_str() {
             "--workspace" => {
                 if workspace.is_some() {
-                    return Err(CliError::usage("--workspace may appear only once"));
+                    return Err(CliError::top_usage(
+                        "global.workspace_duplicate",
+                        "--workspace may appear only once",
+                    ));
                 }
-                let path = arguments
-                    .next()
-                    .ok_or_else(|| CliError::usage("--workspace requires a path"))?;
+                let path = arguments.next().ok_or_else(|| {
+                    CliError::top_usage("global.workspace_missing", "--workspace requires a path")
+                })?;
                 let path = PathBuf::from(path);
                 if !path.is_absolute() {
-                    return Err(CliError::usage("--workspace must be an absolute path"));
+                    return Err(CliError::top_usage(
+                        "global.workspace_invalid",
+                        "--workspace must be an absolute path",
+                    ));
                 }
                 workspace = Some(path);
             }
             "--admit" => {
-                let path = required_text(&mut arguments, "--admit")?;
-                admissions.push(
-                    AdmissionRoot::new(path).map_err(|error| CliError::usage(error.to_string()))?,
-                );
+                let path = required_text(&mut arguments, "--admit")
+                    .map_err(|error| promote_top_usage(error, "global.admit_missing"))?;
+                admissions.push(AdmissionRoot::new(path).map_err(|error| {
+                    CliError::top_usage("global.admit_invalid", error.to_string())
+                })?);
             }
             "--json" => {
                 if output != OutputMode::Human {
-                    return Err(CliError::usage("only one output option may appear"));
+                    return Err(CliError::top_usage(
+                        "global.output_duplicate",
+                        "only one output option may appear",
+                    ));
                 }
                 output = OutputMode::Json;
             }
             "--raw" => {
                 if output != OutputMode::Human {
-                    return Err(CliError::usage("only one output option may appear"));
+                    return Err(CliError::top_usage(
+                        "global.output_duplicate",
+                        "only one output option may appear",
+                    ));
                 }
                 output = OutputMode::Raw;
             }
@@ -292,7 +371,12 @@ fn execute() -> Result<ExitCode, CliError> {
                     || output != OutputMode::Human
                     || !trailing.is_empty()
                 {
-                    return Err(CliError::usage("version accepts no options or operands"));
+                    return Err(CliError::command_usage(
+                        "version.extra_operand",
+                        "version accepts no options or operands",
+                        VERSION_HELP,
+                        "bw help version",
+                    ));
                 }
                 write_version()?;
                 return Ok(ExitCode::SUCCESS);
@@ -313,7 +397,12 @@ fn execute() -> Result<ExitCode, CliError> {
                     || output != OutputMode::Human
                     || !trailing.is_empty()
                 {
-                    return Err(CliError::usage("update accepts no options or operands"));
+                    return Err(CliError::command_usage(
+                        "update.extra_operand",
+                        "update accepts no options or operands",
+                        UPDATE_HELP,
+                        "bw help update",
+                    ));
                 }
                 return execute_update();
             }
@@ -335,7 +424,12 @@ fn execute() -> Result<ExitCode, CliError> {
             }
             "shell" => {
                 if output != OutputMode::Human {
-                    return Err(CliError::usage("output options are unsupported for shell"));
+                    return Err(CliError::command_usage(
+                        "shell.output_unsupported",
+                        "output options are unsupported for shell",
+                        SHELL_HELP,
+                        "bw help shell",
+                    ));
                 }
                 let trailing: Vec<OsString> = arguments.collect();
                 if trailing.len() == 1 && trailing[0] == "--help" {
@@ -343,42 +437,71 @@ fn execute() -> Result<ExitCode, CliError> {
                     return Ok(ExitCode::SUCCESS);
                 }
                 if !trailing.is_empty() {
-                    return Err(CliError::usage("shell accepts no operands"));
+                    return Err(CliError::command_usage(
+                        "shell.extra_operand",
+                        "shell accepts no operands",
+                        SHELL_HELP,
+                        "bw help shell",
+                    ));
                 }
                 return execute_shell(workspace, admissions);
             }
             "help" => {
                 if workspace.is_some() || !admissions.is_empty() || output != OutputMode::Human {
-                    return Err(CliError::usage("help accepts no global options"));
+                    return Err(CliError::top_usage(
+                        "help.global_option",
+                        "help accepts no global options",
+                    ));
                 }
                 let Some(command) = arguments.next() else {
                     write_help(TOP_LEVEL_HELP)?;
                     return Ok(ExitCode::SUCCESS);
                 };
                 if arguments.next().is_some() {
-                    return Err(CliError::usage("help accepts at most one command"));
+                    return Err(CliError::top_usage(
+                        "help.extra_operand",
+                        "help accepts at most one command",
+                    ));
                 }
-                write_command_help(&utf8(command, "help command")?)?;
+                write_command_help(
+                    &utf8(command, "help command")
+                        .map_err(|error| promote_top_usage(error, "help.command_utf8"))?,
+                )?;
                 return Ok(ExitCode::SUCCESS);
             }
             "pick" | "anchor" | "apply" | "data" => {
                 if output != OutputMode::Human {
-                    return Err(CliError::usage(
+                    return Err(CliError::top_usage(
+                        "capability.output_unsupported",
                         "output options are unsupported for this capability",
                     ));
                 }
-                return Err(CliError::usage(format!(
-                    "{argument} has no one-shot command; use bw shell"
-                )));
+                return Err(CliError::top_usage(
+                    "capability.one_shot_unavailable",
+                    format!("{argument} has no one-shot command; use bw shell"),
+                ));
             }
-            "--help" => return Err(CliError::usage("--help must be used alone")),
+            "--help" => {
+                return Err(CliError::top_usage(
+                    "help.position",
+                    "--help must be used alone",
+                ));
+            }
             _ => {
-                return Err(CliError::usage(format!(
-                    "unknown capability or option: {argument}"
-                )));
+                return Err(CliError::top_usage(
+                    "command.unknown",
+                    format!("unknown capability or option: {argument}"),
+                ));
             }
         }
         capability = arguments.next();
+    }
+}
+
+fn promote_top_usage(error: CliError, code: &'static str) -> CliError {
+    match error {
+        CliError::Usage(message) => CliError::top_usage(code, message),
+        error => error,
     }
 }
 
@@ -400,11 +523,17 @@ fn write_command_help(command: &str) -> Result<(), CliError> {
         "update" => UPDATE_HELP,
         "version" => VERSION_HELP,
         "pick" | "anchor" | "apply" | "data" => {
-            return Err(CliError::usage(format!(
-                "{command} has no one-shot command; use bw shell"
-            )));
+            return Err(CliError::top_usage(
+                "capability.one_shot_unavailable",
+                format!("{command} has no one-shot command; use bw shell"),
+            ));
         }
-        _ => return Err(CliError::usage(format!("unknown help command: {command}"))),
+        _ => {
+            return Err(CliError::top_usage(
+                "help.command_unknown",
+                format!("unknown help command: {command}"),
+            ));
+        }
     };
     write_help(help)
 }
@@ -522,19 +651,42 @@ fn execute_search(
     output: OutputMode,
 ) -> Result<(), CliError> {
     if output == OutputMode::Raw {
-        return Err(CliError::usage("--raw is supported only for View"));
+        return Err(search_usage(
+            "search.output_unsupported",
+            "--raw is supported only for View",
+        ));
     }
     let arguments = text_arguments(arguments, "search argument")?;
     if arguments.len() == 1 && arguments[0] == "--help" {
         return write_command_help("search");
     }
-    let request = parse_search(&arguments)?;
-    let runtime = open_runtime(workspace, admissions)?;
+    let request = parse_search(&arguments).map_err(promote_search_usage)?;
+    let runtime = open_runtime(workspace, admissions, Some("search"))?;
     let outcome = run_search(&runtime, request)?;
     match output {
         OutputMode::Human => write_search(&outcome),
         OutputMode::Json => write_search_json(&outcome),
         OutputMode::Raw => unreachable!(),
+    }
+}
+
+fn promote_search_usage(error: CliError) -> CliError {
+    match error {
+        CliError::Usage(message)
+            if message.contains("search kind") || message.contains("invalid search kind") =>
+        {
+            search_usage("search.kind_invalid", message)
+        }
+        CliError::Usage(message) if message.contains("requires a value") => {
+            search_usage("search.operand_missing", message)
+        }
+        CliError::Usage(message)
+            if message.contains("output options") || message.contains("--admit") =>
+        {
+            search_usage("search.option_position", message)
+        }
+        CliError::Usage(message) => search_usage("search.request_invalid", message),
+        error => error,
     }
 }
 
@@ -596,31 +748,54 @@ fn execute_edit(
     output: OutputMode,
 ) -> Result<(), CliError> {
     if output == OutputMode::Raw {
-        return Err(CliError::usage("--raw is supported only for View"));
+        return Err(edit_usage(
+            "edit.output_unsupported",
+            "--raw is supported only for View",
+        ));
     }
-    let form = required_text(&mut arguments, "edit input form")?;
+    let form = arguments
+        .next()
+        .ok_or_else(|| edit_usage("edit.form_missing", "edit input form requires a value"))
+        .and_then(|value| utf8_for_edit(value, "edit input form"))?;
     if form == "--help" && arguments.next().is_none() {
         return write_command_help("edit");
     }
     if form != "anddress" {
-        return Err(CliError::usage("edit requires the anddress input form"));
+        return Err(edit_usage(
+            "edit.form_invalid",
+            "edit requires the anddress input form",
+        ));
     }
-    let encoded = required_text(&mut arguments, "edit anddress")?;
-    let mut content = required_text(&mut arguments, "edit content")?;
+    let encoded = arguments
+        .next()
+        .ok_or_else(|| edit_usage("edit.address_missing", "edit anddress requires a value"))
+        .and_then(|value| utf8_for_edit(value, "edit anddress"))?;
+    let content_selector = arguments
+        .next()
+        .ok_or_else(|| edit_usage("edit.content_missing", "edit content requires a value"))?;
     if arguments.next().is_some() {
-        return Err(CliError::usage(
-            "edit anddress accepts exactly one anddress and content operand",
+        return Err(edit_usage(
+            "edit.extra_operand",
+            "edit anddress accepts exactly one anddress and Content selector",
         ));
     }
 
-    let anddress = decode_anddress(encoded)?;
+    let anddress = decode_anddress_for_edit(encoded)?;
+    let mut content = if content_selector == "--stdin" {
+        read_edit_stdin()?
+    } else {
+        utf8_for_edit(content_selector, "edit content")?
+    };
     if let Some(terminator) = anddress.terminator() {
         if content
             .as_bytes()
             .iter()
             .any(|byte| matches!(byte, b'\0' | b'\r' | b'\n'))
         {
-            return Err(map_edit_error(EditError::InvalidInput));
+            return Err(edit_usage(
+                "edit.content_invalid",
+                EditError::InvalidInput.to_string(),
+            ));
         }
         let terminator = match terminator {
             LineTerminator::None => "",
@@ -630,7 +805,7 @@ fn execute_edit(
         };
         content
             .try_reserve_exact(terminator.len())
-            .map_err(|_| map_edit_error(EditError::Resource))?;
+            .map_err(|_| CliError::execution(EditError::Resource.to_string()))?;
         content.push_str(terminator);
     }
 
@@ -638,12 +813,52 @@ fn execute_edit(
         target: anddress,
         content,
     };
-    edit.validate().map_err(map_edit_error)?;
-    let mut runtime = open_runtime(workspace, admissions)?;
+    edit.validate().map_err(map_edit_error_for_edit)?;
+    let mut runtime = open_runtime(workspace, admissions, Some("edit"))?;
     let receipt = runtime
         .apply_replace(&edit)
         .map_err(|error: ApplyError| CliError::execution(error.to_string()))?;
     write_edit(receipt, output)
+}
+
+fn utf8_for_edit(value: OsString, context: &str) -> Result<String, CliError> {
+    value
+        .into_string()
+        .map_err(|_| edit_usage("edit.utf8_invalid", format!("{context} must be UTF-8")))
+}
+
+fn read_edit_stdin() -> Result<String, CliError> {
+    let mut bytes = Vec::new();
+    io::stdin()
+        .lock()
+        .read_to_end(&mut bytes)
+        .map_err(|error| {
+            CliError::execution(format!("could not read edit standard input: {error}"))
+        })?;
+    String::from_utf8(bytes)
+        .map_err(|_| CliError::execution("edit standard input must be valid UTF-8"))
+}
+
+fn decode_anddress_for_edit(encoded: String) -> Result<Anddress, CliError> {
+    match Anddress::decode(encoded.as_bytes()) {
+        Ok(anddress) => Ok(anddress),
+        Err(AnddressError::Resource) => Err(CliError::execution(
+            "Anddress decoding ran out of resources",
+        )),
+        Err(AnddressError::UnsupportedVersion) => Err(edit_usage(
+            "edit.address_unsupported",
+            AnddressError::UnsupportedVersion.to_string(),
+        )),
+        Err(error) => Err(edit_usage("edit.address_invalid", error.to_string())),
+    }
+}
+
+fn map_edit_error_for_edit(error: EditError) -> CliError {
+    match error {
+        EditError::UnsupportedVersion => edit_usage("edit.address_unsupported", error.to_string()),
+        EditError::InvalidInput => edit_usage("edit.content_invalid", error.to_string()),
+        EditError::Resource => CliError::execution(error.to_string()),
+    }
 }
 
 fn write_edit(receipt: EditReceipt, output: OutputMode) -> Result<(), CliError> {
@@ -713,56 +928,71 @@ fn execute_view(
     admissions: Vec<AdmissionRoot>,
     output: OutputMode,
 ) -> Result<(), CliError> {
-    let form = required_text(&mut arguments, "view input form")?;
+    let form = required_text(&mut arguments, "view input form").map_err(promote_view_usage)?;
     if form == "--help" && arguments.next().is_none() {
         return write_command_help("view");
     }
     if form != "anddress" {
         if form == "anchored" {
-            return Err(CliError::usage(
+            return Err(view_usage(
+                "view.form_unavailable",
                 "view anchored has no one-shot form; use bw shell",
             ));
         }
-        return Err(CliError::usage("view requires the anddress input form"));
+        return Err(view_usage(
+            "view.form_invalid",
+            "view requires the anddress input form",
+        ));
     }
-    let arguments = text_arguments(arguments, "view operand")?;
+    let arguments = text_arguments(arguments, "view operand").map_err(promote_view_usage)?;
     let as_index = arguments.iter().position(|argument| argument == "--as");
     let (encoded, projection) = match as_index {
         Some(index) => {
             if arguments[index + 1..].len() != 1 {
-                return Err(CliError::usage(
+                return Err(view_usage(
+                    "view.target_invalid",
                     "view --as requires exactly one target and must be last",
                 ));
             }
             (
                 &arguments[..index],
-                Some(parse_view_target(&arguments[index + 1])?),
+                Some(parse_view_target(&arguments[index + 1]).map_err(promote_view_usage)?),
             )
         }
         None => (arguments.as_slice(), None),
     };
     if encoded.is_empty() {
-        return Err(CliError::usage(
+        return Err(view_usage(
+            "view.operand_missing",
             "view requires at least one anddress operand",
         ));
     }
     if encoded.iter().any(|argument| argument == "--as") {
-        return Err(CliError::usage("view accepts --as only once"));
+        return Err(view_usage(
+            "view.target_duplicate",
+            "view accepts --as only once",
+        ));
     }
     if encoded.len() != 1 && output != OutputMode::Json {
-        return Err(CliError::usage("batch View requires --json"));
+        return Err(view_usage(
+            "view.output_unsupported",
+            "batch View requires --json",
+        ));
     }
     if encoded.len() != 1 && projection.is_none() {
-        return Err(CliError::usage("batch View requires --as"));
+        return Err(view_usage(
+            "view.projection_missing",
+            "batch View requires --as",
+        ));
     }
     let mut anddresses = Vec::new();
     anddresses
         .try_reserve_exact(encoded.len())
         .map_err(|_| CliError::execution("View input allocation failed"))?;
     for value in encoded {
-        anddresses.push(decode_anddress(value.clone())?);
+        anddresses.push(decode_anddress(value.clone()).map_err(promote_view_usage)?);
     }
-    let runtime = open_runtime(workspace, admissions)?;
+    let runtime = open_runtime(workspace, admissions, Some("view"))?;
     let projection = projection.unwrap_or_else(|| anddresses[0].target());
     if anddresses.len() == 1 {
         let outcome = run_view(&runtime, &anddresses[0], projection)?;
@@ -775,6 +1005,16 @@ fn execute_view(
             .view_batch(&anddresses, projection)
             .map_err(|error| CliError::execution(error.to_string()))?;
         write_view_json(&outcomes)
+    }
+}
+
+fn promote_view_usage(error: CliError) -> CliError {
+    match error {
+        CliError::Usage(message) if message.contains("requires a value") => {
+            view_usage("view.operand_missing", message)
+        }
+        CliError::Usage(message) => view_usage("view.address_invalid", message),
+        error => error,
     }
 }
 
@@ -796,33 +1036,51 @@ fn execute_check(
     output: OutputMode,
 ) -> Result<(), CliError> {
     if output == OutputMode::Raw {
-        return Err(CliError::usage("--raw is supported only for View"));
+        return Err(check_usage(
+            "check.output_unsupported",
+            "--raw is supported only for View",
+        ));
     }
-    let form = required_text(&mut arguments, "check input form")?;
+    let form = required_text(&mut arguments, "check input form").map_err(promote_check_usage)?;
     if form == "--help" && arguments.next().is_none() {
         return write_command_help("check");
     }
     if form != "anddress" {
         if matches!(form.as_str(), "search" | "pick") {
-            return Err(CliError::usage(format!(
-                "check {form} has no one-shot form; use bw shell"
-            )));
+            return Err(check_usage(
+                "check.form_unavailable",
+                format!("check {form} has no one-shot form; use bw shell"),
+            ));
         }
-        return Err(CliError::usage("check requires the anddress input form"));
+        return Err(check_usage(
+            "check.form_invalid",
+            "check requires the anddress input form",
+        ));
     }
-    let encoded = required_text(&mut arguments, "check anddress")?;
+    let encoded = required_text(&mut arguments, "check anddress").map_err(promote_check_usage)?;
     if arguments.next().is_some() {
-        return Err(CliError::usage(
+        return Err(check_usage(
+            "check.extra_operand",
             "check accepts exactly one anddress operand",
         ));
     }
-    let anddress = decode_anddress(encoded)?;
-    let runtime = open_runtime(workspace, admissions)?;
+    let anddress = decode_anddress(encoded).map_err(promote_check_usage)?;
+    let runtime = open_runtime(workspace, admissions, Some("check"))?;
     let outcome = run_check(&runtime, anddress)?;
     match output {
         OutputMode::Human => write_check(&outcome),
         OutputMode::Json => write_check_json(&outcome),
         OutputMode::Raw => unreachable!(),
+    }
+}
+
+fn promote_check_usage(error: CliError) -> CliError {
+    match error {
+        CliError::Usage(message) if message.contains("requires a value") => {
+            check_usage("check.operand_missing", message)
+        }
+        CliError::Usage(message) => check_usage("check.address_invalid", message),
+        error => error,
     }
 }
 
@@ -867,12 +1125,22 @@ fn decode_anddress(encoded: String) -> Result<Anddress, CliError> {
 fn open_runtime(
     workspace: Option<PathBuf>,
     mut admissions: Vec<AdmissionRoot>,
+    command: Option<&'static str>,
 ) -> Result<WorkspaceRuntime, CliError> {
     if admissions.is_empty() {
         admissions.push(AdmissionRoot::new(".").expect("dot admission is valid"));
     }
-    let admission =
-        WorkspaceAdmission::new(admissions).map_err(|error| CliError::usage(error.to_string()))?;
+    let admission = WorkspaceAdmission::new(admissions).map_err(|error| {
+        let message = error.to_string();
+        match command {
+            Some("search") => search_usage("search.request_invalid", message),
+            Some("view") => view_usage("view.request_invalid", message),
+            Some("check") => check_usage("check.request_invalid", message),
+            Some("edit") => edit_usage("edit.request_invalid", message),
+            None => CliError::usage(message),
+            Some(_) => unreachable!("one-shot runtime command"),
+        }
+    })?;
     let workspace = match workspace {
         Some(path) => path,
         None => env::current_dir().map_err(|error| CliError::execution(error.to_string()))?,
@@ -1231,7 +1499,7 @@ fn execute_shell(
     workspace: Option<PathBuf>,
     admissions: Vec<AdmissionRoot>,
 ) -> Result<ExitCode, CliError> {
-    let mut runtime = open_runtime(workspace, admissions)?;
+    let mut runtime = open_runtime(workspace, admissions, None)?;
     let mut data = DataStore::new();
     let stdin = io::stdin();
     let mut reader = stdin.lock();
@@ -1284,7 +1552,7 @@ fn trim_physical_line(line: &mut String) {
 
 fn session_error_status(error: &CliError) -> u8 {
     match error {
-        CliError::Usage(_) => 2,
+        CliError::Usage(_) | CliError::ActionableUsage { .. } => 2,
         CliError::Execution(_) => 1,
         CliError::Stream(_) => 1,
     }

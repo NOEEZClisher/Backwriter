@@ -13,10 +13,11 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.2.6 operational Adapter authority — Gates 1–2 complete
+## 0.2.6 operational Adapter authority — Gates 1–3 complete
 
 The `0.2.6` operational Adapter and verification-contraction authority is
-documentation-only at Gate 1 and adds command-local help at Gate 2. The
+documentation-only at Gate 1, command-local help at Gate 2, and actionable
+usage errors plus one-shot Edit standard-input Content at Gate 3. The
 governing rule is: **explain what to type, what happens, and what comes back.**
 It retains the closed `0.2.5` Core,
 Runtime, v5 wire, Search behavior/output/performance, raw Session, and public
@@ -27,8 +28,14 @@ reachability proves a smaller replacement.
 `bw --help` and `bw help` share one top-level writer. `bw help X` and
 `bw X --help` share one command-local writer for Search, View, Edit, Check,
 Shell, Update, and Version; they return before Runtime/source I/O or Update
-download. Only a later named Gate may implement stable usage codes, `--stdin`,
-process-local references, Replace ergonomics, or ordered batch Check. These are
+download. Every top-level and one-shot usage error now has its stable
+`error[code]`, cause, command-local canonical usage, and help hint; raw Session
+keeps its existing grammar and reporting. One-shot Edit accepts exactly one
+positional Content operand or `--stdin`, validates its v5 Anddress before
+reading stdin to EOF, and opens Runtime only afterwards. File and Paragraph
+retain exact UTF-8 Content; Line retains its body-only validation and current
+terminator. Only a later named Gate may implement process-local references,
+Replace ergonomics, or ordered batch Check. These are
 not a Core lifecycle, persistent identity, relocation, history,
 retry, transaction, CAS/lock, rollback, v6, or Search optimization. The
 [0.2.6 tracker](docs/tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)

@@ -1,6 +1,7 @@
 # Backwriter 0.2.6 Operational Adapter & Verification Contraction
 
-Status: Gates 1–2 complete — authority and command-local help. `0.2.5` remains the closed source,
+Status: Gates 1–3 complete — authority, command-local help, and actionable
+errors/stdin. `0.2.5` remains the closed source,
 package, CLI, installer, artifact, and public distribution. This tracker is
 execution authority; its companion [source note](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-source.md)
 and [roadmap](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-roadmap.md)
@@ -56,14 +57,26 @@ help; stable code/cause/usage/hint work remains Gate 3. The three new CLI
 regressions make the complete GNU and musl suites 271 tests each while keeping
 the inherited 268-test N-1 evidence and all drift controls intact.
 
-## Gate 3 — failures and stdin
+## Gate 3 — failures and stdin — complete
 
-Retain exit codes `0`, `1`, and `2`. Usage failure presentation must have a
-stable code, cause, usage, and hint. Decide the exact vocabulary before tests
-freeze it. Add `--stdin` only as an XOR alternative to positional Content and
-read it to EOF. Canonical output options are documented as prefix-only;
-trailing acceptance is permitted only after a direct simplification proof, and
-operand insertion is prohibited.
+Top-level and one-shot usage failures now write a stable lowercase dot code,
+cause, canonical usage extracted from the same help authority, and precise help
+hint; they exit `2` with empty stdout. Execution/current-source/stream failures
+remain exit `1`, and raw Session grammar/reporting stays unchanged. The tested
+inventory distinguishes command/global placement and duplicate output, command
+form/kind/target/address/request, missing/extra operands, unsupported output,
+batch View projection, and unavailable one-shot capabilities.
+
+One-shot Edit accepts exactly positional Content or `--stdin` at that position;
+mixed/trailing Content is rejected before source I/O. It validates argv and v5
+Anddress first, reads stdin to EOF as UTF-8, then opens Runtime and reuses the
+existing `apply_replace`/receipt writers. File/Paragraph bytes are exact; Line
+retains body-only NUL/CR/LF rejection and None/LF/CR/CRLF preservation. Empty,
+Unicode, invalid UTF-8/NUL/Line break, multiple read chunks, source-byte
+preservation, help equivalence/no-I/O, and raw Session controls are covered.
+Gate 3 adds four CLI regressions, bringing complete GNU and musl suites to
+275 tests. Output options remain prefix-only; trailing acceptance and operand
+insertion remain prohibited.
 
 ## Gate 4 — Line body and exact boundary
 

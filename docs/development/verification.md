@@ -8,9 +8,12 @@ byte-identical. Gate 2 adds exact top-level and seven command-help KATs,
 section-order checks, sole-operand checks, no-Runtime-opening checks, and a Unix
 fake-curl control that proves `update --help` does not start download. The three
 Gate 2 CLI regressions bring both complete GNU and musl suites to 271 passing
-tests. It does not reinterpret the inherited result as evidence for
-future Adapter behavior. Gates 3–6 must add their own executable usage/stdin,
-Line-body, reference/Replace, and batch-Check evidence; Gate 7 may
+tests. Gate 3 adds exact actionable-error KATs, argv/stdin parity for File,
+Paragraph, and None/LF/CR/CRLF Line Content, invalid-stdin/nonpublication, and
+a multi-reader-chunk Content control; both complete suites now pass 275 tests.
+It does not reinterpret the inherited result as evidence for future Adapter
+behavior. Gates 4–6 must add their own Line-body, reference/Replace, and
+batch-Check evidence; Gate 7 may
 contract tests/docs only after its blind Dummy, Genie, and external-evidence
 audit.
 

@@ -1,9 +1,9 @@
 # Backwriter Current State
 
-## 0.2.6 operational Adapter and verification contraction — Gates 1–2 complete
+## 0.2.6 operational Adapter and verification contraction — Gates 1–3 complete
 
-Gate 1 records the approved Adapter boundary and Gate 2 closes command-local
-help in the
+Gate 1 records the approved Adapter boundary, Gate 2 closes command-local help,
+and Gate 3 closes actionable usage failures and one-shot Edit stdin Content in the
 [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).
 The governing rule is **explain what to type, what happens, and what comes
 back**. No implementation, version, artifact, installer, publication, Core, or
@@ -12,14 +12,20 @@ distribution.
 
 `bw --help` equals `bw help`; `bw help X` equals `bw X --help` for Search,
 View, Edit, Check, Shell, Update, and Version. Each command page uses fixed
-section order and returns before Runtime/source I/O or Update download. The
-future sequence is errors and stdin; Line body/exact boundary; process-local
-references plus Replace; ordered batch Check; verification/docs contraction;
-then source readiness. Search, v5 values/wire, raw Session,
+section order and returns before Runtime/source I/O or Update download. Usage
+errors use a stable code, cause, directly extracted canonical command usage,
+and command help hint without a top-level help dump. Edit Content is exactly one
+argv operand or the exclusive `--stdin` selector; it validates the address,
+reads valid UTF-8 stdin to EOF, then opens Runtime. File/Paragraph bytes remain
+exact and Line preserves its existing terminator after body validation. The
+future sequence is Line body/exact boundary; process-local references plus
+Replace; ordered batch Check; verification/docs contraction; then source
+readiness. Search, v5 values/wire, raw Session,
 `apply_replace`, and current Check seams remain fixed. Candidate execution
 compares with `0.2.5`; inherited GNU/musl 268-test evidence and `Correct 1 /
 Safe Reject 6 / Wrong Apply 0` remain required controls. Gate 2 adds three CLI
-regressions, so the complete GNU and musl suites each pass 271 tests.
+regressions, and Gate 3 adds four, so the complete GNU and musl suites each
+pass 275 tests.
 
 ## 0.2.5 performance recovery — published and closed
 

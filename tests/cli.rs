@@ -131,6 +131,7 @@ const EDIT_HELP_KAT: &str = r#"NAME
 
 USAGE
   bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> <content>
+  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> --stdin
 
 DESCRIPTION
   Replaces exactly one current File, Paragraph, or Line target through the Runtime Replace seam.
@@ -139,22 +140,24 @@ ARGUMENTS
   anddress                  Required input form.
   <encoded-v5-Anddress>     One canonical v5 object.
   <content>                  One positional replacement string.
+  --stdin                    Read replacement Content from standard input through EOF.
 
 OPTIONS
   --workspace, --admit, and --json must precede edit.
-  No command-local options are available.
+  --stdin is the exclusive Content selector; use standard input to pass literal --stdin Content.
 
 WHAT HAPPENS
-  Validates input, preserves an existing Line terminator automatically, then applies one Replace.
+  Validates the Anddress, reads selected standard input before Runtime access, preserves an existing Line terminator automatically, then applies one Replace.
 
 OUTPUT
   Human output writes the receipt outcome and fresh Anddress when present. --json writes bw.cli.edit.v1.
 
 EXAMPLES
   bw edit anddress '<v5-Anddress>' 'replacement'
+  printf '%s' 'replacement' | bw edit anddress '<v5-Anddress>' --stdin
 
 FAILURES
-  Invalid input is a usage failure. Stale, unavailable, or publication failure exits 1.
+  Invalid input is a usage failure. Standard-input, stale, unavailable, or publication failure exits 1.
 
 SEE ALSO
   bw help view
@@ -305,6 +308,19 @@ fn run(root: &Path, arguments: &[&str]) -> Output {
         .unwrap()
 }
 
+fn run_with_stdin(root: &Path, arguments: &[&str], input: &[u8]) -> Output {
+    let mut child = Command::new(binary())
+        .current_dir(root)
+        .args(arguments)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.as_mut().unwrap().write_all(input).unwrap();
+    child.wait_with_output().unwrap()
+}
+
 fn run_shell(root: &Path, input: &str) -> Output {
     let mut child = Command::new(binary())
         .current_dir(root)
@@ -399,6 +415,7 @@ impl Natural {
     }
 }
 
+#[derive(Clone)]
 enum AnddressTarget {
     File,
     Paragraph {
@@ -503,7 +520,25 @@ fn paragraph_ranges(source: &[u8]) -> Vec<(usize, usize)> {
 fn assert_usage(output: Output) {
     assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty());
-    assert!(text(output.stderr).contains("\n\nUSAGE\n"));
+    let stderr = text(output.stderr);
+    assert!(stderr.contains("\nusage:\n") || stderr.contains("\n\nUSAGE\n"));
+}
+
+fn usage_from_help(help: &str) -> &str {
+    let usage = help.split_once("USAGE\n").unwrap().1;
+    usage.split_once("\n\n").map_or(usage, |(usage, _)| usage)
+}
+
+fn assert_actionable_usage(output: Output, code: &str, cause: &str, help: &str, hint: &str) {
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    assert_eq!(
+        text(output.stderr),
+        format!(
+            "error[{code}]:\n{cause}\n\nusage:\n{}\n\nhint:\nrun `{hint}`\n",
+            usage_from_help(help)
+        )
+    );
 }
 
 fn assert_help_section_order(help: &[u8]) {
@@ -864,6 +899,66 @@ fn command_local_help_kats_are_exact_and_skip_runtime_opening() {
     assert_usage(run(root.path(), &["anchor"]));
     assert_usage(run(root.path(), &["apply"]));
     assert_usage(run(root.path(), &["data"]));
+}
+
+#[test]
+fn one_shot_usage_errors_have_exact_command_local_codes_usage_and_hints() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    let operand = view_operand(root.path(), "coordinate.txt", AnddressTarget::File);
+
+    assert_actionable_usage(
+        run(root.path(), &[]),
+        "command.missing",
+        "missing capability",
+        TOP_LEVEL_HELP_KAT,
+        "bw --help",
+    );
+    assert_actionable_usage(
+        run(
+            root.path(),
+            &["--json", "--json", "search", "line", "coordinate"],
+        ),
+        "global.output_duplicate",
+        "only one output option may appear",
+        TOP_LEVEL_HELP_KAT,
+        "bw --help",
+    );
+    assert_actionable_usage(
+        run(root.path(), &["search", "wrong", "coordinate"]),
+        "search.kind_invalid",
+        "invalid search kind: wrong",
+        SEARCH_HELP_KAT,
+        "bw help search",
+    );
+    assert_actionable_usage(
+        run(root.path(), &["view", "anddress", &operand, "--as"]),
+        "view.target_invalid",
+        "view --as requires exactly one target and must be last",
+        VIEW_HELP_KAT,
+        "bw help view",
+    );
+    assert_actionable_usage(
+        run(root.path(), &["edit", "wrong", &operand, "content"]),
+        "edit.form_invalid",
+        "edit requires the anddress input form",
+        EDIT_HELP_KAT,
+        "bw help edit",
+    );
+    assert_actionable_usage(
+        run(root.path(), &["check", "anddress", &operand, "extra"]),
+        "check.extra_operand",
+        "check accepts exactly one anddress operand",
+        CHECK_HELP_KAT,
+        "bw help check",
+    );
+    assert_actionable_usage(
+        run(root.path(), &["pick"]),
+        "capability.one_shot_unavailable",
+        "pick has no one-shot command; use bw shell",
+        TOP_LEVEL_HELP_KAT,
+        "bw --help",
+    );
 }
 
 #[test]
@@ -1981,7 +2076,6 @@ fn one_shot_edit_replaces_file_and_paragraph_with_exact_content() {
         ),
         ("old\n", "file", "--json", "--json", false),
         ("old\n", "file", "--raw", "--raw", false),
-        ("old\n", "file", "--stdin", "--stdin", false),
         ("first\nline\n\nkeep\n", "paragraph", "", "\nkeep\n", false),
         (
             "first\nline\n\nkeep\n",
@@ -2002,13 +2096,6 @@ fn one_shot_edit_replaces_file_and_paragraph_with_exact_content() {
             "paragraph",
             "--raw",
             "--raw\nkeep\n",
-            false,
-        ),
-        (
-            "first\nline\n\nkeep\n",
-            "paragraph",
-            "--stdin",
-            "--stdin\nkeep\n",
             false,
         ),
         (
@@ -2078,7 +2165,6 @@ fn one_shot_edit_replaces_line_body_and_preserves_every_terminator() {
         ("old\r\n", "새 줄", "새 줄\r\n"),
         ("old\n", "--json", "--json\n"),
         ("old\r\n", "--raw", "--raw\r\n"),
-        ("old", "--stdin", "--stdin"),
     ] {
         for json in [false, true] {
             let root = tempfile::tempdir().unwrap();
@@ -2112,6 +2198,152 @@ fn one_shot_edit_replaces_line_body_and_preserves_every_terminator() {
             );
         }
     }
+}
+
+#[test]
+fn one_shot_edit_stdin_matches_argv_content_and_preserves_exact_boundaries() {
+    for (before, target, content, expected) in [
+        ("old", AnddressTarget::File, "한글\nnext", "한글\nnext"),
+        (
+            "first\nline\n\nkeep\n",
+            AnddressTarget::Paragraph {
+                ordinal: Natural::zero(),
+            },
+            "new\nparagraph\n",
+            "new\nparagraph\n\nkeep\n",
+        ),
+        (
+            "old",
+            AnddressTarget::Line {
+                ordinal: Natural::zero(),
+                exact_extent: "old".to_owned(),
+            },
+            "",
+            "",
+        ),
+        (
+            "old\n",
+            AnddressTarget::Line {
+                ordinal: Natural::zero(),
+                exact_extent: "old\n".to_owned(),
+            },
+            "replace",
+            "replace\n",
+        ),
+        (
+            "old\r",
+            AnddressTarget::Line {
+                ordinal: Natural::zero(),
+                exact_extent: "old\r".to_owned(),
+            },
+            "replace",
+            "replace\r",
+        ),
+        (
+            "old\r\n",
+            AnddressTarget::Line {
+                ordinal: Natural::zero(),
+                exact_extent: "old\r\n".to_owned(),
+            },
+            "replace",
+            "replace\r\n",
+        ),
+    ] {
+        let root = tempfile::tempdir().unwrap();
+        write(root.path(), "coordinate.txt", "coordinate\n");
+        write(root.path(), "note.txt", before);
+        let argv_operand = view_operand(root.path(), "note.txt", target.clone());
+        let argv = run(root.path(), &["edit", "anddress", &argv_operand, content]);
+        assert_eq!(
+            fs::read(root.path().join("note.txt")).unwrap(),
+            expected.as_bytes()
+        );
+        write(root.path(), "note.txt", before);
+        let stdin_operand = view_operand(root.path(), "note.txt", target);
+        let stdin = run_with_stdin(
+            root.path(),
+            &["edit", "anddress", &stdin_operand, "--stdin"],
+            content.as_bytes(),
+        );
+        assert!(argv.status.success());
+        assert_eq!(stdin.status.code(), Some(0));
+        assert_eq!(argv.stdout, stdin.stdout);
+        assert!(stdin.stderr.is_empty());
+        assert_eq!(
+            fs::read(root.path().join("note.txt")).unwrap(),
+            expected.as_bytes()
+        );
+    }
+}
+
+#[test]
+fn one_shot_edit_stdin_rejects_invalid_content_without_publication() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "old\r\n");
+    let operand = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::zero(),
+            exact_extent: "old\r\n".to_owned(),
+        },
+    );
+
+    for input in [b"bad\0body".as_slice(), b"bad\nbody", b"bad\rbody", b"\xff"] {
+        let output = run_with_stdin(
+            root.path(),
+            &["edit", "anddress", &operand, "--stdin"],
+            input,
+        );
+        assert_eq!(
+            output.status.code(),
+            Some(if input == b"\xff" { 1 } else { 2 })
+        );
+        assert!(output.stdout.is_empty());
+        assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"old\r\n");
+    }
+
+    fs::remove_file(root.path().join("note.txt")).unwrap();
+    let output = run_with_stdin(
+        root.path(),
+        &["edit", "anddress", &operand, "--stdin"],
+        b"still\ninvalid",
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    assert!(!root.path().join("note.txt").exists());
+
+    assert_actionable_usage(
+        run(
+            root.path(),
+            &["edit", "anddress", &operand, "--stdin", "extra"],
+        ),
+        "edit.extra_operand",
+        "edit anddress accepts exactly one anddress and Content selector",
+        EDIT_HELP_KAT,
+        "bw help edit",
+    );
+}
+
+#[test]
+fn one_shot_edit_stdin_reads_content_beyond_multiple_reader_chunks() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "coordinate.txt", "coordinate\n");
+    write(root.path(), "note.txt", "old\n");
+    let operand = view_operand(root.path(), "note.txt", AnddressTarget::File);
+    let content = format!("prefix-{}-suffix", "한".repeat(32_768));
+    let output = run_with_stdin(
+        root.path(),
+        &["edit", "anddress", &operand, "--stdin"],
+        content.as_bytes(),
+    );
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    assert_eq!(
+        fs::read(root.path().join("note.txt")).unwrap(),
+        content.as_bytes()
+    );
 }
 
 #[test]
@@ -2254,11 +2486,13 @@ fn one_shot_edit_exact_noop_uses_v5_geometry_and_shared_apply_without_view() {
         .split_once("fn execute_view")
         .unwrap()
         .0;
-    let decode = edit.find("decode_anddress(encoded)").unwrap();
+    let decode = edit.find("decode_anddress_for_edit(encoded)").unwrap();
     let terminator = edit.find("anddress.terminator()").unwrap();
     let construct = edit.find("Edit::Replace").unwrap();
     let validate = edit.find("edit.validate()").unwrap();
-    let open = edit.find("open_runtime(workspace, admissions)").unwrap();
+    let open = edit
+        .find("open_runtime(workspace, admissions, Some(\"edit\"))")
+        .unwrap();
     let apply = edit.find(".apply_replace(&edit)").unwrap();
     let write = edit.find("write_edit(receipt, output)").unwrap();
     assert!(decode < terminator);
@@ -2274,7 +2508,6 @@ fn one_shot_edit_exact_noop_uses_v5_geometry_and_shared_apply_without_view() {
     assert!(!edit.contains("run_check"));
     assert_eq!(edit.matches("open_runtime").count(), 1);
     assert!(!edit.contains("write_session_status"));
-    assert!(!edit.contains("stdin"));
     assert!(!edit.contains("output options must precede the capability"));
     assert_eq!(source.matches("fn execute_edit").count(), 1);
 

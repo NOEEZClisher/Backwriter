@@ -1,10 +1,12 @@
 # Backwriter CLI V1
 
-## 0.2.6 operational Adapter authority — Gates 1–2 complete
+## 0.2.6 operational Adapter authority — Gates 1–3 complete
 
 The planned operational target explains what to type, what happens, and what
 comes back. Gate 1 changes no command, parser, output, error, version, or
-process behavior; Gate 2 adds help only. Top-level help covers only global
+process behavior; Gate 2 adds help and Gate 3 adds only actionable usage
+presentation plus the exclusive one-shot Edit `--stdin` Content selector.
+Top-level help covers only global
 syntax, capabilities, and additional help. Command help uses `NAME`, `USAGE`,
 `DESCRIPTION`, `ARGUMENTS`, `OPTIONS`, `WHAT HAPPENS`, `OUTPUT`, `EXAMPLES`,
 `FAILURES`, and `SEE ALSO`, with `bw help X` equal to `bw X --help` and
@@ -12,10 +14,13 @@ executable examples. `bw --help` equals `bw help`; `bw help X` equals `bw X
 --help` for Search, View, Edit, Check, Shell, Update, and Version. These paths
 return before Runtime/source I/O and Update download.
 
-Later Gates retain exits `0/1/2`, document canonical output options only as
-prefixes, and may accept trailing options only after a direct simplification
-proof; operands are never interleaved with options. `--stdin` will be XOR with
-positional Content and read to EOF. One-shot Line Replace remains body-only,
+Usage errors now write `error[stable.code]`, cause, command-local canonical
+usage, and an exact help hint to stderr with exit `2` and no stdout; execution
+and stream errors retain exit `1`. Later Gates document canonical output options
+only as prefixes, and may accept trailing options only after a direct
+simplification proof; operands are never interleaved with options. `--stdin` is
+XOR with positional Content, is valid only at Content position, validates the
+Anddress before reading EOF, and has no fixed semantic size limit. One-shot Line Replace remains body-only,
 preserves its existing terminator, and rejects NUL/CR/LF without stripping;
 File/Paragraph retain exact UTF-8 and existing NUL policy. Raw Session and raw
 Apply remain ADVANCED. Process-local refs/aliases and ordered batch Check are
