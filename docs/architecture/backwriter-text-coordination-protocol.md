@@ -1,5 +1,25 @@
 # Backwriter Protocol
 
+## 0.2.6 operational Adapter boundary — Gate 1 authority
+
+Gate 1 changes no Core or Runtime contract. Existing `WorkspaceRuntime`
+seams are the default: one-shot Replace reuses `apply_replace`, raw `apply`
+and raw Session retain their public/advanced roles, and existing `check`,
+`check_search`, and `check_pick` retain their current input meanings. Gate 6
+may add a narrow ordered batch Check seam only after evidence proves those three
+cannot represent the Adapter input without changing their semantics.
+
+Search remains its exact `0.2.5` contract: matcher, structural path,
+traversal, order, tiers, storage, `SearchOutcome`, `bw.cli.search.v2`, v5
+values/wire, output bytes, and performance do not change. Future shell
+references are process-local Adapter RAM only; they create no Core identity,
+provenance, relocation, history, retry, transaction, CAS/lock, or rollback.
+
+The Adapter's future normal flow is Search → ref → batch View → Replace → fresh
+ref → batch Check. It is caller convenience, not a protocol-required lifecycle
+or capability order. The [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
+owns the remaining decisions and gates.
+
 ## 0.2.5 performance-recovery authority
 
 Gates 1 through 8 are complete. Cargo, `bw version`, the official four-target

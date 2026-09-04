@@ -1,5 +1,19 @@
 # Backwriter Roadmap
 
+## Planned: 0.2.6 operational Adapter and verification contraction
+
+The [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
+starts with documentation-only Gate 1. It makes `bw` explain what to type,
+what happens, and what comes back without changing Core/Runtime, Search,
+v5/`bw.cli.search.v2`, raw Session, or the closed `0.2.5` release.
+
+Gates 2–8 may only add the approved operational surface in order: shared help/
+usage/KAT authority, errors/stdin, Line body/exact boundary, process-local refs
+and Replace, ordered batch Check, evidence-led test/docs contraction, and source
+readiness. Artifacts and publication remain separately authorized. Search
+execution comparisons are candidate-versus-`0.2.5`; the inherited 268-test GNU/
+musl result and `Correct 1 / Safe Reject 6 / Wrong Apply 0` do not weaken.
+
 ## Completed: 0.2.5 release closure
 
 The [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)

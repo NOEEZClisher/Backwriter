@@ -13,6 +13,23 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
+## 0.2.6 operational Adapter authority — Gate 1 only
+
+The `0.2.6` operational Adapter and verification-contraction authority is
+documentation-only at Gate 1. The governing rule is: **explain what to type,
+what happens, and what comes back.** It retains the closed `0.2.5` Core,
+Runtime, v5 wire, Search behavior/output/performance, raw Session, and public
+distribution unchanged. Future Adapter work reuses the handwritten parser,
+canonical writers, `apply_replace`, and existing Check grouping unless direct
+reachability proves a smaller replacement.
+
+Only a later named Gate may implement command help, stable usage errors,
+`--stdin`, process-local references, Replace ergonomics, or ordered batch Check.
+These are not a Core lifecycle, persistent identity, relocation, history,
+retry, transaction, CAS/lock, rollback, v6, or Search optimization. The
+[0.2.6 tracker](docs/tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
+is execution authority; its source note and roadmap are preserved evidence.
+
 Search, View, Pick, Anchor, and Check have Rust implementations. The published
 `0.2.5` source is closed through Gate 8 with the v5 Anddress algebra, wire, shared
 structural cursor, direct Search result collection, geometry-driven

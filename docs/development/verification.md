@@ -1,5 +1,23 @@
 # Verification
 
+## 0.2.6 operational Adapter and verification-contraction authority
+
+Gate 1 is documentation-only. It preserves the N-1 `0.2.5` GNU/musl result of
+268 tests because Rust, Cargo, lockfile, toolchain, tests, and CLI behavior are
+byte-identical. It does not reinterpret that inherited result as evidence for
+future Adapter behavior. Gates 2–6 must add their own executable help,
+usage/stdin, Line-body, reference/Replace, and batch-Check evidence; Gate 7 may
+contract tests/docs only after its blind Dummy, Genie, and external-evidence
+audit.
+
+New execution comparison is candidate versus `0.2.5` only. N-2 and older
+releases use preserved task, revision, and raw evidence; three-version execution
+is exceptional evidence for an explicit regression recovery or two-step
+migration. Every Gate preserves v5 KATs, Search tier/order/duplicates,
+currentness/publication boundaries, and `Correct 1 / Safe Reject 6 / Wrong
+Apply 0`. The tracker defines the exact future evidence without changing the
+closed Search performance suite.
+
 ## 0.2.5 performance-recovery gates
 
 Gate 1 is documentation-only. Gates 2 through 7 replace the sole literal

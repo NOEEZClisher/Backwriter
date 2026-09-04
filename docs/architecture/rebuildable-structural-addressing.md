@@ -1,5 +1,14 @@
 # Backwriter Anddress and Exact Line Model
 
+## 0.2.6 Adapter boundary
+
+Gate 1 of the operational Adapter target changes no Anddress algebra, v5 wire,
+source identity, exact geometry, validation, encoding, or projection. Future
+shell references are process-local Adapter values, not an Anddress issuer,
+alias, persistent identifier, or relocation mechanism. Any later exact extent
+or raw Apply syntax remains ADVANCED and requires an actual Gate 4 consumer;
+no new address syntax or v6 branch is authorized here.
+
 ## 0.2.5 encoding, attachment, and currentness boundary
 
 Gates 1 through 7 preserve the complete published v5 algebra and wire. Exact

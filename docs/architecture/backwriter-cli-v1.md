@@ -1,5 +1,26 @@
 # Backwriter CLI V1
 
+## 0.2.6 operational Adapter authority — Gate 1 only
+
+The planned operational target explains what to type, what happens, and what
+comes back; Gate 1 changes no command, parser, output, error, version, or
+process behavior. Top-level help will later cover only global syntax,
+capabilities, and additional help. Command help will use `NAME`, `USAGE`,
+`DESCRIPTION`, `ARGUMENTS`, `OPTIONS`, `WHAT HAPPENS`, `OUTPUT`, `EXAMPLES`,
+`FAILURES`, and `SEE ALSO`, with `bw help X` equal to `bw X --help` and
+executable examples.
+
+Later Gates retain exits `0/1/2`, document canonical output options only as
+prefixes, and may accept trailing options only after a direct simplification
+proof; operands are never interleaved with options. `--stdin` will be XOR with
+positional Content and read to EOF. One-shot Line Replace remains body-only,
+preserves its existing terminator, and rejects NUL/CR/LF without stripping;
+File/Paragraph retain exact UTF-8 and existing NUL policy. Raw Session and raw
+Apply remain ADVANCED. Process-local refs/aliases and ordered batch Check are
+future bounded Adapter work under the
+[0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md),
+not new Core wire, identity, persistence, or lifecycle behavior.
+
 ## 0.2.5 encoder reuse and release boundary
 
 Gates 1 through 4 change no CLI syntax, schema, key order, output byte, status,

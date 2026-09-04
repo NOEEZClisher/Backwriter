@@ -1,5 +1,21 @@
 # Backwriter Current State
 
+## Planned: 0.2.6 operational Adapter and verification contraction — Gate 1 authority
+
+Gate 1 records only the approved Adapter boundary in the
+[0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).
+The governing rule is **explain what to type, what happens, and what comes
+back**. No implementation, version, artifact, installer, publication, Core, or
+Runtime change occurs here: `0.2.5` remains the closed source and public
+distribution.
+
+The future sequence is help; errors and stdin; Line body/exact boundary;
+process-local references plus Replace; ordered batch Check; verification/docs
+contraction; then source readiness. Search, v5 values/wire, raw Session,
+`apply_replace`, and current Check seams remain fixed. Candidate execution
+compares with `0.2.5`; inherited GNU/musl 268-test evidence and `Correct 1 /
+Safe Reject 6 / Wrong Apply 0` remain required controls.
+
 ## 0.2.5 performance recovery — published and closed
 
 Gates 1 through 8 are complete under the
