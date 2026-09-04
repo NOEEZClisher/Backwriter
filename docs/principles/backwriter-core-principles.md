@@ -2,8 +2,9 @@
 
 The planned `0.2.6` operational Adapter and verification-contraction target is
 governed by the [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).
-Gate 1 is authority only. Its rule is **explain what to type, what happens, and
-what comes back**. It adds no Core/Runtime behavior or required workflow and
+Gate 1 is authority only, and Gate 2 adds one command-local help authority. Its
+rule is **explain what to type, what happens, and what comes back**. It adds no
+Core/Runtime behavior or required workflow and
 retains closed `0.2.5` Search/v5/raw-Session meaning. Future references stay
 process-local Adapter RAM; they are not target identity, provenance, history,
 relocation, retry, or persistence. Candidate evidence compares with `0.2.5`,

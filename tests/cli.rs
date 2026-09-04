@@ -24,6 +24,275 @@ use backwriter::{
 };
 use serde_json::Value;
 
+const TOP_LEVEL_HELP_KAT: &str = r#"USAGE
+  bw [GLOBAL OPTIONS] <command> [command options and operands]
+  bw help [<command>]
+
+GLOBAL OPTIONS
+  --workspace ABSOLUTE_PATH  Select an absolute workspace before the command.
+  --admit LOGICAL_PATH       Admit a logical root before the command; repeatable.
+  --json                     Select JSON output where the command supports it.
+  --raw                      Select raw View output only.
+
+CAPABILITIES
+  search   Discover current File, Paragraph, or Line Anddresses.
+  view     Read one or more current Anddresses.
+  edit     Replace one current Anddress.
+  check    Check one current Anddress.
+  shell    Run advanced raw Session commands.
+  version  Print the Backwriter version.
+  update   Run the installed-platform updater.
+
+Pick, Anchor, Apply, and Data have no one-shot command; use bw shell.
+
+ADDITIONAL HELP
+  bw help <command>
+
+Global options precede the command. Canonical output options are documented only in that position.
+"#;
+
+const SEARCH_HELP_KAT: &str = r#"NAME
+  bw search - discover current Anddresses by exact literal Line content or logical File path
+
+USAGE
+  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...
+  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>
+
+DESCRIPTION
+  Searches admitted Workspace Source. Literal queries are case-sensitive and match exact Line content without normalization.
+
+ARGUMENTS
+  <line|paragraph|file>  Returned target kind.
+  <query>                Nonempty literal query.
+  /file <logical-path>   Exact logical File lookup.
+
+OPTIONS
+  --workspace, --admit, and --json must precede search.
+  --source LOGICAL_PATH and --subtree LOGICAL_PATH narrow a literal search scope.
+
+WHAT HAPPENS
+  Opens the Runtime, scans admitted source once per selected source, and returns all-or-nothing current results.
+
+OUTPUT
+  Human output lists matches. --json writes the fixed bw.cli.search.v2 envelope.
+
+EXAMPLES
+  bw search line needle --source note.txt
+  bw --json search paragraph needle
+  bw search /file note.txt
+
+FAILURES
+  Invalid request or scope is a usage failure. Unavailable source or Runtime failure exits 1.
+
+SEE ALSO
+  bw help view
+  bw help shell
+"#;
+
+const VIEW_HELP_KAT: &str = r#"NAME
+  bw view - project current content from one or more v5 Anddresses
+
+USAGE
+  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]
+  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json view anddress <encoded-v5-Anddress>... --as <line|paragraph|file>
+
+DESCRIPTION
+  Validates current source state and projects the requested target relation from caller-provided v5 Anddresses.
+
+ARGUMENTS
+  anddress                  Required input form.
+  <encoded-v5-Anddress>     One or more canonical v5 objects.
+
+OPTIONS
+  --workspace, --admit, --json, and --raw must precede view.
+  --as selects line, paragraph, or file and must be last. Batch View requires --json and --as.
+
+WHAT HAPPENS
+  Opens the Runtime after input validation and returns the requested current projection.
+
+OUTPUT
+  One human or raw View writes content. JSON writes the fixed bw.cli.view.v2 envelope.
+
+EXAMPLES
+  bw view anddress '<v5-Anddress>'
+  bw --raw view anddress '<v5-Line-Anddress>'
+  bw --json view anddress '<v5-Anddress>' --as paragraph
+
+FAILURES
+  Invalid input or unsupported output form is a usage failure. Unavailable or stale source exits 1.
+
+SEE ALSO
+  bw help search
+  bw help check
+"#;
+
+const EDIT_HELP_KAT: &str = r#"NAME
+  bw edit - replace one current v5 Anddress
+
+USAGE
+  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> <content>
+
+DESCRIPTION
+  Replaces exactly one current File, Paragraph, or Line target through the Runtime Replace seam.
+
+ARGUMENTS
+  anddress                  Required input form.
+  <encoded-v5-Anddress>     One canonical v5 object.
+  <content>                  One positional replacement string.
+
+OPTIONS
+  --workspace, --admit, and --json must precede edit.
+  No command-local options are available.
+
+WHAT HAPPENS
+  Validates input, preserves an existing Line terminator automatically, then applies one Replace.
+
+OUTPUT
+  Human output writes the receipt outcome and fresh Anddress when present. --json writes bw.cli.edit.v1.
+
+EXAMPLES
+  bw edit anddress '<v5-Anddress>' 'replacement'
+
+FAILURES
+  Invalid input is a usage failure. Stale, unavailable, or publication failure exits 1.
+
+SEE ALSO
+  bw help view
+  bw help check
+"#;
+
+const CHECK_HELP_KAT: &str = r#"NAME
+  bw check - check one current v5 Anddress
+
+USAGE
+  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v5-Anddress>
+
+DESCRIPTION
+  Checks the current state of one caller-provided v5 Anddress.
+
+ARGUMENTS
+  anddress                  Required input form.
+  <encoded-v5-Anddress>     One canonical v5 object.
+
+OPTIONS
+  --workspace, --admit, and --json must precede check.
+  No command-local options are available.
+
+WHAT HAPPENS
+  Opens the Runtime after input validation and reports currentness for that one target.
+
+OUTPUT
+  Human output writes one state. --json writes the existing one-shot Check envelope.
+
+EXAMPLES
+  bw check anddress '<v5-Anddress>'
+
+FAILURES
+  Invalid input is a usage failure. Unavailable source or Runtime failure exits 1.
+
+SEE ALSO
+  bw help search
+  bw help shell
+"#;
+
+const SHELL_HELP_KAT: &str = r#"NAME
+  bw shell - run the advanced raw Session surface
+
+USAGE
+  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
+
+DESCRIPTION
+  Reads raw Session commands from standard input until exit. This is the advanced surface for bindings and raw capability composition.
+
+ARGUMENTS
+  None.
+
+OPTIONS
+  --workspace and --admit must precede shell.
+  --json and --raw are unavailable.
+
+WHAT HAPPENS
+  Retains one Session Runtime and explicit caller bindings. Search, Pick, View, Check, Anchor, Edit, Apply, and Data use their existing raw grammar.
+
+OUTPUT
+  Each raw command writes its existing human result.
+
+EXAMPLES
+  bw shell
+  let hits = search line needle
+  view anddress @hits[0]
+  exit
+
+FAILURES
+  Invalid raw grammar is a usage failure. Runtime and source failures exit 1.
+
+SEE ALSO
+  bw help search
+  bw help edit
+"#;
+
+const UPDATE_HELP_KAT: &str = r#"NAME
+  bw update - run the installed-platform updater
+
+USAGE
+  bw update
+
+DESCRIPTION
+  Downloads and hands off to the canonical installer for the current platform.
+
+ARGUMENTS
+  None.
+
+OPTIONS
+  None.
+
+WHAT HAPPENS
+  Performs the existing update download and installer handoff.
+
+OUTPUT
+  The installer owns its output.
+
+EXAMPLES
+  bw update
+
+FAILURES
+  Any option or operand is a usage failure. Download, installer, or platform failure exits 1.
+
+SEE ALSO
+  bw help version
+"#;
+
+const VERSION_HELP_KAT: &str = r#"NAME
+  bw version - print the Backwriter version
+
+USAGE
+  bw version
+
+DESCRIPTION
+  Prints the version compiled into this executable.
+
+ARGUMENTS
+  None.
+
+OPTIONS
+  None.
+
+WHAT HAPPENS
+  Reads no Workspace Source and opens no Runtime.
+
+OUTPUT
+  One Backwriter version line.
+
+EXAMPLES
+  bw version
+
+FAILURES
+  Any option or operand is a usage failure. Standard-output failure exits 1.
+
+SEE ALSO
+  bw help update
+"#;
+
 fn binary() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_bw"))
 }
@@ -234,7 +503,27 @@ fn paragraph_ranges(source: &[u8]) -> Vec<(usize, usize)> {
 fn assert_usage(output: Output) {
     assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty());
-    assert!(text(output.stderr).contains("Usage:"));
+    assert!(text(output.stderr).contains("\n\nUSAGE\n"));
+}
+
+fn assert_help_section_order(help: &[u8]) {
+    let help = std::str::from_utf8(help).unwrap();
+    let mut end = 0;
+    for section in [
+        "NAME\n",
+        "USAGE\n",
+        "DESCRIPTION\n",
+        "ARGUMENTS\n",
+        "OPTIONS\n",
+        "WHAT HAPPENS\n",
+        "OUTPUT\n",
+        "EXAMPLES\n",
+        "FAILURES\n",
+        "SEE ALSO\n",
+    ] {
+        let start = help[end..].find(section).unwrap() + end;
+        end = start + section.len();
+    }
 }
 
 fn assert_execution_error(output: Output) {
@@ -513,20 +802,143 @@ fn canonical_binary_help_and_default_workspace_search() {
 
     let help = run(root.path(), &["--help"]);
     assert!(help.status.success());
-    let help_stdout = text(help.stdout);
-    assert!(help_stdout.starts_with("Usage:\n  bw "));
-    assert!(help_stdout.contains("[--json] search"));
-    assert!(help_stdout.contains("[--json] check"));
-    assert!(help_stdout.contains("[--json|--raw] view"));
-    assert!(help_stdout.contains("edit anddress <encoded-v5-Anddress> <content>"));
-    assert!(help_stdout.contains("  bw version\n"));
-    assert!(help_stdout.contains("  bw update\n"));
+    assert_eq!(help.stdout, TOP_LEVEL_HELP_KAT.as_bytes());
     assert!(help.stderr.is_empty());
+
+    let named_help = run(root.path(), &["help"]);
+    assert!(named_help.status.success());
+    assert_eq!(named_help.stdout, TOP_LEVEL_HELP_KAT.as_bytes());
+    assert!(named_help.stderr.is_empty());
 
     let version = run(root.path(), &["version"]);
     assert!(version.status.success());
     assert_eq!(version.stdout, b"Backwriter 0.2.5\n");
     assert!(version.stderr.is_empty());
+}
+
+#[test]
+fn command_local_help_kats_are_exact_and_skip_runtime_opening() {
+    let root = tempfile::tempdir().unwrap();
+    let cases = [
+        ("search", SEARCH_HELP_KAT),
+        ("view", VIEW_HELP_KAT),
+        ("edit", EDIT_HELP_KAT),
+        ("check", CHECK_HELP_KAT),
+        ("shell", SHELL_HELP_KAT),
+        ("update", UPDATE_HELP_KAT),
+        ("version", VERSION_HELP_KAT),
+    ];
+
+    for (command, expected) in cases {
+        let direct = run(root.path(), &[command, "--help"]);
+        assert!(direct.status.success());
+        assert_eq!(direct.stdout, expected.as_bytes());
+        assert!(direct.stderr.is_empty());
+        assert_help_section_order(&direct.stdout);
+
+        let named = run(root.path(), &["help", command]);
+        assert!(named.status.success());
+        assert_eq!(named.stdout, expected.as_bytes());
+        assert!(named.stderr.is_empty());
+
+        assert_usage(run(root.path(), &[command, "--help", "trailing"]));
+    }
+
+    for (command, expected) in cases[..5].iter().copied() {
+        let unavailable = root.path().join("not-a-workspace");
+        let output = Command::new(binary())
+            .current_dir(root.path())
+            .arg("--workspace")
+            .arg(unavailable)
+            .args([command, "--help"])
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(output.stdout, expected.as_bytes());
+        assert!(output.stderr.is_empty());
+    }
+
+    assert_usage(run(root.path(), &["help", "search", "trailing"]));
+    assert_usage(run(root.path(), &["help", "unknown"]));
+    assert_usage(run(root.path(), &["pick"]));
+    assert_usage(run(root.path(), &["anchor"]));
+    assert_usage(run(root.path(), &["apply"]));
+    assert_usage(run(root.path(), &["data"]));
+}
+
+#[test]
+fn command_help_examples_match_current_one_shot_and_raw_session_behavior() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\r\n");
+    write(root.path(), "coordinate.txt", "coordinate\n");
+
+    let search = run(
+        root.path(),
+        &["search", "line", "needle", "--source", "note.txt"],
+    );
+    assert!(search.status.success());
+    assert_eq!(search.stdout, b"Found 1\n0\tLine\tnote.txt:1\n");
+    assert!(search.stderr.is_empty());
+
+    let operand = view_operand(
+        root.path(),
+        "note.txt",
+        AnddressTarget::Line {
+            ordinal: Natural::zero(),
+            exact_extent: "needle\r\n".to_owned(),
+        },
+    );
+    let view = run(root.path(), &["view", "anddress", &operand]);
+    assert!(view.status.success());
+    assert_eq!(view.stdout, b"needle\r\n");
+    assert!(view.stderr.is_empty());
+
+    let check = run(root.path(), &["check", "anddress", &operand]);
+    assert_check_status(check, "Current");
+
+    let edit = run(root.path(), &["edit", "anddress", &operand, "replacement"]);
+    assert!(edit.status.success());
+    assert!(edit.stderr.is_empty());
+    assert_eq!(
+        fs::read(root.path().join("note.txt")).unwrap(),
+        b"replacement\r\n"
+    );
+
+    let shell = run_shell(
+        root.path(),
+        "let hits = search line replacement\nview anddress @hits[0]\nexit\n",
+    );
+    assert!(shell.status.success());
+    assert_eq!(
+        shell.stdout,
+        b"Found 1\n0\tLine\tnote.txt:1\nreplacement\r\n"
+    );
+    assert!(shell.stderr.is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn update_help_does_not_start_the_update_download() {
+    let root = tempfile::tempdir().unwrap();
+    fs::create_dir(root.path().join("bin")).unwrap();
+    let called = root.path().join("curl-called");
+    write_executable(
+        root.path(),
+        "bin/curl",
+        "#!/bin/sh\n: > \"$BW_HELP_CURL_CALLED\"\nexit 99\n",
+    );
+
+    let output = Command::new(binary())
+        .current_dir(root.path())
+        .args(["update", "--help"])
+        .env("PATH", root.path().join("bin"))
+        .env("BW_HELP_CURL_CALLED", &called)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(output.stdout, UPDATE_HELP_KAT.as_bytes());
+    assert!(output.stderr.is_empty());
+    assert!(!called.exists());
 }
 
 #[cfg(unix)]

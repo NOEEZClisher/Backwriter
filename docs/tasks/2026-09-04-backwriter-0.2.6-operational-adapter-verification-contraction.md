@@ -1,6 +1,6 @@
 # Backwriter 0.2.6 Operational Adapter & Verification Contraction
 
-Status: Gate 1 complete — authority only. `0.2.5` remains the closed source,
+Status: Gates 1–2 complete — authority and command-local help. `0.2.5` remains the closed source,
 package, CLI, installer, artifact, and public distribution. This tracker is
 execution authority; its companion [source note](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-source.md)
 and [roadmap](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-roadmap.md)
@@ -39,15 +39,22 @@ byte-identical to N-1. The existing parser, canonical writers, `apply_replace`,
 raw Session, and Check group execution are retained as actual consumers; no
 new parser, executor, result store, or Runtime seam is created.
 
-## Gate 2 — help, usage error, and KAT authority
+## Gate 2 — help, usage error, and KAT authority — complete
 
-Consolidate only demonstrated duplicate command-local help, usage error, and
-KAT plumbing. Keep a handwritten parser unless deletion proves a simpler result.
-No declarative parser rewrite or extra integration binary is allowed. Top-level
-help describes global syntax, capability list, and additional help only.
-Command help must order sections as `NAME`, `USAGE`, `DESCRIPTION`,
+One writer now owns top-level help and one command-local selection owns the
+seven implemented command pages. The handwritten parser, Runtime execution,
+normal writers, raw Session, and one integration test crate remain. No
+declarative parser rewrite, second dispatch, wrapper, or extra integration
+binary is added. Top-level help describes global syntax, capability list, and
+additional help only. Command help orders sections as `NAME`, `USAGE`, `DESCRIPTION`,
 `ARGUMENTS`, `OPTIONS`, `WHAT HAPPENS`, `OUTPUT`, `EXAMPLES`, `FAILURES`, and
-`SEE ALSO`; `bw help X` equals `bw X --help`, and examples execute.
+`SEE ALSO`; `bw --help` equals `bw help`; `bw help X` equals `bw X --help`; and
+examples execute against a task-local CRLF fixture. `--help` is help only when
+it is the command's sole operand. Help returns before Runtime/source I/O and
+the Update download. Existing usage failures still exit 2 and reuse top-level
+help; stable code/cause/usage/hint work remains Gate 3. The three new CLI
+regressions make the complete GNU and musl suites 271 tests each while keeping
+the inherited 268-test N-1 evidence and all drift controls intact.
 
 ## Gate 3 — failures and stdin
 

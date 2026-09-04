@@ -2,11 +2,15 @@
 
 ## 0.2.6 operational Adapter and verification-contraction authority
 
-Gate 1 is documentation-only. It preserves the N-1 `0.2.5` GNU/musl result of
-268 tests because Rust, Cargo, lockfile, toolchain, tests, and CLI behavior are
-byte-identical. It does not reinterpret that inherited result as evidence for
-future Adapter behavior. Gates 2–6 must add their own executable help,
-usage/stdin, Line-body, reference/Replace, and batch-Check evidence; Gate 7 may
+Gate 1 is documentation-only and reused the N-1 `0.2.5` GNU/musl result of 268
+tests because Rust, Cargo, lockfile, toolchain, tests, and CLI behavior were
+byte-identical. Gate 2 adds exact top-level and seven command-help KATs,
+section-order checks, sole-operand checks, no-Runtime-opening checks, and a Unix
+fake-curl control that proves `update --help` does not start download. The three
+Gate 2 CLI regressions bring both complete GNU and musl suites to 271 passing
+tests. It does not reinterpret the inherited result as evidence for
+future Adapter behavior. Gates 3–6 must add their own executable usage/stdin,
+Line-body, reference/Replace, and batch-Check evidence; Gate 7 may
 contract tests/docs only after its blind Dummy, Genie, and external-evidence
 audit.
 

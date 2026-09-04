@@ -34,7 +34,21 @@ use backwriter::{
     runtime::{AdmissionRoot, WorkspaceAdmission, WorkspaceRuntime},
 };
 
-const USAGE: &str = "Usage:\n  bw version\n  bw update\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v5-Anddress>... [--as <line|paragraph|file>]\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v5-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> <content>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nOne-shot Version, Update, human and JSON Search, View, Check, and Anddress-first Edit, raw View, plus Session Pick, batch Check, Anchor, Edit, Apply, result binding, and Data are implemented.";
+const TOP_LEVEL_HELP: &str = "USAGE\n  bw [GLOBAL OPTIONS] <command> [command options and operands]\n  bw help [<command>]\n\nGLOBAL OPTIONS\n  --workspace ABSOLUTE_PATH  Select an absolute workspace before the command.\n  --admit LOGICAL_PATH       Admit a logical root before the command; repeatable.\n  --json                     Select JSON output where the command supports it.\n  --raw                      Select raw View output only.\n\nCAPABILITIES\n  search   Discover current File, Paragraph, or Line Anddresses.\n  view     Read one or more current Anddresses.\n  edit     Replace one current Anddress.\n  check    Check one current Anddress.\n  shell    Run advanced raw Session commands.\n  version  Print the Backwriter version.\n  update   Run the installed-platform updater.\n\nPick, Anchor, Apply, and Data have no one-shot command; use bw shell.\n\nADDITIONAL HELP\n  bw help <command>\n\nGlobal options precede the command. Canonical output options are documented only in that position.";
+
+const SEARCH_HELP: &str = "NAME\n  bw search - discover current Anddresses by exact literal Line content or logical File path\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n\nDESCRIPTION\n  Searches admitted Workspace Source. Literal queries are case-sensitive and match exact Line content without normalization.\n\nARGUMENTS\n  <line|paragraph|file>  Returned target kind.\n  <query>                Nonempty literal query.\n  /file <logical-path>   Exact logical File lookup.\n\nOPTIONS\n  --workspace, --admit, and --json must precede search.\n  --source LOGICAL_PATH and --subtree LOGICAL_PATH narrow a literal search scope.\n\nWHAT HAPPENS\n  Opens the Runtime, scans admitted source once per selected source, and returns all-or-nothing current results.\n\nOUTPUT\n  Human output lists matches. --json writes the fixed bw.cli.search.v2 envelope.\n\nEXAMPLES\n  bw search line needle --source note.txt\n  bw --json search paragraph needle\n  bw search /file note.txt\n\nFAILURES\n  Invalid request or scope is a usage failure. Unavailable source or Runtime failure exits 1.\n\nSEE ALSO\n  bw help view\n  bw help shell";
+
+const VIEW_HELP: &str = "NAME\n  bw view - project current content from one or more v5 Anddresses\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json view anddress <encoded-v5-Anddress>... --as <line|paragraph|file>\n\nDESCRIPTION\n  Validates current source state and projects the requested target relation from caller-provided v5 Anddresses.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One or more canonical v5 objects.\n\nOPTIONS\n  --workspace, --admit, --json, and --raw must precede view.\n  --as selects line, paragraph, or file and must be last. Batch View requires --json and --as.\n\nWHAT HAPPENS\n  Opens the Runtime after input validation and returns the requested current projection.\n\nOUTPUT\n  One human or raw View writes content. JSON writes the fixed bw.cli.view.v2 envelope.\n\nEXAMPLES\n  bw view anddress '<v5-Anddress>'\n  bw --raw view anddress '<v5-Line-Anddress>'\n  bw --json view anddress '<v5-Anddress>' --as paragraph\n\nFAILURES\n  Invalid input or unsupported output form is a usage failure. Unavailable or stale source exits 1.\n\nSEE ALSO\n  bw help search\n  bw help check";
+
+const EDIT_HELP: &str = "NAME\n  bw edit - replace one current v5 Anddress\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> <content>\n\nDESCRIPTION\n  Replaces exactly one current File, Paragraph, or Line target through the Runtime Replace seam.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One canonical v5 object.\n  <content>                  One positional replacement string.\n\nOPTIONS\n  --workspace, --admit, and --json must precede edit.\n  No command-local options are available.\n\nWHAT HAPPENS\n  Validates input, preserves an existing Line terminator automatically, then applies one Replace.\n\nOUTPUT\n  Human output writes the receipt outcome and fresh Anddress when present. --json writes bw.cli.edit.v1.\n\nEXAMPLES\n  bw edit anddress '<v5-Anddress>' 'replacement'\n\nFAILURES\n  Invalid input is a usage failure. Stale, unavailable, or publication failure exits 1.\n\nSEE ALSO\n  bw help view\n  bw help check";
+
+const CHECK_HELP: &str = "NAME\n  bw check - check one current v5 Anddress\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v5-Anddress>\n\nDESCRIPTION\n  Checks the current state of one caller-provided v5 Anddress.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One canonical v5 object.\n\nOPTIONS\n  --workspace, --admit, and --json must precede check.\n  No command-local options are available.\n\nWHAT HAPPENS\n  Opens the Runtime after input validation and reports currentness for that one target.\n\nOUTPUT\n  Human output writes one state. --json writes the existing one-shot Check envelope.\n\nEXAMPLES\n  bw check anddress '<v5-Anddress>'\n\nFAILURES\n  Invalid input is a usage failure. Unavailable source or Runtime failure exits 1.\n\nSEE ALSO\n  bw help search\n  bw help shell";
+
+const SHELL_HELP: &str = "NAME\n  bw shell - run the advanced raw Session surface\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nDESCRIPTION\n  Reads raw Session commands from standard input until exit. This is the advanced surface for bindings and raw capability composition.\n\nARGUMENTS\n  None.\n\nOPTIONS\n  --workspace and --admit must precede shell.\n  --json and --raw are unavailable.\n\nWHAT HAPPENS\n  Retains one Session Runtime and explicit caller bindings. Search, Pick, View, Check, Anchor, Edit, Apply, and Data use their existing raw grammar.\n\nOUTPUT\n  Each raw command writes its existing human result.\n\nEXAMPLES\n  bw shell\n  let hits = search line needle\n  view anddress @hits[0]\n  exit\n\nFAILURES\n  Invalid raw grammar is a usage failure. Runtime and source failures exit 1.\n\nSEE ALSO\n  bw help search\n  bw help edit";
+
+const UPDATE_HELP: &str = "NAME\n  bw update - run the installed-platform updater\n\nUSAGE\n  bw update\n\nDESCRIPTION\n  Downloads and hands off to the canonical installer for the current platform.\n\nARGUMENTS\n  None.\n\nOPTIONS\n  None.\n\nWHAT HAPPENS\n  Performs the existing update download and installer handoff.\n\nOUTPUT\n  The installer owns its output.\n\nEXAMPLES\n  bw update\n\nFAILURES\n  Any option or operand is a usage failure. Download, installer, or platform failure exits 1.\n\nSEE ALSO\n  bw help version";
+
+const VERSION_HELP: &str = "NAME\n  bw version - print the Backwriter version\n\nUSAGE\n  bw version\n\nDESCRIPTION\n  Prints the version compiled into this executable.\n\nARGUMENTS\n  None.\n\nOPTIONS\n  None.\n\nWHAT HAPPENS\n  Reads no Workspace Source and opens no Runtime.\n\nOUTPUT\n  One Backwriter version line.\n\nEXAMPLES\n  bw version\n\nFAILURES\n  Any option or operand is a usage failure. Standard-output failure exits 1.\n\nSEE ALSO\n  bw help update";
 
 #[cfg(unix)]
 const INSTALL_SH_URL: &str = "https://backwriter.pentagration.com/install.sh";
@@ -194,7 +208,7 @@ impl CliError {
         let mut stderr = io::stderr().lock();
         match self {
             Self::Usage(message) => {
-                let _ = writeln!(stderr, "error: {message}\n\n{USAGE}");
+                let _ = writeln!(stderr, "error: {message}\n\n{TOP_LEVEL_HELP}");
             }
             Self::Execution(message) | Self::Stream(message) => {
                 let _ = writeln!(stderr, "error: {message}");
@@ -217,11 +231,7 @@ fn execute() -> Result<ExitCode, CliError> {
     let mut arguments = env::args_os().skip(1);
     let first = arguments.next();
     if matches!(first.as_deref(), Some(value) if value == "--help") && arguments.next().is_none() {
-        let mut stdout = BufWriter::new(io::stdout().lock());
-        writeln!(stdout, "{USAGE}").map_err(|error| CliError::stream(error.to_string()))?;
-        stdout
-            .flush()
-            .map_err(|error| CliError::stream(error.to_string()))?;
+        write_help(TOP_LEVEL_HELP)?;
         return Ok(ExitCode::SUCCESS);
     }
 
@@ -267,10 +277,20 @@ fn execute() -> Result<ExitCode, CliError> {
                 output = OutputMode::Raw;
             }
             "version" => {
+                let trailing: Vec<OsString> = arguments.collect();
+                if workspace.is_none()
+                    && admissions.is_empty()
+                    && output == OutputMode::Human
+                    && trailing.len() == 1
+                    && trailing[0] == "--help"
+                {
+                    write_command_help("version")?;
+                    return Ok(ExitCode::SUCCESS);
+                }
                 if workspace.is_some()
                     || !admissions.is_empty()
                     || output != OutputMode::Human
-                    || arguments.next().is_some()
+                    || !trailing.is_empty()
                 {
                     return Err(CliError::usage("version accepts no options or operands"));
                 }
@@ -278,10 +298,20 @@ fn execute() -> Result<ExitCode, CliError> {
                 return Ok(ExitCode::SUCCESS);
             }
             "update" => {
+                let trailing: Vec<OsString> = arguments.collect();
+                if workspace.is_none()
+                    && admissions.is_empty()
+                    && output == OutputMode::Human
+                    && trailing.len() == 1
+                    && trailing[0] == "--help"
+                {
+                    write_command_help("update")?;
+                    return Ok(ExitCode::SUCCESS);
+                }
                 if workspace.is_some()
                     || !admissions.is_empty()
                     || output != OutputMode::Human
-                    || arguments.next().is_some()
+                    || !trailing.is_empty()
                 {
                     return Err(CliError::usage("update accepts no options or operands"));
                 }
@@ -307,10 +337,29 @@ fn execute() -> Result<ExitCode, CliError> {
                 if output != OutputMode::Human {
                     return Err(CliError::usage("output options are unsupported for shell"));
                 }
-                if arguments.next().is_some() {
+                let trailing: Vec<OsString> = arguments.collect();
+                if trailing.len() == 1 && trailing[0] == "--help" {
+                    write_command_help("shell")?;
+                    return Ok(ExitCode::SUCCESS);
+                }
+                if !trailing.is_empty() {
                     return Err(CliError::usage("shell accepts no operands"));
                 }
                 return execute_shell(workspace, admissions);
+            }
+            "help" => {
+                if workspace.is_some() || !admissions.is_empty() || output != OutputMode::Human {
+                    return Err(CliError::usage("help accepts no global options"));
+                }
+                let Some(command) = arguments.next() else {
+                    write_help(TOP_LEVEL_HELP)?;
+                    return Ok(ExitCode::SUCCESS);
+                };
+                if arguments.next().is_some() {
+                    return Err(CliError::usage("help accepts at most one command"));
+                }
+                write_command_help(&utf8(command, "help command")?)?;
+                return Ok(ExitCode::SUCCESS);
             }
             "pick" | "anchor" | "apply" | "data" => {
                 if output != OutputMode::Human {
@@ -319,7 +368,7 @@ fn execute() -> Result<ExitCode, CliError> {
                     ));
                 }
                 return Err(CliError::usage(format!(
-                    "{argument} is not implemented in this slice"
+                    "{argument} has no one-shot command; use bw shell"
                 )));
             }
             "--help" => return Err(CliError::usage("--help must be used alone")),
@@ -331,6 +380,33 @@ fn execute() -> Result<ExitCode, CliError> {
         }
         capability = arguments.next();
     }
+}
+
+fn write_help(help: &str) -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    writeln!(stdout, "{help}").map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
+}
+
+fn write_command_help(command: &str) -> Result<(), CliError> {
+    let help = match command {
+        "search" => SEARCH_HELP,
+        "view" => VIEW_HELP,
+        "edit" => EDIT_HELP,
+        "check" => CHECK_HELP,
+        "shell" => SHELL_HELP,
+        "update" => UPDATE_HELP,
+        "version" => VERSION_HELP,
+        "pick" | "anchor" | "apply" | "data" => {
+            return Err(CliError::usage(format!(
+                "{command} has no one-shot command; use bw shell"
+            )));
+        }
+        _ => return Err(CliError::usage(format!("unknown help command: {command}"))),
+    };
+    write_help(help)
 }
 
 fn write_version() -> Result<(), CliError> {
@@ -449,6 +525,9 @@ fn execute_search(
         return Err(CliError::usage("--raw is supported only for View"));
     }
     let arguments = text_arguments(arguments, "search argument")?;
+    if arguments.len() == 1 && arguments[0] == "--help" {
+        return write_command_help("search");
+    }
     let request = parse_search(&arguments)?;
     let runtime = open_runtime(workspace, admissions)?;
     let outcome = run_search(&runtime, request)?;
@@ -520,6 +599,9 @@ fn execute_edit(
         return Err(CliError::usage("--raw is supported only for View"));
     }
     let form = required_text(&mut arguments, "edit input form")?;
+    if form == "--help" && arguments.next().is_none() {
+        return write_command_help("edit");
+    }
     if form != "anddress" {
         return Err(CliError::usage("edit requires the anddress input form"));
     }
@@ -632,10 +714,13 @@ fn execute_view(
     output: OutputMode,
 ) -> Result<(), CliError> {
     let form = required_text(&mut arguments, "view input form")?;
+    if form == "--help" && arguments.next().is_none() {
+        return write_command_help("view");
+    }
     if form != "anddress" {
         if form == "anchored" {
             return Err(CliError::usage(
-                "view anchored is not implemented in this slice",
+                "view anchored has no one-shot form; use bw shell",
             ));
         }
         return Err(CliError::usage("view requires the anddress input form"));
@@ -714,10 +799,13 @@ fn execute_check(
         return Err(CliError::usage("--raw is supported only for View"));
     }
     let form = required_text(&mut arguments, "check input form")?;
+    if form == "--help" && arguments.next().is_none() {
+        return write_command_help("check");
+    }
     if form != "anddress" {
         if matches!(form.as_str(), "search" | "pick") {
             return Err(CliError::usage(format!(
-                "check {form} is not implemented in this slice"
+                "check {form} has no one-shot form; use bw shell"
             )));
         }
         return Err(CliError::usage("check requires the anddress input form"));

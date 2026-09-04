@@ -1,6 +1,6 @@
 # Backwriter Protocol
 
-## 0.2.6 operational Adapter boundary — Gate 1 authority
+## 0.2.6 operational Adapter boundary — Gates 1–2 authority
 
 Gate 1 changes no Core or Runtime contract. Existing `WorkspaceRuntime`
 seams are the default: one-shot Replace reuses `apply_replace`, raw `apply`
@@ -8,6 +8,12 @@ and raw Session retain their public/advanced roles, and existing `check`,
 `check_search`, and `check_pick` retain their current input meanings. Gate 6
 may add a narrow ordered batch Check seam only after evidence proves those three
 cannot represent the Adapter input without changing their semantics.
+
+Gate 2 adds no protocol command or parser model. The handwritten Adapter parser
+recognizes `bw --help`/`bw help` and the exact `bw help X`/`bw X --help` pairs
+for Search, View, Edit, Check, Shell, Update, and Version before any Runtime
+open, source I/O, or Update network operation. Help uses fixed command-local
+sections and describes only the already implemented parser forms.
 
 Search remains its exact `0.2.5` contract: matcher, structural path,
 traversal, order, tiers, storage, `SearchOutcome`, `bw.cli.search.v2`, v5

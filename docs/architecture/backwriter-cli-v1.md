@@ -1,14 +1,16 @@
 # Backwriter CLI V1
 
-## 0.2.6 operational Adapter authority — Gate 1 only
+## 0.2.6 operational Adapter authority — Gates 1–2 complete
 
 The planned operational target explains what to type, what happens, and what
-comes back; Gate 1 changes no command, parser, output, error, version, or
-process behavior. Top-level help will later cover only global syntax,
-capabilities, and additional help. Command help will use `NAME`, `USAGE`,
+comes back. Gate 1 changes no command, parser, output, error, version, or
+process behavior; Gate 2 adds help only. Top-level help covers only global
+syntax, capabilities, and additional help. Command help uses `NAME`, `USAGE`,
 `DESCRIPTION`, `ARGUMENTS`, `OPTIONS`, `WHAT HAPPENS`, `OUTPUT`, `EXAMPLES`,
 `FAILURES`, and `SEE ALSO`, with `bw help X` equal to `bw X --help` and
-executable examples.
+executable examples. `bw --help` equals `bw help`; `bw help X` equals `bw X
+--help` for Search, View, Edit, Check, Shell, Update, and Version. These paths
+return before Runtime/source I/O and Update download.
 
 Later Gates retain exits `0/1/2`, document canonical output options only as
 prefixes, and may accept trailing options only after a direct simplification
