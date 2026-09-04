@@ -55,8 +55,8 @@ passes every hard gate: sparse G/A is 1.0983/1.1163 at 256 MiB and
 remain within their A boundaries. B/G v5 output is exact, reusable encoding
 has zero loop allocations, and 200,000-file batch/sequential View output is
 identical. GNU and musl each pass 268 tests, and drift remains Correct 1 / Safe
-Reject 6 / Wrong Apply 0. The only remaining work is separately authorized
-Gate 8 release reconstruction and publication.
+Reject 6 / Wrong Apply 0. At the Gate 7 boundary, the only remaining work was
+separately authorized Gate 8 release reconstruction and publication.
 
 Gate 3 keeps one raw same-read Line counter and moves only proven geometry
 consumers onto the structural composition. Its fixed D/A medians are 1.0812
@@ -639,9 +639,9 @@ The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 The target choice and direct build verification are complete. The external
 operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.4` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.5` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
-`0ee4dcce14da93f925c27a04d0e79051c83fd124`. Linux uses
+`e4022fc073e9df3928e1c3817b266ce92121a03c`. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
 and `x86_64-apple-darwin` at minimum 10.12. Windows uses
 `x86_64-pc-windows-gnu` and canonical `bw.exe`. Archives, checksum sidecars,
@@ -659,13 +659,13 @@ installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
 Windows build and installer verification make no native-runtime or native-CMD
 claim.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.4`; the sole canonical executable and external Adapter command are `bw`.
+`0.2.5`; the sole canonical executable and external Adapter command are `bw`.
 The public beta.1, beta.2, and beta.3 files remain unchanged immutable
 prior artifacts. The complete stable `0.1.0` Linux/macOS/Windows version
 directory is immutable, the planned matrix is complete, and the stable release
-is closed. The complete `0.2.0`, `0.2.1`, `0.2.2`, `0.2.3`, and `0.2.4`
-version directories are likewise immutable; the current installers and
-manifest select `0.2.4` in the exact 60-file public tree.
+is closed. The complete `0.2.0`, `0.2.1`, `0.2.2`, `0.2.3`, `0.2.4`, and
+`0.2.5` version directories are likewise immutable; the current installers and
+manifest select `0.2.5` in the exact 68-file public tree.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a target registry,

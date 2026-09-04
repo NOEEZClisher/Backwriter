@@ -505,7 +505,8 @@ GNU and musl each pass all 268 tests, all-target check, clippy with warnings
 denied, and release build. Exact v5 KATs, every terminator and Unicode framing,
 late read/UTF-8/NUL fail-all, receipt/Anchor parity, and Correct 1 / Safe Reject
 6 / Wrong Apply 0 remain green. Cargo, CLI syntax/schema, version, dependency,
-server, public distribution, and release state remain `0.2.4` and unchanged.
+server, public distribution, and release state remain `0.2.4` and unchanged at
+the Gate 5 boundary.
 
 ### Gate 6 — consumer reaudit and contraction — complete
 
@@ -789,7 +790,8 @@ bytes/9,213 lines, +2.41%/+2.89% over B, with one parser, validator, canonical
 writer, cursor, and Issuer. The 256 MiB sparse p95 misses the 1.10 target at
 1.1163 but passes the fixed 1.15 hard ceiling; every other hard gate passes.
 Gate 7 is therefore GO and advances only Cargo, the root lock entry, README,
-version KAT, and active status to source-ready, unpublished `0.2.5`. After that
+version KAT, and active status to source-ready, unpublished `0.2.5` at that
+boundary. After that
 alignment, GNU and musl release binaries both print exact `Backwriter 0.2.5`
 plus LF and pass matching Help, JSON Search-to-Paragraph-View-to-receipt-Edit-
 to-Check/fresh-View, and raw Session Apply smokes. A source-built `0.2.5`

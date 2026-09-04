@@ -236,9 +236,9 @@ cargo test --offline --locked
 
 The official distribution authority is
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com).
-It publishes the closed Backwriter `0.2.4` release for Linux/WSL x86_64,
+It publishes the closed Backwriter `0.2.5` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
-`0ee4dcce14da93f925c27a04d0e79051c83fd124`. Linux uses canonical target
+`e4022fc073e9df3928e1c3817b266ce92121a03c`. Linux uses canonical target
 `x86_64-unknown-linux-musl`;
 `x86_64-unknown-linux-gnu` remains the local development/test-host target.
 macOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and
@@ -274,16 +274,18 @@ automatic update, telemetry, `sudo` execution, or automatic `PATH` or
 shell-startup-file change.
 GitHub is a public source and documentation mirror, not the distribution
 authority. The complete beta.1, beta.2, beta.3, stable `0.1.0`, `0.2.0`, and
-`0.2.1` and `0.2.2` version directories remain unchanged and immutable. The complete
-`0.2.3` and `0.2.4` version directories are immutable; the `0.2.4` planned
-matrix is complete and the release is closed. The active public tree has
-exactly 60 files; the current installers and manifest select `0.2.4`. Any later platform or version requires
-separate Owner authority. Linux arm64, tags, GitHub Releases, crates.io
-publication, and background or automatic update remain outside the completed
-publication. The `0.2.4` publication added its eight versioned files and
-replaced only the two installers and manifest pointers without replacing any
-of the 48 prior versioned files or the CMD Adapter. A second publisher run
-reused all 60 files without metadata change.
+`0.2.1` and `0.2.2` version directories remain unchanged and immutable. The
+complete `0.2.3`, `0.2.4`, and `0.2.5` version directories are immutable; the
+`0.2.5` release is closed. The active public tree has exactly 68 files, and
+the current installers and manifest select `0.2.5`. Any later platform or
+version requires separate Owner authority. Linux arm64, tags, GitHub Releases,
+crates.io publication, and background or automatic update remain outside the
+completed publication. The earlier `0.2.4` publication added its eight
+versioned files and replaced only the two installers and manifest pointers
+without replacing any of the 48 prior versioned files or the CMD Adapter. Its
+second publisher run reused all 60 files without metadata change. The `0.2.5`
+publication then added its eight versioned files, replaced the two installers
+and manifest pointers, and reused all 68 files on its second run.
 
 ## Architecture
 

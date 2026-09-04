@@ -274,8 +274,8 @@ Check, Anchor, Edit, Apply, result-binding, Data, Search/View/Check/Edit JSON, r
 View, Version, Update, and `0.2.3` Patch Box Adapter slice, every
 other capability remains deferred Adapter work. `bw update` is an explicit
 user-invoked installer handoff with no version comparison. It installs or
-reinstalls the current official `0.2.4` release through installers that accept
-only the exact closed `0.2.3` and current `0.2.4` manifests; it
+reinstalls the current official `0.2.5` release through installers that accept
+only the exact closed `0.2.4` and current `0.2.5` manifests; it
 creates no daemon, background updater, retry authority, or version-comparison
 engine.
 

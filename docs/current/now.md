@@ -98,7 +98,8 @@ Reusable encoding records zero loop allocations for one repeated target,
 The 200,000-file Search order and batch/sequential View results agree exactly.
 Host Check retains zero capability open/read/hash/cursor work. No completed
 gate activates `StructuralDemand`, cursor specialization, or shared Paragraph
-allocation. The only remaining gate is separately authorized release work.
+allocation. At the Gate 7 boundary, the only remaining gate was separately
+authorized release work; Gate 8 is now complete.
 
 ## Published and closed 0.2.4 structural authority
 
@@ -510,14 +511,14 @@ GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.4` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.5` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses
 `aarch64-apple-darwin` at minimum 11.0 and `x86_64-apple-darwin` at minimum
 10.12. Windows uses `x86_64-pc-windows-gnu` and canonical `bw.exe`. Their
 artifacts, manual-verification checksum sidecars, expanded canonical manifest,
 POSIX and PowerShell installers, and publication are complete from Source
-Authority revision `0ee4dcce14da93f925c27a04d0e79051c83fd124`. The installer verifies the
+Authority revision `e4022fc073e9df3928e1c3817b266ce92121a03c`. The installer verifies the
 manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/bw`
 with a same-directory rename, without changing `PATH` or shell startup files.
 Fresh installation prints the installed version and replacement prints the
@@ -532,22 +533,22 @@ macOS and Windows support are based on static cross-build verification without
 native runtime-test or native CMD claims. Linux arm64 remains unsupported, and
 no universal host compatibility is claimed. The public beta.1, beta.2, and
 beta.3 files remain unchanged and immutable. The complete stable `0.1.0`,
-`0.2.0`, `0.2.1`, `0.2.2`, and `0.2.3` version directories are immutable. The
-complete current `0.2.4` directory is immutable, its planned matrix is
-complete, and the `0.2.4` release is closed; any later
-platform or version requires separate Owner authority. Tags, GitHub Releases,
-crates.io publication, and GitHub distribution
-remain outside the completed publication.
+`0.2.0`, `0.2.1`, `0.2.2`, `0.2.3`, and `0.2.4` version directories are
+immutable. The complete current `0.2.5` directory is immutable, its planned
+matrix is complete, and the `0.2.5` release is closed; any later platform or
+version requires separate Owner authority. Tags, GitHub Releases, crates.io
+publication, and GitHub distribution remain outside the completed publication.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.4`; the sole canonical executable and external Adapter command are `bw`.
+`0.2.5`; the sole canonical executable and external Adapter command are `bw`.
 There is no current `backwriter` binary, alias, or wrapper. Product prose
 continues to use Backwriter, and persisted Core wire/private-path and
-distribution artifact/domain contracts keep their existing names. `0.2.4`
-publication is closed: the exact 60-file public tree retains all 48 prior
+distribution artifact/domain contracts keep their existing names. `0.2.5`
+publication is closed: the exact 68-file public tree retains all 56 prior
 versioned files and `install.cmd`, while the current installers and manifest
-select `0.2.4` and `bw update` delegates to that official installer. The
-installers accept only the exact closed `0.2.3` and current `0.2.4` manifests;
-`0.2.2`, `0.2.1`, `0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired.
+select `0.2.5` and `bw update` delegates to that official installer. The
+installers accept only the exact closed `0.2.4` and current `0.2.5` manifests;
+`0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable `0.1.0`, and beta.3 acceptance is
+retired.
 
 ## Published 0.2.0 authority
 

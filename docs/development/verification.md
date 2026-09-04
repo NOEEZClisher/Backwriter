@@ -1279,13 +1279,12 @@ Before staging, verify the diff and empty index, confirm repository-root
 Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
-The repository source package and source-built command are source-ready,
-unpublished `0.2.5`; the command prints exactly `Backwriter 0.2.5` plus LF.
-The closed public distribution, installed release, installers, manifest, and
-Update handoff remain `0.2.4`; exact `0.2.3` remains the only other accepted
-manifest. A source-built `0.2.5` Update may therefore install or reinstall
-official `0.2.4` because Update has no version comparison. Prior
-`0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, `0.1.0`, and beta
+The repository source package and source-built command are published and
+closed `0.2.5`; the command prints exactly `Backwriter 0.2.5` plus LF. The
+closed public distribution, installed release, installers, manifest, and
+Update handoff are `0.2.5`; exact `0.2.4` is the only other accepted manifest.
+Update has no version comparison and installs or reinstalls official `0.2.5`.
+Prior `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, `0.1.0`, and beta
 versioned files remain immutable. The closed `0.2.1`
 source suite passed 236 GNU-host and 236 musl Rust tests; the closed `0.2.0`
 source suite passed 203 GNU-host Rust tests, and the historical `0.1.0` source

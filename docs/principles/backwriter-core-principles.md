@@ -8,13 +8,13 @@ contraction, fixed integration evidence, and release closure. Cargo, `bw
 version`, installers, Update, and the official distribution are closed
 `0.2.5`.
 
-The published and closed `0.2.4` target is governed by Principle 18 and its
+The prior published and closed `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
 Gates 2–7 hard-cut current source to v5, install the sole Issuer and shared
 complete-source structural cursor, contract Search results and View, and remove
 one-shot Edit's private View, then confirm source-state-only Check and direct v5
-consumers before integrated source readiness. Cargo and `bw version` are
-`0.2.4`; Gate 8 publishes and closes the matching four-target v5 distribution
+consumers before integrated source readiness. At that gate, Cargo and `bw
+version` are `0.2.4`; Gate 8 publishes and closes the matching four-target v5 distribution
 while preserving `0.2.3` as immutable v4 release evidence.
 
 The closed public `0.1.0` release remains immutable v3 evidence. Published and
@@ -39,7 +39,7 @@ single self-or-ancestor View projection, and ordered all-or-nothing batch View
 plus the Replace-only native receipt and its direct human/JSON Adapter
 projection, integrated Dummy, GNU/musl readiness, and release publication while
 leaving v4 identity and currentness unchanged. Official release state is now
-the v5 `0.2.4` distribution governed by Principle 18.
+the v5 `0.2.5` distribution governed by Principle 19.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash, length, and Line count only while its

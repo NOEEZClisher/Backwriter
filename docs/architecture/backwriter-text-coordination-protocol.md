@@ -51,7 +51,8 @@ One strict owned-source Issuer path now serves typed construction and decode.
 Production G is 304,431 bytes/9,213 lines, within the existing three-percent
 ceiling and without a renewed allowance. Fixed A/B/G evidence, complete
 GNU/musl semantics, and the AI workflow make Gate 7 GO without changing
-production `src/**`. The remaining ordered gate is separately authorized release.
+production `src/**`. At that boundary, the remaining ordered gate was the
+separately authorized release.
 No gate may change v5 fields or output, add another parser or authority, or
 restore a retired carrier, relation scan, or private Edit View.
 
@@ -142,7 +143,7 @@ The `0.2.2` Anddress-first general editing Adapter authority, minimum one-shot
 implementation, integration, source-version decision, and separate Gate 7
 publication are closed. Patch Box Gates 1–8 are published and closed `0.2.3`;
 they change no v4 identity or currentness meaning. Official artifacts,
-installers, update target, and publication are aligned at `0.2.4`.
+installers, update target, and publication are aligned at `0.2.5`.
 
 ## 0.2.0 current-observation authority
 
