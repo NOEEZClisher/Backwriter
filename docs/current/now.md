@@ -1,13 +1,13 @@
 # Backwriter Current State
 
-## 0.2.5 performance recovery — source-ready, unpublished
+## 0.2.5 performance recovery — published and closed
 
-Gates 1 through 7 are complete under the
+Gates 1 through 8 are complete under the
 [performance-recovery tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
 Gate 2 adds one checked segment operation to the existing literal matcher and
-deletes the Runtime per-byte caller loop. Cargo and `bw version` are
-source-ready, unpublished `0.2.5`; artifacts, installers, Update, and the
-official distribution remain published and closed `0.2.4`.
+deletes the Runtime per-byte caller loop. Cargo, `bw version`, the canonical
+four-target artifacts, installers, Update, and the official exact 68-file
+distribution are published and closed `0.2.5`.
 
 The governing rule is **semantics stay unified; execution becomes specialized
 again**. V5 fields, algebra, canonical bytes, capability and Adapter outputs,

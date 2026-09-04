@@ -43,8 +43,11 @@ Gate-specific evidence is cumulative:
   duplicate parser/validator/writer, and code-size contraction.
 - Gate 7: complete GNU/musl semantics and fixed A/B/G performance, memory, I/O,
   output, drift, and code-size evidence; source-readiness is GO.
-- Gate 8: separately authorized artifacts, installers, publication, endpoints,
-  update, and release closure.
+- Gate 8: artifacts, installers, manifest-last publication, endpoints, update,
+  idempotent reuse, and release closure — complete. The live root has 68
+  regular files; loopback and public HTTPS each passed 68 exact GET/HEAD body,
+  length, MIME, cache-policy, and zero-HEAD-body checks. Isolated fresh install,
+  public `0.2.4` update, and `0.2.5` reinstall selected the exact Linux member.
 
 Fixed gates are G/A sparse target at most 1.10 and ceiling 1.15; 1,048,576-hit
 RSS target at most 130 MiB, soft at most 140 MiB, and hard NO-GO above 145 MiB;

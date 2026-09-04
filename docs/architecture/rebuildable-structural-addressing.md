@@ -44,9 +44,10 @@ same-source Edit validation, while the sole Runtime source-state comparator
 continues to require SHA-256, byte length, and Line count. No unchecked
 constructor, second validator, or second writer exists. Production G is
 304,431 bytes/9,213 lines, -1,727/-48 from F and +7,162/+259 from B.
-Gate 7 leaves those production bytes unchanged, passes the fixed A/B/G and
-GNU/musl evidence, and advances only Cargo and `bw version` to source-ready,
-unpublished `0.2.5`.
+Gate 7 leaves those production bytes unchanged and passes the fixed A/B/G and
+GNU/musl evidence. Gate 8 closes the matching `0.2.5` four-target artifacts,
+installers, Update target, and exact 68-file distribution without changing
+address authority.
 
 ## Published and closed 0.2.4 v5 target algebra
 

@@ -2,9 +2,9 @@
 
 Status: Gates 1 through 7 complete; source readiness is GO. Bulk literal
 matching, raw/structural observation, canonical encoding reuse, dense pending
-memory, consumer contraction, and integrated evidence are complete. Cargo and
-`bw version` are source-ready, unpublished `0.2.5`; artifacts, installers,
-Update, and the public distribution remain published and closed `0.2.4`.
+memory, consumer contraction, integrated evidence, and release closure are
+complete. Cargo, `bw version`, artifacts, installers, Update, and the public
+distribution are published and closed `0.2.5`.
 
 This tracker resolves the planning questions preserved in the companion
 [source note](2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery-source.md)
@@ -795,11 +795,15 @@ plus LF and pass matching Help, JSON Search-to-Paragraph-View-to-receipt-Edit-
 to-Check/fresh-View, and raw Session Apply smokes. A source-built `0.2.5`
 Update still has no version comparison and may install official `0.2.4`.
 
-### Gate 8 — separately authorized release
+### Gate 8 — release closure complete
 
-Artifact reconstruction, installer allowlist, publisher, live publication,
-endpoint/install/update verification, and release closure require a new exact
-Owner authorization. Gate 7 source readiness does not authorize Gate 8.
+The pinned four-target artifacts, installer allowlist, manifest-last publisher,
+live 60-to-68-file transition, endpoint verification, isolated fresh install,
+public `0.2.4` update, `0.2.5` reinstall, and idempotent rerun are complete.
+The closed release manifest is 876 bytes with SHA-256
+`2c8f19af7ee98be211e788f1e538a3bc476b554c614b6f07373572f16d09c2b7`.
+The rerun preserved every live file's bytes, inode, mode, owner, size, mtime,
+and ctime. Gate 8 changes no production source authority.
 
 ## Fixed acceptance gates
 

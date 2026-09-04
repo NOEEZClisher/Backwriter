@@ -2,8 +2,9 @@
 
 ## 0.2.5 performance-recovery authority
 
-Gates 1 through 7 are complete. Cargo and `bw version` are source-ready,
-unpublished `0.2.5`; the official release remains closed `0.2.4`. The
+Gates 1 through 8 are complete. Cargo, `bw version`, the official four-target
+artifacts, installers, Update target, and exact 68-file distribution are closed
+`0.2.5`. The
 performance target preserves all public v5,
 capability, Runtime, Adapter, failure, and publication meaning under one rule:
 semantics stay unified while execution becomes specialized again.

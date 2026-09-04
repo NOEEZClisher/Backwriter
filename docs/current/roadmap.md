@@ -1,9 +1,9 @@
 # Backwriter Roadmap
 
-## In progress: 0.2.5 release separation
+## Completed: 0.2.5 release closure
 
 The [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
-closes Gates 1 through 7 while keeping release state separate. The target keeps the
+closes all eight Gates and release state. The target keeps the
 complete closed `0.2.4` v5 meaning and restores specialized hot paths only
 where measurement and reachability show unnecessary work.
 
@@ -21,10 +21,10 @@ where measurement and reachability show unnecessary work.
 6. Consumer reaudit and contraction — complete; dead fallibility, parity,
    indexing, comparison, tier, and source-construction plumbing is removed
    without adding a feature.
-7. Fixed A/B/G evidence and source-readiness GO/NO-GO — complete, GO; Cargo and
-   `bw version` are source-ready, unpublished `0.2.5`.
-8. Artifacts, installers, publication, and release closure — requires separate
-   exact Owner authorization.
+7. Fixed A/B/G evidence and source-readiness GO/NO-GO — complete, GO.
+8. Artifacts, installers, manifest-last publication, endpoint/install
+   verification, idempotent reuse, and release closure — complete; the
+   official exact 68-file distribution is `0.2.5`.
 
 Line count remains part of v5 identity, Host proof, and currentness; false
 same-hash/same-length Line count remains `NotCurrent`. Strict decode and public
@@ -78,10 +78,10 @@ The fixed labels are published v4 A=`195aaa37068122097ecc04d2644642b6afcc6765`,
 closed `0.2.4` production B=`8b20987893ea5ac454c4c0a50d0c470e26b5e650`,
 release Source Authority `0ee4dcce14da93f925c27a04d0e79051c83fd124`,
 and Gate 2 C=`05c50802b7393a213147b8a2b52b2616b4b06bee`. Gate 3 D is that clean
-revision plus only the measured Gate 3 production/test/document delta. Cargo,
-and `bw version` are source-ready, unpublished `0.2.5`; official artifacts,
-Update, and the public distribution remain closed `0.2.4` until Gate 8 is
-separately authorized and passes its distinct boundaries.
+revision plus only the measured Gate 3 production/test/document delta. At the
+Gate 3 boundary, Cargo and `bw version` were not yet release-aligned; Gate 8
+later closed the matching artifacts, Update, and public distribution at
+`0.2.5`.
 
 ## Completed: 0.2.4 structural-authority hard cut and distribution
 

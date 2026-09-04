@@ -2,11 +2,11 @@
 
 The active `0.2.5` performance recovery is governed by Principle 19 and its
 [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
-Gates 1 through 7 close authority, bulk literal matching, raw/structural
+Gates 1 through 8 close authority, bulk literal matching, raw/structural
 observation, canonical encoding reuse, dense Search storage, and consumer
-contraction, then fixed integration evidence. Cargo and `bw version` are
-source-ready, unpublished `0.2.5`; the official release remains closed
-`0.2.4`.
+contraction, fixed integration evidence, and release closure. Cargo, `bw
+version`, installers, Update, and the official distribution are closed
+`0.2.5`.
 
 The published and closed `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).

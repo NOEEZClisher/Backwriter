@@ -1,10 +1,10 @@
 # Backwriter CLI V1
 
-## 0.2.5 encoder reuse boundary
+## 0.2.5 encoder reuse and release boundary
 
 Gates 1 through 4 change no CLI syntax, schema, key order, output byte, status,
 error, version, or process behavior. Cargo, `bw version`, installers, Update,
-and the official distribution remain closed `0.2.4`.
+and the official distribution are closed `0.2.5`.
 
 Search and batch View replace per-address temporary allocation with the address
 authority's public `Anddress::encode_into(&mut Vec<u8>)`. Each operation owns

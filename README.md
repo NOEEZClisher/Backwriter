@@ -13,7 +13,7 @@ Adapter-owned Version and Update.
 
 ## Quick start
 
-Install the closed official `0.2.4` release with the command for your
+Install the closed official `0.2.5` release with the command for your
 platform.
 
 Linux, macOS, or WSL:
@@ -48,7 +48,7 @@ not already on `PATH`.
 bw version
 ```
 
-The source-ready, unpublished `0.2.5` build prints exactly:
+The closed official `0.2.5` build prints exactly:
 
 ```text
 Backwriter 0.2.5
@@ -61,29 +61,27 @@ bw update
 ```
 
 `bw update` downloads and delegates to the current official installer. The
-current manifest selects the closed `0.2.4` distribution. The installer
+current manifest selects the closed `0.2.5` distribution. The installer
 reads that manifest, verifies the selected artifact, and installs or reinstalls
 that manifest version only after validation succeeds. It does not run a
 background updater or compare release versions. The installer accepts only the
-exact immutable `0.2.3` manifest and current `0.2.4` manifest; `0.2.2`, `0.2.1`, `0.2.0`, stable
+exact immutable `0.2.4` manifest and current `0.2.5` manifest; `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable
 `0.1.0`, and beta.3 acceptance is retired. The command still performs no
 version comparison and adds no version guard.
 
 The product is Backwriter. The source Cargo package and
-library crate are `backwriter` at source-ready, unpublished `0.2.5`; the sole canonical executable and
+library crate are `backwriter` at closed official `0.2.5`; the sole canonical executable and
 external Adapter command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
-official installer remains separate and selects the closed public `0.2.4`
+official installer remains separate and selects the closed public `0.2.5`
 distribution.
 
-The Cargo package and `bw version` are source-ready, unpublished `0.2.5`;
+The Cargo package and `bw version` are published and closed `0.2.5`;
 production `src/**` is byte-identical to Gate 6 candidate
 `22e6df23755cdc80b299b77be313d307b67bc37f`. Official artifacts, installers,
-manifest, Update target, and the public distribution remain published and
-closed `0.2.4` from Source Authority
-`0ee4dcce14da93f925c27a04d0e79051c83fd124`. Update performs no version
-comparison, so a source-built `0.2.5` command may install or reinstall that
-official `0.2.4` release until a separately authorized Gate 8 closes release
-state.
+manifest, Update target, and the exact 68-file public distribution are
+published and closed `0.2.5` from Source Authority
+`e4022fc073e9df3928e1c3817b266ce92121a03c`. Update performs no version
+comparison and installs or reinstalls that official `0.2.5` release.
 
 ## Anddress-first editing
 

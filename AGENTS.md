@@ -14,7 +14,7 @@ are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. The published
-`0.2.4` source is closed through Gate 8 with the v5 Anddress algebra, wire, shared
+`0.2.5` source is closed through Gate 8 with the v5 Anddress algebra, wire, shared
 structural cursor, direct Search result collection, geometry-driven
 single/batch View, and View-free one-shot Edit, with source-state-only Check
 classification. Their direct View source-state/range projection,
@@ -27,26 +27,26 @@ implementation uses direct v5 ranges and provenance and is complete. Data V1
 semantic/public API/type/error authority and Rust implementation are complete.
 
 The closed public `0.1.0` release is the immutable v3 baseline. The published
-and closed `0.2.4` release source, package, and official distribution use the
+and closed `0.2.5` release source, package, and official distribution use the
 hard-cutover `artext.backwriter-anddress.v5` Rust API and wire. The prior closed
 `0.2.3`, `0.2.2`, `0.2.1`, and `0.2.0` distributions use the hard-cutover
 `artext.backwriter-anddress.v4` Rust API and wire. SHA-256, exact source byte
 length, target kind, and `[start, end)` byte range are implemented identity;
 v3 remains only in Git history and immutable `0.1.0` release evidence. The
-canonical four-target `0.2.4` artifacts, manifest, installers, exact 60-file
-live publication, fresh installation, and explicit public `0.2.3` update are
-complete from Source Authority revision
-`0ee4dcce14da93f925c27a04d0e79051c83fd124`.
+canonical four-target `0.2.5` artifacts, manifest, installers, exact 68-file
+live publication, fresh installation, explicit public `0.2.4` update, and
+idempotent reuse are complete from Source Authority revision
+`e4022fc073e9df3928e1c3817b266ce92121a03c`.
 
-## 0.2.5 performance recovery — Gates 1–7 complete
+## 0.2.5 performance recovery — Gates 1–8 complete and published
 
-Gates 1 through 7 of the
+Gates 1 through 8 of the
 [performance-recovery tracker](docs/tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
 close authority, bulk literal matching, raw/structural observation, canonical
-encoding reuse, dense pending-result memory, consumer contraction, and fixed
-integration evidence. Cargo and `bw version` are source-ready, unpublished
-`0.2.5`; artifacts, installers, Update, and the public distribution remain
-published and closed `0.2.4`. The governing
+encoding reuse, dense pending-result memory, consumer contraction, fixed
+integration evidence, and release closure. Cargo, `bw version`, artifacts,
+installers, Update, and the public distribution are published and closed
+`0.2.5`. The governing
 rule is: semantics stay unified; execution becomes specialized again.
 
 The target preserves v5 fields, algebra, wire bytes, Search/View/Edit output,
