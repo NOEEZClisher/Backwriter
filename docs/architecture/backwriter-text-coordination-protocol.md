@@ -1,6 +1,6 @@
 # Backwriter Protocol
 
-## 0.2.6 operational Adapter boundary — Gates 1–4 authority
+## 0.2.6 operational Adapter boundary — Gates 1–5 authority
 
 Gate 1 changes no Core or Runtime contract. Existing `WorkspaceRuntime`
 seams are the default: one-shot Replace reuses `apply_replace`, raw `apply`
@@ -39,14 +39,26 @@ including a terminator or multiline replacement. No exact one-shot syntax,
 flag, override, DTO, parser, wire, second executor, implicit discovery, or retry
 is added.
 
+Gate 5 adds no protocol operation or Runtime seam. One `bw shell` process owns
+an append-only Adapter-only `Vec<Anddress>`: canonical unsigned `@N` selects a
+slot, while `@name` and `@name[index]` retain raw Session binding meaning.
+Direct Search and projected direct View reserve then append complete result
+sets; `RelationAbsent` and failure append none. Direct Replace validates
+target-aware Content, reserves its possible fresh slot before `apply_replace`,
+and appends only `Unchanged` or `Changed(Some)` receipt values. `Changed(None)`
+has no reference. `let name = @N` clones a reference into the existing named
+Anddress binding. The vector ends at Session EOF and is neither identity,
+provenance, history, persistence, nor a required capability order.
+
 Search remains its exact `0.2.5` contract: matcher, structural path,
 traversal, order, tiers, storage, `SearchOutcome`, `bw.cli.search.v2`, v5
-values/wire, output bytes, and performance do not change. Future shell
-references are process-local Adapter RAM only; they create no Core identity,
+values/wire, one-shot output bytes, and performance do not change. Shell references are
+process-local Adapter RAM only; they create no Core identity,
 provenance, relocation, history, retry, transaction, CAS/lock, or rollback.
 
-The Adapter's future normal flow is Search → ref → batch View → Replace → fresh
-ref → batch Check. It is caller convenience, not a protocol-required lifecycle
+The Adapter's normal shell convenience flow is Search → ref → View → Replace →
+fresh ref; batch Check remains future work. It is caller convenience, not a
+protocol-required lifecycle
 or capability order. The [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
 owns the remaining decisions and gates.
 

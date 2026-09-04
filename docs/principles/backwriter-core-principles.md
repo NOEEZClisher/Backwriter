@@ -4,8 +4,8 @@ The active `0.2.6` operational Adapter and verification-contraction target is
 governed by the [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).
 Gate 1 is authority only, Gate 2 adds one command-local help authority, Gate 3
 adds private actionable usage presentation plus one-shot Edit stdin Content,
-and Gate 4 closes the one-shot Line body and advanced raw exact-extent boundary.
-Its
+Gate 4 closes the one-shot Line body and advanced raw exact-extent boundary,
+and Gate 5 closes process-local shell references plus high-level Replace. Its
 rule is **explain what to type, what happens, and what comes back**. It adds no
 Core/Runtime behavior or required workflow and
 retains closed `0.2.5` Search/v5/raw-Session meaning. Stable usage codes belong
@@ -15,8 +15,9 @@ wire, state, or raw-Session transport. One-shot Line Content is body only:
 NUL is `edit.content_contains_nul`, CR/LF is
 `edit.line_body_contains_terminator`, and the decoded terminator is appended
 exactly once. Existing raw Session `Edit::Replace` plus separate Apply retains
-the advanced caller-owned exact-range operation. Future references stay
-process-local Adapter RAM; they are not target identity, provenance, history,
+the advanced caller-owned exact-range operation. Gate 5 references are
+append-only process-local Adapter RAM and only carry existing typed Anddresses;
+they are not target identity, provenance, history,
 relocation, retry, or persistence. Candidate evidence compares with `0.2.5`,
 while the inherited 268-test GNU/musl result and `Correct 1 / Safe Reject 6 /
 Wrong Apply 0` remain controls.

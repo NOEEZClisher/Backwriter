@@ -1,12 +1,13 @@
 # Backwriter CLI V1
 
-## 0.2.6 operational Adapter authority — Gates 1–4 complete
+## 0.2.6 operational Adapter authority — Gates 1–5 complete
 
 The planned operational target explains what to type, what happens, and what
 comes back. Gate 1 changes no command, parser, output, error, version, or
 process behavior; Gate 2 adds help, Gate 3 adds actionable usage presentation
-plus the exclusive one-shot Edit `--stdin` Content selector, and Gate 4 closes
-Line body replacement against the existing advanced raw exact-extent consumer.
+plus the exclusive one-shot Edit `--stdin` Content selector, Gate 4 closes
+Line body replacement against the existing advanced raw exact-extent consumer,
+and Gate 5 adds shell-local numeric references plus high-level Replace.
 Top-level help covers only global
 syntax, capabilities, and additional help. Command help uses `NAME`, `USAGE`,
 `DESCRIPTION`, `ARGUMENTS`, `OPTIONS`, `WHAT HAPPENS`, `OUTPUT`, `EXAMPLES`,
@@ -26,8 +27,12 @@ Replace remains body-only, preserves its existing terminator, rejects NUL as
 `edit.content_contains_nul`, and rejects CR/LF as
 `edit.line_body_contains_terminator` without stripping; File/Paragraph retain
 exact UTF-8 and the NUL policy. Raw Session `Edit::Replace` plus separate Apply
-remains the ADVANCED caller-owned exact-extent surface. Process-local refs/aliases and ordered batch Check are
-future bounded Adapter work under the
+remains the ADVANCED caller-owned exact-extent surface. A direct shell Search
+or View appends one process-local numeric `@N` reference per projected
+Anddress; direct Replace emits a fresh reference only when its receipt has one.
+`@N` is distinct from raw `@name` and `@name[index]`, while `let name = @N`
+creates an ordinary named Anddress alias. Ordered batch Check remains future
+bounded Adapter work under the
 [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md),
 not new Core wire, identity, persistence, or lifecycle behavior.
 

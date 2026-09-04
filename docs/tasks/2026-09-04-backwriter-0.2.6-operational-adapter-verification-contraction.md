@@ -1,7 +1,8 @@
 # Backwriter 0.2.6 Operational Adapter & Verification Contraction
 
-Status: Gates 1–4 complete — authority, command-local help, actionable
-errors/stdin, and the Line body/advanced exact-extent boundary. `0.2.5` remains the closed source,
+Status: Gates 1–5 complete — authority, command-local help, actionable
+errors/stdin, the Line body/advanced exact-extent boundary, and shell-local
+references plus high-level Replace. `0.2.5` remains the closed source,
 package, CLI, installer, artifact, and public distribution. This tracker is
 execution authority; its companion [source note](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-source.md)
 and [roadmap](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-roadmap.md)
@@ -23,8 +24,8 @@ Runtime meaning by implication and adds no required capability workflow.
 - GNU and musl each retain the closed 268-test result until a later Gate adds
   justified regression coverage.
 - v5 values/wire, Search algorithm/matcher/structural path/traversal/order/
-  tier/storage, `SearchOutcome`, `bw.cli.search.v2`, output bytes, and Search
-  performance are immutable in this target.
+  tier/storage, `SearchOutcome`, `bw.cli.search.v2`, one-shot output bytes,
+  and Search performance are immutable in this target.
 - Existing raw `apply`, raw Session, Search/View/Check/Anchor/Host proof,
   publication, and failure contracts remain authoritative.
 - No v6, persistent registry, history, relocation, watcher, retry,
@@ -97,13 +98,26 @@ implicit View/Search/Check, or retry. Raw Session grammar and Runtime/Core
 production files remain unchanged. The complete GNU and musl suites each pass
 276 tests.
 
-## Gate 5 — process-local references and Replace
+## Gate 5 — process-local references and Replace — complete
 
-Implement only process-local RAM references/aliases with no durable ID,
-silent rebinding, relocation, history, or retry. Resolve the exact collision
-policy for existing `@name`, `@name[index]`, and any proposed `@N` before code.
-The normal shell flow is Search → ref → batch View → Replace → fresh ref →
-batch Check; it is not a Core lifecycle. Raw Session stays ADVANCED.
+`bw shell` owns one append-only `Vec<Anddress>` for the life of one process;
+slots are zero-based canonical unsigned `@N` values and are never reused or
+silently rebound. Names begin with an ASCII letter or underscore, so `@name`
+and `@name[index]` retain raw Session meaning. `let name = @N` clones a slot
+into the existing named `Anddress` binding; raw `edit`, `apply`, Pick, Anchor,
+Data, and named raw View/Check keep their grammar and output.
+
+Direct `search` appends complete Found results then writes `@N` plus target
+location. Direct `view <REF>... [--as KIND]` reuses View or View batch,
+preserves input order and duplicates, and issues refs only for a complete
+Projected result set; `RelationAbsent` adds no ref. Direct `replace <REF>
+<CONTENT>` reuses one-shot target-aware Content preparation and `Edit::Replace`
+with `apply_replace`. It reserves its one possible slot before publication,
+then writes `Unchanged` or `Changed` with a fresh ref, or `Changed\tNone`.
+Search/View failure and `RelationAbsent` append nothing; Apply failure preserves
+prior slots and source. No Core/Runtime API, wire, registry, persistence,
+history, retry, or lifecycle is added. The normal convenience flow is Search →
+ref → View → Replace → fresh ref; raw Session remains ADVANCED.
 
 ## Gate 6 — ordered batch Check Adapter
 

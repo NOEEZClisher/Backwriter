@@ -13,15 +13,16 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.2.6 operational Adapter authority — Gates 1–4 complete
+## 0.2.6 operational Adapter authority — Gates 1–5 complete
 
 The `0.2.6` operational Adapter and verification-contraction authority is
 documentation-only at Gate 1, command-local help at Gate 2, actionable
-usage errors plus one-shot Edit standard-input Content at Gate 3, and the Line
-body/advanced exact-extent boundary at Gate 4. The
+usage errors plus one-shot Edit standard-input Content at Gate 3, the Line
+body/advanced exact-extent boundary at Gate 4, and shell-local references plus
+high-level Replace at Gate 5. The
 governing rule is: **explain what to type, what happens, and what comes back.**
 It retains the closed `0.2.5` Core,
-Runtime, v5 wire, Search behavior/output/performance, raw Session, and public
+Runtime, v5 wire, Core Search behavior, one-shot Search output/performance, raw Session, and public
 distribution unchanged. Future Adapter work reuses the handwritten parser,
 canonical writers, `apply_replace`, and existing Check grouping unless direct
 reachability proves a smaller replacement.
@@ -39,10 +40,13 @@ also rejects CR/LF as `edit.line_body_contains_terminator`, accepts body only,
 and appends the decoded current terminator exactly once. Existing raw Session
 `Edit::Replace` plus separate Apply remains the advanced exact-extent consumer:
 it may carry caller-provided terminators or multiline bytes. One-shot adds no
-exact flag, override, View/Search/Check call, second executor, or retry. Only a
-later named Gate may implement process-local references,
-Replace ergonomics, or ordered batch Check. These are
-not a Core lifecycle, persistent identity, relocation, history,
+exact flag, override, View/Search/Check call, second executor, or retry.
+Shell-local numeric references are append-only `Vec<Anddress>` values owned by
+one `bw shell` process. Direct Search and View issue them; direct Replace
+consumes one and issues a fresh result only when the receipt has one. `@N` is
+distinct from named raw bindings, and `let name = @N` clones it into the
+existing named Anddress binding. They are not a Core lifecycle, persistent
+identity, relocation, history,
 retry, transaction, CAS/lock, rollback, v6, or Search optimization. The
 [0.2.6 tracker](docs/tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
 is execution authority; its source note and roadmap are preserved evidence.

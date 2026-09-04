@@ -1,11 +1,12 @@
 # Backwriter Current State
 
-## 0.2.6 operational Adapter and verification contraction — Gates 1–4 complete
+## 0.2.6 operational Adapter and verification contraction — Gates 1–5 complete
 
 Gate 1 records the approved Adapter boundary, Gate 2 closes command-local help,
 and Gate 3 closes actionable usage failures and one-shot Edit stdin Content.
 Gate 4 closes Line body replacement and separates it from advanced raw exact
-extent replacement in the
+extent replacement. Gate 5 adds only shell-local numeric references and
+high-level Replace in the
 [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).
 The governing rule is **explain what to type, what happens, and what comes
 back**. No implementation, version, artifact, installer, publication, Core, or
@@ -23,10 +24,14 @@ exact and reject NUL with `edit.content_contains_nul`. Line accepts body only,
 rejects CR/LF with `edit.line_body_contains_terminator`, and appends its decoded
 None/LF/CR/CRLF terminator exactly once. Advanced raw Session Edit/Apply retains
 caller-provided exact range bytes and a separate publication step; no exact
-one-shot form exists. The future sequence is process-local references plus
-Replace; ordered batch Check; verification/docs contraction; then source
-readiness. Search, v5 values/wire, raw Session,
-`apply_replace`, and current Check seams remain fixed. Candidate execution
+one-shot form exists. One `bw shell` process owns append-only `@N` references:
+direct Search and View issue them, direct Replace consumes one and issues a
+fresh one only when its receipt has an Anddress, and `Changed\tNone` issues
+none. `@N` does not collide with named raw bindings; `let name = @N` creates an
+existing named Anddress alias. The future sequence is ordered batch Check,
+verification/docs contraction, then source readiness. Core Search and one-shot
+Search output, v5 values/wire, raw Session, `apply_replace`, and current Check
+seams remain fixed. Candidate execution
 compares with `0.2.5`; inherited GNU/musl 268-test evidence and `Correct 1 /
 Safe Reject 6 / Wrong Apply 0` remain required controls. Gate 2 adds three CLI
 regressions, and Gate 3 adds four, so the complete GNU and musl suites each

@@ -202,13 +202,13 @@ SEE ALSO
 "#;
 
 const SHELL_HELP_KAT: &str = r#"NAME
-  bw shell - run the advanced raw Session surface
+  bw shell - run one local reference session and advanced raw Session commands
 
 USAGE
   bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 
 DESCRIPTION
-  Reads raw Session commands from standard input until exit. This is the advanced surface for bindings and raw capability composition.
+  Reads commands from standard input until exit. Direct search, view, and replace use session-local numeric Anddress references. Raw bindings and raw capability composition remain the advanced surface.
 
 ARGUMENTS
   None.
@@ -218,19 +218,22 @@ OPTIONS
   --json and --raw are unavailable.
 
 WHAT HAPPENS
-  Retains one Session Runtime and explicit caller bindings. Search, Pick, View, Check, Anchor, Edit, Apply, and Data use their existing raw grammar.
+  A successful direct search or view emits append-only @N references. Direct replace uses one reference and emits a fresh reference when one exists. References end with this shell process. Raw let, Pick, View, Check, Anchor, Edit, Apply, and Data retain their existing grammar.
 
 OUTPUT
-  Each raw command writes its existing human result.
+  Direct references write @N, target kind, and location. Raw commands write their existing human result.
 
 EXAMPLES
   bw shell
+  search line needle
+  view @0
+  replace @1 replacement
   let hits = search line needle
   view anddress @hits[0]
   exit
 
 FAILURES
-  Invalid raw grammar is a usage failure. Runtime and source failures exit 1.
+  Invalid shell grammar is a usage failure. Runtime and source failures exit 1.
 
 SEE ALSO
   bw help search
@@ -2575,7 +2578,9 @@ fn one_shot_edit_exact_noop_uses_v5_geometry_and_shared_apply_without_view() {
         .unwrap()
         .0;
     let decode = edit.find("decode_anddress_for_edit(encoded)").unwrap();
-    let terminator = edit.find("anddress.terminator()").unwrap();
+    let prepare = edit
+        .find("prepare_replace_content(&anddress, content)")
+        .unwrap();
     let construct = edit.find("Edit::Replace").unwrap();
     let validate = edit.find("edit.validate()").unwrap();
     let open = edit
@@ -2583,8 +2588,8 @@ fn one_shot_edit_exact_noop_uses_v5_geometry_and_shared_apply_without_view() {
         .unwrap();
     let apply = edit.find(".apply_replace(&edit)").unwrap();
     let write = edit.find("write_edit(receipt, output)").unwrap();
-    assert!(decode < terminator);
-    assert!(terminator < construct);
+    assert!(decode < prepare);
+    assert!(prepare < construct);
     assert!(construct < validate);
     assert!(validate < open);
     assert!(validate < apply);
@@ -2600,6 +2605,14 @@ fn one_shot_edit_exact_noop_uses_v5_geometry_and_shared_apply_without_view() {
     assert!(!edit.contains("write_session_status"));
     assert!(!edit.contains("output options must precede the capability"));
     assert_eq!(source.matches("fn execute_edit").count(), 1);
+    let replace_content = source
+        .split_once("fn prepare_replace_content")
+        .unwrap()
+        .1
+        .split_once("fn map_edit_content_error")
+        .unwrap()
+        .0;
+    assert!(replace_content.contains("anddress.terminator()"));
 
     let raw_replace = source
         .split_once("fn parse_session_edit")
@@ -2876,6 +2889,200 @@ fn session_reuses_search_projection_view_and_check_with_exact_bindings() {
 }
 
 #[test]
+fn shell_local_references_start_at_zero_append_in_order_and_keep_named_raw_aliases() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "needle\nneedle\n");
+
+    let output = run_shell(
+        root.path(),
+        "search line absent\nsearch line needle\nlet primary = @1\nview anddress @primary\nview @0 @0\nview @0 @1 --as paragraph\nexit\n",
+    );
+    assert!(output.status.success());
+    assert_eq!(
+        output.stdout,
+        b"@0\tLine\tnote.txt:1\n@1\tLine\tnote.txt:2\nneedle\n@2\tLine\tnote.txt:1\n@3\tLine\tnote.txt:1\n@4\tParagraph\tnote.txt:1-2\n@5\tParagraph\tnote.txt:1-2\n"
+    );
+    assert!(output.stderr.is_empty());
+
+    let source = include_str!("../src/bin/bw.rs");
+    assert_eq!(source.matches("fn reserve_session_refs").count(), 1);
+    let search = source
+        .split_once("fn execute_session_search")
+        .unwrap()
+        .1
+        .split_once("fn execute_session_replace")
+        .unwrap()
+        .0;
+    assert!(
+        search
+            .find("reserve_session_refs(refs, anddresses.len())")
+            .unwrap()
+            < search.find("refs.extend(anddresses)").unwrap()
+    );
+    let replace = source
+        .split_once("fn execute_session_replace")
+        .unwrap()
+        .1
+        .split_once("fn execute_session_ref_view")
+        .unwrap()
+        .0;
+    assert!(replace.contains("prepare_replace_content(&target, tokens[2].clone())"));
+    assert!(
+        replace.find("reserve_session_refs(refs, 1)").unwrap()
+            < replace.find(".apply_replace(&edit)").unwrap()
+    );
+}
+
+#[test]
+fn shell_local_references_reject_malformed_numeric_forms_before_runtime_access() {
+    let root = tempfile::tempdir().unwrap();
+
+    let output = run_shell(
+        root.path(),
+        "view @\nview @00\nview @+1\nview @-1\nview @999999999999999999999999999999999999999999999999999999\nview @1\nexit\n",
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    let stderr = text(output.stderr);
+    assert!(stderr.contains("numeric reference is empty"));
+    assert!(stderr.contains("numeric reference must be canonical"));
+    assert!(stderr.contains("numeric reference must be an unsigned decimal"));
+    assert!(stderr.contains("numeric reference is out of range"));
+}
+
+#[test]
+fn shell_local_view_relation_absent_and_search_failure_do_not_consume_reference_slots() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", " \t\nneedle\n");
+
+    let output = run_shell(
+        root.path(),
+        "search line \" \"\nview @0 --as paragraph\nreplace @0 body\nview @1\nexit\n",
+    );
+    assert!(output.status.success());
+    assert_eq!(
+        output.stdout,
+        b"@0\tLine\tnote.txt:1\nRelationAbsent\n@1\tChanged\tLine\tnote.txt:1\n@2\tLine\tnote.txt:1\n"
+    );
+    assert!(output.stderr.is_empty());
+    assert_eq!(
+        fs::read(root.path().join("note.txt")).unwrap(),
+        b"body\nneedle\n"
+    );
+
+    let unavailable = tempfile::tempdir().unwrap();
+    write(unavailable.path(), "note.txt", "needle\n");
+    fs::write(unavailable.path().join("broken.txt"), b"needle\0").unwrap();
+    let output = run_shell(unavailable.path(), "search line needle\nview @0\nexit\n");
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    let stderr = text(output.stderr);
+    assert!(stderr.contains("unavailable"));
+    assert!(stderr.contains("numeric reference is out of range: 0"));
+}
+
+#[test]
+fn shell_local_replace_preserves_line_terminators_and_issues_fresh_references() {
+    for (before, expected) in [
+        ("old", "new"),
+        ("old\n", "new\n"),
+        ("old\r", "new\r"),
+        ("old\r\n", "new\r\n"),
+    ] {
+        let root = tempfile::tempdir().unwrap();
+        write(root.path(), "note.txt", before);
+
+        let output = run_shell(
+            root.path(),
+            "search line old\nreplace @0 new\nview @0\nview @1\nreplace @1 new\nexit\n",
+        );
+        assert_eq!(output.status.code(), Some(1));
+        assert_eq!(
+            output.stdout,
+            b"@0\tLine\tnote.txt:1\n@1\tChanged\tLine\tnote.txt:1\n@2\tLine\tnote.txt:1\n@3\tUnchanged\tLine\tnote.txt:1\n"
+        );
+        assert!(text(output.stderr).contains("unavailable"));
+        assert_eq!(
+            fs::read(root.path().join("note.txt")).unwrap(),
+            expected.as_bytes()
+        );
+    }
+}
+
+#[test]
+fn shell_local_replace_failure_does_not_consume_a_fresh_slot() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "old\n");
+
+    let output = run_shell(
+        root.path(),
+        "search line old\nreplace @0 \"bad\\n\"\nreplace @0 new\nexit\n",
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(
+        output.stdout,
+        b"@0\tLine\tnote.txt:1\n@1\tChanged\tLine\tnote.txt:1\n"
+    );
+    assert!(text(output.stderr).contains(EDIT_LINE_BODY_CAUSE));
+    assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"new\n");
+}
+
+#[test]
+fn shell_local_replace_covers_file_and_paragraph_receipts() {
+    let file = tempfile::tempdir().unwrap();
+    write(file.path(), "note.txt", "old\r\n");
+    let file_output = run_shell(file.path(), "search file old\nreplace @0 new\nexit\n");
+    assert!(file_output.status.success());
+    assert_eq!(
+        file_output.stdout,
+        b"@0\tFile\tnote.txt\n@1\tChanged\tFile\tnote.txt\n"
+    );
+    assert_eq!(fs::read(file.path().join("note.txt")).unwrap(), b"new");
+
+    let paragraph = tempfile::tempdir().unwrap();
+    write(paragraph.path(), "note.txt", "old\n\nsecond\n");
+    let paragraph_output = run_shell(
+        paragraph.path(),
+        "search paragraph old\nreplace @0 \"new\\n\"\nexit\n",
+    );
+    assert!(paragraph_output.status.success());
+    assert_eq!(
+        paragraph_output.stdout,
+        b"@0\tParagraph\tnote.txt:1-1\n@1\tChanged\tParagraph\tnote.txt:1-1\n"
+    );
+    assert_eq!(
+        fs::read(paragraph.path().join("note.txt")).unwrap(),
+        b"new\n\nsecond\n"
+    );
+
+    let literal_stdin = tempfile::tempdir().unwrap();
+    write(literal_stdin.path(), "note.txt", "old");
+    let literal_output = run_shell(
+        literal_stdin.path(),
+        "search file old\nreplace @0 --stdin\nexit\n",
+    );
+    assert!(literal_output.status.success());
+    assert_eq!(
+        fs::read(literal_stdin.path().join("note.txt")).unwrap(),
+        b"--stdin"
+    );
+
+    let absent = tempfile::tempdir().unwrap();
+    write(absent.path(), "note.txt", "old\n");
+    let absent_output = run_shell(
+        absent.path(),
+        "search paragraph old\nreplace @0 \"\\n\"\nview @1\nexit\n",
+    );
+    assert_eq!(absent_output.status.code(), Some(2));
+    assert_eq!(
+        absent_output.stdout,
+        b"@0\tParagraph\tnote.txt:1-1\nChanged\tNone\n"
+    );
+    assert!(text(absent_output.stderr).contains("numeric reference is out of range: 1"));
+    assert_eq!(fs::read(absent.path().join("note.txt")).unwrap(), b"\n");
+}
+
+#[test]
 fn session_pick_all_and_target_kind_project_the_existing_core_order() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "note.txt", "first\n\nsecond\n");
@@ -2953,7 +3160,7 @@ fn session_pick_rejects_malformed_references_and_preserves_existing_bindings() {
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(
         output.stdout,
-        b"Found 1\n0\tLine\tnote.txt:1\nFound 0\nSelected 0\nSelected 1\n0\tLine\tnote.txt:0-7\nFound 1\n0\tLine\tnote.txt:1\n"
+        b"Found 1\n0\tLine\tnote.txt:1\nFound 0\nSelected 0\nSelected 1\n0\tLine\tnote.txt:0-7\n@0\tLine\tnote.txt:1\n"
     );
     let stderr = text(output.stderr);
     assert!(stderr.contains("Pick predicate has trailing input"));
@@ -3053,7 +3260,7 @@ fn session_anchor_creates_views_and_invalidates_only_the_selected_source() {
     assert_eq!(invalidated.status.code(), Some(1));
     assert_eq!(
         invalidated.stdout,
-        b"Found 2\n0\tLine\tleft.txt:1\n1\tLine\tright.txt:1\nAnchored\nOK\nFound 2\n0\tLine\tleft.txt:1\n1\tLine\tright.txt:1\n"
+        b"Found 2\n0\tLine\tleft.txt:1\n1\tLine\tright.txt:1\nAnchored\nOK\n@0\tLine\tleft.txt:1\n@1\tLine\tright.txt:1\n"
     );
     assert!(text(invalidated.stderr).contains("unavailable"));
 
@@ -3302,7 +3509,7 @@ fn session_bindings_reject_unknown_duplicate_empty_out_of_range_and_type_mismatc
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(
         output.stdout,
-        b"Found 1\n0\tLine\tnote.txt:1\nFound 0\nFound 1\n0\tLine\tnote.txt:1\n"
+        b"Found 1\n0\tLine\tnote.txt:1\nFound 0\n@0\tLine\tnote.txt:1\n"
     );
     let stderr = text(output.stderr);
     assert!(stderr.contains("let requires a standalone = token"));
@@ -3325,7 +3532,7 @@ fn session_lexer_exit_and_eof_follow_the_initial_grammar() {
     assert_eq!(lexical.status.code(), Some(2));
     assert_eq!(
         lexical.stdout,
-        b"Found 1\n0\tLine\tnote.txt:1\nFound 1\n0\tLine\tnote.txt:2\nquote: \" and slash \\\nFound 1\n0\tLine\tnote.txt:1\nFound 1\n0\tLine\tnote.txt:1\n"
+        b"Found 1\n0\tLine\tnote.txt:1\nFound 1\n0\tLine\tnote.txt:2\nquote: \" and slash \\\n@0\tLine\tnote.txt:1\n@1\tLine\tnote.txt:1\n"
     );
     let stderr = text(lexical.stderr);
     assert!(stderr.contains("search query is invalid"));
@@ -3337,7 +3544,7 @@ fn session_lexer_exit_and_eof_follow_the_initial_grammar() {
 
     let eof = run_shell(root.path(), "\nsearch line \"a space\"\n");
     assert!(eof.status.success());
-    assert_eq!(eof.stdout, b"Found 1\n0\tLine\tnote.txt:1\n");
+    assert_eq!(eof.stdout, b"@0\tLine\tnote.txt:1\n");
     assert!(eof.stderr.is_empty());
 }
 
@@ -3392,12 +3599,12 @@ fn session_preserves_execution_then_usage_exit_precedence_without_latest_state()
         "search line needle --source missing.txt\nsearch line needle\n",
     );
     assert_eq!(execution_only.status.code(), Some(1));
-    assert_eq!(execution_only.stdout, b"Found 1\n0\tLine\tnote.txt:1\n");
+    assert_eq!(execution_only.stdout, b"@0\tLine\tnote.txt:1\n");
     assert!(text(execution_only.stderr).contains("workspace source is unavailable"));
 
     let no_latest = run_shell(root.path(), "search line needle\nview anddress @latest\n");
     assert_eq!(no_latest.status.code(), Some(2));
-    assert_eq!(no_latest.stdout, b"Found 1\n0\tLine\tnote.txt:1\n");
+    assert_eq!(no_latest.stdout, b"@0\tLine\tnote.txt:1\n");
     assert!(text(no_latest.stderr).contains("unknown binding: latest"));
 
     let execution_then_usage = run_shell(
@@ -3405,9 +3612,6 @@ fn session_preserves_execution_then_usage_exit_precedence_without_latest_state()
         "search line needle --source missing.txt\nunknown\nsearch line needle\n",
     );
     assert_eq!(execution_then_usage.status.code(), Some(2));
-    assert_eq!(
-        execution_then_usage.stdout,
-        b"Found 1\n0\tLine\tnote.txt:1\n"
-    );
+    assert_eq!(execution_then_usage.stdout, b"@0\tLine\tnote.txt:1\n");
     assert!(text(execution_then_usage.stderr).contains("unsupported Session command: unknown"));
 }

@@ -131,6 +131,28 @@ separately. The caller owns the binding, index, quoting, terminator, and
 publication boundary. General replacement should use one-shot body Content
 first; no exact one-shot flag or alternate executor exists.
 
+### Shell-local references
+
+`bw shell` also provides a short-lived interactive flow without adding a Core
+wire or persistent identity:
+
+```text
+search line needle
+view @0
+replace @1 replacement
+exit
+```
+
+Successful direct `search` and projected direct `view` append `@N` references
+in output order, including duplicates. `replace @N <content>` uses the same
+target-aware Content rules as one-shot Edit and appends a fresh reference for
+`Unchanged` or `Changed` when the receipt has an Anddress; `Changed\tNone`
+adds none. Slots are zero-based canonical unsigned decimals, append-only, and
+discarded at `exit` or EOF. `@name` and `@name[index]` remain the advanced raw
+Session forms; `let name = @N` explicitly clones a numeric slot into that
+existing named Anddress binding. Raw `edit replace` and separate `apply @edit`
+remain the advanced exact-range path.
+
 The default workspace is the process current working directory. An explicit
 `--workspace` must be absolute and is checked by Runtime. Search admits `.` by
 default; repeat `--admit LOGICAL_PATH` before `search` to narrow admission.

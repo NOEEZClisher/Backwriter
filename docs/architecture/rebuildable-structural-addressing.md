@@ -1,6 +1,6 @@
 # Backwriter Anddress and Exact Line Model
 
-## 0.2.6 Adapter boundary — Gates 1–4 complete
+## 0.2.6 Adapter boundary — Gates 1–5 complete
 
 The operational Adapter target changes no Anddress algebra, v5 wire, source
 identity, exact geometry, validation, encoding, or projection. One-shot Line
@@ -8,6 +8,13 @@ Replace derives its terminator solely from a decoded v5 Line and never creates a
 new address form. Existing raw Session Edit/Apply remains the ADVANCED
 caller-owned exact-extent consumer; it does not add an issuer, alias, persistent
 identifier, relocation mechanism, new address syntax, or v6 branch.
+
+Gate 5's shell-local `@N` values are merely process-local handles to existing
+typed v5 Anddresses. Direct Search, projected View, and Replace receipts append
+the existing values without encoding a second wire or changing algebra,
+geometry, validation, equality, issuance, or currentness. A slot ends with the
+shell process; it is not an address field, locator, alias namespace, or
+continuity claim.
 
 ## 0.2.5 encoding, attachment, and currentness boundary
 

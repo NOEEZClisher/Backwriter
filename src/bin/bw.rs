@@ -44,7 +44,7 @@ const EDIT_HELP: &str = "NAME\n  bw edit - replace one current v5 Anddress\n\nUS
 
 const CHECK_HELP: &str = "NAME\n  bw check - check one current v5 Anddress\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] check anddress <encoded-v5-Anddress>\n\nDESCRIPTION\n  Checks the current state of one caller-provided v5 Anddress.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One canonical v5 object.\n\nOPTIONS\n  --workspace, --admit, and --json must precede check.\n  No command-local options are available.\n\nWHAT HAPPENS\n  Opens the Runtime after input validation and reports currentness for that one target.\n\nOUTPUT\n  Human output writes one state. --json writes the existing one-shot Check envelope.\n\nEXAMPLES\n  bw check anddress '<v5-Anddress>'\n\nFAILURES\n  Invalid input is a usage failure. Unavailable source or Runtime failure exits 1.\n\nSEE ALSO\n  bw help search\n  bw help shell";
 
-const SHELL_HELP: &str = "NAME\n  bw shell - run the advanced raw Session surface\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nDESCRIPTION\n  Reads raw Session commands from standard input until exit. This is the advanced surface for bindings and raw capability composition.\n\nARGUMENTS\n  None.\n\nOPTIONS\n  --workspace and --admit must precede shell.\n  --json and --raw are unavailable.\n\nWHAT HAPPENS\n  Retains one Session Runtime and explicit caller bindings. Search, Pick, View, Check, Anchor, Edit, Apply, and Data use their existing raw grammar.\n\nOUTPUT\n  Each raw command writes its existing human result.\n\nEXAMPLES\n  bw shell\n  let hits = search line needle\n  view anddress @hits[0]\n  exit\n\nFAILURES\n  Invalid raw grammar is a usage failure. Runtime and source failures exit 1.\n\nSEE ALSO\n  bw help search\n  bw help edit";
+const SHELL_HELP: &str = "NAME\n  bw shell - run one local reference session and advanced raw Session commands\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nDESCRIPTION\n  Reads commands from standard input until exit. Direct search, view, and replace use session-local numeric Anddress references. Raw bindings and raw capability composition remain the advanced surface.\n\nARGUMENTS\n  None.\n\nOPTIONS\n  --workspace and --admit must precede shell.\n  --json and --raw are unavailable.\n\nWHAT HAPPENS\n  A successful direct search or view emits append-only @N references. Direct replace uses one reference and emits a fresh reference when one exists. References end with this shell process. Raw let, Pick, View, Check, Anchor, Edit, Apply, and Data retain their existing grammar.\n\nOUTPUT\n  Direct references write @N, target kind, and location. Raw commands write their existing human result.\n\nEXAMPLES\n  bw shell\n  search line needle\n  view @0\n  replace @1 replacement\n  let hits = search line needle\n  view anddress @hits[0]\n  exit\n\nFAILURES\n  Invalid shell grammar is a usage failure. Runtime and source failures exit 1.\n\nSEE ALSO\n  bw help search\n  bw help edit";
 
 const UPDATE_HELP: &str = "NAME\n  bw update - run the installed-platform updater\n\nUSAGE\n  bw update\n\nDESCRIPTION\n  Downloads and hands off to the canonical installer for the current platform.\n\nARGUMENTS\n  None.\n\nOPTIONS\n  None.\n\nWHAT HAPPENS\n  Performs the existing update download and installer handoff.\n\nOUTPUT\n  The installer owns its output.\n\nEXAMPLES\n  bw update\n\nFAILURES\n  Any option or operand is a usage failure. Download, installer, or platform failure exits 1.\n\nSEE ALSO\n  bw help version";
 
@@ -781,35 +781,12 @@ fn execute_edit(
     }
 
     let anddress = decode_anddress_for_edit(encoded)?;
-    let mut content = if content_selector == "--stdin" {
+    let content = if content_selector == "--stdin" {
         read_edit_stdin()?
     } else {
         utf8_for_edit(content_selector, "edit content")?
     };
-    if content.contains('\0') {
-        return Err(edit_usage(
-            "edit.content_contains_nul",
-            "Edit Content must not contain NUL.",
-        ));
-    }
-    if let Some(terminator) = anddress.terminator() {
-        if content.contains(['\r', '\n']) {
-            return Err(edit_usage(
-                "edit.line_body_contains_terminator",
-                "Line Edit accepts body Content only. Backwriter preserves the existing Line terminator automatically. Exact extent replacement is available through advanced raw Session Edit/Apply.",
-            ));
-        }
-        let terminator = match terminator {
-            LineTerminator::None => "",
-            LineTerminator::Lf => "\n",
-            LineTerminator::Cr => "\r",
-            LineTerminator::Crlf => "\r\n",
-        };
-        content
-            .try_reserve_exact(terminator.len())
-            .map_err(|_| CliError::execution(EditError::Resource.to_string()))?;
-        content.push_str(terminator);
-    }
+    let content = prepare_replace_content(&anddress, content).map_err(map_edit_content_error)?;
 
     let edit = Edit::Replace {
         target: anddress,
@@ -839,6 +816,61 @@ fn read_edit_stdin() -> Result<String, CliError> {
         })?;
     String::from_utf8(bytes)
         .map_err(|_| CliError::execution("edit standard input must be valid UTF-8"))
+}
+
+enum ReplaceContentError {
+    Nul,
+    LineTerminator,
+    Resource,
+}
+
+fn prepare_replace_content(
+    anddress: &Anddress,
+    mut content: String,
+) -> Result<String, ReplaceContentError> {
+    if content.contains('\0') {
+        return Err(ReplaceContentError::Nul);
+    }
+    if let Some(terminator) = anddress.terminator() {
+        if content.contains(['\r', '\n']) {
+            return Err(ReplaceContentError::LineTerminator);
+        }
+        let terminator = match terminator {
+            LineTerminator::None => "",
+            LineTerminator::Lf => "\n",
+            LineTerminator::Cr => "\r",
+            LineTerminator::Crlf => "\r\n",
+        };
+        content
+            .try_reserve_exact(terminator.len())
+            .map_err(|_| ReplaceContentError::Resource)?;
+        content.push_str(terminator);
+    }
+    Ok(content)
+}
+
+fn map_edit_content_error(error: ReplaceContentError) -> CliError {
+    match error {
+        ReplaceContentError::Nul => edit_usage(
+            "edit.content_contains_nul",
+            "Edit Content must not contain NUL.",
+        ),
+        ReplaceContentError::LineTerminator => edit_usage(
+            "edit.line_body_contains_terminator",
+            "Line Edit accepts body Content only. Backwriter preserves the existing Line terminator automatically. Exact extent replacement is available through advanced raw Session Edit/Apply.",
+        ),
+        ReplaceContentError::Resource => CliError::execution(EditError::Resource.to_string()),
+    }
+}
+
+fn map_session_replace_content_error(error: ReplaceContentError) -> CliError {
+    match error {
+        ReplaceContentError::Nul => CliError::usage("Edit Content must not contain NUL."),
+        ReplaceContentError::LineTerminator => CliError::usage(
+            "Line Edit accepts body Content only. Backwriter preserves the existing Line terminator automatically. Exact extent replacement is available through advanced raw Session Edit/Apply.",
+        ),
+        ReplaceContentError::Resource => CliError::execution(EditError::Resource.to_string()),
+    }
 }
 
 fn decode_anddress_for_edit(encoded: String) -> Result<Anddress, CliError> {
@@ -1506,6 +1538,7 @@ fn execute_shell(
     let stdin = io::stdin();
     let mut reader = stdin.lock();
     let mut bindings = Vec::new();
+    let mut refs = Vec::new();
     let mut line = String::new();
     let mut highest_error = 0_u8;
 
@@ -1529,7 +1562,7 @@ fn execute_shell(
         if tokens.is_empty() {
             continue;
         }
-        match execute_session_command(&mut runtime, &mut data, &mut bindings, &tokens) {
+        match execute_session_command(&mut runtime, &mut data, &mut bindings, &mut refs, &tokens) {
             Ok(SessionControl::Continue) => {}
             Ok(SessionControl::Exit) => break,
             Err(error @ CliError::Stream(_)) => return Err(error),
@@ -1564,12 +1597,12 @@ fn execute_session_command(
     runtime: &mut WorkspaceRuntime,
     data: &mut DataStore,
     bindings: &mut Vec<SessionBinding>,
+    refs: &mut Vec<Anddress>,
     tokens: &[String],
 ) -> Result<SessionControl, CliError> {
     match tokens[0].as_str() {
         "search" => {
-            let outcome = run_search(runtime, parse_search(&tokens[1..])?)?;
-            write_search(&outcome)?;
+            execute_session_search(runtime, refs, &tokens[1..])?;
             Ok(SessionControl::Continue)
         }
         "pick" => {
@@ -1578,11 +1611,11 @@ fn execute_session_command(
             Ok(SessionControl::Continue)
         }
         "let" => {
-            execute_let(runtime, data, bindings, tokens)?;
+            execute_let(runtime, data, bindings, refs, tokens)?;
             Ok(SessionControl::Continue)
         }
         "view" => {
-            execute_session_view(runtime, bindings, tokens)?;
+            execute_session_view(runtime, bindings, refs, tokens)?;
             Ok(SessionControl::Continue)
         }
         "check" => {
@@ -1601,6 +1634,10 @@ fn execute_session_command(
             execute_session_data(data, bindings, tokens)?;
             Ok(SessionControl::Continue)
         }
+        "replace" => {
+            execute_session_replace(runtime, refs, bindings, tokens)?;
+            Ok(SessionControl::Continue)
+        }
         "exit" if tokens.len() == 1 => Ok(SessionControl::Exit),
         "exit" => Err(CliError::usage("exit accepts no operands")),
         capability => Err(CliError::usage(format!(
@@ -1609,10 +1646,201 @@ fn execute_session_command(
     }
 }
 
+fn execute_session_search(
+    runtime: &WorkspaceRuntime,
+    refs: &mut Vec<Anddress>,
+    arguments: &[String],
+) -> Result<(), CliError> {
+    let outcome = run_search(runtime, parse_search(arguments)?)?;
+    let SearchOutcome::Found { anddresses } = outcome else {
+        return Ok(());
+    };
+    let start = reserve_session_refs(refs, anddresses.len())?;
+    refs.extend(anddresses);
+    write_session_refs(start, &refs[start..])
+}
+
+fn execute_session_replace(
+    runtime: &mut WorkspaceRuntime,
+    refs: &mut Vec<Anddress>,
+    bindings: &[SessionBinding],
+    tokens: &[String],
+) -> Result<(), CliError> {
+    if tokens.len() != 3 {
+        return Err(CliError::usage(
+            "replace requires exactly one reference and Content",
+        ));
+    }
+    let target = resolve_session_ref(bindings, refs, &tokens[1])?;
+    let content = prepare_replace_content(&target, tokens[2].clone())
+        .map_err(map_session_replace_content_error)?;
+    let edit = Edit::Replace { target, content };
+    edit.validate().map_err(map_edit_error)?;
+    let slot = reserve_session_refs(refs, 1)?;
+    let receipt = runtime
+        .apply_replace(&edit)
+        .map_err(|error: ApplyError| CliError::execution(error.to_string()))?;
+    match receipt {
+        EditReceipt::Unchanged { anddress } => {
+            refs.push(anddress);
+            write_session_replace(slot, "Unchanged", &refs[slot])
+        }
+        EditReceipt::Changed {
+            anddress: Some(anddress),
+        } => {
+            refs.push(anddress);
+            write_session_replace(slot, "Changed", &refs[slot])
+        }
+        EditReceipt::Changed { anddress: None } => write_session_status("Changed\tNone"),
+    }
+}
+
+fn execute_session_ref_view(
+    runtime: &mut WorkspaceRuntime,
+    bindings: &[SessionBinding],
+    refs: &mut Vec<Anddress>,
+    tokens: &[String],
+) -> Result<(), CliError> {
+    let (references, projection) = parse_session_ref_view(tokens)?;
+    let mut inputs = Vec::new();
+    inputs
+        .try_reserve_exact(references.len())
+        .map_err(|_| CliError::execution("Session View allocation failed"))?;
+    for reference in references {
+        inputs.push(resolve_session_ref(bindings, refs, reference)?);
+    }
+
+    let outcomes = if let Some(projection) = projection {
+        runtime
+            .view_batch(&inputs, projection)
+            .map_err(|error| CliError::execution(error.to_string()))?
+    } else {
+        let mut outcomes = Vec::new();
+        outcomes
+            .try_reserve_exact(inputs.len())
+            .map_err(|_| CliError::execution("Session View allocation failed"))?;
+        for input in &inputs {
+            outcomes.push(run_view(runtime, input, input.target())?);
+        }
+        outcomes
+    };
+
+    if outcomes
+        .iter()
+        .any(|outcome| matches!(outcome, ViewOutcome::RelationAbsent))
+    {
+        return write_session_relation_absent(&outcomes);
+    }
+
+    let start = reserve_session_refs(refs, outcomes.len())?;
+    for outcome in outcomes {
+        let ViewOutcome::Projected { anddress, .. } = outcome else {
+            unreachable!();
+        };
+        refs.push(anddress);
+    }
+    write_session_refs(start, &refs[start..])
+}
+
+fn parse_session_ref_view(
+    tokens: &[String],
+) -> Result<(&[String], Option<AnddressTarget>), CliError> {
+    let Some(first) = tokens.first() else {
+        return Err(CliError::usage("view requires at least one reference"));
+    };
+    if !first.starts_with('@') {
+        return Err(CliError::usage("view requires an Anddress reference"));
+    }
+    let Some(as_index) = tokens.iter().position(|token| token == "--as") else {
+        return Ok((tokens, None));
+    };
+    if as_index == 0 || as_index + 2 != tokens.len() {
+        return Err(CliError::usage(
+            "view --as requires references followed by one target kind",
+        ));
+    }
+    let projection = match tokens[as_index + 1].as_str() {
+        "line" => AnddressTarget::Line,
+        "paragraph" => AnddressTarget::Paragraph,
+        "file" => AnddressTarget::File,
+        _ => return Err(CliError::usage("invalid view target kind")),
+    };
+    Ok((&tokens[..as_index], Some(projection)))
+}
+
+fn reserve_session_refs(refs: &mut Vec<Anddress>, count: usize) -> Result<usize, CliError> {
+    refs.try_reserve_exact(count)
+        .map_err(|_| CliError::execution("Session reference allocation failed"))?;
+    Ok(refs.len())
+}
+
+fn write_session_refs(start: usize, refs: &[Anddress]) -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    for (offset, anddress) in refs.iter().enumerate() {
+        write_session_ref_line(&mut stdout, start + offset, None, anddress)
+            .map_err(|error| CliError::stream(error.to_string()))?;
+    }
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
+}
+
+fn write_session_replace(slot: usize, status: &str, anddress: &Anddress) -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    write_session_ref_line(&mut stdout, slot, Some(status), anddress)
+        .map_err(|error| CliError::stream(error.to_string()))?;
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
+}
+
+fn write_session_ref_line(
+    stdout: &mut impl Write,
+    slot: usize,
+    status: Option<&str>,
+    anddress: &Anddress,
+) -> io::Result<()> {
+    write!(stdout, "@{slot}\t")?;
+    if let Some(status) = status {
+        write!(stdout, "{status}\t")?;
+    }
+    match anddress.target() {
+        AnddressTarget::File => writeln!(stdout, "File\t{}", anddress.logical_path()),
+        AnddressTarget::Line => {
+            let line = anddress.line_number().expect("Line has a number");
+            writeln!(stdout, "Line\t{}:{line}", anddress.logical_path())
+        }
+        AnddressTarget::Paragraph => {
+            let lines = anddress.line_range();
+            writeln!(
+                stdout,
+                "Paragraph\t{}:{}-{}",
+                anddress.logical_path(),
+                lines.start + 1,
+                lines.end
+            )
+        }
+    }
+}
+
+fn write_session_relation_absent(outcomes: &[ViewOutcome]) -> Result<(), CliError> {
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    for outcome in outcomes {
+        if matches!(outcome, ViewOutcome::RelationAbsent) {
+            writeln!(stdout, "RelationAbsent")
+                .map_err(|error| CliError::stream(error.to_string()))?;
+        }
+    }
+    stdout
+        .flush()
+        .map_err(|error| CliError::stream(error.to_string()))
+}
+
 fn execute_let(
     runtime: &mut WorkspaceRuntime,
     data: &mut DataStore,
     bindings: &mut Vec<SessionBinding>,
+    refs: &[Anddress],
     tokens: &[String],
 ) -> Result<(), CliError> {
     let name = required_token(tokens, 1, "let name")?;
@@ -1746,7 +1974,9 @@ fn execute_let(
         if tokens.len() != 4 {
             return Err(CliError::usage("let reference accepts exactly one operand"));
         }
-        if right_hand_side.contains('[') || right_hand_side.contains(']') {
+        if numeric_session_ref(right_hand_side)?.is_some() {
+            SessionValue::Anddress(resolve_session_ref(bindings, refs, right_hand_side)?)
+        } else if right_hand_side.contains('[') || right_hand_side.contains(']') {
             SessionValue::Anddress(resolve_anddress(bindings, right_hand_side)?)
         } else {
             resolve_binding_value(bindings, right_hand_side)?
@@ -2390,6 +2620,7 @@ fn finish_pick_frame(mut frame: PickFrame) -> Result<PickPredicate, CliError> {
 fn execute_session_view(
     runtime: &mut WorkspaceRuntime,
     bindings: &[SessionBinding],
+    refs: &mut Vec<Anddress>,
     tokens: &[String],
 ) -> Result<(), CliError> {
     match required_token(tokens, 1, "view input form")? {
@@ -2410,9 +2641,7 @@ fn execute_session_view(
                 .map_err(|error| CliError::execution(error.to_string()))?;
             write_view(&outcome)
         }
-        _ => Err(CliError::usage(
-            "view requires the anddress or anchored input form",
-        )),
+        _ => execute_session_ref_view(runtime, bindings, refs, &tokens[1..]),
     }
 }
 
@@ -2641,6 +2870,20 @@ fn resolve_edit<'a>(bindings: &'a [SessionBinding], token: &str) -> Result<&'a E
     }
 }
 
+fn resolve_session_ref(
+    bindings: &[SessionBinding],
+    refs: &[Anddress],
+    token: &str,
+) -> Result<Anddress, CliError> {
+    if let Some(slot) = numeric_session_ref(token)? {
+        return refs
+            .get(slot)
+            .cloned()
+            .ok_or_else(|| CliError::usage(format!("numeric reference is out of range: {slot}")));
+    }
+    resolve_anddress(bindings, token)
+}
+
 fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress, CliError> {
     let reference = token
         .strip_prefix('@')
@@ -2715,6 +2958,30 @@ fn resolve_anddress(bindings: &[SessionBinding], token: &str) -> Result<Anddress
         ))),
         None => Err(CliError::usage(format!("unknown binding: {name}"))),
     }
+}
+
+fn numeric_session_ref(token: &str) -> Result<Option<usize>, CliError> {
+    let Some(reference) = token.strip_prefix('@') else {
+        return Ok(None);
+    };
+    if reference.is_empty() {
+        return Err(CliError::usage("numeric reference is empty"));
+    }
+    if reference.starts_with(['+', '-']) {
+        return Err(CliError::usage(
+            "numeric reference must be an unsigned decimal",
+        ));
+    }
+    if !reference.bytes().all(|byte| byte.is_ascii_digit()) {
+        return Ok(None);
+    }
+    if reference.len() > 1 && reference.starts_with('0') {
+        return Err(CliError::usage("numeric reference must be canonical"));
+    }
+    reference
+        .parse()
+        .map(Some)
+        .map_err(|_| CliError::usage("numeric reference is out of range"))
 }
 
 fn parse_session_index(value: &str) -> Result<usize, CliError> {
