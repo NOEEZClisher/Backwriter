@@ -1,10 +1,10 @@
 # Backwriter 0.2.6 Operational Adapter & Verification Contraction
 
-Status: Gates 1–7 complete — authority, command-local help, actionable
+Status: Gates 1–8 complete — source-ready unpublished `0.2.6`; authority, command-local help, actionable
 errors/stdin, the Line body/advanced exact-extent boundary, shell-local
 references plus high-level Replace, ordered batch Check, and verification/
-documentation contraction. `0.2.5` remains the closed source,
-package, CLI, installer, artifact, and public distribution. This tracker is
+documentation contraction. Source Cargo and `bw version` are `0.2.6`; `0.2.5`
+remains the closed official installer, artifact, and public distribution. This tracker is
 execution authority; its companion [source note](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-source.md)
 and [roadmap](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-roadmap.md)
 remain preserved planning evidence.
@@ -190,9 +190,20 @@ consumers. `verification.md` removes 13 superseded Gate 1–6 lines in favor of
 the current controls and tracker evidence. Production Rust, Cargo, lockfile,
 and toolchain remain byte-identical to Gate 6.
 
-## Gate 8 — source readiness
+## Gate 8 — source readiness — GO
 
-Decide GO/NO-GO after Gates 2–7 with full inherited GNU/musl verification. A
-GO may align source version/status only under explicit Gate 8 authority.
-Artifact reconstruction, installer changes, public publication, and live
-operations remain separately authorized work.
+The decision matrix is GO. Top-level and seven command Help pairs, their fixed
+section order and executable examples, usage exit 2, execution exit 1, and
+success exit 0 remain exact. One-shot argv/stdin Edit parity, EOF UTF-8,
+empty/Unicode/large Content, invalid UTF-8/NUL fail-closure, Line terminators,
+raw Session exact extent, shell references, ordered duplicate-preserving Check,
+Host proof, v5/Search immutability, and `Correct 1 / Safe Reject 6 / Wrong
+Apply 0` all retain their Gate 2–7 regressions and evidence. GNU and musl each
+pass 285 tests. Candidate production `src/**` is byte-identical to Gate 6.
+
+Root Cargo/lock, exact Version KAT, and active authority therefore advance to
+source-ready unpublished `0.2.6`. Artifact reconstruction, installer changes,
+public publication, and live operations remain separately authorized. The
+official installer, manifest, Update target, and public distribution remain
+closed `0.2.5`; Update has no version comparison and may install that release
+from a source-built `0.2.6` until a later release closure.

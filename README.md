@@ -69,19 +69,20 @@ exact immutable `0.2.4` manifest and current `0.2.5` manifest; `0.2.3`, `0.2.2`,
 `0.1.0`, and beta.3 acceptance is retired. The command still performs no
 version comparison and adds no version guard.
 
-The product is Backwriter. The source Cargo package and
-library crate are `backwriter` at closed official `0.2.5`; the sole canonical executable and
-external Adapter command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
+The product is Backwriter. The source Cargo package and library crate are
+`backwriter` at source-ready unpublished `0.2.6`; a source-built `bw version`
+prints `Backwriter 0.2.6`. The sole canonical executable and external Adapter
+command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
 official installer remains separate and selects the closed public `0.2.5`
 distribution.
 
-The Cargo package and `bw version` are published and closed `0.2.5`;
-production `src/**` is byte-identical to Gate 6 candidate
+Production `src/**` remains byte-identical to Gate 6 candidate
 `22e6df23755cdc80b299b77be313d307b67bc37f`. Official artifacts, installers,
-manifest, Update target, and the exact 68-file public distribution are
+manifest, Update target, and the exact 68-file public distribution remain
 published and closed `0.2.5` from Source Authority
 `e4022fc073e9df3928e1c3817b266ce92121a03c`. Update performs no version
-comparison and installs or reinstalls that official `0.2.5` release.
+comparison, so source-built `0.2.6` still installs or reinstalls that official
+`0.2.5` release until a separately authorized release closes the gap.
 
 ## Anddress-first editing
 

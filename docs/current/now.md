@@ -1,6 +1,6 @@
 # Backwriter Current State
 
-## 0.2.6 operational Adapter and verification contraction — Gates 1–7 complete
+## 0.2.6 operational Adapter and verification contraction — Gates 1–8 source-ready, unpublished
 
 Gate 1 records the approved Adapter boundary, Gate 2 closes command-local help,
 and Gate 3 closes actionable usage failures and one-shot Edit stdin Content.
@@ -12,8 +12,9 @@ blind, trained-use, and external verification in the
 The governing rule is **explain what to type, what happens, and what comes
 back**. Gate 6 adds only the narrow ordered Check Runtime seam and Adapter
 writers; version, artifact, installer, publication, v5 wire, Search, and other
-capability meanings remain unchanged. `0.2.5` remains the closed source and
-public distribution.
+capability meanings remain unchanged. Gate 8 is GO: source Cargo and `bw
+version` are `0.2.6`, while the official installers, manifest, Update target,
+and public distribution remain closed `0.2.5`.
 
 `bw --help` equals `bw help`; `bw help X` equals `bw X --help` for Search,
 View, Edit, Check, Shell, Update, and Version. Each command page uses fixed
@@ -36,13 +37,16 @@ existing named Anddress alias. One-shot JSON Check is `bw.cli.check.v2` and
 preserves one Current, NotCurrent, or Unavailable outcome per input; a batch
 requires JSON while single human output remains one status line. The public
 shell guidance now quotes whitespace-containing query and Content arguments.
-The future sequence is source readiness only. Core Search
+Source readiness is complete. Core Search
 and one-shot Search output, v5 values/wire, raw Session, `apply_replace`, and
 existing Check seam meanings remain fixed. Candidate execution
 compares with `0.2.5`; inherited GNU/musl 268-test evidence and `Correct 1 /
 Safe Reject 6 / Wrong Apply 0` remain required controls. Gate 2 adds three CLI
 regressions, Gate 3 adds four, Gate 5 adds six, and Gate 6 adds three, so the
-complete GNU and musl suites each pass 285 tests.
+complete GNU and musl suites each pass 285 tests. Production `src/**` remains
+byte-identical to Gate 6. Because Update has no version comparison, a
+source-built `0.2.6` `bw update` can install the closed official `0.2.5` until
+separately authorized release work closes that temporary boundary.
 
 ## 0.2.5 performance recovery — published and closed
 

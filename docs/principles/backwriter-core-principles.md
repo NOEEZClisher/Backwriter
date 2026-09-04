@@ -6,8 +6,9 @@ Gate 1 is authority only, Gate 2 adds one command-local help authority, Gate 3
 adds private actionable usage presentation plus one-shot Edit stdin Content,
 Gate 4 closes the one-shot Line body and advanced raw exact-extent boundary,
 and Gate 5 closes process-local shell references plus high-level Replace, while
-Gate 6 closes ordered batch Check, and Gate 7 closes only the evidence and
-documentation contraction. Its
+Gate 6 closes ordered batch Check, Gate 7 closes only the evidence and
+documentation contraction, and Gate 8 closes source readiness at unpublished
+`0.2.6`. Its
 rule is **explain what to type, what happens, and what comes back**. It adds no
 Core/Runtime behavior or required workflow and
 retains closed `0.2.5` Search/v5/raw-Session meaning. Stable usage codes belong
@@ -25,7 +26,10 @@ reuses existing Runtime grouping without adding Core lifecycle state. Gate 7
 records only candidate-versus-`0.2.5` execution, public-only blind/trained use,
 and external evidence; it adds no Core or Runtime behavior. Candidate evidence compares with `0.2.5`,
 while the inherited 268-test GNU/musl result and `Correct 1 / Safe Reject 6 /
-Wrong Apply 0` remain controls.
+Wrong Apply 0` remain controls. Gate 8 changes only source Cargo, `bw version`,
+its KAT, and current status. The official installer, manifest, Update target,
+and public distribution remain closed `0.2.5`; because Update has no version
+comparison, it may install that official release from a source-built `0.2.6`.
 
 The active `0.2.5` performance recovery is governed by Principle 19 and its
 [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).

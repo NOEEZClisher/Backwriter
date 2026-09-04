@@ -6,7 +6,11 @@ Gates 1–6 retain one test authority for exact Help/usage/JSON KATs, stdin and
 Line terminators, shell references/Replace, ordered Check, raw Session, and the
 inherited v5/Search/currentness/publication/Host-proof/Anchor boundaries. GNU
 and musl each pass 285 tests; `Correct 1 / Safe Reject 6 / Wrong Apply 0` is
-unchanged.
+unchanged. Gate 8 reruns the complete GNU and musl suites at 285 tests each and
+is GO: only root Cargo/lock version, the exact Version KAT, and active status
+advance to source-ready unpublished `0.2.6`. Production Rust remains
+byte-identical to Gate 6; official artifacts, installers, manifest, Update,
+and the 68-file public distribution remain closed `0.2.5`.
 
 Gate 7 executes candidate `c78e07f242035230e8b071d583491ac633f58d29` only
 against clean exported N-1 `a9b47b06e0c4ac4c3058332f85a2885f47edd53a`.

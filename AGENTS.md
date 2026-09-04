@@ -13,7 +13,7 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.2.6 operational Adapter authority — Gates 1–7 complete
+## 0.2.6 operational Adapter authority — Gates 1–8 source-ready, unpublished
 
 The `0.2.6` operational Adapter and verification-contraction authority is
 documentation-only at Gate 1, command-local help at Gate 2, actionable
@@ -52,12 +52,17 @@ identity, relocation, history,
 retry, transaction, CAS/lock, rollback, v6, or Search optimization. The
 [0.2.6 tracker](docs/tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
 is execution authority; its source note and roadmap are preserved evidence.
-Gate 7 leaves production Rust, Cargo, the v5 wire, and the closed `0.2.5`
-release unchanged; its public README records direct-shell quoting for
-whitespace-containing literal and Content arguments.
+Gate 8 is GO: it changes only the source Cargo package and `bw version` to
+`0.2.6`, its exact KAT, and current authority. Production Rust and the v5 wire
+remain byte-identical to Gate 6. Official artifacts, installers, manifest,
+Update target, and the exact 68-file public distribution remain closed `0.2.5`.
+Because Update has no version comparison, a source-built `0.2.6` `bw update`
+still installs or reinstalls that official `0.2.5` release until separately
+authorized release work.
 
-Search, View, Pick, Anchor, and Check have Rust implementations. The published
-`0.2.5` source is closed through Gate 8 with the v5 Anddress algebra, wire, shared
+Search, View, Pick, Anchor, and Check have Rust implementations. The
+source-ready unpublished `0.2.6` checkout retains the closed `0.2.5` v5
+Anddress algebra, wire, shared
 structural cursor, direct Search result collection, geometry-driven
 single/batch View, and View-free one-shot Edit, with source-state-only Check
 classification. Their direct View source-state/range projection,

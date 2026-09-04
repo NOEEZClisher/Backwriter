@@ -1,12 +1,13 @@
 # Backwriter Roadmap
 
-## Active: 0.2.6 operational Adapter and verification contraction
+## Completed: 0.2.6 operational Adapter and verification contraction — source-ready, unpublished
 
 The [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
 starts with completed documentation-only Gate 1, command-local-help Gate 2,
 actionable-errors/stdin Gate 3, Line-body/exact-boundary Gate 4,
 shell-local-reference/high-level-Replace Gate 5, ordered batch Check Gate 6,
-and verification/documentation contraction Gate 7.
+and verification/documentation contraction Gate 7, followed by source-readiness
+Gate 8.
 It makes `bw` explain what to type,
 what happens, and what comes back without changing Core/Runtime, Search,
 v5/`bw.cli.search.v2`, raw Session, or the closed `0.2.5` release.
@@ -22,8 +23,11 @@ append-only process-local `@N` refs for direct shell Search/View/Replace; Gate
 one-shot JSON and direct shell Check. Gate 7 records candidate/N-1, blind,
 trained-use, and external controls; it changes no production behavior and adds
 one README quoting example for existing Shell grammar. Raw named bindings remain
-ADVANCED. Gate 8 alone may decide source readiness. Artifacts and publication
-remain separately authorized. Search
+ADVANCED. Gate 8 is GO: source Cargo and `bw version` are `0.2.6` while
+production Rust remains byte-identical to Gate 6. Artifacts and publication
+remain separately authorized at closed official `0.2.5`; Update has no version
+comparison and can therefore install that official release from a source-built
+`0.2.6`. Search
 execution comparisons are candidate-versus-`0.2.5`; the inherited 268-test GNU/
 musl result and `Correct 1 / Safe Reject 6 / Wrong Apply 0` do not weaken.
 

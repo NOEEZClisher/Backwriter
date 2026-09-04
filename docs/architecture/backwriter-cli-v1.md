@@ -1,6 +1,6 @@
 # Backwriter CLI V1
 
-## 0.2.6 operational Adapter authority — Gates 1–7 complete
+## 0.2.6 operational Adapter authority — Gates 1–8 source-ready, unpublished
 
 The planned operational target explains what to type, what happens, and what
 comes back. Gate 1 changes no command, parser, output, error, version, or
@@ -40,7 +40,10 @@ Check is bounded Adapter work under the
 [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md),
 not new Core wire, identity, persistence, or lifecycle behavior. Gate 7 adds no
 CLI parser or output change; it records only the candidate/N-1 and public-use
-evidence before Gate 8 source readiness.
+evidence. Gate 8 is GO: only source Cargo, `bw version`, its KAT, and active
+status become `0.2.6`; Core/Runtime/Adapter behavior stays fixed. The official
+installer, manifest, Update target, and public distribution remain closed
+`0.2.5`, so unguarded Update from source-built `0.2.6` may install `0.2.5`.
 
 ## 0.2.5 encoder reuse and release boundary
 
