@@ -1,6 +1,6 @@
 # Backwriter Protocol
 
-## 0.2.6 operational Adapter boundary — Gates 1–3 authority
+## 0.2.6 operational Adapter boundary — Gates 1–4 authority
 
 Gate 1 changes no Core or Runtime contract. Existing `WorkspaceRuntime`
 seams are the default: one-shot Replace reuses `apply_replace`, raw `apply`
@@ -27,6 +27,17 @@ reuses the existing Replace/receipt writer. File and Paragraph Content is exact;
 Line rejects NUL/CR/LF and preserves the decoded current terminator. This adds
 no Core/Runtime seam, JSON schema, executor, retry, or stdin transport for raw
 Session.
+
+Gate 4 closes the actual consumer boundary. One-shot Line Replace accepts body
+only: NUL is `edit.content_contains_nul`, CR/LF is
+`edit.line_body_contains_terminator`, and the decoded None/LF/CR/CRLF terminator
+is appended exactly once before its one existing `Edit::Replace → apply_replace`
+path. It neither strips nor normalizes input and never calls View, Search, or
+Check. Existing raw Session `Edit::Replace` and separate raw Apply remain the
+ADVANCED exact-extent path: the caller deliberately supplies exact range bytes,
+including a terminator or multiline replacement. No exact one-shot syntax,
+flag, override, DTO, parser, wire, second executor, implicit discovery, or retry
+is added.
 
 Search remains its exact `0.2.5` contract: matcher, structural path,
 traversal, order, tiers, storage, `SearchOutcome`, `bw.cli.search.v2`, v5

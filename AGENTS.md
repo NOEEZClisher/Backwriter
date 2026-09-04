@@ -13,11 +13,12 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.2.6 operational Adapter authority — Gates 1–3 complete
+## 0.2.6 operational Adapter authority — Gates 1–4 complete
 
 The `0.2.6` operational Adapter and verification-contraction authority is
-documentation-only at Gate 1, command-local help at Gate 2, and actionable
-usage errors plus one-shot Edit standard-input Content at Gate 3. The
+documentation-only at Gate 1, command-local help at Gate 2, actionable
+usage errors plus one-shot Edit standard-input Content at Gate 3, and the Line
+body/advanced exact-extent boundary at Gate 4. The
 governing rule is: **explain what to type, what happens, and what comes back.**
 It retains the closed `0.2.5` Core,
 Runtime, v5 wire, Search behavior/output/performance, raw Session, and public
@@ -33,8 +34,13 @@ download. Every top-level and one-shot usage error now has its stable
 keeps its existing grammar and reporting. One-shot Edit accepts exactly one
 positional Content operand or `--stdin`, validates its v5 Anddress before
 reading stdin to EOF, and opens Runtime only afterwards. File and Paragraph
-retain exact UTF-8 Content; Line retains its body-only validation and current
-terminator. Only a later named Gate may implement process-local references,
+retain exact UTF-8 Content and reject NUL as `edit.content_contains_nul`; Line
+also rejects CR/LF as `edit.line_body_contains_terminator`, accepts body only,
+and appends the decoded current terminator exactly once. Existing raw Session
+`Edit::Replace` plus separate Apply remains the advanced exact-extent consumer:
+it may carry caller-provided terminators or multiline bytes. One-shot adds no
+exact flag, override, View/Search/Check call, second executor, or retry. Only a
+later named Gate may implement process-local references,
 Replace ergonomics, or ordered batch Check. These are
 not a Core lifecycle, persistent identity, relocation, history,
 retry, transaction, CAS/lock, rollback, v6, or Search optimization. The

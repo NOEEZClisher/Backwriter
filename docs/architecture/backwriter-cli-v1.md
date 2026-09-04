@@ -1,11 +1,12 @@
 # Backwriter CLI V1
 
-## 0.2.6 operational Adapter authority — Gates 1–3 complete
+## 0.2.6 operational Adapter authority — Gates 1–4 complete
 
 The planned operational target explains what to type, what happens, and what
 comes back. Gate 1 changes no command, parser, output, error, version, or
-process behavior; Gate 2 adds help and Gate 3 adds only actionable usage
-presentation plus the exclusive one-shot Edit `--stdin` Content selector.
+process behavior; Gate 2 adds help, Gate 3 adds actionable usage presentation
+plus the exclusive one-shot Edit `--stdin` Content selector, and Gate 4 closes
+Line body replacement against the existing advanced raw exact-extent consumer.
 Top-level help covers only global
 syntax, capabilities, and additional help. Command help uses `NAME`, `USAGE`,
 `DESCRIPTION`, `ARGUMENTS`, `OPTIONS`, `WHAT HAPPENS`, `OUTPUT`, `EXAMPLES`,
@@ -20,10 +21,12 @@ and stream errors retain exit `1`. Later Gates document canonical output options
 only as prefixes, and may accept trailing options only after a direct
 simplification proof; operands are never interleaved with options. `--stdin` is
 XOR with positional Content, is valid only at Content position, validates the
-Anddress before reading EOF, and has no fixed semantic size limit. One-shot Line Replace remains body-only,
-preserves its existing terminator, and rejects NUL/CR/LF without stripping;
-File/Paragraph retain exact UTF-8 and existing NUL policy. Raw Session and raw
-Apply remain ADVANCED. Process-local refs/aliases and ordered batch Check are
+Anddress before reading EOF, and has no fixed semantic size limit. One-shot Line
+Replace remains body-only, preserves its existing terminator, rejects NUL as
+`edit.content_contains_nul`, and rejects CR/LF as
+`edit.line_body_contains_terminator` without stripping; File/Paragraph retain
+exact UTF-8 and the NUL policy. Raw Session `Edit::Replace` plus separate Apply
+remains the ADVANCED caller-owned exact-extent surface. Process-local refs/aliases and ordered batch Check are
 future bounded Adapter work under the
 [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md),
 not new Core wire, identity, persistence, or lifecycle behavior.
@@ -220,8 +223,9 @@ Each appears before the capability at most once and can occur in any order among
 `--workspace` and `--admit`. `--json` is Search/View/Check/Edit-only, while `--raw`
 is one-shot View-only. Duplicate, mixed, or output-option-position use after a
 capability is a usage error. In the required one-shot Edit Content position,
-the exact strings `--json`, `--raw`, and `--stdin` are ordinary Content rather than output
-selections; a later token remains an extra-operand usage error. Session and
+`--stdin` is the exclusive EOF Content selector; literal `--stdin` Content is
+provided through standard input. The exact strings `--json` and `--raw` remain
+Content, and a later token remains an extra-operand usage error. Session and
 every other one-shot capability reject output selections.
 
 A content query is exactly one argv value supplied by the host shell. The CLI
@@ -424,13 +428,16 @@ passes the native result to the existing direct writer. It adds no request
 type, Core wire, retained state, or automatic capability handoff.
 
 For File and Paragraph, `<content>` is the exact replacement string and retains
-the existing NUL rejection. For Line, it is body-only Content and any NUL, CR,
-or LF is a usage error. The Adapter appends exactly the None, LF, CR, or CRLF
+the existing NUL rejection. For Line, it is body-only Content: NUL is
+`edit.content_contains_nul`, while CR or LF is
+`edit.line_body_contains_terminator`. Its cause states that the existing
+terminator is automatic and that advanced raw Session Edit/Apply owns exact
+extent replacement. The Adapter appends exactly the None, LF, CR, or CRLF
 terminator carried by the decoded v5 Line; Apply then confirms that exact source
 state. It performs no other escape
 decoding, trimming, normalization, separator insertion, or target conversion.
-The positional values `--json`, `--raw`, and `--stdin` follow those same rules
-exactly. Leading global `--json edit ...` selects JSON; leading `--raw` is a
+The positional values `--json` and `--raw` follow those same rules exactly;
+`--stdin` selects UTF-8 EOF Content. Leading global `--json edit ...` selects JSON; leading `--raw` is a
 usage error, and any token after the required Content is an extra operand.
 
 Human success exits `0` after writing exactly one of these LF-terminated rows:
@@ -456,9 +463,10 @@ Key order is `schema`, `outcome`, `anddress`. The writer calls
 canonical bytes directly in either form without a JSON `Value`, reserialization,
 clone, or second result collection. CLI grammar, v5 decode/validation other than
 resource exhaustion, and invalid Content are usage errors: the existing usage
-reporter writes `error: <message>`, one blank line, the complete usage text, and
-one final LF to stderr, then exits `2`. Target-specific Content rejection uses
-the existing `Edit input is invalid` message. Decoder resource exhaustion,
+reporter writes `error[code]`, cause, canonical command usage, a help hint, and
+one final LF to stderr, then exits `2`. Target-independent NUL is
+`edit.content_contains_nul`; Line CR/LF is
+`edit.line_body_contains_terminator`. Decoder resource exhaustion,
 Runtime Apply failure, and stdout failure are execution errors: the
 existing execution reporter writes exactly `error: <message>` plus LF to stderr
 and exits `1`. Existing Apply error text and variants are retained,
@@ -473,17 +481,18 @@ stdout is possible, so the Adapter does not roll back or retry.
 Byte-identical no-op, publication uncertainty, Anchor reflection, and optional
 Host proof/invalidation semantics remain owned by existing Runtime Apply. The
 implemented raw Session Edit/Apply form below remains an advanced surface and
-is not an alias or prerequisite for this command. Raw output, batch Edit,
-stdin/file content transport, retry, merge, relocation, and automatic re-search
-are not part of this closed form.
+is not an alias or prerequisite for this command. It alone permits the caller to
+supply exact replacement bytes, including a terminator or multiline content,
+before a separate Apply. Raw output, batch Edit, file content transport, retry,
+merge, relocation, and automatic re-search are not part of this closed form.
 
-Gate 6 retains Gate 3's no-addition Content transport decision. One
-argv value already carries empty and Unicode Content, File and Paragraph CR/LF,
-and every allowed Line body; NUL is invalid by contract. Known OS argument
-limits, shell quoting/newline behavior, and process-list/history exposure do
-not establish a reproduced consumer failure, measured payload need, or concrete
-security requirement. There is therefore no `--stdin` grammar, reader, EOF
-state, generic content source, or file transport. Because the receipt write
+Gate 6 retains Gate 3's single exclusive `--stdin` Content selector rather than
+adding a generic content source or file transport. One argv value or UTF-8 EOF
+stdin carries empty and Unicode Content, File and Paragraph CR/LF, and every
+allowed Line body; NUL is invalid by contract. Known OS argument limits, shell
+quoting/newline behavior, and process-list/history exposure do not establish a
+reproduced consumer failure, measured payload need, or concrete security
+requirement for further transport. Because the receipt write
 follows Apply, exit `1` is not evidence that source bytes are unchanged and
 must not trigger an automatic retry.
 
@@ -616,12 +625,11 @@ changed with a fresh target, changed without one, prepublication failure, and
 uncertain publication. Human output uses exact `Unchanged`/`Changed` rows;
 `bw.cli.edit.v1` uses one directly embedded canonical v4 object or `null`.
 
-Argv Content remains the only supported exact transport. Gate 6 records no
-stdin addition because there is no reproduced consumer failure, measured
-payload need, or concrete security requirement. Literal `--stdin` in Content
-position remains Content; there is no reader, EOF state, or reserved syntax. No
-history, diff, retry, relocation, watcher, persistent identity, performance
-claim, or automatic capability workflow is part of this Adapter direction.
+Argv Content and Gate 3's exclusive UTF-8 EOF `--stdin` selector are the only
+supported one-shot transports. Literal `--stdin` Content is supplied through
+the latter, not an argv escape. No generic reader, file transport, history,
+diff, retry, relocation, watcher, persistent identity, performance claim, or
+automatic capability workflow is part of this Adapter direction.
 
 Gate 7 confirms the integrated source flow against published `0.2.2`: the v2
 occurrence supplies one embedded v4 object, each changed JSON Edit receipt

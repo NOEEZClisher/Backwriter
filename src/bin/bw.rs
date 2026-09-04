@@ -786,15 +786,17 @@ fn execute_edit(
     } else {
         utf8_for_edit(content_selector, "edit content")?
     };
+    if content.contains('\0') {
+        return Err(edit_usage(
+            "edit.content_contains_nul",
+            "Edit Content must not contain NUL.",
+        ));
+    }
     if let Some(terminator) = anddress.terminator() {
-        if content
-            .as_bytes()
-            .iter()
-            .any(|byte| matches!(byte, b'\0' | b'\r' | b'\n'))
-        {
+        if content.contains(['\r', '\n']) {
             return Err(edit_usage(
-                "edit.content_invalid",
-                EditError::InvalidInput.to_string(),
+                "edit.line_body_contains_terminator",
+                "Line Edit accepts body Content only. Backwriter preserves the existing Line terminator automatically. Exact extent replacement is available through advanced raw Session Edit/Apply.",
             ));
         }
         let terminator = match terminator {

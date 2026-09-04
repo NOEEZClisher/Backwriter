@@ -11,9 +11,11 @@ Gate 2 CLI regressions bring both complete GNU and musl suites to 271 passing
 tests. Gate 3 adds exact actionable-error KATs, argv/stdin parity for File,
 Paragraph, and None/LF/CR/CRLF Line Content, invalid-stdin/nonpublication, and
 a multi-reader-chunk Content control; both complete suites now pass 275 tests.
+Gate 4 adds exact Line NUL/CR/LF/CRLF rejection codes with source and Unix inode
+preservation, File/Paragraph NUL closure, and a raw exact-range terminator and
+multiline matrix with separate Apply. Both complete suites now pass 276 tests.
 It does not reinterpret the inherited result as evidence for future Adapter
-behavior. Gates 4–6 must add their own Line-body, reference/Replace, and
-batch-Check evidence; Gate 7 may
+behavior. Gates 5–6 must add their own reference/Replace and batch-Check evidence; Gate 7 may
 contract tests/docs only after its blind Dummy, Genie, and external-evidence
 audit.
 
@@ -627,14 +629,14 @@ ordering establish zero success output and no receipt on Apply failure. A
 Linux `/dev/full` control proves a post-publication flush failure exits `1`
 while leaving the confirmed source publication intact and without retry.
 
-Argv remains the only Content transport. Direct empty/Unicode,
-File/Paragraph-newline, and Line-body coverage exists; argument length,
-shell/newline behavior, and process-list/history exposure supply no reproduced
-consumer failure, measured payload need, or concrete security requirement.
-Gate 6 therefore adds no `--stdin` grammar, reader, EOF state, generic content
-source, file transport, or placeholder. The complete offline/locked GNU-host
-suite passes 256 tests: the 255 Gate 5 controls plus one CLI stream-failure
-regression.
+At that historical `0.2.2` Gate 6, argv was the only Content transport. Direct
+empty/Unicode, File/Paragraph-newline, and Line-body coverage existed; argument
+length, shell/newline behavior, and process-list/history exposure supplied no
+reproduced consumer failure, measured payload need, or concrete security
+requirement. The later `0.2.6` Gate 3 adds the one exclusive `--stdin` EOF
+selector; neither gate adds a generic content source, file transport, or
+placeholder. The complete offline/locked GNU-host suite passed 256 tests: the
+255 Gate 5 controls plus one CLI stream-failure regression.
 
 Gate 7 builds the published `0.2.2` Source Authority
 `04b36d9ca9cc725bedeb17231339c67b5f0590ea` and the integrated Patch Box parent

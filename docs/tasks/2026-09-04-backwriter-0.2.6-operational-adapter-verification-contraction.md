@@ -1,7 +1,7 @@
 # Backwriter 0.2.6 Operational Adapter & Verification Contraction
 
-Status: Gates 1–3 complete — authority, command-local help, and actionable
-errors/stdin. `0.2.5` remains the closed source,
+Status: Gates 1–4 complete — authority, command-local help, actionable
+errors/stdin, and the Line body/advanced exact-extent boundary. `0.2.5` remains the closed source,
 package, CLI, installer, artifact, and public distribution. This tracker is
 execution authority; its companion [source note](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-source.md)
 and [roadmap](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-roadmap.md)
@@ -78,13 +78,24 @@ Gate 3 adds four CLI regressions, bringing complete GNU and musl suites to
 275 tests. Output options remain prefix-only; trailing acceptance and operand
 insertion remain prohibited.
 
-## Gate 4 — Line body and exact boundary
+## Gate 4 — Line body and exact boundary — complete
 
-Prove the consumer before adding or exposing syntax. Line Replace accepts body
-only, preserves None/LF/CR/CRLF, and rejects NUL/CR/LF without stripping.
-File/Paragraph retain exact UTF-8 plus existing NUL policy. Exact extent/raw
-Apply remains ADVANCED. One-shot Replace continues to use `apply_replace` and
-does not change raw Apply.
+The existing one-shot `Edit::Replace → apply_replace → receipt writer` is the
+only general Replace path. Its decoded v5 Line terminator is appended exactly
+once; None/LF/CR/CRLF, empty, and Unicode bodies are preserved. NUL is the
+target-independent `edit.content_contains_nul`; Line CR/LF is
+`edit.line_body_contains_terminator`. Both are exact usage failures before
+Runtime access, source mutation, or Unix inode change. File/Paragraph retain
+exact UTF-8 CR/LF Content and the NUL rule.
+
+The consumer audit confirms that raw Session `edit replace` already supplies
+caller-owned exact v5 target-range Content and existing separate `apply @edit`
+publishes it. Its terminator and multiline matrix proves that it is the
+ADVANCED exact-extent surface. Therefore Gate 4 adds no exact one-shot command,
+flag, DTO, Runtime/Core API, executor, parser, wire, terminator override,
+implicit View/Search/Check, or retry. Raw Session grammar and Runtime/Core
+production files remain unchanged. The complete GNU and musl suites each pass
+276 tests.
 
 ## Gate 5 — process-local references and Replace
 

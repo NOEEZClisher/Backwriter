@@ -3,8 +3,8 @@
 ## Active: 0.2.6 operational Adapter and verification contraction
 
 The [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
-starts with completed documentation-only Gate 1, command-local-help Gate 2, and
-actionable-errors/stdin Gate 3.
+starts with completed documentation-only Gate 1, command-local-help Gate 2,
+actionable-errors/stdin Gate 3, and Line-body/exact-boundary Gate 4.
 It makes `bw` explain what to type,
 what happens, and what comes back without changing Core/Runtime, Search,
 v5/`bw.cli.search.v2`, raw Session, or the closed `0.2.5` release.
@@ -12,9 +12,11 @@ v5/`bw.cli.search.v2`, raw Session, or the closed `0.2.5` release.
 Gates 2–3 retain the handwritten parser and normal execution paths while one
 writer serves top-level and command help, and a minimal private usage context
 extracts that same canonical usage for errors. One-shot Edit has the exclusive
-EOF `--stdin` Content form without a Runtime/API or output change. Gates 4–8
-may only add Line body/exact boundary, process-local refs and Replace, ordered
-batch Check, evidence-led test/docs contraction, and source readiness. Artifacts
+EOF `--stdin` Content form without a Runtime/API or output change. Its Line
+form accepts body only, automatically preserves the decoded terminator, and
+keeps raw Session Edit/Apply as the advanced exact-range path. Gates 5–8 may
+only add process-local refs and Replace, ordered batch Check, evidence-led
+test/docs contraction, and source readiness. Artifacts
 and publication remain separately authorized. Search
 execution comparisons are candidate-versus-`0.2.5`; the inherited 268-test GNU/
 musl result and `Correct 1 / Safe Reject 6 / Wrong Apply 0` do not weaken.

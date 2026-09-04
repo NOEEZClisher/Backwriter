@@ -96,9 +96,13 @@ Human Search rows are not encoded Anddress values and cannot be Edit input.
 Treat the selected JSON object as opaque: do not interpret or rewrite its hash,
 range, length, or other fields. File and Paragraph Content is the exact
 replacement. Line Content is body-only, rejects NUL, CR, and LF, and preserves
-the None, LF, CR, or CRLF terminator carried by the exact v5 Line. Apply alone
-confirms that source state before publication. View or Pick may help a caller
-select a target; neither View nor Check is required.
+the None, LF, CR, or CRLF terminator carried by the exact v5 Line. A Line NUL
+is `edit.content_contains_nul`; a Line CR or LF is
+`edit.line_body_contains_terminator`. The latter explains that Backwriter adds
+the current terminator and that advanced raw Session Edit/Apply owns exact
+extent replacement. Apply alone confirms that source state before publication.
+View or Pick may help a caller select a target; neither View nor Check is
+required.
 
 Human success writes one exact LF-terminated receipt row. `Unchanged` is
 followed by the still-current input v5 object; `Changed` is followed by the
@@ -111,25 +115,21 @@ an explicit Search before later target work. Exit `1` is neither a stale-only
 classification nor proof that source bytes are unchanged, so it must not
 trigger automatic retry.
 
-Argv remains the only Content transport. Empty and Unicode Content,
-File/Paragraph CR and LF, and permitted Line bodies already travel in one argv
-value. Known OS length, shell quoting/newline, process-list, and history
-constraints are not a reproduced consumer failure, measured payload need, or
-concrete security requirement, so this slice adds no stdin syntax or reader.
-Literal `--json`, `--raw`, and `--stdin` in the Content position remain exact
-Content.
+One-shot Content is either one UTF-8 argv value or the exclusive `--stdin`
+selector in that position; stdin is read to EOF after v5 address validation and
+before Runtime access. Both forms have the same target-specific Content rules.
+File/Paragraph CR and LF are exact Content, while Line body Content never
+silently strips a trailing newline. Literal `--json` and `--raw` remain exact
+Content; a literal `--stdin` Content value is supplied through standard input.
 
 Raw Session is the advanced composition surface for Insert/Delete/Move/Copy,
 Position, Anchor/Data lifetime, explicit bindings, and separate Apply. It is
-not a prerequisite or alias for ordinary Replace. On the same single-Line CRLF
-fixture, JSON Search followed by one-shot Edit uses two processes and two
-one-shot Adapter commands; the Edit command prepares one `Edit::Replace` from
-the v5 geometry and invokes the Replace receipt seam without a View call.
-A raw Session can instead use one process with
-four work expressions—Search binding, optional View, indexed raw Replace Edit
-binding, and Apply—plus `exit`; its caller must carry the binding and index,
-escape the exact terminator, and publish separately. Both paths produce the
-same bytes. No timing advantage is claimed.
+not a prerequisite or alias for ordinary Replace. Its existing raw
+`edit replace` accepts caller-provided exact range Content, including an
+explicit terminator or multiline replacement, and `apply @edit` publishes it
+separately. The caller owns the binding, index, quoting, terminator, and
+publication boundary. General replacement should use one-shot body Content
+first; no exact one-shot flag or alternate executor exists.
 
 The default workspace is the process current working directory. An explicit
 `--workspace` must be absolute and is checked by Runtime. Search admits `.` by
@@ -169,8 +169,12 @@ bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     check anddress <encoded-v5-Anddress>
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
     edit anddress <encoded-v5-Anddress> <content>
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...
+    edit anddress <encoded-v5-Anddress> --stdin
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
     edit anddress <encoded-v5-Anddress> <content>
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json
+    edit anddress <encoded-v5-Anddress> --stdin
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell
 ```
 

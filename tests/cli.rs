@@ -164,6 +164,9 @@ SEE ALSO
   bw help check
 "#;
 
+const EDIT_CONTENT_NUL_CAUSE: &str = "Edit Content must not contain NUL.";
+const EDIT_LINE_BODY_CAUSE: &str = "Line Edit accepts body Content only. Backwriter preserves the existing Line terminator automatically. Exact extent replacement is available through advanced raw Session Edit/Apply.";
+
 const CHECK_HELP_KAT: &str = r#"NAME
   bw check - check one current v5 Anddress
 
@@ -2290,28 +2293,100 @@ fn one_shot_edit_stdin_rejects_invalid_content_without_publication() {
         },
     );
 
-    for input in [b"bad\0body".as_slice(), b"bad\nbody", b"bad\rbody", b"\xff"] {
+    #[cfg(unix)]
+    let inode = fs::metadata(root.path().join("note.txt")).unwrap().ino();
+    for (input, code, cause) in [
+        (
+            b"bad\0body".as_slice(),
+            "edit.content_contains_nul",
+            EDIT_CONTENT_NUL_CAUSE,
+        ),
+        (
+            b"bad\nbody",
+            "edit.line_body_contains_terminator",
+            EDIT_LINE_BODY_CAUSE,
+        ),
+        (
+            b"bad\rbody",
+            "edit.line_body_contains_terminator",
+            EDIT_LINE_BODY_CAUSE,
+        ),
+        (
+            b"bad\r\nbody",
+            "edit.line_body_contains_terminator",
+            EDIT_LINE_BODY_CAUSE,
+        ),
+    ] {
         let output = run_with_stdin(
             root.path(),
             &["edit", "anddress", &operand, "--stdin"],
             input,
         );
-        assert_eq!(
-            output.status.code(),
-            Some(if input == b"\xff" { 1 } else { 2 })
-        );
-        assert!(output.stdout.is_empty());
+        assert_actionable_usage(output, code, cause, EDIT_HELP_KAT, "bw help edit");
         assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"old\r\n");
+        #[cfg(unix)]
+        assert_eq!(
+            fs::metadata(root.path().join("note.txt")).unwrap().ino(),
+            inode
+        );
     }
 
-    fs::remove_file(root.path().join("note.txt")).unwrap();
     let output = run_with_stdin(
         root.path(),
         &["edit", "anddress", &operand, "--stdin"],
-        b"still\ninvalid",
+        b"\xff",
     );
-    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
+    assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"old\r\n");
+
+    for (before, target) in [
+        ("old\r\n", AnddressTarget::File),
+        (
+            "first\r\nline\r\n\r\nkeep\r\n",
+            AnddressTarget::Paragraph {
+                ordinal: Natural::zero(),
+            },
+        ),
+    ] {
+        write(root.path(), "note.txt", before);
+        let operand = view_operand(root.path(), "note.txt", target);
+        #[cfg(unix)]
+        let inode = fs::metadata(root.path().join("note.txt")).unwrap().ino();
+        assert_actionable_usage(
+            run_with_stdin(
+                root.path(),
+                &["edit", "anddress", &operand, "--stdin"],
+                b"bad\0content",
+            ),
+            "edit.content_contains_nul",
+            EDIT_CONTENT_NUL_CAUSE,
+            EDIT_HELP_KAT,
+            "bw help edit",
+        );
+        assert_eq!(
+            fs::read(root.path().join("note.txt")).unwrap(),
+            before.as_bytes()
+        );
+        #[cfg(unix)]
+        assert_eq!(
+            fs::metadata(root.path().join("note.txt")).unwrap().ino(),
+            inode
+        );
+    }
+
+    fs::remove_file(root.path().join("note.txt")).unwrap();
+    assert_actionable_usage(
+        run_with_stdin(
+            root.path(),
+            &["edit", "anddress", &operand, "--stdin"],
+            b"still\ninvalid",
+        ),
+        "edit.line_body_contains_terminator",
+        EDIT_LINE_BODY_CAUSE,
+        EDIT_HELP_KAT,
+        "bw help edit",
+    );
     assert!(!root.path().join("note.txt").exists());
 
     assert_actionable_usage(
@@ -2360,22 +2435,35 @@ fn one_shot_edit_rejects_line_break_content_without_touching_source() {
         },
     );
 
+    #[cfg(unix)]
+    let inode = fs::metadata(root.path().join("note.txt")).unwrap().ino();
     for content in ["bad\nbody", "bad\rbody", "bad\r\nbody"] {
-        let output = run(root.path(), &["edit", "anddress", &operand, content]);
-        assert_eq!(output.status.code(), Some(2));
-        assert!(output.stdout.is_empty());
-        assert!(text(output.stderr).contains("Edit input is invalid"));
+        assert_actionable_usage(
+            run(root.path(), &["edit", "anddress", &operand, content]),
+            "edit.line_body_contains_terminator",
+            EDIT_LINE_BODY_CAUSE,
+            EDIT_HELP_KAT,
+            "bw help edit",
+        );
         assert_eq!(fs::read(root.path().join("note.txt")).unwrap(), b"old\r\n");
+        #[cfg(unix)]
+        assert_eq!(
+            fs::metadata(root.path().join("note.txt")).unwrap().ino(),
+            inode
+        );
     }
 
     fs::remove_file(root.path().join("note.txt")).unwrap();
-    let output = run(
-        root.path(),
-        &["edit", "anddress", &operand, "still\ninvalid"],
+    assert_actionable_usage(
+        run(
+            root.path(),
+            &["edit", "anddress", &operand, "still\ninvalid"],
+        ),
+        "edit.line_body_contains_terminator",
+        EDIT_LINE_BODY_CAUSE,
+        EDIT_HELP_KAT,
+        "bw help edit",
     );
-    assert_eq!(output.status.code(), Some(2));
-    assert!(output.stdout.is_empty());
-    assert!(text(output.stderr).contains("Edit input is invalid"));
     assert!(!root.path().join("note.txt").exists());
 }
 
@@ -2506,10 +2594,22 @@ fn one_shot_edit_exact_noop_uses_v5_geometry_and_shared_apply_without_view() {
     assert!(!edit.contains(".view("));
     assert!(!edit.contains("run_search"));
     assert!(!edit.contains("run_check"));
+    assert!(!edit.contains("replace-exact"));
+    assert!(!edit.contains("--exact"));
     assert_eq!(edit.matches("open_runtime").count(), 1);
     assert!(!edit.contains("write_session_status"));
     assert!(!edit.contains("output options must precede the capability"));
     assert_eq!(source.matches("fn execute_edit").count(), 1);
+
+    let raw_replace = source
+        .split_once("fn parse_session_edit")
+        .unwrap()
+        .1
+        .split_once("fn parse_session_position")
+        .unwrap()
+        .0;
+    assert!(raw_replace.contains("Edit::Replace"));
+    assert!(!raw_replace.contains("apply_replace"));
 
     let writer = source
         .split_once("fn write_edit")
@@ -3038,6 +3138,32 @@ fn session_edit_apply_builds_each_core_edit_and_every_position() {
             after
         );
         assert!(text(output.stdout).contains("OK\n"));
+    }
+}
+
+#[test]
+fn session_raw_replace_is_the_advanced_exact_extent_surface() {
+    for (before, replacement, expected) in [
+        ("old", "one\\ntwo", "one\ntwo"),
+        ("old\n", "one\\r", "one\r"),
+        ("old\r", "one\\r\\n", "one\r\n"),
+        ("old\r\n", "one", "one"),
+    ] {
+        let root = tempfile::tempdir().unwrap();
+        write(root.path(), "note.txt", before);
+        let output = run_shell(
+            root.path(),
+            &format!(
+                "let lines = search line old\nlet edit = edit replace @lines[0] \"{replacement}\"\napply @edit\nexit\n"
+            ),
+        );
+        assert!(output.status.success(), "{}", text(output.stderr));
+        assert!(output.stderr.is_empty());
+        assert!(output.stdout.ends_with(b"OK\n"));
+        assert_eq!(
+            fs::read(root.path().join("note.txt")).unwrap(),
+            expected.as_bytes()
+        );
     }
 }
 

@@ -1,9 +1,11 @@
 # Backwriter Current State
 
-## 0.2.6 operational Adapter and verification contraction — Gates 1–3 complete
+## 0.2.6 operational Adapter and verification contraction — Gates 1–4 complete
 
 Gate 1 records the approved Adapter boundary, Gate 2 closes command-local help,
-and Gate 3 closes actionable usage failures and one-shot Edit stdin Content in the
+and Gate 3 closes actionable usage failures and one-shot Edit stdin Content.
+Gate 4 closes Line body replacement and separates it from advanced raw exact
+extent replacement in the
 [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).
 The governing rule is **explain what to type, what happens, and what comes
 back**. No implementation, version, artifact, installer, publication, Core, or
@@ -17,8 +19,11 @@ errors use a stable code, cause, directly extracted canonical command usage,
 and command help hint without a top-level help dump. Edit Content is exactly one
 argv operand or the exclusive `--stdin` selector; it validates the address,
 reads valid UTF-8 stdin to EOF, then opens Runtime. File/Paragraph bytes remain
-exact and Line preserves its existing terminator after body validation. The
-future sequence is Line body/exact boundary; process-local references plus
+exact and reject NUL with `edit.content_contains_nul`. Line accepts body only,
+rejects CR/LF with `edit.line_body_contains_terminator`, and appends its decoded
+None/LF/CR/CRLF terminator exactly once. Advanced raw Session Edit/Apply retains
+caller-provided exact range bytes and a separate publication step; no exact
+one-shot form exists. The future sequence is process-local references plus
 Replace; ordered batch Check; verification/docs contraction; then source
 readiness. Search, v5 values/wire, raw Session,
 `apply_replace`, and current Check seams remain fixed. Candidate execution
