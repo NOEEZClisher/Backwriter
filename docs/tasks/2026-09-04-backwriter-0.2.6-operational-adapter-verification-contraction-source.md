@@ -141,3 +141,62 @@ weaken these controls to make an Adapter path fit.
   evidence audit;
 - the Gate 7 proof required from blind Dummy, Genie, and external evidence;
 - the source-readiness decision after Gates 2–7.
+
+## Later owner handoff — Release R2 complete, 2026-09-05
+
+This appended handoff preserves the owner's later completion report. The
+original Gates 1–8 planning above remains historical evidence. This prompt
+preparation does not execute or authorize live publication by itself.
+
+- Backwriter Source Authority is
+  `09bb6c424081594bd86a95f04345b786ef9b46b6`, source-ready `0.2.6`.
+- Server R2 commit is `30c005f9dcdff73103e9151d329c0bcfe9b7f022`, pushed
+  non-force from `ea9cdcbb565931218826aad988cbb6cafd64f151`. Both repositories
+  were reported at `HEAD == origin/main` with clean worktrees and indexes.
+- Installer acceptance is exact `0.2.5` plus `0.2.6`; `0.2.4` and earlier,
+  altered, reordered, duplicate, and mixed manifests are rejected.
+- POSIX installer: 14,200 bytes, SHA-256
+  `fae43945969beb574133ffae7d378cd402a11702b69fd861d9cd0ba7c0393337`.
+- PowerShell installer: 15,802 bytes, SHA-256
+  `dd865fe62f67b9e4b46978ae40e72b7a0d56eac527b3706b4dae44c4ecd28239`.
+- Publisher SHA-256:
+  `0cb9359913462c447465bc2ee2c10ab80f925c274ba5843e4e62635bb0d06853`.
+  It prepares the exact 68-to-76-file transition: eight versioned files,
+  POSIX installer, PowerShell installer, and manifest last. All 64 previous
+  versioned files and `install.cmd` are preserved. Prefix resume, eleven
+  failure boundaries, idempotence, collisions, mutations, symlink, mode, and
+  owner failures were verified.
+
+Canonical private artifacts were regenerated:
+
+| Target | Bytes | SHA-256 |
+| --- | ---: | --- |
+| Linux x86_64 | 460219 | `cb7783fdfdf726508f884d16e254d8c8daa1eb7a5640c249ce534f5b5103c89a` |
+| macOS arm64 | 358257 | `997b18ed3c8ad43ca9a47e061f1e382ff5302d22a76fe45a029af524ba1335ba` |
+| macOS x86_64 | 392024 | `9aa645bf5a2605f0eed10ccee21e8ddb40f639304f2990ea634ccfadb4f9a6dd` |
+| Windows x86_64 | 906101 | `f90d0f8a9d6779d343db178c37879d30e2ce8bfb2d9d6b85526336d3d7221d50` |
+
+The canonical manifest is 876 bytes with SHA-256
+`47001acd4831954a5106a3aac5b9fdfe0b36791144f355f52523cd0d0eb7d5f1`.
+
+Reported verification: installer 45, new publisher 58, previous publisher 57,
+CMD static 12, and Origin 13 passing cases; Origin offline metadata/tree,
+fmt/check/clippy/release passed. Linux Help/Version, Search v2/v5, View v2,
+Check v2, stdin Edit, shell refs/Replace, ordered Check, and stale
+nonpublication passed. GNU/musl 285-test results were reused because source
+was byte-identical after R1. macOS/Windows were cross-built, not run natively;
+PowerShell was statically checked because `pwsh` was absent. Private bundles,
+fixtures, caches, and task-local cargo-zigbuild were removed.
+
+The nine changed server paths were `AGENTS.md`, `README.md`,
+`backwriter/install.sh`, `backwriter/install.ps1`,
+`backwriter/release/README.md`, `backwriter/publish/README.md`,
+`backwriter/publish/publish-0.2.6.sh`, `backwriter/tests/install.sh`, and
+`backwriter/tests/publish-0.2.6.sh`.
+
+Live publication was not performed. The reported public root remained the
+closed 68-file `0.2.5` tree with the original manifest SHA-256
+`2c8f19af7ee98be211e788f1e538a3bc476b554c614b6f07373572f16d09c2b7`.
+Origin/cloudflared PID, InvocationID, restart counts, and the
+`127.0.0.1:8080` listener were unchanged. Reported duration was about
+32 minutes. The next proposed operation is separately scoped R3 publication.

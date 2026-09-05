@@ -76,3 +76,67 @@ Do not change v5/v6 identity, Search matching/traversal/order/tier/storage,
 `SearchOutcome`, `bw.cli.search.v2`, Search output/performance, raw Session
 semantics, persistence, history, relocation, watcher, retry, transactions,
 CAS/locks, rollback, installers, artifacts, publication, or live operations.
+
+## Release follow-up plan — R3 prompt preparation, 2026-09-05
+
+This appendix plans separate release work after Gates 1–8; it does not change
+their original exclusions or claim publication has happened. The appended
+[owner handoff](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-source.md#later-owner-handoff--release-r2-complete-2026-09-05)
+preserves the R2 report. No release operation is run while drafting the prompt.
+
+**Repository verified:** server is clean at
+`30c005f9dcdff73103e9151d329c0bcfe9b7f022`; Backwriter is clean at
+`09bb6c424081594bd86a95f04345b786ef9b46b6`; both match local `origin/main`.
+The actual installer and publisher SHA-256 values match the owner's handoff.
+The server's release README pins the source revision and four artifacts. Its
+publisher README and `publish-0.2.6.sh` accept a canonical private bundle plus
+the 68-file tree, a canonical interrupted prefix, or the completed 76-file
+tree. The script validates before mutation and publishes the manifest last.
+
+**Owner-reported, not freshly probed during prompt preparation:** live remains
+`0.2.5`, with 68 files and unchanged services. The execution agent must verify
+that precondition before any publication. Tracked source/roadmap changes from
+this preparation are documents only, left unstaged; they must be reviewed and
+committed under the execution prompt's named Git scope before builders require
+a clean source checkout. Unrelated changes must be preserved.
+
+**Proposed execution order:**
+
+1. Read both repositories' current guards, the release and publisher contracts,
+   and this handoff. Record code hashes, the live file/directory inventory and
+   metadata, current manifest, and service PID/InvocationID/restart/listener.
+   Preserve the locally managed tunnel and existing ingress configuration.
+2. Use only the pinned builders and generator to reconstruct one task-local
+   canonical bundle. Match all artifact, sidecar, manifest, and installer
+   bytes; first execute the existing publisher against a private copy of the
+   68-file tree. Unexplained mismatches stop publication, not weaken validation.
+3. Under an explicit R3 execution request, run the unchanged
+   `/home/NOEEZ/server/backwriter/publish/publish-0.2.6.sh` with the verified
+   absolute bundle and `/var/lib/pentagration/backwriter/public` as root. Allow
+   only the eight versioned files and two installers plus manifest transition.
+   Re-run once for idempotence; preserve all 64 previous versioned files and
+   CMD metadata. A failed operation permits only the publisher's verified
+   prefix-resume path, never manual pointer repair or rollback.
+4. Require 76 regular files, root-owned directories mode `0755`, files `0644`,
+   and no symlinks, unknown files, or staging. Compare complete file metadata
+   before and after the idempotent run. Probe every path with GET and HEAD on
+   loopback and public HTTPS: bytes/SHA, length, MIME, bodyless HEAD, immutable
+   versioned caching, no-store pointers/errors, and root/unknown 404.
+5. Use isolated task-local HOME directories for fresh install, the actual
+   public `0.2.5` binary's Update, and `0.2.6` reinstall. Compare installed
+   binaries with the canonical Linux member and test help, stdin, v5 values,
+   receipts, shell refs, ordered Check, CRLF, and stale rejection. Reuse exact
+   unchanged R1/R2 suite evidence, with provenance, and run changed or
+   unproven checks; do not repeat blind trials or performance benchmarks.
+6. After endpoint and installation success, align active release documentation
+   to closed `0.2.6`, exact 76 files, and `0.2.5`/`0.2.6` acceptance. Keep
+   Source Authority `09bb6c4...` and historical Gate/R1/R2 states explicit.
+   Commit/push only named documentation paths, then verify clean source,
+   immutable production/deployment code, unchanged service state, and cleanup.
+
+**Completion and risks:** publication plus exact endpoint/install/update
+evidence establishes release closure. No native macOS/Windows/PowerShell/CMD
+execution is implied by cross-builds or HTTP byte equality. Existing publisher
+concurrency-lock/rollback/fsync/crash-durability limitations remain. R3 adds no
+runtime code, release framework, service restart, DNS/tunnel change, credential
+content access, real-user HOME change, tag, GitHub Release, or crates.io work.
