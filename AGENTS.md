@@ -13,7 +13,7 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.2.6 operational Adapter authority — Gates 1–8 source-ready, unpublished
+## 0.2.6 operational Adapter authority — Gates 1–8 and release complete
 
 The `0.2.6` operational Adapter and verification-contraction authority is
 documentation-only at Gate 1, command-local help at Gate 2, actionable
@@ -52,16 +52,17 @@ identity, relocation, history,
 retry, transaction, CAS/lock, rollback, v6, or Search optimization. The
 [0.2.6 tracker](docs/tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
 is execution authority; its source note and roadmap are preserved evidence.
-Gate 8 is GO: it changes only the source Cargo package and `bw version` to
-`0.2.6`, its exact KAT, and current authority. Production Rust and the v5 wire
-remain byte-identical to Gate 6. Official artifacts, installers, manifest,
-Update target, and the exact 68-file public distribution remain closed `0.2.5`.
-Because Update has no version comparison, a source-built `0.2.6` `bw update`
-still installs or reinstalls that official `0.2.5` release until separately
-authorized release work.
+Gate 8 made source Cargo and `bw version` `0.2.6` while official distribution
+was still `0.2.5`. Production Rust and the v5 wire remain byte-identical to
+Gate 6. R3 release closure is complete: Source Authority
+`09bb6c424081594bd86a95f04345b786ef9b46b6` supplies published and closed
+`0.2.6`. Official artifacts, installers, manifest, and Update now select
+`0.2.6` in the exact 76-file tree. Installers accept only exact `0.2.5` and
+`0.2.6` manifests. Update still performs no version comparison. Production
+Rust, Cargo, tests, toolchain, and v5 wire are unchanged by release closure.
 
 Search, View, Pick, Anchor, and Check have Rust implementations. The
-source-ready unpublished `0.2.6` checkout retains the closed `0.2.5` v5
+published and closed `0.2.6` checkout retains the closed `0.2.5` v5
 Anddress algebra, wire, shared
 structural cursor, direct Search result collection, geometry-driven
 single/batch View, and View-free one-shot Edit, with source-state-only Check
@@ -322,8 +323,8 @@ Check, Anchor, Edit, Apply, result-binding, Data, Search/View/Check/Edit JSON, r
 View, Version, Update, and `0.2.3` Patch Box Adapter slice, every
 other capability remains deferred Adapter work. `bw update` is an explicit
 user-invoked installer handoff with no version comparison. It installs or
-reinstalls the current official `0.2.5` release through installers that accept
-only the exact closed `0.2.4` and current `0.2.5` manifests; it
+reinstalls the current official `0.2.6` release through installers that accept
+only the exact closed `0.2.5` and current `0.2.6` manifests; it
 creates no daemon, background updater, retry authority, or version-comparison
 engine.
 

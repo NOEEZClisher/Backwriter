@@ -1,6 +1,6 @@
 # Backwriter CLI V1
 
-## 0.2.6 operational Adapter authority — Gates 1–8 source-ready, unpublished
+## 0.2.6 operational Adapter authority — Gates 1–8 and release complete
 
 The planned operational target explains what to type, what happens, and what
 comes back. Gate 1 changes no command, parser, output, error, version, or
@@ -41,9 +41,10 @@ Check is bounded Adapter work under the
 not new Core wire, identity, persistence, or lifecycle behavior. Gate 7 adds no
 CLI parser or output change; it records only the candidate/N-1 and public-use
 evidence. Gate 8 is GO: only source Cargo, `bw version`, its KAT, and active
-status become `0.2.6`; Core/Runtime/Adapter behavior stays fixed. The official
-installer, manifest, Update target, and public distribution remain closed
-`0.2.5`, so unguarded Update from source-built `0.2.6` may install `0.2.5`.
+status became `0.2.6`; Core/Runtime/Adapter behavior stays fixed. R3 now closes
+the matching official artifacts, installers, manifest, and 76-file public
+distribution. Update installs or reinstalls official `0.2.6` without version
+comparison.
 
 ## 0.2.5 encoder reuse and release boundary
 
@@ -102,7 +103,7 @@ documents in the authority-reading order.
 The `0.2.2` one-shot Anddress-first Edit execution contract remains closed and
 published Adapter authority. Patch Box Gates 1–8 remain published and closed
 `0.2.3` evidence. The current official installer, Update target, and closed
-distribution are `0.2.5` and embed the v5 objects defined here.
+distribution are `0.2.6` and embed the v5 objects defined here.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -176,15 +177,15 @@ capability workflow.
 `bw version` writes exactly:
 
 ```text
-Backwriter 0.2.5
+Backwriter 0.2.6
 ```
 
 including the final LF and no other successful output.
 
 `bw update` downloads the current platform's official installer over HTTPS and
 delegates installation to it. The current official manifest selects the closed
-public `0.2.5` distribution. The installer accepts only the exact `0.2.4` and
-`0.2.5` manifests; `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired. Update does not
+public `0.2.6` distribution. The installer accepts only the exact `0.2.5` and
+`0.2.6` manifests; `0.2.4`, `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired. Update does not
 publish a release and performs no local version comparison, retry,
 daemon or background update, and adds no compatibility alias. On Unix it uses a
 private temporary directory, runs the downloaded `install.sh` synchronously
@@ -195,8 +196,8 @@ parent before replacing `bw.exe`. A Windows parent status of `0` means only that
 handoff started successfully; the child owns final installer output, final
 status, replacement, and bootstrap cleanup.
 
-The published `0.2.5` command has no version-comparison guard. Invoking Update
-therefore installs or reinstalls the official `0.2.5` release.
+The published `0.2.6` command has no version-comparison guard. Invoking Update
+therefore installs or reinstalls the official `0.2.6` release.
 This boundary does not authorize a guard, retry, rollback, alternate installer,
 or publication.
 

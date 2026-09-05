@@ -13,7 +13,7 @@ Adapter-owned Version and Update.
 
 ## Quick start
 
-Install the closed official `0.2.5` release with the command for your
+Install the closed official `0.2.6` release with the command for your
 platform.
 
 Linux, macOS, or WSL:
@@ -48,10 +48,10 @@ not already on `PATH`.
 bw version
 ```
 
-The closed official `0.2.5` build prints exactly:
+The closed official `0.2.6` build prints exactly:
 
 ```text
-Backwriter 0.2.5
+Backwriter 0.2.6
 ```
 
 ### Update
@@ -61,32 +61,33 @@ bw update
 ```
 
 `bw update` downloads and delegates to the current official installer. The
-current manifest selects the closed `0.2.5` distribution. The installer
+current manifest selects the closed `0.2.6` distribution. The installer
 reads that manifest, verifies the selected artifact, and installs or reinstalls
 that manifest version only after validation succeeds. It does not run a
 background updater or compare release versions. The installer accepts only the
-exact immutable `0.2.4` manifest and current `0.2.5` manifest; `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable
+exact immutable `0.2.5` manifest and current `0.2.6` manifest; `0.2.4`, `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable
 `0.1.0`, and beta.3 acceptance is retired. The command still performs no
 version comparison and adds no version guard.
 
 The product is Backwriter. The source Cargo package and library crate are
-`backwriter` at source-ready unpublished `0.2.6`; a source-built `bw version`
+`backwriter` at published and closed `0.2.6`; a source-built `bw version`
 prints `Backwriter 0.2.6`. The sole canonical executable and external Adapter
 command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
-official installer remains separate and selects the closed public `0.2.5`
+official installer selects the closed public `0.2.6`
 distribution.
 
 Production `src/**` remains byte-identical to Gate 6 candidate
-`22e6df23755cdc80b299b77be313d307b67bc37f`. Official artifacts, installers,
-manifest, Update target, and the exact 68-file public distribution remain
-published and closed `0.2.5` from Source Authority
-`e4022fc073e9df3928e1c3817b266ce92121a03c`. Update performs no version
-comparison, so source-built `0.2.6` still installs or reinstalls that official
-`0.2.5` release until a separately authorized release closes the gap.
+`22e6df23755cdc80b299b77be313d307b67bc37f`.
+R3 release closure is complete: Source Authority
+`09bb6c424081594bd86a95f04345b786ef9b46b6` supplies published and closed
+`0.2.6`. Official artifacts, installers, manifest, and Update now select
+`0.2.6` in the exact 76-file tree. Installers accept only exact `0.2.5` and
+`0.2.6` manifests. Update still performs no version comparison. Production
+Rust, Cargo, tests, toolchain, and v5 wire are unchanged by release closure.
 
 ## Anddress-first editing
 
-The default source-checkout replacement flow is:
+The default replacement flow is:
 
 1. Run `bw --json search ...`.
 2. Select one occurrence from `occurrences` and pass its exact embedded v5
@@ -317,9 +318,9 @@ shell-startup-file change.
 GitHub is a public source and documentation mirror, not the distribution
 authority. The complete beta.1, beta.2, beta.3, stable `0.1.0`, `0.2.0`, and
 `0.2.1` and `0.2.2` version directories remain unchanged and immutable. The
-complete `0.2.3`, `0.2.4`, and `0.2.5` version directories are immutable; the
-`0.2.5` release is closed. The active public tree has exactly 68 files, and
-the current installers and manifest select `0.2.5`. Any later platform or
+complete `0.2.3`, `0.2.4`, `0.2.5`, and `0.2.6` version directories are immutable;
+the `0.2.6` release is closed. The active public tree has exactly 76 files,
+and the current installers and manifest select `0.2.6`. Any later platform or
 version requires separate Owner authority. Linux arm64, tags, GitHub Releases,
 crates.io publication, and background or automatic update remain outside the
 completed publication. The earlier `0.2.4` publication added its eight
@@ -327,7 +328,9 @@ versioned files and replaced only the two installers and manifest pointers
 without replacing any of the 48 prior versioned files or the CMD Adapter. Its
 second publisher run reused all 60 files without metadata change. The `0.2.5`
 publication then added its eight versioned files, replaced the two installers
-and manifest pointers, and reused all 68 files on its second run.
+and manifest pointers, and reused all 68 files on its second run. R3 adds the
+eight `0.2.6` files and replaces the two installers and manifest last; its
+second run reuses all 76 files without byte or metadata change.
 
 ## Architecture
 

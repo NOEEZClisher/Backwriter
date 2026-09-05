@@ -1,10 +1,10 @@
 # Backwriter 0.2.6 Operational Adapter & Verification Contraction
 
-Status: Gates 1–8 complete — source-ready unpublished `0.2.6`; authority, command-local help, actionable
+Status: Gates 1–8 and separately authorized R1–R3 release complete — closed `0.2.6`; authority, command-local help, actionable
 errors/stdin, the Line body/advanced exact-extent boundary, shell-local
 references plus high-level Replace, ordered batch Check, and verification/
-documentation contraction. Source Cargo and `bw version` are `0.2.6`; `0.2.5`
-remains the closed official installer, artifact, and public distribution. This tracker is
+documentation contraction. Source Cargo, `bw version`, official installers,
+artifacts, manifest, and the 76-file public distribution now select `0.2.6`. This tracker is
 execution authority; its companion [source note](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-source.md)
 and [roadmap](2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction-roadmap.md)
 remain preserved planning evidence.
@@ -190,7 +190,7 @@ consumers. `verification.md` removes 13 superseded Gate 1–6 lines in favor of
 the current controls and tracker evidence. Production Rust, Cargo, lockfile,
 and toolchain remain byte-identical to Gate 6.
 
-## Gate 8 — source readiness — GO
+## Gate 8 — source readiness — GO (historical source-only decision)
 
 The decision matrix is GO. Top-level and seven command Help pairs, their fixed
 section order and executable examples, usage exit 2, execution exit 1, and
@@ -207,3 +207,53 @@ public publication, and live operations remain separately authorized. The
 official installer, manifest, Update target, and public distribution remain
 closed `0.2.5`; Update has no version comparison and may install that release
 from a source-built `0.2.6` until a later release closure.
+
+## 0.2.6 R3 release closure — GO, 2026-09-05
+
+The unchanged pinned builders and generator reconstructed the canonical twelve-file
+bundle from Source Authority `09bb6c424081594bd86a95f04345b786ef9b46b6`.
+All four artifact hashes and sizes, sidecars, macOS UUIDs, and installer hashes
+match server R2 `30c005f9dcdff73103e9151d329c0bcfe9b7f022`. The manifest is
+876 bytes, SHA-256 `47001acd4831954a5106a3aac5b9fdfe0b36791144f355f52523cd0d0eb7d5f1`.
+The unchanged publisher first passed a private 68-to-76-file transition, then
+ran once as root against the live root: eight versioned files, POSIX installer,
+PowerShell installer, and manifest last. One idempotent rerun preserved all 76
+files' bytes, device/inode, owner, mode, size, mtime, and ctime. All 64 earlier
+versioned files and `install.cmd` retained their before snapshot. The final tree
+has 76 regular files and 11 directories including its root, directories `0755`
+and files `0644`, all root-owned, with no symlink, unknown entry, or staging.
+
+Canonical sorted JSON snapshot SHA-256 is
+`a002515b938f0e8611ec0602ab83d055f1bad232a2f35c886e3fa32d1ce6dc49`
+before publication and
+`c0224fc082100436673a4d4e6d8c49a2d9ce655e4d18e8c996c7584f5d1c17b0`
+both after publication and after reuse. It covers the file evidence above,
+directory names, service identity/restarts, and listener. Origin PID 629 and
+cloudflared PID 998 retain InvocationIDs
+`cb7eb656fe5a4b8bac0f378ac8a84cf6` and
+`6d43980020c142099d9003c94624b0ef`, zero restarts, and `127.0.0.1:8080`.
+
+Loopback and public HTTPS each pass 76 GET and 76 HEAD requests plus four
+root/unknown GET/HEAD controls: 312 checks total, exact SHA/length,
+`application/octet-stream`, immutable versioned caching, no-store pointers and
+404s, and zero actual HEAD body bytes. The endpoint evidence SHA-256 is
+`829bf154b8a03367605c538b38f1062e7602bdd38e1ccc1377b4ada5ec597136`.
+Isolated fresh install, the actual public `0.2.5` binary's Update, and `0.2.6`
+reinstall produce exact Installed/Updated `0.2.6` output and byte-identical
+canonical Linux binaries. Seventeen recorded installer/CLI commands cover
+Help/Version, Search v2/v5, stdin Edit receipt, fresh single/batch View,
+ordered duplicate Check v2, shell refs/Replace/fresh Check, CRLF, old-ref
+NotCurrent and stale nonpublication, and raw Session Apply. The final source
+SHA-256 is `cc326fa86d3e5924c488283058e530b9413d6acec0f4f78a954882f85f92edbf`.
+
+Unchanged source/code/input evidence reuses GNU/musl 285 tests each, installer
+45, publisher 58, CMD 12, and Origin 13; these are prior passing suites, not
+newly executed R3 suite runs. R3 changes only release documentation and no
+production Rust, Cargo, tests, toolchain, builder, installer, publisher, service,
+Cloudflare, DNS, credential, or actual user HOME/PATH/startup state. Native
+macOS/Windows/PowerShell/CMD execution remains unverified. Existing lack of
+publisher locking, rollback, fsync, and crash-durability guarantees is unchanged.
+
+The task-local bundle, temporary build tool/output, isolated HOME directories,
+fixtures, and raw verification files were removed after recording their evidence.
+Both repositories retain no new untracked output or `.artext` state.

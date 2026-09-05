@@ -1,6 +1,6 @@
 # Backwriter Current State
 
-## 0.2.6 operational Adapter and verification contraction — Gates 1–8 source-ready, unpublished
+## 0.2.6 operational Adapter and verification contraction — Gates 1–8 and release complete
 
 Gate 1 records the approved Adapter boundary, Gate 2 closes command-local help,
 and Gate 3 closes actionable usage failures and one-shot Edit stdin Content.
@@ -12,9 +12,15 @@ blind, trained-use, and external verification in the
 The governing rule is **explain what to type, what happens, and what comes
 back**. Gate 6 adds only the narrow ordered Check Runtime seam and Adapter
 writers; version, artifact, installer, publication, v5 wire, Search, and other
-capability meanings remain unchanged. Gate 8 is GO: source Cargo and `bw
-version` are `0.2.6`, while the official installers, manifest, Update target,
-and public distribution remain closed `0.2.5`.
+capability meanings remain unchanged. Gate 8 made source Cargo and `bw
+version` `0.2.6` before the separately authorized release.
+
+R3 release closure is complete: Source Authority
+`09bb6c424081594bd86a95f04345b786ef9b46b6` supplies published and closed
+`0.2.6`. Official artifacts, installers, manifest, and Update now select
+`0.2.6` in the exact 76-file tree. Installers accept only exact `0.2.5` and
+`0.2.6` manifests. Update still performs no version comparison. Production
+Rust, Cargo, tests, toolchain, and v5 wire are unchanged by release closure.
 
 `bw --help` equals `bw help`; `bw help X` equals `bw X --help` for Search,
 View, Edit, Check, Shell, Update, and Version. Each command page uses fixed
@@ -44,9 +50,8 @@ compares with `0.2.5`; inherited GNU/musl 268-test evidence and `Correct 1 /
 Safe Reject 6 / Wrong Apply 0` remain required controls. Gate 2 adds three CLI
 regressions, Gate 3 adds four, Gate 5 adds six, and Gate 6 adds three, so the
 complete GNU and musl suites each pass 285 tests. Production `src/**` remains
-byte-identical to Gate 6. Because Update has no version comparison, a
-source-built `0.2.6` `bw update` can install the closed official `0.2.5` until
-separately authorized release work closes that temporary boundary.
+byte-identical to Gate 6. R3 closes the temporary source/public version gap;
+Update now installs or reinstalls official `0.2.6` without version comparison.
 
 ## 0.2.5 performance recovery — published and closed
 
@@ -559,14 +564,14 @@ GNU target is retained for local development and tests. Target selection and
 direct build verification are complete. The external operations-owned
 distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.5` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.2.6` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses
 `aarch64-apple-darwin` at minimum 11.0 and `x86_64-apple-darwin` at minimum
 10.12. Windows uses `x86_64-pc-windows-gnu` and canonical `bw.exe`. Their
 artifacts, manual-verification checksum sidecars, expanded canonical manifest,
 POSIX and PowerShell installers, and publication are complete from Source
-Authority revision `e4022fc073e9df3928e1c3817b266ce92121a03c`. The installer verifies the
+Authority revision `09bb6c424081594bd86a95f04345b786ef9b46b6`. The installer verifies the
 manifest-authoritative SHA-256 and installs to `$HOME/.local/bin/bw`
 with a same-directory rename, without changing `PATH` or shell startup files.
 Fresh installation prints the installed version and replacement prints the
@@ -582,20 +587,20 @@ native runtime-test or native CMD claims. Linux arm64 remains unsupported, and
 no universal host compatibility is claimed. The public beta.1, beta.2, and
 beta.3 files remain unchanged and immutable. The complete stable `0.1.0`,
 `0.2.0`, `0.2.1`, `0.2.2`, `0.2.3`, and `0.2.4` version directories are
-immutable. The complete current `0.2.5` directory is immutable, its planned
-matrix is complete, and the `0.2.5` release is closed; any later platform or
+immutable, as is `0.2.5`. The complete current `0.2.6` directory is immutable,
+its planned matrix is complete, and the `0.2.6` release is closed; any later platform or
 version requires separate Owner authority. Tags, GitHub Releases, crates.io
 publication, and GitHub distribution remain outside the completed publication.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.5`; the sole canonical executable and external Adapter command are `bw`.
+`0.2.6`; the sole canonical executable and external Adapter command are `bw`.
 There is no current `backwriter` binary, alias, or wrapper. Product prose
 continues to use Backwriter, and persisted Core wire/private-path and
-distribution artifact/domain contracts keep their existing names. `0.2.5`
-publication is closed: the exact 68-file public tree retains all 56 prior
+distribution artifact/domain contracts keep their existing names. `0.2.6`
+publication is closed: the exact 76-file public tree retains all 64 prior
 versioned files and `install.cmd`, while the current installers and manifest
-select `0.2.5` and `bw update` delegates to that official installer. The
-installers accept only the exact closed `0.2.4` and current `0.2.5` manifests;
-`0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable `0.1.0`, and beta.3 acceptance is
+select `0.2.6` and `bw update` delegates to that official installer. The
+installers accept only the exact closed `0.2.5` and current `0.2.6` manifests;
+`0.2.4`, `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable `0.1.0`, and beta.3 acceptance is
 retired.
 
 ## Published 0.2.0 authority

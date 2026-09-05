@@ -1,6 +1,6 @@
 # Backwriter Protocol
 
-## 0.2.6 operational Adapter boundary — Gates 1–8 source-ready, unpublished
+## 0.2.6 operational Adapter boundary — Gates 1–8 and release complete
 
 Gate 1 changes no Core or Runtime contract. Existing `WorkspaceRuntime`
 seams are the default: one-shot Replace reuses `apply_replace`, raw `apply`
@@ -66,11 +66,12 @@ owns the remaining decisions and gates.
 
 Gate 7 changes no protocol contract. It records candidate/N-1, blind,
 trained-use, and external evidence, and documents the existing quoted Shell
-token form for whitespace-containing literals or Content. Gate 8 is GO and
-changes only source Cargo, `bw version`, its KAT, and current status to
-unpublished `0.2.6`. The public `0.2.5` installer, manifest, Update target,
-and distribution remain closed; Update has no version comparison and can
-install that official release from a source-built `0.2.6`.
+token form for whitespace-containing literals or Content. Gate 8 made source
+Cargo, `bw version`, its KAT, and status unpublished `0.2.6` while the public
+release remained `0.2.5`. R3 now closes the matching official `0.2.6`
+artifacts, installers, manifest, and 76-file distribution without changing
+Core/Runtime contracts. Update installs or reinstalls official `0.2.6` with
+no version comparison; installers accept only exact `0.2.5`/`0.2.6` manifests.
 
 ## 0.2.5 performance-recovery authority
 
@@ -215,7 +216,7 @@ The `0.2.2` Anddress-first general editing Adapter authority, minimum one-shot
 implementation, integration, source-version decision, and separate Gate 7
 publication are closed. Patch Box Gates 1–8 are published and closed `0.2.3`;
 they change no v4 identity or currentness meaning. Official artifacts,
-installers, update target, and publication are aligned at `0.2.5`.
+installers, update target, and publication are aligned at `0.2.6`.
 
 ## 0.2.0 current-observation authority
 

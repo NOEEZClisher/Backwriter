@@ -27,9 +27,10 @@ records only candidate-versus-`0.2.5` execution, public-only blind/trained use,
 and external evidence; it adds no Core or Runtime behavior. Candidate evidence compares with `0.2.5`,
 while the inherited 268-test GNU/musl result and `Correct 1 / Safe Reject 6 /
 Wrong Apply 0` remain controls. Gate 8 changes only source Cargo, `bw version`,
-its KAT, and current status. The official installer, manifest, Update target,
-and public distribution remain closed `0.2.5`; because Update has no version
-comparison, it may install that official release from a source-built `0.2.6`.
+its KAT, and current status. At Gate 8 the official distribution remained
+`0.2.5`. R3 now closes official `0.2.6` artifacts, installers, manifest, and
+the exact 76-file tree. Update installs or reinstalls `0.2.6` without version
+comparison; the installer allowlist is exact `0.2.5`/`0.2.6`.
 
 The active `0.2.5` performance recovery is governed by Principle 19 and its
 [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
@@ -70,7 +71,7 @@ single self-or-ancestor View projection, and ordered all-or-nothing batch View
 plus the Replace-only native receipt and its direct human/JSON Adapter
 projection, integrated Dummy, GNU/musl readiness, and release publication while
 leaving v4 identity and currentness unchanged. Official release state is now
-the v5 `0.2.5` distribution governed by Principle 19.
+the v5 `0.2.6` distribution, retaining Principle 19's unchanged execution.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash, length, and Line count only while its

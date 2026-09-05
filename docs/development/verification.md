@@ -9,8 +9,8 @@ and musl each pass 285 tests; `Correct 1 / Safe Reject 6 / Wrong Apply 0` is
 unchanged. Gate 8 reruns the complete GNU and musl suites at 285 tests each and
 is GO: only root Cargo/lock version, the exact Version KAT, and active status
 advance to source-ready unpublished `0.2.6`. Production Rust remains
-byte-identical to Gate 6; official artifacts, installers, manifest, Update,
-and the 68-file public distribution remain closed `0.2.5`.
+byte-identical to Gate 6; at that source gate official distribution remained
+`0.2.5`. R3 below closes the official `0.2.6` release.
 
 Gate 7 executes candidate `c78e07f242035230e8b071d583491ac633f58d29` only
 against clean exported N-1 `a9b47b06e0c4ac4c3058332f85a2885f47edd53a`.
@@ -1305,10 +1305,10 @@ Owner-authorized work then stages only the reviewed paths and repeats the
 cached diff audit before commit.
 
 The repository source package and source-built command are published and
-closed `0.2.5`; the command prints exactly `Backwriter 0.2.5` plus LF. The
+closed `0.2.6`; the command prints exactly `Backwriter 0.2.6` plus LF. The
 closed public distribution, installed release, installers, manifest, and
-Update handoff are `0.2.5`; exact `0.2.4` is the only other accepted manifest.
-Update has no version comparison and installs or reinstalls official `0.2.5`.
+Update handoff are `0.2.6`; exact `0.2.5` is the only other accepted manifest.
+Update has no version comparison and installs or reinstalls official `0.2.6`.
 Prior `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, `0.1.0`, and beta
 versioned files remain immutable. The closed `0.2.1`
 source suite passed 236 GNU-host and 236 musl Rust tests; the closed `0.2.0`
@@ -1383,3 +1383,19 @@ displaying through borrowed outcomes. Session Edit/Apply regressions cover all
 five Edit variants, all four Position forms, exact source bytes, explicit Edit
 binding cloning and repeated Apply reuse, invalid forms, and continued execution
 after errors without CLI recovery.
+
+## 0.2.6 R3 release closure — GO
+
+The [tracker's R3 evidence](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md#026-r3-release-closure--go-2026-09-05)
+records pinned artifact reconstruction, the private 68-to-76-file trial,
+manifest-last live publication and one idempotent rerun, exact file metadata
+fingerprints, and unchanged services. Loopback/public GET/HEAD and error
+boundaries pass 312 checks, including actual empty HEAD bodies. Isolated fresh
+install, public `0.2.5` Update, `0.2.6` reinstall, and 17 recorded installer/CLI
+commands pass exact binary, output, v5/receipt, CRLF, ordered Check, shell-ref,
+stale nonpublication, and raw Session controls.
+
+Production source and release code match the pinned passing inputs, so GNU/musl
+285 tests each, installer 45, publisher 58, CMD 12, and Origin 13 are reused
+prior results, not rerun suite claims. Native macOS/Windows/PowerShell/CMD and
+publisher lock/rollback/fsync/crash-durability guarantees remain absent.

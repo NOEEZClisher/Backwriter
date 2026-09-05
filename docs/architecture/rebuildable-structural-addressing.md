@@ -1,6 +1,6 @@
 # Backwriter Anddress and Exact Line Model
 
-## 0.2.6 Adapter boundary — Gates 1–8 source-ready, unpublished
+## 0.2.6 Adapter boundary — Gates 1–8 and release complete
 
 The operational Adapter target changes no Anddress algebra, v5 wire, source
 identity, exact geometry, validation, encoding, or projection. One-shot Line
@@ -19,7 +19,9 @@ continuity claim.
 Gate 7 adds verification evidence and public Shell quoting guidance only. Gate
 8 is GO and changes source Cargo, `bw version`, its KAT, and active status to
 unpublished `0.2.6`; it does not change v5 values, encoding, numeric
-references, or address algebra. Official distribution remains closed `0.2.5`.
+references, or address algebra. At Gate 8 official distribution remained
+`0.2.5`; R3 now closes matching official `0.2.6` publication without changing
+this address authority.
 
 ## 0.2.5 encoding, attachment, and currentness boundary
 
