@@ -1,9 +1,10 @@
 # Backwriter Current State
 
-## 0.3.0 target — Gates 1–3 complete, Gates 4–5 pending
+## 0.3.0 target — Gates 1–4 complete, Gate 5 pending
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
-closes documentation authority, focused namespace and direct shell View implementation. Cargo/CLI and official
+closes documentation authority, focused namespace, direct shell View, Help and
+private CLI module/evidence contraction. Cargo/CLI and official
 distribution remain published and closed `0.2.6`, with pinned N-1 Source
 Authority `09bb6c424081594bd86a95f04345b786ef9b46b6`. No `0.3.0` readiness
 revision is assigned, and this work authorizes no artifact or publication.
@@ -19,9 +20,11 @@ records show input/fresh refs, byte length and exact Content, including normal
 absent positions. CLI authority fixes append-before-write and terminal Stream
 semantics. One-shot/raw/JSON outputs and all v5/currentness rules stay fixed.
 
-Gate 2 namespace/BOX 23 and Gate 3 focused verification are complete. Next is Gate 4
-help/private modules/evidence-preserving verification contraction, and Gate 5
-final GNU/musl and four-arm N-1/N readiness. No implementation or version change
+Gate 4 passes 116 focused GNU tests and 33 release smoke invocations. It preserves
+all 74 CLI test names across one integration crate and all non-Help function
+bodies across private modules. This is not source byte equality with N-1 or a
+full product suite. Next is Gate 5 final GNU/musl and four-arm N-1/N readiness.
+No implementation or version change
 occurs at Gate 1; Gate 2 changes no version or CLI output. Source and roadmap
 notes are preserved planning evidence. Full GNU/musl suites remain Gate 5 work;
 the existing 285-test results are baseline evidence, not post-Gate-2 results.
@@ -49,8 +52,9 @@ R3 release closure is complete: Source Authority
 Rust, Cargo, tests, toolchain, and v5 wire are unchanged by release closure.
 
 `bw --help` equals `bw help`; `bw help X` equals `bw X --help` for Search,
-View, Edit, Check, Shell, Update, and Version. Each command page uses fixed
-section order and returns before Runtime/source I/O or Update download. Usage
+View, Edit, Check, Shell, Update, and Version. Each command page returns before
+Runtime/source I/O or Update download. Gate 4 removes the historical uniform
+section-order requirement and adds shell-only Pick/Anchor/Apply/Data topics. Usage
 errors use a stable code, cause, directly extracted canonical command usage,
 and command help hint without a top-level help dump. Edit Content is exactly one
 argv operand or the exclusive `--stdin` selector; it validates the address,
@@ -75,8 +79,9 @@ existing Check seam meanings remain fixed. Candidate execution
 compares with `0.2.5`; inherited GNU/musl 268-test evidence and `Correct 1 /
 Safe Reject 6 / Wrong Apply 0` remain required controls. Gate 2 adds three CLI
 regressions, Gate 3 adds four, Gate 5 adds six, and Gate 6 adds three, so the
-complete GNU and musl suites each pass 285 tests. Production `src/**` remains
-byte-identical to Gate 6. R3 closes the temporary source/public version gap;
+complete GNU and musl suites each passed 285 tests at the `0.2.6` boundary.
+The published Source Authority's `src/**` is byte-identical to its Gate 6,
+not to the later `0.3.0` checkout. R3 closed the temporary source/public version gap;
 Update now installs or reinstalls official `0.2.6` without version comparison.
 
 ## 0.2.5 performance recovery — published and closed

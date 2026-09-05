@@ -76,8 +76,14 @@ command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
 official installer selects the closed public `0.2.6`
 distribution.
 
-Production `src/**` remains byte-identical to Gate 6 candidate
-`22e6df23755cdc80b299b77be313d307b67bc37f`.
+The published `0.2.6` Source Authority's `src/**` is byte-identical to its Gate 6
+candidate `c78e07f242035230e8b071d583491ac633f58d29`; that claim does not cover
+this later checkout. Unpublished `0.3.0` Gates 1–4 add the private namespace
+boundary, complete direct shell View, discoverable Help and private CLI modules.
+Cargo and `bw version` still report `0.2.6`; readiness and release remain pending.
+Use `bw help shell` for short-reference Search/View/Replace/Check and
+`bw help pick`, `bw help anchor`, `bw help apply`, or `bw help data` for advanced
+raw Session topics. These Help topics add no one-shot capability execution.
 R3 release closure is complete: Source Authority
 `09bb6c424081594bd86a95f04345b786ef9b46b6` supplies published and closed
 `0.2.6`. Official artifacts, installers, manifest, and Update now select

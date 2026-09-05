@@ -1,6 +1,6 @@
 # Backwriter CLI V1
 
-## 0.3.0 direct shell View — Gate 3 complete; help remains Gate 4
+## 0.3.0 direct shell View and Help — Gates 3–4 complete
 
 Owner-approved D1/D2 are implemented in this unpublished checkout, not in
 published `0.2.6`. The
@@ -61,22 +61,24 @@ kinds; Some uses one common upward kind. This is a source-breaking Rust API
 change: previous explicit callers must pass Some(kind). There is no overload,
 compatibility facade or new executor. Single View is unchanged. One-shot batch
 still requires JSON and explicit `--as`, and raw named Session keeps single
-View; their grammar and output bytes do not change. Help constants remain
-unchanged until Gate 4, so they do not yet describe the new direct framing.
+View; their grammar and output bytes do not change. Gate 4 Help describes the
+implemented direct framing without changing non-Help execution.
 
-Gate 4 help must expose direct shell Search/View/Replace/Check, numeric and
+Gate 4 Help exposes direct shell Search/View/Replace/Check, numeric and
 named refs, quoting, Content plus fresh-ref output, Line body-only replacement,
 Current-only Check slots, and old same-source staleness. Fixed numeric examples
-include their producing commands and are executed as complete examples.
+include their producing commands and pass as complete examples.
 Advanced Pick/Anchor/Apply/Data topics explain existing raw Session operands,
 bindings, examples, output and failures, without adding one-shot execution.
 Keep one canonical usage source for errors and help/version before Runtime,
 download and private IO. Concise topics need no empty ten-section template.
 
-Move existing CLI responsibilities into private modules only in Gate 4; no new
-parser, public crate, executor, generic output trait, factory or forwarding-only
-facade. Test splitting is conditional and stays within one CLI integration
-crate with shared fixtures and all distinct structural/failure controls.
+Gate 4 moves existing responsibilities into private help, shell, output and
+error modules, leaving entry/one-shot dispatch and platform Update in bw.rs.
+It adds no parser, public crate, executor, generic output trait, factory or
+forwarding-only facade. Help/Edit/View/Check/Shell tests are child modules of
+one CLI integration crate with shared fixtures and all 74 existing test names.
+Independent Help KATs remain test-owned rather than reading production constants.
 One-shot EOF stdin and raw Session remain; direct shell EOF stdin is excluded.
 
 ## 0.2.6 operational Adapter authority — Gates 1–8 and release complete
@@ -90,12 +92,20 @@ Gate 5 adds shell-local numeric references plus high-level Replace, Gate 6
 adds ordered batch Check, and Gate 7 closes its verification/documentation
 contraction.
 Top-level help covers only global
-syntax, capabilities, and additional help. Command help uses `NAME`, `USAGE`,
-`DESCRIPTION`, `ARGUMENTS`, `OPTIONS`, `WHAT HAPPENS`, `OUTPUT`, `EXAMPLES`,
-`FAILURES`, and `SEE ALSO`, with `bw help X` equal to `bw X --help` and
-executable examples. `bw --help` equals `bw help`; `bw help X` equals `bw X
+syntax, commands, and additional help. The original ten-section template is
+historical: current command Help uses only useful sections, with one canonical
+USAGE section reused by errors and executable examples. `bw --help` equals
+`bw help`; `bw help X` equals `bw X
 --help` for Search, View, Edit, Check, Shell, Update, and Version. These paths
 return before Runtime/source I/O and Update download.
+
+`bw help pick`, `bw help anchor`, `bw help apply` and `bw help data` describe
+only the existing advanced raw Session. Their top-level execution (including
+`bw pick --help` and the corresponding other capabilities) remains the existing
+one-shot-unavailable usage error. Help topics do not grant execution authority.
+The direct shell example starts with a single CRLF needle Line and creates
+every numeric ref it uses: Search @0, projected Paragraph @1, Replace @2,
+Current Check @3 and final View @4. The old @0 Check is NotCurrent after Replace.
 
 Usage errors now write `error[stable.code]`, cause, command-local canonical
 usage, and an exact help hint to stderr with exit `2` and no stdout; execution
@@ -204,7 +214,7 @@ executable. The repository provides no `backwriter` binary, alias, or wrapper.
 External callers invoke `bw`, which adapts to `backwriter` Core. Product prose
 uses Backwriter; persisted `artext.backwriter-*` wire values and distribution
 artifact/domain names are unchanged contracts. Published `.artext/bw` exclusion
-and the unimplemented `0.3.0` namespace target are distinct from those names.
+and the implemented unpublished `0.3.0` namespace target are distinct from those names.
 
 CLI V1 execution has two intended forms:
 

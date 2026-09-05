@@ -14,12 +14,13 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.3.0 target — Gates 1–3 complete
+## 0.3.0 target — Gates 1–4 complete
 
-Gates 1–3 are complete in the
+Gates 1–4 are complete in the
 [five-gate tracker](docs/tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
 Cargo, CLI, and public distribution remain closed `0.2.6`; the following
-checkout implements namespace exclusion and complete direct shell View, not source readiness.
+checkout implements namespace exclusion, complete direct shell View and Help/module
+contraction, not source readiness.
 The Protocol owns the implemented Runtime-root-relative `.bw` reservation plus
 the exact legacy `.artext/bw` exclusion. No private state store was found;
 creation/read/write/spill/cleanup of such a store is N/A, not permission to
@@ -31,7 +32,7 @@ results. Owner-approved D1 changes only batch projection to
 `Option<AnddressTarget>`: None means each input's self kind, Some means a common
 upward kind. D2 closes byte-length Content framing and append-before-write slots
 with terminal Stream failure and no Drop retry. Gate 2 is namespace verification;
-Gate 3 is complete View; Gate 4 is direct/advanced help, private module relocation and
+Gate 3 is complete View; Gate 4 completes direct/advanced help, private module relocation and
 evidence-preserving verification contraction; Gate 5 is final GNU/musl and
 N-1/N readiness. Release slices require separate approval afterwards.
 Use focused development checks and reuse evidence only across the complete

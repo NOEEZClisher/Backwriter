@@ -1,6 +1,7 @@
 # Backwriter Principles
 
-The `0.3.0` target has completed authority Gate 1, namespace Gate 2 and View Gate 3 in its
+The `0.3.0` target has completed authority Gate 1, namespace Gate 2, View Gate 3
+and Help/module/evidence contraction Gate 4 in its
 [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
 Cargo and public distribution remain closed `0.2.6`. A private reservation is
 not a storage engine: `.bw` and the legacy exact exclusion must neither cause
@@ -11,7 +12,7 @@ executor. Byte framing and append-before-write expose existing results, not a
 new wire, observation or delivery guarantee. Reuse actual consumers, remove proven duplicate presentation,
 and retain every unique safety boundary. Verification reuse requires the whole
 test/build input boundary, not just production equality; current policy and
-unique historical evidence must survive later documentation contraction.
+unique historical evidence remain preserved through documentation contraction.
 
 The active `0.2.6` operational Adapter and verification-contraction target is
 governed by the [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).

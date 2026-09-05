@@ -3,7 +3,7 @@
 ## 0.3.0 namespace — Gate 2 implemented in the checkout
 
 This target supplements the closed `0.2.6` implementation described below;
-Gates 1–3 are complete, not source readiness. Published `0.2.6` excludes `.artext/bw` and does
+Gates 1–4 are complete, not source readiness. Published `0.2.6` excludes `.artext/bw` and does
 not implement a private state store. The `0.3.0` target reserves `.bw` at the
 same accepted Runtime workspace root, not at an admission-root-relative,
 nested-workspace, HOME, or new environment-selected base. It excludes both
@@ -40,7 +40,7 @@ The v5 fields/wire/hash domains, workspace coordinate, source SHA-256/length/
 `sourceLineCount` currentness (including false-count `NotCurrent`), Search
 algorithm/order/multiplicity/output, Apply publication, Anchor reflection and
 Host proof remain unchanged. Complete shell View is implemented under the
-[CLI authority](backwriter-cli-v1.md#030-direct-shell-view--gate-3-complete-help-remains-gate-4):
+[CLI authority](backwriter-cli-v1.md#030-direct-shell-view-and-help--gates-34-complete):
 it displays returned Content, not another observation or a new Core result.
 Raw/JSON View, exact File/Paragraph Content, Line body-only replacement and
 terminator preservation, raw Session and one-shot stdin remain supported.

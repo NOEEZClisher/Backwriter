@@ -3,7 +3,7 @@
 ## Active target: 0.3.0 independent namespace and complete shell View
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
-records Gates 1–3 as complete. Its source note and grounded roadmap remain
+records Gates 1–4 as complete. Its source note and grounded roadmap remain
 unchanged planning evidence; Protocol, address model, CLI and verification own
 the reconciled target. Closed `0.2.6` stays current.
 
@@ -16,7 +16,7 @@ the reconciled target. Closed `0.2.6` stays current.
    optional projection reuses one batch for mixed-kind plural self-View.
 4. Gate 4: direct/advanced help, existing CLI private-module relocation,
    conditional test modules within one CLI integration crate, and verification
-   contraction preserving current rules and unique historical evidence — pending.
+   contraction preserving current rules and unique historical evidence — complete.
 5. Gate 5: final GNU/musl candidate, pinned `0.2.6` N-1 versus N, four-arm
    Dummy/Genie with an independent four-file oracle, and readiness — pending.
    Subsequent artifact/installer/publication slices require separate approval.
@@ -53,7 +53,8 @@ one-shot JSON and direct shell Check. Gate 7 records candidate/N-1, blind,
 trained-use, and external controls; it changes no production behavior and adds
 one README quoting example for existing Shell grammar. Raw named bindings remain
 ADVANCED. Gate 8 is GO: source Cargo and `bw version` are `0.2.6` while
-production Rust remains byte-identical to Gate 6. R3 has now completed the
+the published `0.2.6` production Rust remains byte-identical to its Gate 6;
+the later `0.3.0` checkout is outside that equality scope. R3 has completed the
 separately authorized `0.2.6` artifact, installer, manifest-last publication,
 endpoint, and isolated installation closure. Update installs official `0.2.6`
 without version comparison. Search

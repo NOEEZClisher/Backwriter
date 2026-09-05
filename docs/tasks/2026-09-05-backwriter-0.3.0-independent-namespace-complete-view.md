@@ -1,11 +1,12 @@
 # Backwriter 0.3.0 independent namespace and complete shell View
 
-## Status — Gates 1–3 complete; Gates 4–5 pending
+## Status — Gates 1–4 complete; Gate 5 pending
 
 Recorded 2026-09-05. Gate 1 closes authority, audited discrepancies, open
 decisions and acceptance. Gate 2 implements the existing namespace predicate
 and focused regressions only. Gate 3 implements Owner-approved D1/D2 after
 the preserved proposal below; its focused verification is recorded separately.
+Gate 4 completes Help, private CLI/test modules and evidence contraction.
 No version bump, readiness SHA,
 artifact, installer, publication or operational change is made. Cargo/CLI and
 official distribution remain published and closed `0.2.6`.
@@ -122,7 +123,7 @@ Multiple Replace commands are still separate publications, not a transaction.
 | 1 — authority | Complete | Consumer/N/A inventory; active target versus closed release; D1–D3; unchanged planning notes; input equality, metadata, document/Git hygiene |
 | 2 — namespace | Complete | BOX 23 focused tests using existing filter; absent/new/old-only/both roots; task-local old sentinel byte equality; new reserved file/symlink never exposed; exact components/case and ordinary sibling/nested paths; no help/version creation; existing no-follow/admission/direct-access errors; nonexistent store IO stays N/A |
 | 3 — complete shell View | Complete, approved D1/D2 | Single self and Line-to-Paragraph/File; one single/batch call; ordered duplicate input/ref/Content mapping; mixed projected/absent peers; empty/terminator/framing KATs; reserve/Runtime/write/flush failures; zero Content-only extra observation; unchanged raw/JSON/Replace; recoverable reserve overflow is not allocator-exhaustion proof |
-| 4 — help/modules/verification | Pending | Executable direct/named/quoted examples including ref producers, fresh Current slots and same-source staleness; real advanced Pick/Anchor/Apply/Data help; no new one-shot/parser/crate; private code relocation; tests split only for useful navigation within one CLI integration crate; current rules extracted before duplicate history links, unique evidence preserved verbatim |
+| 4 — help/modules/verification | Complete | Executable direct/named/quoted examples including ref producers, fresh Current slots and same-source staleness; real advanced Pick/Anchor/Apply/Data help; no new one-shot/parser/crate; private code relocation; tests split only for useful navigation within one CLI integration crate; current rules extracted before duplicate history links, unique evidence preserved verbatim |
 | 5 — integration/readiness | Pending, D3 required | Final GNU/musl semantic matrix, metadata/tree/fmt/check/test/clippy/release and release smoke; fresh N-1/N four arms; exact independent oracle; actual candidate identity and GO/NO-GO, then separately approved release slices |
 
 Gate 2 sentinels belong only to a task-local fixture, never the real old path.
@@ -546,3 +547,162 @@ public tree, service or Cloudflare operation occurs. Planning notes, README,
 Cargo/lock/toolchain/dependencies and all non-allowlisted tracked inputs remain
 byte-identical. Document/Git hygiene and exact-path temporary cleanup precede
 the approved commit and non-force push; no artifact or release is produced.
+
+## Gate 4 Help, private modules and verification contraction — complete
+
+Entry: clean `main = origin/main =
+3d35f14338d2374777acd485d0bce49387800fbc`. The source note, grounded roadmap
+and 224-line pre-approval D1/D2 proposal remain byte-identical. This gate changes
+Help and physical organization only; it does not reopen D1/D2, v5, Core/Runtime,
+schemas, namespace, version, readiness or operational authority.
+
+### Consumer and deletion decisions
+
+| Responsibility / actual consumer | Decision |
+| --- | --- |
+| Top dispatch, one-shot argument validation, shared Search/Replace preparation, Runtime calls, Update bootstrap | Keep in `src/bin/bw.rs`; no second executor/parser, Update or HOME behavior change |
+| `write_command_help`, constants and `canonical_usage` consumed by dispatch/error reporting | Move to private `bw/help.rs`; reuse usage extraction, add only four raw Session Help topics; remove empty Version sections and the uniform ten-section assertion |
+| CLI error construction, promotion, stream/exit reporting consumed by all command paths | Move existing bodies to private `bw/error.rs`; retain error codes/priority and status meanings |
+| Direct and raw Session parsing, refs, bindings, Pick composition and Data lifetime | Move to private `bw/shell.rs`; preserve actual advanced consumers and shared one-shot helpers |
+| Human/JSON/raw and direct-ref output, Data display, batch reports | Move to private `bw/output.rs`; keep distinct native-result consumers, one canonical address encoder and Gate 3 consuming writer/failure tests |
+| Test organization | Keep one CLI integration crate and its shared fixture/support; move only responsibility groups into child modules; no helper/framework or integration binary added |
+
+All 117 top-level production function definitions survive, including platform
+alternatives. Excluding signature visibility/wrapping, 116 bodies are exact;
+only `write_command_help` changes to accept advanced topics. No non-Help
+executor/writer body changes. Module imports and sibling visibility are private
+and explicit. Error methods retain their bodies. Production byte equality with
+N-1 or the Gate 3 parent is not claimed; module moves do not imply speed gains.
+README's inherited 0.2.5 Gate 6 reference is corrected to the actual 0.2.6
+Gate 6 `c78e07f242035230e8b071d583491ac633f58d29`: its `src/**` diff against
+published Source Authority `09bb6c424081594bd86a95f04345b786ef9b46b6` is empty.
+
+Top Help now introduces shell as ordinary short-reference work. Shell Help
+covers all direct commands, numeric/named/indexed refs, quoting/escapes,
+Content framing and fresh refs, body-only Line Replace, Current-only Check
+slots, same-source staleness and terminal stream failure. Four advanced topics
+derive their operands/bindings/output/failures from the unchanged raw parsers.
+Their one-shot execution, including `<capability> --help`, stays rejected;
+only `bw help <topic>` is added. Existing one-shot Help forms are unchanged.
+
+### Test inventory and focused evidence
+
+| Location after move | Existing test functions |
+| --- | ---: |
+| `tests/cli.rs` (shared fixtures plus Search/global/Update controls) | 12 |
+| `tests/cli/help.rs` | 5 |
+| `tests/cli/edit.rs` | 10 |
+| `tests/cli/view.rs` | 9 |
+| `tests/cli/check.rs` | 6 |
+| `tests/cli/shell.rs` | 32 |
+| `src/bin/bw/output.rs::view_output_tests` | 3 |
+
+CLI inventory is exactly the same 74 names before and after movement; module
+qualification alone changes their displayed paths. Help cases and five complete
+direct/advanced example rows extend existing functions. The removed section-order
+helper asserted a retired presentation constraint, not a failure boundary.
+Independent test-owned Help KATs do not include production constants.
+Structural source assertions now read the actual entry/output/shell locations.
+
+Final focused GNU evidence is **116 distinct passed**: CLI 74, binary 3,
+View integration 21, Runtime View 13, namespace controls 5. The latter are the
+existing spill-boundary unit, Search private/sibling fixture, Host Check
+private/admission, Apply unavailable path, and Anchor path-exact invalidation.
+Gate 3's reserve/append/framing, every byte-boundary/flush failure, no Drop retry,
+single=1/batch=1 and terminal broken pipe all pass. No new observer, counter,
+hook, Content clone, parser or result collection is introduced.
+
+Full offline/locked metadata/tree, fmt, GNU all-target check, clippy
+`-D warnings` and release build pass with Rust/Cargo 1.95.0, default features
+and existing profiles in task-local targets. Initial relocation validation
+found one stale include path and unnecessary imports; both were corrected
+without weakening their assertions. Final tests/checks pass. This is not a
+whole GNU product-suite pass; full GNU/musl, AI arms, D3 and benchmarks remain
+Gate 5 work. Previous 285/285 and Gate 3 116/9 are baseline evidence, not fresh
+full-suite claims.
+
+### Release smoke and unchanged execution
+
+The clean Gate 3 parent and current candidate are built offline/locked in
+separate task-local targets. A common workspace is reset to exact
+`needle\r\n` before each comparison; neither installed bw nor actual HOME is
+used. **33 process invocations** pass: 12 candidate Help topics, one Version,
+five parent/candidate shell example pairs and five one-shot command pairs.
+All examples include their ref producers. There is no timing comparison.
+
+The direct example obtains @0 from Search, @1 from Paragraph View, aliases @0,
+replaces through that alias to @2, checks old @0 as NotCurrent and @2 as
+Current/@3, then reads @3 as @4. Exact final Content is `new value\r\n`.
+Pick, Anchor, raw Apply and Data examples match documented commands and
+byte-exact expected output. Parent/candidate stdout, stderr, exit and final
+source bytes are equal for all five flows.
+
+The one-shot pair uses original Search-v2/v5 embedded object bytes without
+reencoding, raw View, Current Check, JSON receipt Edit and stale nonpublication.
+Both end with `replacement\r\n`; stale Apply exits 1 with empty stdout and
+exact `error: current source is unavailable\n`. Help/Version create no private
+state. Usage Help text intentionally changes while codes/status meanings stay
+fixed. Release binary hashes are identity evidence, not artifact authority:
+
+- Parent: `f0ecce7326d745b9286c4c6ce86dcae1241dba5116b3f7e1f48cf6bf213e295d`.
+- Candidate: `72ef3e058061ca97eb290ddfc5031bdfae2d7c92c2a5be1e6310482ef2da63d0`.
+- Task-local smoke driver: `9e1569362ac9234f8160dfcd697cf3ff44d073c5ae1f8b7658ebc921c6deea47`.
+
+### Verification evidence preservation
+
+Current safety/target/reuse/hygiene rules were extracted before removal:
+v5/count currentness, no-follow/text/resource fail-close, observation and
+all-or-none controls, receipt/proof/Anchor/publication boundaries, exact output
+and streaming, full stable-candidate target commands and bounded N/N-1 comparison.
+Repeated release/gate narratives and detailed measurements link to their existing
+trackers via the [history index](../history/index.md), not a second full archive.
+
+The original verification file is pinned above at 96,993 bytes/1,487 lines,
+SHA-256 `7bd2851b1add8756590ab4f0888b2d6e4c0e5f78eaacaffd7afd0a60c2bb9666`.
+The [verbatim excerpts](../history/2026-09-05-verification-before-0.3.0.md)
+preserve only evidence units with additional details, plus their interpreting
+conditions. Each original line span equals the stored excerpt bytes exactly:
+
+| Original verification lines | Preserved additional evidence |
+| --- | --- |
+| 155–161 | 0.2.5 endpoint/install closure detail with gate context |
+| 519–537 | 0.2.4 raw Session rchar and paired terminator evidence |
+| 592–611, 632–645, 647–666 | Patch Box scratch-boundary and intermediate 247-test details |
+| 740–749 | Exact unrounded Patch Box elapsed values and conditions |
+| 908–915 | 0.2.2 endpoint/error/cache and isolated install details |
+| 1059–1080 | Phase 7A exact baseline values and follow-up conditions |
+| 1116–1210, 1239–1257 | Detailed historical raw/streaming/capability regression inventory |
+| 1284–1386 | Beta.3/stable/0.2.0/0.2.1 release verification details |
+| 1404–1471 | Historical CLI/Session regression inventory |
+
+All 12 excerpt units pass byte identity. All 273 distinct original long
+digests/revisions and multi-decimal measurement values remain present in the
+linked/preserved documents. Existing task evidence is not rewritten or rerun;
+old v3/v4 paths and contracts are explicitly historical, not current authority.
+Link/anchor/fence/conflict-marker audits pass. Current verification keeps only
+policy, candidate/N-1, required matrix, this gate's evidence and three evidence
+links; no readiness SHA or final suite count is invented.
+
+### Exact sizes and boundary
+
+| Scope | Before lines / bytes | After lines / bytes | Delta |
+| --- | ---: | ---: | ---: |
+| CLI entry file | 3,437 / 132,293 | 962 / 33,746 | -2,475 / -98,547 |
+| CLI entry plus four private modules | 3,437 / 132,293 | 3,917 / 142,109 | +480 / +9,816 |
+| CLI test entry | 3,905 / 140,960 | 1,139 / 38,240 | -2,766 / -102,720 |
+| CLI test crate including five child modules | 3,905 / 140,960 | 4,129 / 151,117 | +224 / +10,157 |
+| Active verification | 1,487 / 96,993 | 141 / 9,790 | -1,346 / -87,203 |
+| Unique historical excerpts | absent | 455 / 29,650 | preservation, not active growth |
+| Historical index | absent | 18 / 1,413 | existing evidence discovery |
+
+Help is now readable multiline Rust text, not line-golfed escaped constants.
+Added bytes document actual commands and independent KATs; reduced entry files
+reflect navigation, not total-code or performance contraction.
+
+The 49 tracked paths outside the approved set remain byte-identical to entry,
+including Core/Runtime/v5, Cargo/lock/toolchain and both planning notes. The
+proposal remains exact. No server, live/public/service/Cloudflare/credential,
+installed executable or actual HOME access/change is part of this gate.
+Only inspected task-owned exports, targets, scripts and fixtures are removed.
+Exact allowed-path staging and cached review precede one non-force push.
+Gate 5/D3, native-platform gaps and separately authorized release remain open.
