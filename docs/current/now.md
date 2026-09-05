@@ -1,6 +1,6 @@
 # Backwriter Current State
 
-## 0.3.0 target — Gates 1–4 complete, Gate 5 NO-GO
+## 0.3.0 target — Gates 1–5 complete, Gate 5R readiness GO
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 closes documentation authority, focused namespace, direct shell View, Help and
@@ -23,12 +23,17 @@ semantics. One-shot/raw/JSON outputs and all v5/currentness rules stay fixed.
 Gate 4 passes 116 focused GNU tests and 33 release smoke invocations. It preserves
 all 74 CLI test names across one integration crate and all non-Help function
 bodies across private modules. This is not source byte equality with N-1 or a
-full product suite. Gate 5 now passes 293 tests per GNU/musl target and 52
-release smoke invocations. Four independently executed AI arms match the
-pre-authored replacement oracle exactly, but D3 is NO-GO: separate output
-streams/full elapsed/model-visible byte evidence is incomplete, and Genie N
-uses nine capability commands against the eight-command reference. No source
-readiness or version promotion follows; production, tests and Cargo stay fixed.
+full product suite. Gate 5 passes 293 tests per GNU/musl target and 52
+release smokes. Gate 5R reuses those identical inputs and closes D3 with four
+new independent arms: separate streams, whole-arm monotonic time and exact
+delivered text-content records are captured; all sixteen final files match
+the fixed oracle. Both N arms have complete first Paragraph Content, zero
+recovery calls and zero wrong edits/newline mistakes. Readiness is GO, while
+version selection remains pending and production/tests/Cargo remain fixed.
+The prior NO-GO/raw transcripts remain unedited evidence; its nine-command
+Genie N included optional File verification, not missing-Content recovery.
+Unobservable platform-added envelopes are excluded from the declared
+model-delivered text-content byte counts. No timing performance claim follows.
 No implementation or version change
 occurs at Gate 1; Gate 2 changes no version or CLI output. Source and roadmap
 notes are preserved planning evidence. The existing 285-test results remain

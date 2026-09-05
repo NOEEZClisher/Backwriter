@@ -14,17 +14,20 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.3.0 target — Gates 1–4 complete; Gate 5 NO-GO
+## 0.3.0 target — Gates 1–5 complete; Gate 5R readiness GO
 
-Gates 1–4 are complete in the
+Gates 1–5 are complete after Gate 5R in the
 [five-gate tracker](docs/tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
 Cargo, CLI, and public distribution remain closed `0.2.6`; the following
 checkout implements namespace exclusion, complete direct shell View and Help/module
-contraction, not source readiness. Gate 5 executed 293 tests on each of GNU
-and musl and all four independent AI arms, but required D3 capture evidence
-is incomplete and Genie N used nine rather than eight capability commands.
-Keep Cargo/CLI at `0.2.6`; no production fix or version promotion is authorized
-by this evaluation. See the tracker for exact evidence and limitations.
+contraction. Gate 5R closes D3 with four new independently captured arms and
+exact final oracles, reusing Gate 5's identical-input 293/293 GNU/musl tests
+and 52 smokes. Both N arms obtain complete context without Content recovery.
+The earlier NO-GO and nine-command Genie N record remain evidence; its extra
+File View was optional verification, not a BOX 26 failure. Keep Cargo/CLI at
+`0.2.6`: version selection and release remain separate decisions. No product
+fix or version promotion is part of Gate 5R. The tracker defines measurement
+scope, raw records and unobservable platform-envelope limitations.
 The Protocol owns the implemented Runtime-root-relative `.bw` reservation plus
 the exact legacy `.artext/bw` exclusion. No private state store was found;
 creation/read/write/spill/cleanup of such a store is N/A, not permission to

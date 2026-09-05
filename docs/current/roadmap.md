@@ -3,8 +3,8 @@
 ## Active target: 0.3.0 independent namespace and complete shell View
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
-records Gates 1–4 as complete. Its source note and grounded roadmap remain
-unchanged planning evidence; Protocol, address model, CLI and verification own
+records Gates 1–5 as complete after Gate 5R. Its source note and grounded
+roadmap remain unchanged planning evidence; Protocol, address model, CLI and verification own
 the reconciled target. Closed `0.2.6` stays current.
 
 1. Gate 1: namespace consumer/N/A inventory, shell output authority, explicit
@@ -18,10 +18,13 @@ the reconciled target. Closed `0.2.6` stays current.
    conditional test modules within one CLI integration crate, and verification
    contraction preserving current rules and unique historical evidence — complete.
 5. Gate 5: final GNU/musl candidate, pinned `0.2.6` N-1 versus N, four-arm
-   Dummy/Genie with an independent four-file oracle — executed, readiness NO-GO.
-   Native suites pass 293 tests each; all four final oracles match. Missing
-   D3 stream/timing/visibility evidence and Genie N's extra baseline View
-   prevent promotion. Cargo/CLI remain `0.2.6`; no production fix is included.
+   Dummy/Genie with an independent four-file oracle — Gate 5R readiness GO.
+   The earlier incomplete NO-GO and raw records remain intact; its extra File
+   View was optional verification, not a BOX 26 failure. Four new arms capture
+   separate streams, whole-run time and exact delivered text content. All final
+   bytes match, and N needs no Content-recovery calls. Identical-input 293/293
+   tests and 52 smokes are reused. Version selection remains pending;
+   Cargo/CLI stay `0.2.6`, with no product fix or version promotion.
    Subsequent artifact/installer/publication slices require separate approval.
 
 No Gate adds a parser, executor, persistent refs, history, relocation, rollback,
@@ -32,7 +35,8 @@ declare a common spec-conformant replacement and its new digest, never claim
 identity with a lost fixture. Gate 3 framing and stream-failure slot reporting
 are closed in CLI authority. Gate 5 used a declared independent replacement
 because the original bytes were not located. Its transcripts and evidence
-gaps are recorded in the tracker; no coached rerun replaces these observations.
+gaps are recorded in the tracker. Gate 5R's separately approved fresh arms are
+all retained, not a coached rerun or best-of replacement of those observations.
 
 ## Completed: 0.2.6 operational Adapter and verification contraction — published and closed
 

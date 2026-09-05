@@ -5,8 +5,10 @@
 Owner-approved D1/D2 are implemented in this unpublished checkout, not in
 published `0.2.6`. The
 [tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
-records the audited consumers and Gate 5 readiness NO-GO. The evaluation
-changes no CLI contract or output. Current release, one-shot
+records the audited consumers, preserved Gate 5 NO-GO and Gate 5R readiness GO
+with complete scoped capture and exact oracles. Optional verification is not
+missing-Content recovery. The evaluation changes no CLI contract, output or
+version; version selection remains separate. Current release, one-shot
 syntax, raw/JSON View bytes, Search output, Edit receipts, and Check stay fixed.
 
 Direct `view <REF>... [--as <line|paragraph|file>]` must show each input ref,

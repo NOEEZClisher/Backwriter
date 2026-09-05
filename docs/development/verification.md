@@ -4,22 +4,28 @@
 
 The [0.3.0 five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 records implementation evidence; Protocol, address model and CLI authority own
-semantics. Gates 1–4 are complete. Gate 5 evaluated candidate
-`4c3038505b8f87d01483b60abd3ec7494d0bc94d` and records readiness **NO-GO**.
-The full GNU and musl suites each pass **293 tests**; 52 release smoke
-invocations pass. All four independent AI arms finish with exact replacement
-oracle bytes, but D3 lacks separate stdout/stderr, full-run timing and complete
-model-visible byte evidence. Genie N also uses nine capability commands, not
-the reference eight, by adding a pre-edit File View. Do not rerun a coached
-best case, promote the version or infer a product defect from missing evidence.
-No `0.3.0` readiness SHA or release is assigned.
+semantics. Gates 1–5 are complete after Gate 5R's readiness **GO** on candidate
+`4c3038505b8f87d01483b60abd3ec7494d0bc94d`. Gate 5's GNU/musl **293/293 tests**
+and 52 release smokes are reused after complete input equality, not rerun.
+Gate 5R first passed pipe/Unicode/EOF/error/split-Help/delivery preflight, then
+ran four new independent arms once each. All sixteen final files match the
+fixed oracle. Both N arms receive complete Paragraph Content without recovery;
+newline mistakes and Wrong Apply are zero. Stream bytes and whole-arm time
+are independent of exact model-delivered JSON text-content bytes. Unobservable
+platform-added envelopes are explicitly excluded, not counted as zero.
+Version selection is deferred; Cargo/CLI/public stay `0.2.6` with no release.
 
 The final executed inputs, binary/log identities, independent oracle, four
 unaltered transcripts and capture gaps are retained in the
 [Gate 5 record](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md#gate-5-d3-and-final-readiness--no-go).
-Only docs changed after that matrix, so all test/build inputs remain identical.
-Task-local exports, build outputs, fixture workspaces and captures were removed
-after byte-exact transcript archival. No native macOS/Windows run is claimed.
+The earlier Genie N's ninth command was optional baseline File verification,
+not missing-Content recovery or an automatic BOX 26 failure. Its actual count,
+NO-GO and raw records remain intact. Capture source, four complete records and
+recomputation rules are in the
+[Gate 5R record](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md#gate-5r-result--go).
+Only docs changed after the native matrix. N GNU alone was reconstructed and
+matched its recorded SHA; the existing N-1 GNU binary matched its pinned SHA.
+No full suite, musl rebuild, old benchmark or native macOS/Windows run is claimed.
 
 Cargo and source-built Version remain `0.2.6`. Published N-1 Source Authority is
 `09bb6c424081594bd86a95f04345b786ef9b46b6`, closed `0.2.6`; the candidate

@@ -12,7 +12,9 @@ remains `NotCurrent` even with the same hash and length. Shell Content framing
 and input-to-fresh-ref presentation are Adapter metadata; they neither alter
 Anddress nor create persistence, history, relocation or rebinding. Closed
 Cargo/public `0.2.6` remains current; Gate 4 Help/module work is complete and
-Gate 5 records readiness NO-GO without changing this model. Batch None
+Gate 5R records readiness GO while preserving the earlier incomplete Gate 5
+NO-GO. Neither evaluation changes this model or version; version selection
+remains separate. Batch None
 selects each existing self geometry; Some selects one existing upward kind.
 Neither form changes v5 algebra, source identity or currentness.
 
