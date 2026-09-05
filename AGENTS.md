@@ -5,13 +5,38 @@ target Runtime, and the canonical `bw` CLI Adapter. Product prose uses
 `Backwriter`; the Cargo package, library crate, and Core namespace use
 `backwriter`; external callers invoke `bw`, which adapts to `backwriter` Core.
 Do not add a `backwriter` executable, alias, or wrapper. Persisted
-`artext.backwriter-*` values, the `.artext/bw` private path, and distribution
-artifact/domain names keep their existing contracts. The
+`artext.backwriter-*` values and distribution artifact/domain names keep their
+existing contracts. The published `.artext/bw` exclusion and the unimplemented
+`0.3.0` namespace target are distinguished below. The
 owner-defined Core capability inventory is Search, View, Pick, Anchor, Check,
 Edit, Apply, and Data. `S` is assigned to Search, `P` to Pick, `A` to
 Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
+
+## 0.3.0 target — Gate 1 authority only
+
+Only Gate 1 is complete in the
+[five-gate tracker](docs/tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
+Cargo, CLI, and public distribution remain closed `0.2.6`; the following
+target does not claim implemented namespace, shell output, or source readiness.
+The Protocol owns the target Runtime-root-relative `.bw` reservation plus
+the exact legacy `.artext/bw` exclusion. No private state store was found;
+creation/read/write/spill/cleanup of such a store is N/A, not permission to
+add storage or eager directories. Keep Update and Apply temporary contracts,
+all v5 fields/domains/currentness, Search, Apply, Anchor, and Host proof intact.
+
+The CLI authority owns complete direct shell View presentation from existing
+results. Mixed-kind plural self-View versus the common-target batch API and
+exact framing/stream-failure slot KATs remain Gate 3 prerequisites, not implicit
+API or input-rejection authority. Gate 2 is focused namespace verification;
+Gate 3 is View; Gate 4 is direct/advanced help, private module relocation and
+evidence-preserving verification contraction; Gate 5 is final GNU/musl and
+N-1/N readiness. Release slices require separate approval afterwards.
+Use focused development checks and reuse evidence only across the complete
+input boundary defined in verification. Do not execute `0.2.5` or older
+comparators, or use/update the user's `0.2.2` binary. Preserve both planning
+notes verbatim; they are evidence, not competing active semantic authority.
 
 ## 0.2.6 operational Adapter authority — Gates 1–8 and release complete
 
@@ -435,10 +460,10 @@ are preserved evidence, never current authority.
   View, Check, Apply, or Anchor call returns. A successful Host Search may
   replace the narrow trusted proof without retaining its projection. Anchor
   may retain only target-local session continuity.
-- Future spill belongs only to a host-provided system root. This repository does
-  not create `.artext`; the exact Runtime-root-relative `.artext/bw` path and
-  its descendants are ignored by Backwriter Runtime execution. Other `.artext`
-  children remain ordinary Workspace Source subject to the normal safety policy.
+- Future spill belongs only to a host-provided system root. Published `0.2.6`
+  creates no `.artext` and excludes only root-relative `.artext/bw` and its
+  descendants. The Protocol's `0.3.0` target adds exact `.bw` exclusion without
+  a store or eager creation; other `.artext` children remain ordinary source.
 - Search is read-only discovery over admitted live Workspace Source inside a
   structured scope. Every call scans live source directly; it creates or uses
   no persistent index, global snapshot, result cache, history, or past-result

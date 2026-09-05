@@ -1,5 +1,34 @@
 # Backwriter Roadmap
 
+## Active target: 0.3.0 independent namespace and complete shell View
+
+The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
+records only Gate 1 as complete. Its source note and grounded roadmap remain
+unchanged planning evidence; Protocol, address model, CLI and verification own
+the reconciled target. Closed `0.2.6` stays current.
+
+1. Gate 1: namespace consumer/N/A inventory, shell output authority, explicit
+   unresolved decisions and acceptance — complete; documentation only.
+2. Gate 2: same-root `.bw` plus exact legacy exclusion and BOX 23 focused tests
+   — pending; no store or eager directory creation.
+3. Gate 3: returned Content, input/fresh refs, order/duplicates, absent slots,
+   framing/failure KATs and zero extra observation — pending. Resolve mixed-kind
+   plural self-View versus the common-target batch API before implementation.
+4. Gate 4: direct/advanced help, existing CLI private-module relocation,
+   conditional test modules within one CLI integration crate, and verification
+   contraction preserving current rules and unique historical evidence — pending.
+5. Gate 5: final GNU/musl candidate, pinned `0.2.6` N-1 versus N, four-arm
+   Dummy/Genie with an independent four-file oracle, and readiness — pending.
+   Subsequent artifact/installer/publication slices require separate approval.
+
+No Gate adds a parser, executor, persistent refs, history, relocation, rollback,
+CAS, lock, Search optimization, wire change or shell EOF Content transport.
+Do not use the user-installed `0.2.2` executable or run older comparison arms.
+The original independent fixture must be located before Gate 5; if unavailable,
+declare a common spec-conformant replacement and its new digest, never claim
+identity with a lost fixture. Framing and stream-failure slot reporting remain
+explicit Gate 3 choices, not implicit authority to weaken existing behavior.
+
 ## Completed: 0.2.6 operational Adapter and verification contraction — published and closed
 
 The [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)

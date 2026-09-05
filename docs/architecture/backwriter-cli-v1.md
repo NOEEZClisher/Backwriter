@@ -1,5 +1,64 @@
 # Backwriter CLI V1
 
+## 0.3.0 direct shell View and help target — Gate 1 only
+
+This is approved target authority, not implemented `0.2.6` output. The
+[tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
+records the audited consumers and prerequisites. Current release, one-shot
+syntax, raw/JSON View bytes, Search output, Edit receipts, and Check stay fixed.
+
+Direct `view <REF>... [--as <line|paragraph|file>]` must show each input ref,
+fresh projected ref, target kind/location and the complete Content already
+returned in `ViewOutcome::Projected`. Preserve input order and duplicates.
+Show `RelationAbsent` at its input position with no fresh slot; a normal absent
+relation must not suppress projected peers. The current any-absent early writer
+and discarded Content are removal targets, not new Runtime semantics.
+
+Resolve inputs once before Runtime, reuse existing results and ref reservation,
+and consume outcomes for display without another Content collection or Content
+clone, parser, executor, source read, Search, View, or returned-ref re-resolution.
+Reserve capacity for projected results before output or slot append. Each
+projected occurrence appends one fresh slot, even for duplicate input; absent
+occurrences consume none. Refs remain process-local, append-only and never
+silently rebound or reused. Runtime failure returns no fabricated success or
+new slot; allocation failure before output also emits no successful result.
+Stream failure is distinct: partial bytes may exist, the shell terminates with
+its existing stream-error status, and already performed publication is neither
+cancelled nor retried. It provides no successful delivery or rollback promise.
+
+Before Gate 3 coding, fix one minimal framing and exact byte KAT contract.
+Metadata/display separators must be distinguishable from Content, including
+empty Content, LF, CR, CRLF, no-EOL, Unicode and delimiter-like Content. Do not
+normalize or append a source terminator to make output readable. Choose the
+exact byte-length/end-boundary presentation and freeze slot commit/reporting
+behavior on write/flush failure there; the illustrative arrow is not a KAT.
+Framing is display metadata, never another Anddress wire or Content schema.
+
+The required execution budget is one Runtime single View for one input and
+one Runtime batch View for a batch, with zero output-motivated observations.
+Current explicit `--as` calls `view_batch` once, even for one input; omitted
+`--as` loops over self-Views. The batch API accepts one common target only.
+Homogeneous self inputs have a common target, but mixed-kind plural self inputs
+do not. **Mixed-kind plural self-View is an unresolved Gate 3 prerequisite.**
+Do not silently reject accepted inputs, change their projections, claim a
+single-call loop is a batch, or expand the public API without a bounded Owner
+decision. No choice is implemented or authorized by Gate 1.
+
+Gate 4 help must expose direct shell Search/View/Replace/Check, numeric and
+named refs, quoting, Content plus fresh-ref output, Line body-only replacement,
+Current-only Check slots, and old same-source staleness. Fixed numeric examples
+include their producing commands and are executed as complete examples.
+Advanced Pick/Anchor/Apply/Data topics explain existing raw Session operands,
+bindings, examples, output and failures, without adding one-shot execution.
+Keep one canonical usage source for errors and help/version before Runtime,
+download and private IO. Concise topics need no empty ten-section template.
+
+Move existing CLI responsibilities into private modules only in Gate 4; no new
+parser, public crate, executor, generic output trait, factory or forwarding-only
+facade. Test splitting is conditional and stays within one CLI integration
+crate with shared fixtures and all distinct structural/failure controls.
+One-shot EOF stdin and raw Session remain; direct shell EOF stdin is excluded.
+
 ## 0.2.6 operational Adapter authority — Gates 1–8 and release complete
 
 The completed operational target explains what to type, what happens, and what
@@ -123,8 +182,9 @@ bw
 `backwriter` is the Cargo package, library crate, and Core namespace, not an
 executable. The repository provides no `backwriter` binary, alias, or wrapper.
 External callers invoke `bw`, which adapts to `backwriter` Core. Product prose
-uses Backwriter; persisted `artext.backwriter-*` wire values, `.artext/bw`, and
-distribution artifact/domain names are unchanged contracts.
+uses Backwriter; persisted `artext.backwriter-*` wire values and distribution
+artifact/domain names are unchanged contracts. Published `.artext/bw` exclusion
+and the unimplemented `0.3.0` namespace target are distinct from those names.
 
 CLI V1 execution has two intended forms:
 

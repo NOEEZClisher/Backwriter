@@ -1,5 +1,64 @@
 # Verification
 
+## 0.3.0 verification policy — Gate 1 only
+
+The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
+owns gate evidence and pending acceptance, not competing semantic authority.
+Use focused namespace, shell View, help and module-wiring tests during Gates
+2–4. Run the complete GNU/musl matrix at the final stable Gate 5 candidate,
+including offline/locked metadata/tree, fmt, all-target check, tests, clippy
+with warnings denied, release builds and release Help/Version/capability smoke.
+Do not default to a full two-target rerun at every small development gate.
+This policy governs `0.3.0` over the older blanket run-after-change guidance.
+
+Reuse requires equality of production, tests and fixtures, build scripts,
+Cargo/lock, toolchain, target, features, profile and relevant flags. Record run,
+reused and unexecuted evidence separately. Version/build-metadata changes need
+binary identity and Version KAT checks, not repetition of historical benchmarks.
+G1 verifies documentation hygiene, offline/locked metadata and unchanged inputs;
+it reuses the existing 285-test GNU and 285-test musl results, not a new run.
+
+Gate 2 uses task-local absent/new/old-only/both-root fixtures and unchanged old
+sentinels, private file/symlink cases, exact component and Windows case
+boundaries, ordinary siblings/nested paths, no-follow failures and help/version
+noncreation. Store creation/read/write/spill/cleanup are N/A unless real
+consumers are found; never add IO to satisfy BOX 23. Do not inspect actual old
+state. Gate 3 freezes exact framing/ref/Content KATs, empty/Unicode and every
+terminator, delimiter-like Content, ordered duplicates, mixed projected/absent
+results, allocation/Runtime/stdout failures, and one single or batch call with
+zero Content-only Search/View/re-resolution. Mixed-kind plural self-View needs
+its explicit prerequisite decision before that acceptance can be claimed.
+
+Gate 4 preserves still-current rules before replacing duplicated history with
+links; unique numbers, environments, path spellings and source revisions must
+have a preserved evidence location before removal. It adds no historical index
+at Gate 1. Conditional test modules retain one CLI integration crate and all
+distinct structural/behavioral coverage. No speed claim follows from relocation.
+
+Gate 5 compares only pinned N-1 `0.2.6` Source Authority
+`09bb6c424081594bd86a95f04345b786ef9b46b6` and the actual N candidate. Locate
+the original BOX 25–26 independent four-file fixture first; if unavailable,
+declare a new shared fixture digest and independently defined full-byte oracle.
+It must have eight duplicate Lines, four primary edits (one per file), four
+untouched secondary Lines and LF/CR/CRLF/None. Run Dummy N-1/N and Genie N-1/N
+as four arms. Dummy chooses from public help freely; one-shot is not failure.
+Genie's reference is Search 1 + Paragraph batch View 1 + Replace 4 + Check
+batch 1 + File batch View 1: eight capability commands, excluding help and
+shell lifecycle. Candidate first context View must supply decision-making
+Content, with zero Content-only self-View/named-copy/raw-View workaround,
+zero terminator mistakes/Wrong Apply and exact oracle. Record N-1 deficiencies
+honestly rather than changing the candidate acceptance or extending this
+one-edit-per-file flow to repeated edits in the same source.
+
+Keep process count, actual commands, model tool turns, unexpected CLI failures,
+Content-only extra commands, stdout/stderr bytes, model-visible bytes and elapsed
+separate. More returned Content is not itself regression. Each n=1 arm supplies
+observations, not a mandatory timing ratio or broad performance claim. No
+`0.2.5` or older execution, external-tool comparison arm, user `bw 0.2.2`
+execution/update, suite/benchmark repetition at G1, or release authority follows.
+Existing native-platform gaps and lock/rollback/fsync/crash-durability limits
+remain. G1 does not alter the historical evidence below.
+
 ## 0.2.6 operational Adapter and verification-contraction authority
 
 Gates 1–6 retain one test authority for exact Help/usage/JSON KATs, stdin and

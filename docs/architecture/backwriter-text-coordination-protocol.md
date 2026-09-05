@@ -1,5 +1,52 @@
 # Backwriter Protocol
 
+## 0.3.0 namespace target — authority closed, implementation pending
+
+This target supplements the closed `0.2.6` implementation described below;
+only documentation Gate 1 is complete. `0.2.6` excludes `.artext/bw` and does
+not implement a private state store. The `0.3.0` target reserves `.bw` at the
+same accepted Runtime workspace root, not at an admission-root-relative,
+nested-workspace, HOME, or new environment-selected base. It excludes both
+root-relative `.bw` and legacy `.artext/bw`, including their descendants, by
+exact path components. Non-Windows matching stays case-sensitive; Windows
+matching stays ASCII-case-insensitive on those components. This is availability
+policy, not a change to logical-path equality or workspace coordinates.
+
+`.bw-notes`, `.artext/bw2`, other `.artext` children, and nested
+`x/.bw` or `x/.artext/bw` remain ordinary source under existing admission and
+no-follow safety. Preserve the existing capability-specific private-path
+outcomes and their validation priority. An ignored entry is not followed or
+opened merely to classify its contents; an abnormal file/symlink at the
+reserved spelling cannot become source. Do not weaken ordinary-directory,
+symlink/reparse, no-follow, source validation, or currentness rules.
+
+The production consumer audit finds a reservation/exclusion predicate only:
+private root creation, stored-state reader/writer, generic spill and stored-state
+cleanup are N/A. `.bw` creates no storage engine, eager mkdir, retained source,
+disk refs, or recovery state. There is no old reader, fallback, migration,
+copy, or deletion; the legacy guard protects leftovers without consuming them.
+Never inspect actual historical data to test this boundary. Any newly found
+non-reconstructible-data consumer stops only its dependent cutover for Owner
+decision. Future spill still requires a host-provided system root and separate
+authority; this target does not move it into the workspace.
+
+Update's `env::temp_dir()/backwriter-update-<nonce>` bootstrap and Apply's
+admitted same-parent create-new/no-follow staging remain separate mechanisms.
+Keep Apply's `.env.artext-apply-edit-` name and
+`artext.backwriter-apply-edit-v1-temporary` domain unchanged. Namespace work
+does not move these temporaries, change their cleanup, or authorize installation.
+
+The v5 fields/wire/hash domains, workspace coordinate, source SHA-256/length/
+`sourceLineCount` currentness (including false-count `NotCurrent`), Search
+algorithm/order/multiplicity/output, Apply publication, Anchor reflection and
+Host proof remain unchanged. Complete shell View is only the
+[CLI target](backwriter-cli-v1.md#030-direct-shell-view-and-help-target--gate-1-only):
+it displays returned Content, not another observation or a new Core result.
+Raw/JSON View, exact File/Paragraph Content, Line body-only replacement and
+terminator preservation, raw Session and one-shot stdin remain supported.
+Shell EOF Content transport, ref persistence/history/relocation/rebinding,
+rollback, CAS and locking are not introduced.
+
 ## 0.2.6 operational Adapter boundary — Gates 1–8 and release complete
 
 Gate 1 changes no Core or Runtime contract. Existing `WorkspaceRuntime`
@@ -1575,7 +1622,8 @@ transition engine, successor inference, or past-to-current reconciliation.
 Anchor applies only to source-visible mutation boundaries, never editor-only
 buffers.
 
-The only special ignored path is Runtime-root-relative `.artext/bw` and its
-subtree. `.artext` itself is not globally reserved; other children follow normal
-admission and safety policy. Future spill belongs only to a host-provided system
-root and is not created or configured in this repository.
+In published `0.2.6`, the only special ignored path is Runtime-root-relative
+`.artext/bw` and its subtree. The `0.3.0` target above adds the exact `.bw`
+reservation without storage IO. `.artext` itself is not globally reserved;
+other children follow normal admission and safety policy. Future spill belongs
+only to a host-provided system root and is not created or configured here.

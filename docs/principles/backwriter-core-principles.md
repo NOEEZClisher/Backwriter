@@ -1,5 +1,17 @@
 # Backwriter Principles
 
+The `0.3.0` target has completed documentation-only Gate 1 in its
+[five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
+Closed `0.2.6` remains source and public authority. A private reservation is
+not a storage engine: `.bw` and the legacy exact exclusion must neither cause
+eager IO nor consume historical data. Complete shell View must display returned
+Content, not acquire it again, and normal absent relations must not hide peers.
+Its unresolved batch/framing prerequisites are not permission for silent API or
+projection changes. Reuse actual consumers, remove proven duplicate presentation,
+and retain every unique safety boundary. Verification reuse requires the whole
+test/build input boundary, not just production equality; current policy and
+unique historical evidence must survive later documentation contraction.
+
 The active `0.2.6` operational Adapter and verification-contraction target is
 governed by the [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).
 Gate 1 is authority only, Gate 2 adds one command-local help authority, Gate 3
@@ -98,8 +110,9 @@ the v5 `0.2.6` distribution, retaining Principle 19's unchanged execution.
    range only after exact source-state proof. Re-search is an
    explicit caller choice and returns a new current address.
 6. **Safety remains selective.** Admission, private/unsafe policy, and symlink
-   rejection remain capability-relative. `.artext/bw` alone is ignored;
-   `.artext/other` is ordinary source. Unsaved editor buffers remain outside
+   rejection remain capability-relative. Published `0.2.6` ignores `.artext/bw`;
+   the `0.3.0` target adds exact `.bw` exclusion without a store.
+   `.artext/other` remains ordinary source. Unsaved editor buffers remain outside
    Core, and source-visible does not promise durability, retry, or a second
    read.
 7. **Capability responsibility stays narrow.** View validates source identity
