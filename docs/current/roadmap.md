@@ -1,12 +1,13 @@
 # Backwriter Roadmap
 
-## Active target: 0.3.0 independent namespace and complete shell View
+## Completed: 0.3.0 independent namespace, complete shell View and release
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 records Gates 1–5 as complete after Gate 5R. Its source note and grounded
 roadmap remain unchanged planning evidence; Protocol, address model, CLI and verification own
-the reconciled target. Source-ready unpublished `0.3.0` is selected; official
-distribution remains closed `0.2.6`.
+the reconciled target. Cargo, CLI and official distribution are implemented,
+published and closed `0.3.0`, from Deployment Source Authority
+`237e468993372d1bb079cbaeebd36feea6aa27ea`.
 
 1. Gate 1: namespace consumer/N/A inventory, shell output authority, explicit
    unresolved decisions and acceptance — complete; documentation only.
@@ -26,9 +27,10 @@ distribution remains closed `0.2.6`.
    bytes match, and N needs no Content-recovery calls. Identical-input 293/293
    tests and 52 smokes are reused. Gate 5R itself made no version change.
    The subsequent source-version decision selects Cargo/CLI `0.3.0` without
-   production changes. Artifact/installer/publisher/publication slices remain
-   separate. Source-built Update can install official `0.2.6` without comparing
-   versions; no version guard is added.
+   production changes. The separately authorized artifact/installer/publisher/
+   publication closure and idempotent rerun are complete: 84 files, 12 directories
+   including root, manifest last. Update installs or reinstalls official `0.3.0`
+   without comparing versions; no version guard, retry or rollback is added.
 
 No Gate adds a parser, executor, persistent refs, history, relocation, rollback,
 CAS, lock, Search optimization, wire change or shell EOF Content transport.
@@ -68,7 +70,7 @@ ADVANCED. Gate 8 is GO: source Cargo and `bw version` are `0.2.6` while
 the published `0.2.6` production Rust remains byte-identical to its Gate 6;
 the later `0.3.0` checkout is outside that equality scope. R3 has completed the
 separately authorized `0.2.6` artifact, installer, manifest-last publication,
-endpoint, and isolated installation closure. Update installs official `0.2.6`
+endpoint, and isolated installation closure. At that closure Update installed `0.2.6`
 without version comparison. Search
 execution comparisons are candidate-versus-`0.2.5`; the inherited 268-test GNU/
 musl result and `Correct 1 / Safe Reject 6 / Wrong Apply 0` do not weaken.
@@ -672,7 +674,7 @@ Check accepts the resulting ordinary Search outcome, and its File Anddress can
 drive existing Apply `StartOf` and `EndOf` positions for an empty source.
 
 The historical milestone used Cargo `0.1.0`; the later `0.2.0` closure used
-Cargo `0.2.0` and printed `Backwriter 0.2.0`. Current Cargo/CLI is `0.2.6`.
+Cargo `0.2.0` and printed `Backwriter 0.2.0`. Current Cargo/CLI is `0.3.0`.
 The separate `0.1.0`
 stable-publication phase is completed below, while
 the complete public `0.1.0-beta.3` bundle remains closed and immutable.
@@ -714,9 +716,9 @@ The canonical Linux x86_64 release target is `x86_64-unknown-linux-musl`.
 The target choice and direct build verification are complete. The external
 operations-owned distribution at
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com)
-publishes the closed Backwriter `0.2.6` release for Linux/WSL x86_64,
+publishes the closed Backwriter `0.3.0` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
-`09bb6c424081594bd86a95f04345b786ef9b46b6`. Linux uses
+`237e468993372d1bb079cbaeebd36feea6aa27ea`. Linux uses
 `x86_64-unknown-linux-musl`; macOS uses `aarch64-apple-darwin` at minimum 11.0
 and `x86_64-apple-darwin` at minimum 10.12. Windows uses
 `x86_64-pc-windows-gnu` and canonical `bw.exe`. Archives, checksum sidecars,
@@ -734,14 +736,16 @@ installs to `$HOME\.local\bin\bw.exe` without editing PATH or the profile;
 Windows build and installer verification make no native-runtime or native-CMD
 claim.
 The current Cargo package and library crate are `backwriter` at published
-`0.2.6`; the sole canonical executable and external Adapter command are `bw`.
+`0.3.0`; the sole canonical executable and external Adapter command are `bw`.
 The public beta.1, beta.2, and beta.3 files remain unchanged immutable
 prior artifacts. The complete stable `0.1.0` Linux/macOS/Windows version
 directory is immutable, the planned matrix is complete, and the stable release
 is closed. The complete `0.2.0`, `0.2.1`, `0.2.2`, `0.2.3`, `0.2.4`, and
-`0.2.5` and `0.2.6` version directories are likewise immutable; the current
-installers and manifest select `0.2.6` in the exact 76-file public tree.
-Only exact `0.2.5` and `0.2.6` manifests are accepted.
+`0.2.5`, `0.2.6` and `0.3.0` version directories are likewise immutable; the current
+installers and manifest select `0.3.0` in the exact 84-file public tree.
+Only exact `0.2.6` and `0.3.0` manifests are accepted; `0.2.5` and earlier
+are retired. The 80 versioned files are immutable-cacheable; three installers
+and the manifest are no-store. Preservation of CMD does not change its cache policy.
 
 Backwriter Core construction from an accepted current observation and Search
 delivery of those values are fixed authority boundaries, not a target registry,

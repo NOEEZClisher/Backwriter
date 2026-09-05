@@ -6,11 +6,12 @@ and Help/module/evidence contraction Gate 4 in its
 Gate 5R records readiness GO with scoped complete capture and exact final
 oracles, while preserving Gate 5's incomplete NO-GO and original raw records.
 Optional verification is not missing-Content recovery; command count alone
-does not replace BOX 26. The subsequent source-version decision selects
-source-ready unpublished Cargo/CLI `0.3.0`, without production changes.
-Public distribution stays closed `0.2.6`; artifacts, installers, publisher
-and publication remain separate. Source-built Update can install official
-`0.2.6` without comparing versions. A private reservation is
+does not replace BOX 26. The subsequent source-version decision and separately
+authorized release closure align Cargo/CLI and official distribution at
+implemented, published and closed `0.3.0`. Deployment Source Authority remains
+`237e468993372d1bb079cbaeebd36feea6aa27ea`. Update installs or reinstalls
+`0.3.0` without comparing versions, retry or rollback; the installer allowlist
+is exact `0.2.6`/`0.3.0`. A private reservation is
 not a storage engine: `.bw` and the legacy exact exclusion must neither cause
 eager IO nor consume historical data. Complete shell View displays returned
 Content without acquiring it again; normal absent relations do not hide peers.
@@ -21,7 +22,7 @@ and retain every unique safety boundary. Verification reuse requires the whole
 test/build input boundary, not just production equality; current policy and
 unique historical evidence remain preserved through documentation contraction.
 
-The active `0.2.6` operational Adapter and verification-contraction target is
+The completed `0.2.6` operational Adapter and verification-contraction target is
 governed by the [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md).
 Gate 1 is authority only, Gate 2 adds one command-local help authority, Gate 3
 adds private actionable usage presentation plus one-shot Edit stdin Content,
@@ -49,9 +50,9 @@ and external evidence; it adds no Core or Runtime behavior. Candidate evidence c
 while the inherited 268-test GNU/musl result and `Correct 1 / Safe Reject 6 /
 Wrong Apply 0` remain controls. Gate 8 changes only source Cargo, `bw version`,
 its KAT, and current status. At Gate 8 the official distribution remained
-`0.2.5`. R3 now closes official `0.2.6` artifacts, installers, manifest, and
-the exact 76-file tree. Update installs or reinstalls `0.2.6` without version
-comparison; the installer allowlist is exact `0.2.5`/`0.2.6`.
+`0.2.5`. R3 subsequently closed official `0.2.6` artifacts, installers, manifest,
+and the exact 76-file tree. At that closure Update installed or reinstalled
+`0.2.6` without version comparison; its allowlist was exact `0.2.5`/`0.2.6`.
 
 The completed `0.2.5` performance recovery is governed by Principle 19 and its
 [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
@@ -59,7 +60,7 @@ Gates 1 through 8 close authority, bulk literal matching, raw/structural
 observation, canonical encoding reuse, dense Search storage, and consumer
 contraction, fixed integration evidence, and release closure. At that closure,
 Cargo, `bw version`, installers, Update, and the official distribution aligned
-at `0.2.5`; their current version is `0.2.6`.
+at `0.2.5`; their current version is `0.3.0`.
 
 The prior published and closed `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).
@@ -92,7 +93,7 @@ single self-or-ancestor View projection, and ordered all-or-nothing batch View
 plus the Replace-only native receipt and its direct human/JSON Adapter
 projection, integrated Dummy, GNU/musl readiness, and release publication while
 leaving v4 identity and currentness unchanged. Official release state is now
-the v5 `0.2.6` distribution, retaining Principle 19's unchanged execution.
+the v5 `0.3.0` distribution, retaining Principle 19's unchanged execution.
 
 1. **Current-only permits only bounded evidence.** Current is source-visible.
    Untrusted Mode keeps one source observation's hash, length, and Line count only while its
@@ -119,8 +120,8 @@ the v5 `0.2.6` distribution, retaining Principle 19's unchanged execution.
    range only after exact source-state proof. Re-search is an
    explicit caller choice and returns a new current address.
 6. **Safety remains selective.** Admission, private/unsafe policy, and symlink
-   rejection remain capability-relative. Published `0.2.6` ignores `.artext/bw`;
-   the `0.3.0` target adds exact `.bw` exclusion without a store.
+   rejection remain capability-relative. Prior `0.2.6` ignores `.artext/bw`;
+   published `0.3.0` adds exact `.bw` exclusion without a store.
    `.artext/other` remains ordinary source. Unsaved editor buffers remain outside
    Core, and source-visible does not promise durability, retry, or a second
    read.

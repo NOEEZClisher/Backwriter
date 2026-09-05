@@ -11,12 +11,13 @@ source hash/length/Line count and currentness unchanged. A false Line count
 remains `NotCurrent` even with the same hash and length. Shell Content framing
 and input-to-fresh-ref presentation are Adapter metadata; they neither alter
 Anddress nor create persistence, history, relocation or rebinding. Cargo/CLI
-are source-ready unpublished `0.3.0`; public distribution stays closed `0.2.6`.
+and public distribution are implemented, published and closed `0.3.0`.
 Gate 4 Help/module work is complete and
 Gate 5R records readiness GO while preserving the earlier incomplete Gate 5
 NO-GO. Neither evaluation changes this model; the subsequent source-version
-decision changes no address semantics. Artifact/installer/publication work
-remains separate. Batch None
+decision and separately authorized artifact/installer/publication closure change
+no address semantics. Deployment Source Authority remains
+`237e468993372d1bb079cbaeebd36feea6aa27ea`. Batch None
 selects each existing self geometry; Some selects one existing upward kind.
 Neither form changes v5 algebra, source identity or currentness.
 
@@ -40,7 +41,7 @@ Gate 7 adds verification evidence and public Shell quoting guidance only. Gate
 8 was GO and changed source Cargo, `bw version`, its KAT, and then-active status
 to unpublished `0.2.6`; it did not change v5 values, encoding, numeric
 references, or address algebra. At Gate 8 official distribution remained
-`0.2.5`; R3 now closes matching official `0.2.6` publication without changing
+`0.2.5`; R3 subsequently closed matching official `0.2.6` publication without changing
 this address authority.
 
 ## 0.2.5 encoding, attachment, and currentness boundary

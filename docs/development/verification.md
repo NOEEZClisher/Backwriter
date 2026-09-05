@@ -1,8 +1,36 @@
 # Verification
 
-## Current policy and candidate
+## Current policy and published release
 
-Source-version closure selects **source-ready unpublished 0.3.0** from clean
+Cargo/CLI, official installation and Update are implemented, published and
+closed `0.3.0`. Deployment Source Authority remains
+`237e468993372d1bb079cbaeebd36feea6aa27ea`; server release commit is
+`fc2bfb6032a0a95031c11a169e167b7fcd591195`. The 876-byte manifest SHA-256 is
+`4e95f3f810cc610fcdacf787bf0c5210cb00ccfe066298fa43bdb3d1fe09ffde`.
+The public catalog is 84 files and 12 directories including root. Eighty
+versioned files are immutable-cacheable; three installers and the manifest
+are no-store. The exact installer allowlist is `0.2.6`/`0.3.0`.
+
+This documentation closure directly audits the declared publisher catalog,
+file sizes/SHA, no-follow types, owner/mode and identical fresh before/after
+metadata snapshots, service identity/restarts and the loopback listener. It
+checks source/test/Cargo/toolchain/build input equality to Deployment Source
+Authority, unchanged server inputs, offline/locked metadata and document/Git
+hygiene. The tracker records the actual audit results and links deployment
+details. No historical snapshot equality is inferred from a new serialization.
+
+Reused, not rerun here: GNU/musl **293/293**, source-version **4 KAT executions**
+and recorded smokes; installer **46**, publisher **59**, ZIP helper **12**,
+CMD **12**, Origin **13**, input rejection **15**, endpoint checks **344**
+and installed CLI processes **8**. No full suite, AI, benchmark, cross-build,
+product/installer/publisher/Update or endpoint run belongs to this docs audit.
+It accesses neither installed bw/actual HOME nor credentials. Native macOS,
+Windows, PowerShell and CMD execution remains unverified; no locking, rollback,
+fsync or crash-durability guarantee is added.
+
+### Preserved source-version closure evidence
+
+At source-version closure, the Owner selected **source-ready unpublished 0.3.0** from clean
 `bde689b22fbe6f5ebc06247b094730f5066b05af`. The only non-document changes are
 the root package version in Cargo.toml/Cargo.lock and two literal Version KAT
 expectations. Production, other tests/fixtures, build scripts, toolchain,
@@ -24,9 +52,9 @@ The tracker records the new binary identities; no old
 binary equality is claimed. Full suites, AI capture, N-1 comparison, benchmarks,
 native macOS/Windows, installed `bw` and Update are not rerun.
 
-Official distribution stays closed `0.2.6`. Source-built Update can install
-that version without comparison. Artifact/installer/publisher/publication
-closure is separate and not executed here.
+At that closure official distribution stayed closed `0.2.6`, and source-built
+Update could install it without comparison. Artifact/installer/publisher/
+publication was a separate later closure, now complete as recorded above.
 
 ### Preserved Gate 5R evidence
 

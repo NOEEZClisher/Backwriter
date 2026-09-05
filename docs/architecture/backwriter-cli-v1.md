@@ -2,15 +2,16 @@
 
 ## 0.3.0 direct shell View and Help — Gates 3–4 complete
 
-Owner-approved D1/D2 are implemented in this unpublished checkout, not in
-published `0.2.6`. The
+Owner-approved D1/D2 are implemented, published and closed in `0.3.0`, not in
+the prior `0.2.6` release. The
 [tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 records the audited consumers, preserved Gate 5 NO-GO and Gate 5R readiness GO
 with complete scoped capture and exact oracles. Optional verification is not
 missing-Content recovery. The evaluation changes no CLI contract, output or
-version itself. The subsequent source-version decision selects source-ready
-unpublished Cargo/CLI `0.3.0`; official distribution stays closed `0.2.6`.
-Artifacts, installers, publisher and publication remain separate. One-shot
+version itself. The subsequent source-version decision and separately authorized
+release closure align Cargo/CLI and official distribution at closed `0.3.0`.
+Deployment Source Authority remains `237e468993372d1bb079cbaeebd36feea6aa27ea`.
+One-shot
 syntax, raw/JSON View bytes, Search output, Edit receipts, and Check stay fixed.
 
 Direct `view <REF>... [--as <line|paragraph|file>]` must show each input ref,
@@ -135,9 +136,9 @@ Check is bounded Adapter work under the
 not new Core wire, identity, persistence, or lifecycle behavior. Gate 7 adds no
 CLI parser or output change; it records only the candidate/N-1 and public-use
 evidence. Gate 8 is GO: only source Cargo, `bw version`, its KAT, and active
-status became `0.2.6`; Core/Runtime/Adapter behavior stays fixed. R3 now closes
+status became `0.2.6`; Core/Runtime/Adapter behavior stayed fixed. R3 then closed
 the matching official artifacts, installers, manifest, and 76-file public
-distribution. Update installs or reinstalls official `0.2.6` without version
+distribution. At that closure Update installed or reinstalled `0.2.6` without version
 comparison.
 
 ## 0.2.5 encoder reuse and release boundary
@@ -145,7 +146,7 @@ comparison.
 Gates 1 through 4 change no CLI syntax, schema, key order, output byte, status,
 error, version, or process behavior. At the later `0.2.5` release closure,
 Cargo, `bw version`, installers, Update, and the official distribution aligned
-at `0.2.5`; their current version is `0.2.6`.
+at `0.2.5`; their current version is `0.3.0`.
 
 Search and batch View replace per-address temporary allocation with the address
 authority's public `Anddress::encode_into(&mut Vec<u8>)`. Each operation owns
@@ -199,7 +200,7 @@ documents in the authority-reading order.
 The `0.2.2` one-shot Anddress-first Edit execution contract remains closed and
 published Adapter authority. Patch Box Gates 1–8 remain published and closed
 `0.2.3` evidence. The current official installer, Update target, and closed
-distribution are `0.2.6` and embed the v5 objects defined here.
+distribution are `0.3.0` and embed the v5 objects defined here.
 
 The CLI is the first official Adapter inside the repository cutline. It exposes
 Core semantics without redefining Core Rust APIs, target identity, wire, error
@@ -218,8 +219,8 @@ bw
 executable. The repository provides no `backwriter` binary, alias, or wrapper.
 External callers invoke `bw`, which adapts to `backwriter` Core. Product prose
 uses Backwriter; persisted `artext.backwriter-*` wire values and distribution
-artifact/domain names are unchanged contracts. Published `.artext/bw` exclusion
-and the implemented unpublished `0.3.0` namespace target are distinct from those names.
+artifact/domain names are unchanged contracts. Published `0.3.0` reserves `.bw`
+and retains exact legacy `.artext/bw` exclusion, distinct from those names.
 
 CLI V1 execution has two intended forms:
 
@@ -272,19 +273,19 @@ output selections. They are unavailable inside Session. Neither opens a
 workspace, calls Core or Runtime, defines a wire value, or establishes a
 capability workflow.
 
-Source-built `bw version` writes exactly:
+Official and source-built `bw version` write exactly:
 
 ```text
 Backwriter 0.3.0
 ```
 
-including the final LF and no other successful output. The closed official
-`0.2.6` binary still prints `Backwriter 0.2.6\n`.
+including the final LF and no other successful output. The prior immutable
+`0.2.6` binary retains its `Backwriter 0.2.6\n` output.
 
 `bw update` downloads the current platform's official installer over HTTPS and
 delegates installation to it. The current official manifest selects the closed
-public `0.2.6` distribution. The installer accepts only the exact `0.2.5` and
-`0.2.6` manifests; `0.2.4`, `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired. Update does not
+public `0.3.0` distribution. The installer accepts only the exact `0.2.6` and
+`0.3.0` manifests; `0.2.5`, `0.2.4`, `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable `0.1.0`, and beta.3 acceptance is retired. Update does not
 publish a release and performs no local version comparison, retry,
 daemon or background update, and adds no compatibility alias. On Unix it uses a
 private temporary directory, runs the downloaded `install.sh` synchronously
@@ -295,11 +296,11 @@ parent before replacing `bw.exe`. A Windows parent status of `0` means only that
 handoff started successfully; the child owns final installer output, final
 status, replacement, and bootstrap cleanup.
 
-Neither the published `0.2.6` nor source-built `0.3.0` command has a
-version-comparison guard. Invoking Update therefore can install the official
-`0.2.6` release even from source-built `0.3.0`; this closure does not run it.
-This boundary does not authorize a guard, retry, rollback, alternate installer,
-or publication.
+Update has no version-comparison guard: it installs or reinstalls the official
+`0.3.0` selected by the current manifest. The earlier source-version closure
+preceded publication and could still install `0.2.6` at that time. This
+documentation-only alignment does not run Update or authorize a guard, retry,
+rollback, alternate installer or another publication.
 
 ## Implemented one-shot Search
 

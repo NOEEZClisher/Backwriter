@@ -6,30 +6,33 @@ target Runtime, and the canonical `bw` CLI Adapter. Product prose uses
 `backwriter`; external callers invoke `bw`, which adapts to `backwriter` Core.
 Do not add a `backwriter` executable, alias, or wrapper. Persisted
 `artext.backwriter-*` values and distribution artifact/domain names keep their
-existing contracts. The published `.artext/bw` exclusion and the checkout's
-implemented `0.3.0` Gate 2 namespace are distinguished below. The
+existing contracts. Published `0.3.0` reserves `.bw` and retains the exact
+legacy `.artext/bw` exclusion without a state store. The
 owner-defined Core capability inventory is Search, View, Pick, Anchor, Check,
 Edit, Apply, and Data. `S` is assigned to Search, `P` to Pick, `A` to
 Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.3.0 source-ready, unpublished — Gates 1–5 complete
+## 0.3.0 published and closed — Gates 1–5 and release complete
 
 Gates 1–5 are complete after Gate 5R in the
 [five-gate tracker](docs/tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
-Cargo and source-built CLI are source-ready unpublished `0.3.0`; public
-distribution remains closed `0.2.6`. The following
-checkout implements namespace exclusion, complete direct shell View and Help/module
+Cargo, CLI, official installers and Update are published and closed `0.3.0`.
+Deployment Source Authority remains
+`237e468993372d1bb079cbaeebd36feea6aa27ea`, not a later documentation commit.
+The checkout implements namespace exclusion, complete direct shell View and Help/module
 contraction. Gate 5R closes D3 with four new independently captured arms and
 exact final oracles, reusing Gate 5's identical-input 293/293 GNU/musl tests
 and 52 smokes. Both N arms obtain complete context without Content recovery.
 The earlier NO-GO and nine-command Genie N record remain evidence; its extra
 File View was optional verification, not a BOX 26 failure. The subsequent
-source-version decision selects `0.3.0` without a production change; artifact,
-installer, publisher and publication work remains separate. Source-built
-Update can install official `0.2.6` without version comparison; do not treat
-it as a version guard. No version promotion was part of Gate 5R itself.
+source-version decision selected `0.3.0` without a production change. The
+separately authorized artifact, installer and manifest-last publication closure
+is complete, including one idempotent rerun. Update installs or reinstalls
+official `0.3.0` without version comparison, retry or rollback; installers
+accept only exact `0.2.6`/`0.3.0` manifests. No version promotion was part of
+Gate 5R itself.
 The tracker defines measurement
 scope, raw records and unobservable platform-envelope limitations.
 The Protocol owns the implemented Runtime-root-relative `.bw` reservation plus
@@ -45,7 +48,7 @@ upward kind. D2 closes byte-length Content framing and append-before-write slots
 with terminal Stream failure and no Drop retry. Gate 2 is namespace verification;
 Gate 3 is complete View; Gate 4 completes direct/advanced help, private module relocation and
 evidence-preserving verification contraction; Gate 5 is final GNU/musl and
-N-1/N readiness. Release slices require separate approval afterwards.
+N-1/N readiness. The separately approved release slices are complete.
 Use focused development checks and reuse evidence only across the complete
 input boundary defined in verification. Do not execute `0.2.5` or older
 comparators, or use/update the user's `0.2.2` binary. Preserve both planning
@@ -95,8 +98,8 @@ Gate 8 made source Cargo and `bw version` `0.2.6` while official distribution
 was still `0.2.5`. Production Rust and the v5 wire remain byte-identical to
 Gate 6. R3 release closure is complete: Source Authority
 `09bb6c424081594bd86a95f04345b786ef9b46b6` supplies published and closed
-`0.2.6`. Official artifacts, installers, manifest, and Update now select
-`0.2.6` in the exact 76-file tree. Installers accept only exact `0.2.5` and
+`0.2.6`. At that closure, artifacts, installers, manifest, and Update selected
+`0.2.6` in the exact 76-file tree. Its installers accepted exact `0.2.5` and
 `0.2.6` manifests. Update still performs no version comparison. Production
 Rust, Cargo, tests, toolchain, and v5 wire are unchanged by release closure.
 
@@ -362,8 +365,8 @@ Check, Anchor, Edit, Apply, result-binding, Data, Search/View/Check/Edit JSON, r
 View, Version, Update, and `0.2.3` Patch Box Adapter slice, every
 other capability remains deferred Adapter work. `bw update` is an explicit
 user-invoked installer handoff with no version comparison. It installs or
-reinstalls the current official `0.2.6` release through installers that accept
-only the exact closed `0.2.5` and current `0.2.6` manifests; it
+reinstalls the current official `0.3.0` release through installers that accept
+only the exact closed `0.2.6` and current `0.3.0` manifests; it
 creates no daemon, background updater, retry authority, or version-comparison
 engine.
 
@@ -473,9 +476,9 @@ are preserved evidence, never current authority.
   View, Check, Apply, or Anchor call returns. A successful Host Search may
   replace the narrow trusted proof without retaining its projection. Anchor
   may retain only target-local session continuity.
-- Future spill belongs only to a host-provided system root. Published `0.2.6`
+- Future spill belongs only to a host-provided system root. Prior published `0.2.6`
   creates no `.artext` and excludes only root-relative `.artext/bw` and its
-  descendants. This checkout's `0.3.0` Gate 2 adds exact `.bw` exclusion without
+  descendants. Published `0.3.0` Gate 2 adds exact `.bw` exclusion without
   a store or eager creation; other `.artext` children remain ordinary source.
 - Search is read-only discovery over admitted live Workspace Source inside a
   structured scope. Every call scans live source directly; it creates or uses

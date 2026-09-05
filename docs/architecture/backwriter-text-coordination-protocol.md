@@ -1,17 +1,18 @@
 # Backwriter Protocol
 
-## 0.3.0 namespace — Gate 2 implemented in the checkout
+## 0.3.0 namespace — implemented, published and closed
 
 This target supplements the closed `0.2.6` implementation described below;
 Gates 1–5 are complete after Gate 5R readiness GO in the
 [tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md#gate-5r-result--go),
 which preserves the earlier incomplete NO-GO. No protocol or version change
-follows that evaluation itself. The subsequent source-version decision selects
-source-ready unpublished Cargo/CLI `0.3.0` without changing this Protocol.
-Official distribution stays closed `0.2.6`; artifacts, installers, publisher
-and publication remain separate. Update can install official `0.2.6` without
-version comparison, including from a source-built `0.3.0` binary.
-Published `0.2.6` excludes `.artext/bw` and does
+follows that evaluation itself. The subsequent source-version decision and
+separately authorized release closure align Cargo/CLI, official installers and
+Update at published and closed `0.3.0` without changing this Protocol.
+Deployment Source Authority remains `237e468993372d1bb079cbaeebd36feea6aa27ea`.
+Update installs or reinstalls `0.3.0` without version comparison, retry or
+rollback; installers accept only exact `0.2.6`/`0.3.0` manifests.
+The prior published `0.2.6` excludes `.artext/bw` and does
 not implement a private state store. The `0.3.0` target reserves `.bw` at the
 same accepted Runtime workspace root, not at an admission-root-relative,
 nested-workspace, HOME, or new environment-selected base. It excludes both
@@ -123,10 +124,10 @@ Gate 7 changes no protocol contract. It records candidate/N-1, blind,
 trained-use, and external evidence, and documents the existing quoted Shell
 token form for whitespace-containing literals or Content. Gate 8 made source
 Cargo, `bw version`, its KAT, and status unpublished `0.2.6` while the public
-release remained `0.2.5`. R3 now closes the matching official `0.2.6`
+release remained `0.2.5`. R3 subsequently closed the matching official `0.2.6`
 artifacts, installers, manifest, and 76-file distribution without changing
-Core/Runtime contracts. Update installs or reinstalls official `0.2.6` with
-no version comparison; installers accept only exact `0.2.5`/`0.2.6` manifests.
+Core/Runtime contracts. At that closure Update installed or reinstalled `0.2.6`
+without version comparison; installers accepted exact `0.2.5`/`0.2.6` manifests.
 
 ## 0.2.5 performance-recovery authority
 
@@ -271,7 +272,7 @@ The `0.2.2` Anddress-first general editing Adapter authority, minimum one-shot
 implementation, integration, source-version decision, and separate Gate 7
 publication are closed. Patch Box Gates 1–8 are published and closed `0.2.3`;
 they change no v4 identity or currentness meaning. Official artifacts,
-installers, update target, and publication are aligned at `0.2.6`.
+installers, update target, and publication are aligned at `0.3.0`.
 
 ## 0.2.0 current-observation authority
 
@@ -1634,8 +1635,8 @@ transition engine, successor inference, or past-to-current reconciliation.
 Anchor applies only to source-visible mutation boundaries, never editor-only
 buffers.
 
-In published `0.2.6`, the only special ignored path is Runtime-root-relative
-`.artext/bw` and its subtree. The `0.3.0` target above adds the exact `.bw`
+In prior published `0.2.6`, the only special ignored path is Runtime-root-relative
+`.artext/bw` and its subtree. Published `0.3.0` above adds the exact `.bw`
 reservation without storage IO. `.artext` itself is not globally reserved;
 other children follow normal admission and safety policy. Future spill belongs
 only to a host-provided system root and is not created or configured here.

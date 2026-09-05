@@ -1,5 +1,95 @@
 # Backwriter 0.3.0 independent namespace and complete shell View
 
+## Published 0.3.0 — deployment and documentation closure
+
+Recorded 2026-09-05. Gates 1–5, the subsequent source-version decision and
+separately authorized release publication are complete. Cargo/CLI, official
+installation and Update are implemented, published and closed `0.3.0`.
+Deployment Source Authority remains
+`237e468993372d1bb079cbaeebd36feea6aa27ea`, not this later documentation
+commit. Server deployment commit is
+`fc2bfb6032a0a95031c11a169e167b7fcd591195`.
+The manifest is 876 bytes, SHA-256
+`4e95f3f810cc610fcdacf787bf0c5210cb00ccfe066298fa43bdb3d1fe09ffde`,
+with version `0.3.0` and that exact source revision. Installers accept only
+exact `0.2.6`/`0.3.0` manifests; `0.2.5` and earlier acceptance is retired.
+Update installs or reinstalls `0.3.0` without version comparison, retry or rollback.
+
+The completed publication added eight artifact/sidecar files, replaced
+`install.sh`, then `install.ps1`, then the manifest last, and reran once for
+complete idempotent reuse. It left 84 files and 12 directories including root.
+The 73 preserved files are 72 prior versioned files plus CMD. All 80 versioned
+files are immutable-cacheable; three installers and the manifest are no-store.
+CMD preservation is not an immutable-cache claim.
+Detailed artifacts, installer digests, target limits and execution evidence
+remain in the pinned server
+[release record](https://github.com/NOEEZClisher/server/blob/fc2bfb6032a0a95031c11a169e167b7fcd591195/backwriter/release/README.md)
+and [publisher record](https://github.com/NOEEZClisher/server/blob/fc2bfb6032a0a95031c11a169e167b7fcd591195/backwriter/publish/README.md#closed-030-transition).
+Those are completed past runs, not commands executed by this docs task.
+
+### New read-only audit
+
+Entry was clean main/origin equality at the two commits above. The live root
+was compared with the existing publisher's declared version/platform/hash
+catalog, not merely a file count: all 84 paths, artifact SHA values, exact
+sidecar bytes, installer sizes/hashes and manifest fields match. Current
+artifact/sidecar sizes also match release authority; every observed byte length
+equals file metadata. All 12 directory paths are exact. Directories are
+root:root 0755, regular files root:root 0644, with no symlink, unknown entry or
+staging path. No unexpected entry was removed or followed.
+
+Fresh before/after records use the same deterministic serialization of each
+path's device/inode, owner, mode, size, nanosecond mtime/ctime and file SHA,
+plus service state and listener. Both have SHA-256
+`b2c84cf922c7cec35cf18b55c3d0e78697008710ff3382a8fbc0dce413a3c88a`.
+This proves equality within this documentation audit only; deleted prior raw
+snapshots cannot establish equality with a historical serialization.
+Origin remains active/running, PID 629, InvocationID
+`cb7eb656fe5a4b8bac0f378ac8a84cf6`; cloudflared remains active/running,
+PID 998, InvocationID `6d43980020c142099d9003c94624b0ef`. Both have NRestarts=0,
+with the sole port-8080 listener at `127.0.0.1:8080`. No service repair or restart
+was used. Credential paths, actual installed bw and actual HOME/PATH/rc were
+not accessed. DNS, tunnel and endpoint checks were not repeated.
+
+R Rust, Cargo/lock, tests/fixtures, toolchain and build inputs match Deployment
+Source Authority. S remains clean at its deployment commit, including all
+non-document deployment inputs. New offline/locked metadata confirms package
+`backwriter` version `0.3.0`. The ten allowed documents receive only current
+release wording, historical-tense clarification and this closure record;
+v5, D1/D2, Host, Anchor, raw Session and `.bw` reservation-without-storage
+semantics are unchanged. Source/roadmap notes, history and the entire original
+tracker suffix below remain byte-identical. Document links/anchors/fences,
+conflict markers, diff/index/path, untracked output and absent/untracked
+`.bw`/`.artext` are audited before staging.
+
+The document audit passes 10 documents, 63 local file links, six local anchors,
+balanced fences and no conflict markers; the pre-stage index is empty and no
+untracked output remains. The first sandboxed Git child process was denied;
+the same read-only audit passed through the approved execution path.
+Read-only S retains out-of-scope wording: AGENTS.md line 27 and README.md
+lines 24–25 still use current tense for the historical 76-file tree;
+release/README.md line 101 does likewise, and line 68 calls the preserved
+73 files immutable without distinguishing CMD's no-store policy. Its top-level
+0.3.0 closure and publisher catalog are canonical; those S documents were not
+edited by this R-only task.
+
+Reused rather than rerun: GNU/musl 293/293, source-version four KAT executions
+and recorded smokes, installer 46, publisher 59, ZIP helper 12, CMD 12,
+Origin 13, input rejection 15, endpoint checks 344 and installed CLI processes
+8. Their input boundary is unchanged. No product, full suite, AI, benchmark,
+cross-build, artifact, installer, publisher, Update or full endpoint execution
+belongs to this documentation audit. Native macOS/Windows/PowerShell/CMD
+execution remains unverified, and no locking, rollback, fsync or crash-durability
+guarantee is added. Task-local audit scripts and snapshots are removed after
+recording results; no existing target or user material is removed.
+
+Current stale release claims are corrected, while prior `0.2.6` release/N-1,
+allowlist/Update and 76-file input facts remain historical. All prior NO-GO,
+nine-command Genie, Gate 5R GO, source-version unpublished decisions, original
+transcripts, hashes and precise measurements below retain their original bytes.
+The following sections describe their respective closure times, not current
+official release status.
+
 ## Source-version decision — source-ready unpublished 0.3.0
 
 Recorded 2026-09-05. Entry was clean `main = origin/main =
