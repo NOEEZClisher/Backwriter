@@ -14,19 +14,23 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.3.0 target — Gates 1–5 complete; Gate 5R readiness GO
+## 0.3.0 source-ready, unpublished — Gates 1–5 complete
 
 Gates 1–5 are complete after Gate 5R in the
 [five-gate tracker](docs/tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
-Cargo, CLI, and public distribution remain closed `0.2.6`; the following
+Cargo and source-built CLI are source-ready unpublished `0.3.0`; public
+distribution remains closed `0.2.6`. The following
 checkout implements namespace exclusion, complete direct shell View and Help/module
 contraction. Gate 5R closes D3 with four new independently captured arms and
 exact final oracles, reusing Gate 5's identical-input 293/293 GNU/musl tests
 and 52 smokes. Both N arms obtain complete context without Content recovery.
 The earlier NO-GO and nine-command Genie N record remain evidence; its extra
-File View was optional verification, not a BOX 26 failure. Keep Cargo/CLI at
-`0.2.6`: version selection and release remain separate decisions. No product
-fix or version promotion is part of Gate 5R. The tracker defines measurement
+File View was optional verification, not a BOX 26 failure. The subsequent
+source-version decision selects `0.3.0` without a production change; artifact,
+installer, publisher and publication work remains separate. Source-built
+Update can install official `0.2.6` without version comparison; do not treat
+it as a version guard. No version promotion was part of Gate 5R itself.
+The tracker defines measurement
 scope, raw records and unobservable platform-envelope limitations.
 The Protocol owns the implemented Runtime-root-relative `.bw` reservation plus
 the exact legacy `.artext/bw` exclusion. No private state store was found;

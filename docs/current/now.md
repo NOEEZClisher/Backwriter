@@ -1,13 +1,15 @@
 # Backwriter Current State
 
-## 0.3.0 target — Gates 1–5 complete, Gate 5R readiness GO
+## 0.3.0 source-ready, unpublished — Gates 1–5 complete
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 closes documentation authority, focused namespace, direct shell View, Help and
-private CLI module/evidence contraction. Cargo/CLI and official
-distribution remain published and closed `0.2.6`, with pinned N-1 Source
-Authority `09bb6c424081594bd86a95f04345b786ef9b46b6`. No `0.3.0` readiness
-revision is assigned, and this work authorizes no artifact or publication.
+private CLI module/evidence contraction. Cargo and source-built CLI are
+source-ready unpublished `0.3.0`; official distribution remains closed `0.2.6`,
+with Source Authority `09bb6c424081594bd86a95f04345b786ef9b46b6`. The subsequent
+source-version decision is complete without production changes. Artifacts,
+installers, publisher and publication remain separate. Source-built Update
+can install official `0.2.6` without version comparison; it was not executed.
 
 The checkout excludes same-root `.bw` plus exact legacy `.artext/bw` through
 one existing predicate, not a storage engine. Gate 2 adds no stored-state IO,
@@ -28,8 +30,9 @@ release smokes. Gate 5R reuses those identical inputs and closes D3 with four
 new independent arms: separate streams, whole-arm monotonic time and exact
 delivered text-content records are captured; all sixteen final files match
 the fixed oracle. Both N arms have complete first Paragraph Content, zero
-recovery calls and zero wrong edits/newline mistakes. Readiness is GO, while
-version selection remains pending and production/tests/Cargo remain fixed.
+recovery calls and zero wrong edits/newline mistakes. Readiness is GO. Gate 5R
+kept production/tests/Cargo fixed; the later source-version decision changes
+only the root package versions and two Version KAT literals outside documents.
 The prior NO-GO/raw transcripts remain unedited evidence; its nine-command
 Genie N included optional File verification, not missing-Content recovery.
 Unobservable platform-added envelopes are excluded from the declared

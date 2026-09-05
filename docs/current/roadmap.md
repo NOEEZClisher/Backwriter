@@ -5,7 +5,8 @@
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 records Gates 1–5 as complete after Gate 5R. Its source note and grounded
 roadmap remain unchanged planning evidence; Protocol, address model, CLI and verification own
-the reconciled target. Closed `0.2.6` stays current.
+the reconciled target. Source-ready unpublished `0.3.0` is selected; official
+distribution remains closed `0.2.6`.
 
 1. Gate 1: namespace consumer/N/A inventory, shell output authority, explicit
    unresolved decisions and acceptance — complete; documentation only.
@@ -23,9 +24,11 @@ the reconciled target. Closed `0.2.6` stays current.
    View was optional verification, not a BOX 26 failure. Four new arms capture
    separate streams, whole-run time and exact delivered text content. All final
    bytes match, and N needs no Content-recovery calls. Identical-input 293/293
-   tests and 52 smokes are reused. Version selection remains pending;
-   Cargo/CLI stay `0.2.6`, with no product fix or version promotion.
-   Subsequent artifact/installer/publication slices require separate approval.
+   tests and 52 smokes are reused. Gate 5R itself made no version change.
+   The subsequent source-version decision selects Cargo/CLI `0.3.0` without
+   production changes. Artifact/installer/publisher/publication slices remain
+   separate. Source-built Update can install official `0.2.6` without comparing
+   versions; no version guard is added.
 
 No Gate adds a parser, executor, persistent refs, history, relocation, rollback,
 CAS, lock, Search optimization, wire change or shell EOF Content transport.

@@ -70,8 +70,8 @@ exact immutable `0.2.5` manifest and current `0.2.6` manifest; `0.2.4`, `0.2.3`,
 version comparison and adds no version guard.
 
 The product is Backwriter. The source Cargo package and library crate are
-`backwriter` at published and closed `0.2.6`; a source-built `bw version`
-prints `Backwriter 0.2.6`. The sole canonical executable and external Adapter
+`backwriter` at source-ready unpublished `0.3.0`; a source-built `bw version`
+prints `Backwriter 0.3.0`. The sole canonical executable and external Adapter
 command are `bw`. There is no `backwriter` binary, alias, or wrapper. The
 official installer selects the closed public `0.2.6`
 distribution.
@@ -80,15 +80,16 @@ The published `0.2.6` Source Authority's `src/**` is byte-identical to its Gate 
 candidate `c78e07f242035230e8b071d583491ac633f58d29`; that claim does not cover
 this later checkout. Unpublished `0.3.0` Gates 1–4 add the private namespace
 boundary, complete direct shell View, discoverable Help and private CLI modules.
-Cargo and `bw version` still report `0.2.6`. Gate 5R readiness is **GO**:
+Cargo and source-built `bw version` now report `0.3.0`. Gate 5R readiness is **GO**:
 four new independently captured evaluations preserve exact final bytes, and
 both candidate arms obtain complete Paragraph Content without recovery calls.
 The identical-input native 293/293 tests and 52 smokes are reused, not rerun.
 The prior incomplete evaluation and its optional extra File View remain in the
 [evaluation record](docs/tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md#gate-5r-result--go).
-Version selection remains separate; no product change is included.
-No `0.3.0` release is authorized. Update still hands off to the official
-`0.2.6` installer without comparing versions; it was not executed in Gate 5.
+The subsequent source-version decision is complete, without production changes.
+Artifacts, installers, publisher and publication for `0.3.0` remain separate.
+Source-built `0.3.0` Update can install official `0.2.6` without comparing
+versions; it was not executed for this source-version closure.
 Use `bw help shell` for short-reference Search/View/Replace/Check and
 `bw help pick`, `bw help anchor`, `bw help apply`, or `bw help data` for advanced
 raw Session topics. These Help topics add no one-shot capability execution.

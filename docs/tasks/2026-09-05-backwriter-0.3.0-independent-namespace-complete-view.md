@@ -1,5 +1,110 @@
 # Backwriter 0.3.0 independent namespace and complete shell View
 
+## Source-version decision — source-ready unpublished 0.3.0
+
+Recorded 2026-09-05. Entry was clean `main = origin/main =
+bde689b22fbe6f5ebc06247b094730f5066b05af`. The Owner selects source-ready
+unpublished `0.3.0` on Gate 5R GO. This decision is complete; artifact,
+installer, publisher and publication closure is not. Official `0.2.6`
+Source Authority remains `09bb6c424081594bd86a95f04345b786ef9b46b6`.
+Source-built Update can install official `0.2.6` without version comparison;
+neither installed `bw` nor Update was executed.
+
+### Minimal change and evidence boundary
+
+The existing `write_version` consumes `env!("CARGO_PKG_VERSION")`; no executor,
+writer, helper, API, schema, compatibility path or production code is changed.
+Only Cargo.toml's root version, Cargo.lock's `backwriter` entry and two
+`Backwriter 0.3.0\n` expectations in `tests/cli/help.rs` change outside docs.
+The Version KATs remain independent literals. Dependencies, features, profile,
+toolchain, flags, other tests/fixtures and every production byte are unchanged
+from entry. Cargo/tests are explicitly not wholly byte-identical.
+
+Gate 5 GNU/musl **293/293 tests**, **52 smokes**, and Gate 5R's four arms are
+reused under verification's version/build-metadata exception. Complete input
+comparison permits only these four version substitutions. The previous NO-GO,
+nine-command record, all 21 archived files and complete Gate 5R section below
+are preserved byte-for-byte. T-source/T-roadmap and history remain unchanged.
+No full suite, AI/capture, N-1 comparison, benchmark or performance claim is
+repeated. Delivered text-content excludes unobservable platform envelopes;
+the historical n=1 times remain observations, not performance guarantees.
+
+### Fresh verification
+
+Rust `1.95.0 (59807616e 2026-04-14)`, Cargo
+`1.95.0 (f2d3ce0bd 2026-03-21)`, LLVM `22.1.2`; existing GNU and musl targets,
+default features, unchanged release profile (`panic=abort`, strip, LTO,
+codegen-units=1), no added Rust/build flags. Task-local target output only.
+Offline/locked full metadata and dependency tree equal the entry versions
+after normalizing only the root version/ID. Fmt and each target's all-target
+check, clippy `-D warnings` and release build pass.
+
+| Newly executed evidence | GNU | musl |
+| --- | --- | --- |
+| `canonical_binary_help_and_default_workspace_search` | 1 passed | 1 passed |
+| `command_local_help_kats_are_exact_and_skip_runtime_opening` | 1 passed | 1 passed |
+| Release smoke processes | 7 passed | 7 passed |
+| Release `bw` size | 864848 bytes | 959088 bytes |
+| Release `bw` SHA-256 | `ed0affd068ef017bccc3047ac93d705150ee74fd34d70dffc22be4f88b113732` | `d1916ee22a4d3ea8bfe684ed317456fd966a52520082f2830a33e92d82e190b0` |
+
+These are **4 new test executions and 14 new smoke processes**, not newly run
+293/293 suites or 52 smokes. Additionally, **42 release command-local Help/usage
+processes** pass: seven commands, direct/named Help plus trailing-operand
+rejection, on each target. Independent Help KAT bytes match; usage exits 2
+with empty stdout and nonempty stderr. Update Help never executes Update.
+Both Version runs exit 0, stdout exact
+`Backwriter 0.3.0\n`, stderr empty. `--help` and `help` equal the existing
+independent top-level KAT. Command-local Help/usage and private sentinel
+noncreation are covered by the two KATs on each target. No `.bw` or `.artext`
+appears in the isolated release fixtures.
+
+Each target's seven processes are Version, `--help`, `help`, JSON Search,
+direct shell, stale one-shot Edit and raw Session shell. On exact
+`retry_budget = 3\r\n`, JSON Search v2 returns one occurrence containing v5.
+Direct shell executes:
+
+```text
+search line "retry_budget = 3"
+view @0 @0 --as paragraph
+replace @0 "retry_budget = 5"
+check @3
+view @3
+exit
+```
+
+Exit 0 and empty stderr; two Paragraph records have `bytes=18`, fresh refs
+`@1/@2` and exact old CRLF Content; Replace returns `@3\tChanged`, Check
+returns `@4\tCurrent`, and fresh View returns `@5`, `bytes=18` and exact
+`retry_budget = 5\r\n`. Each record uses existing `View`/`EndView` framing
+without trimming. Reusing the original JSON occurrence's address in one-shot
+Edit exits 1 with unavailable on stderr, empty stdout and unchanged bytes.
+An independent reset to `one\r\n` followed by raw Search binding, exact
+`edit replace @lines[0] "two\\r\\n"`, then separate `apply @edit`, exits 0
+with exact stdout `Found 1\n0\tLine\tnote.txt:1\nOK\n`, empty stderr and
+final `two\r\n`. No live source, HOME, PATH or installation is involved.
+
+The task-local assertion driver SHA-256 is
+`46a933cd2af8b23e6cefd2716d11bb871c6f7aa209e426c271eedb6bfff8a967`;
+the exact argv/stdin/exit/stdout/stderr JSON record SHA-256 is
+`fc18bba8e6e098218883fae756bed01a6cfbb120b78ed6058ce209167db3f3c5`.
+An initial sandbox child-spawn denial required the approved execution path;
+the verification-only extractor was corrected to existing v2 `occurrences`,
+not a production schema change. Both complete final runs passed. New binary
+identities are recorded above, never asserted equal to the `0.2.6` binaries.
+
+Native macOS/Windows/PowerShell/CMD and release reconstruction/installation/
+publication are not verified here. No server, public root, service, tunnel,
+DNS, credential or actual HOME change is authorized by this source decision.
+The source commit is reported after commit rather than inventing a self-SHA.
+
+Final audit passes 13 allowed changed paths, 63 local Markdown links and six
+anchors, balanced fences, no conflict markers, empty pre-stage index and no
+untracked/tracked output or `.bw`/`.artext`. The complete prior tracker suffix
+is byte-identical. The exact task-local root `/tmp/backwriter-source030.iiIisc`
+is removed after verification; existing repository targets and user data are
+preserved. Recorded identities and assertions above remain the evidence;
+temporary binaries, logs and drivers are not release artifacts.
+
 ## Gate 5R result — GO
 
 Recorded 2026-09-05. Gates 1–5 are complete for the evaluated source. D3's

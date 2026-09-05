@@ -464,7 +464,7 @@ fn canonical_binary_help_and_default_workspace_search() {
 
     let version = run(root.path(), &["version"]);
     assert!(version.status.success());
-    assert_eq!(version.stdout, b"Backwriter 0.2.6\n");
+    assert_eq!(version.stdout, b"Backwriter 0.3.0\n");
     assert!(version.stderr.is_empty());
 }
 
@@ -540,7 +540,7 @@ fn command_local_help_kats_are_exact_and_skip_runtime_opening() {
         }
         for (command, expected) in [
             ("--help", TOP_LEVEL_HELP_KAT),
-            ("version", "Backwriter 0.2.6\n"),
+            ("version", "Backwriter 0.3.0\n"),
         ] {
             let output = run(fixture.path(), &[command]);
             assert!(output.status.success());

@@ -6,7 +6,11 @@ This target supplements the closed `0.2.6` implementation described below;
 Gates 1–5 are complete after Gate 5R readiness GO in the
 [tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md#gate-5r-result--go),
 which preserves the earlier incomplete NO-GO. No protocol or version change
-follows that evaluation; version selection remains separate.
+follows that evaluation itself. The subsequent source-version decision selects
+source-ready unpublished Cargo/CLI `0.3.0` without changing this Protocol.
+Official distribution stays closed `0.2.6`; artifacts, installers, publisher
+and publication remain separate. Update can install official `0.2.6` without
+version comparison, including from a source-built `0.3.0` binary.
 Published `0.2.6` excludes `.artext/bw` and does
 not implement a private state store. The `0.3.0` target reserves `.bw` at the
 same accepted Runtime workspace root, not at an admission-root-relative,

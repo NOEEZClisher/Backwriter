@@ -2,6 +2,34 @@
 
 ## Current policy and candidate
 
+Source-version closure selects **source-ready unpublished 0.3.0** from clean
+`bde689b22fbe6f5ebc06247b094730f5066b05af`. The only non-document changes are
+the root package version in Cargo.toml/Cargo.lock and two literal Version KAT
+expectations. Production, other tests/fixtures, build scripts, toolchain,
+dependencies, targets, features, profile and flags are unchanged. Cargo and
+tests are not byte-identical: this is the version/build-metadata exception
+below, not unconditional test-input equality.
+
+Fresh offline/locked metadata and tree retain the dependency graph after
+normalizing only the root version/ID. Fmt, GNU/musl all-target check, clippy
+with warnings denied, and release builds pass. Two Version/Help KATs pass on
+each target: **4 new test executions**, distinct from reused **293/293 tests**,
+52 Gate 5 smokes and four Gate 5R arms. Both release binaries pass 7 fresh
+smoke processes each: exact Version/top-level Help, JSON Search, direct shell
+Search/batch View/Replace/fresh Check/View, stale nonpublication, and raw
+Session Apply. CRLF and D2 framing remain exact; Help/Version create neither
+`.bw` nor `.artext`. Another 42 release command-local Help/usage processes
+pass (21 per target), including Update Help without running Update.
+The tracker records the new binary identities; no old
+binary equality is claimed. Full suites, AI capture, N-1 comparison, benchmarks,
+native macOS/Windows, installed `bw` and Update are not rerun.
+
+Official distribution stays closed `0.2.6`. Source-built Update can install
+that version without comparison. Artifact/installer/publisher/publication
+closure is separate and not executed here.
+
+### Preserved Gate 5R evidence
+
 The [0.3.0 five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 records implementation evidence; Protocol, address model and CLI authority own
 semantics. Gates 1–5 are complete after Gate 5R's readiness **GO** on candidate
@@ -13,7 +41,7 @@ fixed oracle. Both N arms receive complete Paragraph Content without recovery;
 newline mistakes and Wrong Apply are zero. Stream bytes and whole-arm time
 are independent of exact model-delivered JSON text-content bytes. Unobservable
 platform-added envelopes are explicitly excluded, not counted as zero.
-Version selection is deferred; Cargo/CLI/public stay `0.2.6` with no release.
+At Gate 5R, version selection was deferred and Cargo/CLI/public stayed `0.2.6`.
 
 The final executed inputs, binary/log identities, independent oracle, four
 unaltered transcripts and capture gaps are retained in the
@@ -23,11 +51,11 @@ not missing-Content recovery or an automatic BOX 26 failure. Its actual count,
 NO-GO and raw records remain intact. Capture source, four complete records and
 recomputation rules are in the
 [Gate 5R record](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md#gate-5r-result--go).
-Only docs changed after the native matrix. N GNU alone was reconstructed and
+At Gate 5R, only docs changed after the native matrix. N GNU alone was reconstructed and
 matched its recorded SHA; the existing N-1 GNU binary matched its pinned SHA.
 No full suite, musl rebuild, old benchmark or native macOS/Windows run is claimed.
 
-Cargo and source-built Version remain `0.2.6`. Published N-1 Source Authority is
+At that evaluation Cargo and source-built Version remained `0.2.6`. Published N-1 Source Authority is
 `09bb6c424081594bd86a95f04345b786ef9b46b6`, closed `0.2.6`; the candidate
 includes later namespace, optional batch projection, direct shell View and Help
 changes. It is not byte-identical to N-1. CLI relocation is not source equality.

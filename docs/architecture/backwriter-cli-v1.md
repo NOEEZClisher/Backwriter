@@ -8,7 +8,9 @@ published `0.2.6`. The
 records the audited consumers, preserved Gate 5 NO-GO and Gate 5R readiness GO
 with complete scoped capture and exact oracles. Optional verification is not
 missing-Content recovery. The evaluation changes no CLI contract, output or
-version; version selection remains separate. Current release, one-shot
+version itself. The subsequent source-version decision selects source-ready
+unpublished Cargo/CLI `0.3.0`; official distribution stays closed `0.2.6`.
+Artifacts, installers, publisher and publication remain separate. One-shot
 syntax, raw/JSON View bytes, Search output, Edit receipts, and Check stay fixed.
 
 Direct `view <REF>... [--as <line|paragraph|file>]` must show each input ref,
@@ -270,13 +272,14 @@ output selections. They are unavailable inside Session. Neither opens a
 workspace, calls Core or Runtime, defines a wire value, or establishes a
 capability workflow.
 
-`bw version` writes exactly:
+Source-built `bw version` writes exactly:
 
 ```text
-Backwriter 0.2.6
+Backwriter 0.3.0
 ```
 
-including the final LF and no other successful output.
+including the final LF and no other successful output. The closed official
+`0.2.6` binary still prints `Backwriter 0.2.6\n`.
 
 `bw update` downloads the current platform's official installer over HTTPS and
 delegates installation to it. The current official manifest selects the closed
@@ -292,8 +295,9 @@ parent before replacing `bw.exe`. A Windows parent status of `0` means only that
 handoff started successfully; the child owns final installer output, final
 status, replacement, and bootstrap cleanup.
 
-The published `0.2.6` command has no version-comparison guard. Invoking Update
-therefore installs or reinstalls the official `0.2.6` release.
+Neither the published `0.2.6` nor source-built `0.3.0` command has a
+version-comparison guard. Invoking Update therefore can install the official
+`0.2.6` release even from source-built `0.3.0`; this closure does not run it.
 This boundary does not authorize a guard, retry, rollback, alternate installer,
 or publication.
 

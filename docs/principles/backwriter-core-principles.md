@@ -6,9 +6,11 @@ and Help/module/evidence contraction Gate 4 in its
 Gate 5R records readiness GO with scoped complete capture and exact final
 oracles, while preserving Gate 5's incomplete NO-GO and original raw records.
 Optional verification is not missing-Content recovery; command count alone
-does not replace BOX 26. Version selection remains separate.
-Cargo and public distribution remain closed
-`0.2.6`. A private reservation is
+does not replace BOX 26. The subsequent source-version decision selects
+source-ready unpublished Cargo/CLI `0.3.0`, without production changes.
+Public distribution stays closed `0.2.6`; artifacts, installers, publisher
+and publication remain separate. Source-built Update can install official
+`0.2.6` without comparing versions. A private reservation is
 not a storage engine: `.bw` and the legacy exact exclusion must neither cause
 eager IO nor consume historical data. Complete shell View displays returned
 Content without acquiring it again; normal absent relations do not hide peers.
