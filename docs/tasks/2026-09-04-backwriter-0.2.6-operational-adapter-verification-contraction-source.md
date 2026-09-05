@@ -200,3 +200,34 @@ closed 68-file `0.2.5` tree with the original manifest SHA-256
 Origin/cloudflared PID, InvocationID, restart counts, and the
 `127.0.0.1:8080` listener were unchanged. Reported duration was about
 32 minutes. The next proposed operation is separately scoped R3 publication.
+
+## Later owner handoff — Release R3 complete
+
+The owner reports release GO: one root live publication and one idempotent
+rerun completed the eight-versioned-file, POSIX, PowerShell, manifest-last
+transition. All 64 earlier versioned files and CMD were preserved; the rerun
+preserved all 76 files' bytes, inode, owner, mode, size, mtime, and ctime.
+The reported final tree has 76 files and 11 directories; the R3 tracker
+clarifies that the directory count includes the public root.
+
+Manifest: 876 bytes, SHA-256
+`47001acd4831954a5106a3aac5b9fdfe0b36791144f355f52523cd0d0eb7d5f1`.
+Both publication/reuse snapshots have SHA-256
+`c0224fc082100436673a4d4e6d8c49a2d9ce655e4d18e8c996c7584f5d1c17b0`.
+The report records 312 loopback/public GET/HEAD/error checks and 17 isolated
+installation/CLI records, including fresh install, `0.2.5` Update, `0.2.6`
+reinstall, CRLF, receipt reuse, shell refs, stale rejection, and raw Session.
+GNU/musl 285 each, installer 45, publisher 58, CMD 12, and Origin 13 were
+reused after checking code/input identity, not rerun as complete R3 suites.
+
+Backwriter pushed `09bb6c4..2e928bf` to
+`2e928bfa513cd970cbfc8677d1fbcc0bda368e00`; server pushed
+`30c005f..7438148` to `7438148cf46d30f7be300d36fdecb154dc50c3c2`.
+The report identifies twelve Backwriter documents and four server documents
+as the allowed paths; both repositories finish clean at `origin/main`.
+Origin/cloudflared identity, zero restarts, and listener remained unchanged.
+Cloudflare, DNS, credentials, and real HOME were not modified. Temporary
+bundles/tools/fixtures/HOMEs were removed, with no `.artext`, new tracked
+output, or staging. Native macOS/Windows/PowerShell/CMD execution remains
+unverified; existing locking/rollback/fsync/crash-durability limits remain.
+Detailed evidence stays in the R3 tracker instead of being duplicated here.

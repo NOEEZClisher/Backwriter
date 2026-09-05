@@ -17,8 +17,8 @@ shell process; it is not an address field, locator, alias namespace, or
 continuity claim.
 
 Gate 7 adds verification evidence and public Shell quoting guidance only. Gate
-8 is GO and changes source Cargo, `bw version`, its KAT, and active status to
-unpublished `0.2.6`; it does not change v5 values, encoding, numeric
+8 was GO and changed source Cargo, `bw version`, its KAT, and then-active status
+to unpublished `0.2.6`; it did not change v5 values, encoding, numeric
 references, or address algebra. At Gate 8 official distribution remained
 `0.2.5`; R3 now closes matching official `0.2.6` publication without changing
 this address authority.

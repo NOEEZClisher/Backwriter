@@ -629,8 +629,9 @@ human/JSON and Session forms while reusing existing outcomes and writers.
 Check accepts the resulting ordinary Search outcome, and its File Anddress can
 drive existing Apply `StartOf` and `EndOf` positions for an empty source.
 
-The historical milestone used Cargo `0.1.0`; current published source is Cargo
-`0.2.0`, and `bw version` prints `Backwriter 0.2.0`. The separate `0.1.0`
+The historical milestone used Cargo `0.1.0`; the later `0.2.0` closure used
+Cargo `0.2.0` and printed `Backwriter 0.2.0`. Current Cargo/CLI is `0.2.6`.
+The separate `0.1.0`
 stable-publication phase is completed below, while
 the complete public `0.1.0-beta.3` bundle remains closed and immutable.
 
@@ -655,8 +656,9 @@ commands transfer exact Session-value clones to/from Core `DataStore` without
 automatic storage or persistence. It directly reuses Core validation and public
 Runtime seams. One-shot Data and Anchor remain intentionally unsupported because
 their DataStore and live-handle contracts require Session lifetime. One-shot
-Pick, batch Check, and raw Edit/Apply transport await collection or transport
-authority. The distinct `0.2.2` Anddress-first one-shot Edit is implemented.
+Pick and raw Edit/Apply transport await collection or transport authority.
+Ordered one-shot JSON batch Check is complete in `0.2.6` Gate 6. The distinct
+`0.2.2` Anddress-first one-shot Edit is implemented.
 Raw output other than completed one-shot View and further
 Session behavior remain deferred Adapter decisions; CLI syntax creates no Core
 workflow or wire authority. Version and Update are Adapter-owned standalone
@@ -715,8 +717,8 @@ transition model is retired.
 
 ## Deferred capability decisions
 
-Plural View input, ranges, descendants, and partial behavior remain owner
-decisions. Apply's reference letter is unassigned. Future Search spill is
+Ordered batch View is implemented. Arbitrary ranges, descendants, and partial
+behavior remain owner decisions. Apply's reference letter is unassigned. Future Search spill is
 separately owned by a host-provided system root and must not create
 repository-local authority.
 

@@ -32,13 +32,13 @@ its KAT, and current status. At Gate 8 the official distribution remained
 the exact 76-file tree. Update installs or reinstalls `0.2.6` without version
 comparison; the installer allowlist is exact `0.2.5`/`0.2.6`.
 
-The active `0.2.5` performance recovery is governed by Principle 19 and its
+The completed `0.2.5` performance recovery is governed by Principle 19 and its
 [eight-gate tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
 Gates 1 through 8 close authority, bulk literal matching, raw/structural
 observation, canonical encoding reuse, dense Search storage, and consumer
-contraction, fixed integration evidence, and release closure. Cargo, `bw
-version`, installers, Update, and the official distribution are closed
-`0.2.5`.
+contraction, fixed integration evidence, and release closure. At that closure,
+Cargo, `bw version`, installers, Update, and the official distribution aligned
+at `0.2.5`; their current version is `0.2.6`.
 
 The prior published and closed `0.2.4` target is governed by Principle 18 and its
 [eight-gate tracker](../tasks/2026-09-03-backwriter-0.2.4-structural-authority.md).

@@ -58,9 +58,9 @@ Update now installs or reinstalls official `0.2.6` without version comparison.
 Gates 1 through 8 are complete under the
 [performance-recovery tracker](../tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md).
 Gate 2 adds one checked segment operation to the existing literal matcher and
-deletes the Runtime per-byte caller loop. Cargo, `bw version`, the canonical
-four-target artifacts, installers, Update, and the official exact 68-file
-distribution are published and closed `0.2.5`.
+deletes the Runtime per-byte caller loop. At that release closure, Cargo,
+`bw version`, the canonical four-target artifacts, installers, Update, and
+the official exact 68-file distribution aligned at `0.2.5`.
 
 The governing rule is **semantics stay unified; execution becomes specialized
 again**. V5 fields, algebra, canonical bytes, capability and Adapter outputs,
@@ -162,8 +162,9 @@ collection, and geometry-driven exact-range View and Edit/Apply/Anchor
 projection.
 Cargo, `bw version`, the four canonical artifacts, installers, manifest,
 Update target, and official distribution are published and closed `0.2.4`.
-Published and closed `0.2.3` remains immutable v4 release evidence. Update
-performs no version comparison and installs or reinstalls official `0.2.4`.
+Published and closed `0.2.3` remains immutable v4 release evidence. At the
+`0.2.4` closure, Update installed or reinstalled that official version without
+version comparison; its current target is `0.2.6`.
 
 Current source is hard-cut to `artext.backwriter-anddress.v5`. Shared
 `SourceIdentity` includes the exact source Line count alongside workspace
@@ -551,9 +552,10 @@ background or automatic updater. The Adapter adds no Core API, wire, workflow,
 provenance, automatic Data storage,
 registry, persistence, or retained Core state beyond existing Anchor continuity.
 One-shot Data and Anchor remain intentionally unsupported because their
-DataStore and live-handle contracts are Session-lifetime state. One-shot Pick,
-batch Check, and raw Edit/Apply transport still await collection or transport
-authority. The distinct `0.2.2` Anddress-first one-shot Edit is implemented.
+DataStore and live-handle contracts are Session-lifetime state. One-shot Pick
+and raw Edit/Apply transport still await collection or transport authority.
+Ordered one-shot JSON batch Check is complete in `0.2.6` Gate 6. The distinct
+`0.2.2` Anddress-first one-shot Edit is implemented.
 Raw output other than completed one-shot View and further
 Session behavior remain deferred under the
 [CLI V1 authority](../architecture/backwriter-cli-v1.md). The published

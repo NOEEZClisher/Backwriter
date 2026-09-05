@@ -23,8 +23,9 @@ high-level Replace at Gate 5, ordered batch Check at Gate 6, and evidence-led
 verification/documentation contraction at Gate 7. The
 governing rule is: **explain what to type, what happens, and what comes back.**
 It retains the closed `0.2.5` Core,
-Runtime, v5 wire, Core Search behavior, one-shot Search output/performance, raw Session, and public
-distribution unchanged. Future Adapter work reuses the handwritten parser,
+Runtime meanings, v5 wire, Core Search behavior, one-shot Search output/performance,
+and raw Session. Gates 1–8 left public distribution unchanged; R3 later advanced
+it to `0.2.6`. Future Adapter work reuses the handwritten parser,
 canonical writers, `apply_replace`, and existing Check grouping unless direct
 reachability proves a smaller replacement.
 
@@ -93,9 +94,9 @@ Gates 1 through 8 of the
 [performance-recovery tracker](docs/tasks/2026-09-04-backwriter-0.2.5-structural-specialization-performance-recovery.md)
 close authority, bulk literal matching, raw/structural observation, canonical
 encoding reuse, dense pending-result memory, consumer contraction, fixed
-integration evidence, and release closure. Cargo, `bw version`, artifacts,
-installers, Update, and the public distribution are published and closed
-`0.2.5`. The governing
+integration evidence, and release closure. At that closure, Cargo, `bw version`,
+artifacts, installers, Update, and the public distribution aligned at `0.2.5`.
+The governing
 rule is: semantics stay unified; execution becomes specialized again.
 
 The target preserves v5 fields, algebra, wire bytes, Search/View/Edit output,
@@ -160,7 +161,7 @@ Apply after-state activates it only for a non-File receipt or live non-File
 Anchor. Fixed A/B/C/D evidence passes the Check, View, 256 MiB Apply, CRLF
 Edit, and 134,217,728-short-Line boundaries without changing v5 or output.
 
-The remaining ordered work is the separately authorized Gate 8 release.
+Gate 8 subsequently completed the separately authorized `0.2.5` release.
 Shared Paragraph allocation is not active. Do not introduce v6,
 change v5 or Adapter output, restore
 retired carriers/scanners/private View, or add a parser, persistent

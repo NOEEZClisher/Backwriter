@@ -20,7 +20,7 @@ Runtime meaning by implication and adds no required capability workflow.
 
 - N-1 is closed `0.2.5` at
   `a9b47b06e0c4ac4c3058332f85a2885f47edd53a`.
-- The closed public root has 68 files and its manifest SHA-256 is
+- The N-1 public root at the Gates 1–8 baseline had 68 files and manifest SHA-256
   `2c8f19af7ee98be211e788f1e538a3bc476b554c614b6f07373572f16d09c2b7`.
 - GNU and musl each retain the closed 268-test result until a later Gate adds
   justified regression coverage.
@@ -31,7 +31,7 @@ Runtime meaning by implication and adds no required capability workflow.
   publication, and failure contracts remain authoritative.
 - No v6, persistent registry, history, relocation, watcher, retry,
   transaction, CAS/lock, rollback, release, artifact, publication, or live
-  infrastructure work belongs here.
+  infrastructure work belongs to Gates 1–8; R1–R3 required separate authority.
 
 ## Gate 1 — authority and N-1 boundary — complete
 
@@ -257,3 +257,71 @@ publisher locking, rollback, fsync, and crash-durability guarantees is unchanged
 The task-local bundle, temporary build tool/output, isolated HOME directories,
 fixtures, and raw verification files were removed after recording their evidence.
 Both repositories retain no new untracked output or `.artext` state.
+
+## Post-release authority audit — 2026-09-05
+
+Entry revisions are Backwriter `2e928bfa513cd970cbfc8677d1fbcc0bda368e00`
+and server `7438148cf46d30f7be300d36fdecb154dc50c3c2`, both matching
+`origin/main`. The only pending changes were the reviewed source/roadmap R3
+handoff appendices, preserved unchanged by this audit.
+
+Classification and corrections:
+
+- Current authority: closed public `0.2.6`, Source Authority
+  `09bb6c424081594bd86a95f04345b786ef9b46b6`, the 76-file tree, exact
+  `0.2.5`/`0.2.6` installer acceptance, and version-comparison-free Update.
+- Historical: N-1 `0.2.5` features, Gates 1–8's then-unpublished source,
+  R1/R2's 68-file baseline, `0.2.5`-to-`0.2.6` Update, and old publisher
+  prefix/resume inputs remain intact. Private reconstruction output remains a
+  valid current tool contract alongside the published release; prepared inputs
+  do not imply that publication is still pending.
+- Stale: README's official-distribution paragraph still named `0.2.5` and its
+  source revision. Older current-version/Update statements and pending Gate,
+  stdin, ordered Check, and plural View wording conflicted with completed
+  authority. Corrections scope old release claims to their closure and remove
+  only already-completed items from current pending lists. Server README's
+  ambiguous closure antecedent and the old publisher's "now" are historicalized.
+
+Read-only checks compare all 38 Backwriter non-Markdown tracked files directly
+with Source Authority bytes and all 35 server non-Markdown tracked files with
+R2 `30c005f9dcdff73103e9151d329c0bcfe9b7f022`: no differences. Offline/locked
+Cargo metadata succeeds for Backwriter `0.2.6` (67 resolved packages) and
+Origin `0.1.0` (one package). The Version writer and KAT use `0.2.6`; Update
+delegates without a version comparison. Both installer hash-selection branches
+accept only the two canonical manifest digests before artifact download.
+
+The local live tree has exactly 76 regular files and 11 directories including
+the public root, root-owned with directory/file modes `0755`/`0644`, and no
+symlink, unknown entry, or staging. All 76 file hashes match the unchanged
+publisher constants and exact sidecar bytes. The manifest is 876 bytes with
+the R3 digest above. Live and tracked POSIX/PowerShell/CMD installers match:
+
+| Installer | Bytes | SHA-256 |
+| --- | ---: | --- |
+| POSIX | 14200 | `fae43945969beb574133ffae7d378cd402a11702b69fd861d9cd0ba7c0393337` |
+| PowerShell | 15802 | `dd865fe62f67b9e4b46978ae40e72b7a0d56eac527b3706b4dae44c4ecd28239` |
+| CMD | 1549 | `cb2708ab47a693eb1f79b01b1def3dd6d6cb87931848aebfaf3a6893326da3e4` |
+
+Origin/cloudflared retain the R3 PIDs and InvocationIDs above, zero restarts,
+active state, and `127.0.0.1:8080`. The removed raw snapshot serialization is
+not reproduced. Directory names, hashes, sizes, owner/modes, and service fields
+are checked individually; historical inode/mtime/ctime equality and equality
+with the R3 composite snapshot fingerprint are not claimed. Remote DNS,
+connector state, and current endpoint responses are not re-probed.
+
+The existing user binary `/home/NOEEZ/.local/bin/bw` prints exact
+`Backwriter 0.2.2` plus LF, exits zero, and has empty stderr. Its 836208 bytes
+hash to `ba6a7486c9b7290f01fdfdb4296c979c2957653aef01ce15cd97c6f3faf898bf`
+and equal the validated public `0.2.2` Linux archive member, not `0.2.6`.
+This is an unchanged old user installation, not evidence against public
+`0.2.6` closure or a new `0.2.6` runtime test. No install or Update is run.
+
+GNU/musl 285 each, installer 45, publisher 58, CMD 12, and Origin 13 are reused
+passing results under the byte-identity evidence. R3's 312 endpoint checks and
+17 installer/CLI records remain past execution evidence, not fresh audit runs.
+Markdown links/fences/conflict markers, diff/cached paths and whitespace,
+empty starting indexes, and `.artext`/new tracked-output absence are audited.
+No task-local artifact or fixture is created. No suite, build, benchmark, blind
+trial, endpoint sweep, publication, service, credential, or actual HOME/PATH/rc
+mutation is performed. Native macOS/Windows/PowerShell/CMD execution remains
+unverified; publisher lock/rollback/fsync/crash-durability limits remain.

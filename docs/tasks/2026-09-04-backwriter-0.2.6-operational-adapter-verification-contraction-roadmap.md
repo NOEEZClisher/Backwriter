@@ -140,3 +140,50 @@ execution is implied by cross-builds or HTTP byte equality. Existing publisher
 concurrency-lock/rollback/fsync/crash-durability limitations remain. R3 adds no
 runtime code, release framework, service restart, DNS/tunnel change, credential
 content access, real-user HOME change, tag, GitHub Release, or crates.io work.
+
+## Post-release authority audit — proposed follow-up
+
+**Owner report:** R3 is GO, with 76 files, 11 directories including the root,
+312 endpoint checks, 17 installation/CLI records, and reused suite evidence.
+The companion source note captures this later handoff; the R3 tracker owns
+the detailed closure evidence. Earlier plans remain historical records.
+
+**Repository checked while preparing this prompt:** Backwriter
+`2e928bfa513cd970cbfc8677d1fbcc0bda368e00` and server
+`7438148cf46d30f7be300d36fdecb154dc50c3c2` match their local `origin/main`
+and were clean before the source/roadmap appendices. Backwriter production,
+Cargo, tests, and toolchain paths show no delta from Source Authority
+`09bb6c424081594bd86a95f04345b786ef9b46b6`; the server non-Markdown
+Backwriter tree shows no delta from R2
+`30c005f9dcdff73103e9151d329c0bcfe9b7f022`. Cargo declares `0.2.6`;
+the existing Version writer consumes that package version. No live probes
+or publication operations are performed during prompt preparation.
+
+**Audit plan:**
+
+1. Classify release references in active documentation as current authority,
+   historical evidence, or stale current wording. Inspect the containing
+   paragraph/section; do not globally replace `0.2.5`, `68`, `prepared`,
+   `private`, or `unpublished`. Private builder output and old publisher
+   preconditions remain valid after release closure.
+2. Read-only verify Cargo/CLI, Source Authority, installer allowlist and
+   pointer bytes, live inventory/manifest, and service/listener identity.
+   The R3 snapshot covers directory names, service identity/restarts, and
+   listener as well as file evidence. Compare its digest only with the exact
+   serialization. Raw verification files were removed; if the format cannot
+   be reproduced, report field-level evidence and the unavailable comparison,
+   not an invented matching hash. This is not a reason to publish again.
+3. Correct only misleading current release wording in the existing active
+   documents and tracker. Keep prior Gate/R1/R2 states and Source Authority
+   intact. Add no product code, suite, builder, installer, publisher, or
+   infrastructure changes; perform no installation or Update.
+4. Run document links/fences/conflict/whitespace/diff checks and reuse exact
+   unchanged suite/endpoint evidence with provenance. Record what was actually
+   executed; do not rerun all endpoints, full suites, builds, or benchmarks
+   solely for a wording audit. Unexpected code/live differences remain a
+   reported finding, not authority for repair or republishing.
+5. Under the resulting prompt's named Git scope, include the reviewed
+   source/roadmap handoff changes and any necessary document correction in
+   ordinary commits and non-force pushes. Leave an unchanged repository
+   without an empty commit. Finish with scoped clean/index checks and a
+   concise classification, evidence, and limitations report.

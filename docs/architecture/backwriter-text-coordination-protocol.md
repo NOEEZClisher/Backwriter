@@ -62,7 +62,7 @@ The Adapter's normal shell convenience flow is Search → ref → View → Repla
 fresh ref → Check. It is caller convenience, not a
 protocol-required lifecycle
 or capability order. The [0.2.6 tracker](../tasks/2026-09-04-backwriter-0.2.6-operational-adapter-verification-contraction.md)
-owns the remaining decisions and gates.
+records the completed decisions, gates, and separate R3 release closure.
 
 Gate 7 changes no protocol contract. It records candidate/N-1, blind,
 trained-use, and external evidence, and documents the existing quoted Shell
@@ -75,9 +75,9 @@ no version comparison; installers accept only exact `0.2.5`/`0.2.6` manifests.
 
 ## 0.2.5 performance-recovery authority
 
-Gates 1 through 8 are complete. Cargo, `bw version`, the official four-target
-artifacts, installers, Update target, and exact 68-file distribution are closed
-`0.2.5`. The
+Gates 1 through 8 are complete. At the `0.2.5` closure, Cargo, `bw version`,
+the official four-target artifacts, installers, Update target, and exact
+68-file distribution aligned at `0.2.5`. The
 performance target preserves all public v5,
 capability, Runtime, Adapter, failure, and publication meaning under one rule:
 semantics stay unified while execution becomes specialized again.

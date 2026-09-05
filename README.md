@@ -279,9 +279,9 @@ cargo test --offline --locked
 
 The official distribution authority is
 [https://backwriter.pentagration.com](https://backwriter.pentagration.com).
-It publishes the closed Backwriter `0.2.5` release for Linux/WSL x86_64,
+It publishes the closed Backwriter `0.2.6` release for Linux/WSL x86_64,
 macOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision
-`e4022fc073e9df3928e1c3817b266ce92121a03c`. Linux uses canonical target
+`09bb6c424081594bd86a95f04345b786ef9b46b6`. Linux uses canonical target
 `x86_64-unknown-linux-musl`;
 `x86_64-unknown-linux-gnu` remains the local development/test-host target.
 macOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and

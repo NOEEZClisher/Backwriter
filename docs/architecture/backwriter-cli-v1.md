@@ -2,7 +2,7 @@
 
 ## 0.2.6 operational Adapter authority — Gates 1–8 and release complete
 
-The planned operational target explains what to type, what happens, and what
+The completed operational target explains what to type, what happens, and what
 comes back. Gate 1 changes no command, parser, output, error, version, or
 process behavior; Gate 2 adds help, Gate 3 adds actionable usage presentation
 plus the exclusive one-shot Edit `--stdin` Content selector, Gate 4 closes
@@ -20,9 +20,9 @@ return before Runtime/source I/O and Update download.
 
 Usage errors now write `error[stable.code]`, cause, command-local canonical
 usage, and an exact help hint to stderr with exit `2` and no stdout; execution
-and stream errors retain exit `1`. Later Gates document canonical output options
-only as prefixes, and may accept trailing options only after a direct
-simplification proof; operands are never interleaved with options. `--stdin` is
+and stream errors retain exit `1`. Canonical output options remain prefix-only;
+trailing output selections and global-option interleaving among operands are
+not accepted. `--stdin` is
 XOR with positional Content, is valid only at Content position, validates the
 Anddress before reading EOF, and has no fixed semantic size limit. One-shot Line
 Replace remains body-only, preserves its existing terminator, rejects NUL as
@@ -49,8 +49,9 @@ comparison.
 ## 0.2.5 encoder reuse and release boundary
 
 Gates 1 through 4 change no CLI syntax, schema, key order, output byte, status,
-error, version, or process behavior. Cargo, `bw version`, installers, Update,
-and the official distribution are closed `0.2.5`.
+error, version, or process behavior. At the later `0.2.5` release closure,
+Cargo, `bw version`, installers, Update, and the official distribution aligned
+at `0.2.5`; their current version is `0.2.6`.
 
 Search and batch View replace per-address temporary allocation with the address
 authority's public `Anddress::encode_into(&mut Vec<u8>)`. Each operation owns
@@ -90,8 +91,9 @@ Gate 8 then publishes and closes the matching installer, manifest, artifacts,
 Update target, and exact 60-file distribution without changing CLI authority.
 
 The v5 wire is fixed by the address authority. Search position duplication,
-View relation work, and one-shot Edit's private View are removed. Stdin
-transport and splitting `src/bin/bw.rs` remain explicit later decisions. Gate
+View relation work, and one-shot Edit's private View are removed. At that
+boundary, stdin transport and splitting `src/bin/bw.rs` remained later decisions;
+`0.2.6` Gate 3 subsequently completed one-shot Edit stdin. Gate
 2 introduces no alternate command, envelope schema, wrapper, compatibility
 mode, or process lifecycle.
 
@@ -145,8 +147,9 @@ explicit typed Data are implemented.
 Standalone `version` and `update` are Adapter-owned executable operations, not
 Core capabilities or Session commands.
 One-shot Data and Anchor are intentionally unsupported because their DataStore
-and live-handle contracts require Session lifetime. One-shot Pick, batch Check,
-and raw Edit/Apply transport remain deferred. The distinct `0.2.2`
+and live-handle contracts require Session lifetime. One-shot Pick and raw
+Edit/Apply transport remain deferred; ordered one-shot JSON batch Check is
+complete in `0.2.6` Gate 6. The distinct `0.2.2`
 Anddress-first one-shot Edit form is implemented. Raw
 output other than one-shot View, all other capabilities, and further Session
 behavior are deferred and rejected rather than silently accepted.
@@ -427,11 +430,14 @@ The exact syntax is:
 ```text
 bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json]
     edit anddress <encoded-v5-Anddress> <content>
+bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json]
+    edit anddress <encoded-v5-Anddress> --stdin
 ```
 
 This is the canonical general editing form. It accepts one host argv Content
-value and optional leading JSON output selection. Search or Pick may provide the encoded v5
-Anddress to a caller, but the CLI requires no caller-visible View, Check,
+value or UTF-8 EOF stdin and optional leading JSON output selection. Search or
+Pick may provide the encoded v5 Anddress to a caller, but the CLI requires no
+caller-visible View, Check,
 Session binding, index, or Core Edit value. It reuses the strict v5 decoder,
 prepares target-specific Content from the decoded geometry, constructs one
 existing `Edit::Replace`, validates it, opens one ordinary Untrusted Runtime,
@@ -782,7 +788,7 @@ The following are intentionally outside the completed initial slice:
 
 - One-shot Data and Anchor, which require the Session-owned DataStore or live
   handle lifetime.
-- One-shot Pick, batch Check, and raw Edit/Apply transport, pending collection
+- One-shot Pick and raw Edit/Apply transport, pending collection
   or transport authority. The implemented Anddress-first one-shot Edit form
   above is distinct from raw Edit transport.
 - Raw output other than one-shot View, and any JSON form other than one-shot

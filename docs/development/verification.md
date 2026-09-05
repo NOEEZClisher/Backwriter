@@ -69,7 +69,7 @@ Gate-specific evidence is cumulative:
 - Gate 7: complete GNU/musl semantics and fixed A/B/G performance, memory, I/O,
   output, drift, and code-size evidence; source-readiness is GO.
 - Gate 8: artifacts, installers, manifest-last publication, endpoints, update,
-  idempotent reuse, and release closure — complete. The live root has 68
+  idempotent reuse, and release closure — complete. At that closure the live root had 68
   regular files; loopback and public HTTPS each passed 68 exact GET/HEAD body,
   length, MIME, cache-policy, and zero-HEAD-body checks. Isolated fresh install,
   public `0.2.4` update, and `0.2.5` reinstall selected the exact Linux member.
@@ -1306,7 +1306,7 @@ cached diff audit before commit.
 
 The repository source package and source-built command are published and
 closed `0.2.6`; the command prints exactly `Backwriter 0.2.6` plus LF. The
-closed public distribution, installed release, installers, manifest, and
+closed public distribution, R3-isolated installed release, installers, manifest, and
 Update handoff are `0.2.6`; exact `0.2.5` is the only other accepted manifest.
 Update has no version comparison and installs or reinstalls official `0.2.6`.
 Prior `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, `0.1.0`, and beta
