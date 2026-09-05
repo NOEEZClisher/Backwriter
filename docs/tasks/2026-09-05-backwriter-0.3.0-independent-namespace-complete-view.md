@@ -1,10 +1,12 @@
 # Backwriter 0.3.0 independent namespace and complete shell View
 
-## Status — Gates 1–2 complete; Gates 3–5 pending
+## Status — Gates 1–3 complete; Gates 4–5 pending
 
 Recorded 2026-09-05. Gate 1 closes authority, audited discrepancies, open
 decisions and acceptance. Gate 2 implements the existing namespace predicate
-and focused regressions only. No version bump, readiness SHA,
+and focused regressions only. Gate 3 implements Owner-approved D1/D2 after
+the preserved proposal below; its focused verification is recorded separately.
+No version bump, readiness SHA,
 artifact, installer, publication or operational change is made. Cargo/CLI and
 official distribution remain published and closed `0.2.6`.
 
@@ -94,12 +96,12 @@ executor or Content-copy collection is allowed.
 
 | Decision | Status / required closure |
 | --- | --- |
-| D1: mixed-kind plural self-View | Open before Gate 3. The current common-target API cannot express mixed self kinds in one call. Obtain a bounded Owner decision if satisfying the requirements needs API/grammar change; no silent rejection, projection change, per-kind calls disguised as one batch, or second executor |
-| D2: exact framing and stream-failure slot reporting | Open before Gate 3 coding. Freeze one minimal exact byte contract/KAT for input/fresh refs, metadata, body length/end framing, empty/Unicode/LF/CR/CRLF/no-EOL and delimiter-like Content. Preserve reserve-before-output, no slot for absent/Runtime failure, append-only/no-reuse; distinguish partial write/flush failure and terminal stream error from Runtime failure. Do not promise delivery, publication cancellation or retry |
+| D1: mixed-kind plural self-View | Owner approved; Gate 3 implemented and focused tests passed. Replace common-kind argument with Option: None=self, Some=common upward. Single View unchanged; source-breaking caller migration without facade or second executor |
+| D2: exact framing and stream-failure slot reporting | Owner approved; Gate 3 implemented and exact KAT/failure tests passed. Byte-length Content framing, input/fresh refs, reserve-before-output, append-before-record, no absent slot, terminal Stream and no Drop retry; no delivery, cancellation or rollback claim |
 | D3: original four-file fixture | Locate before Gate 5. Repository docs/tests search found the older three-file control, not the exact independent four-file bytes/oracle. If unavailable, explicitly define one common spec-conformant replacement, independent full-byte oracle and new digest for all four arms; no lost-fixture identity claim |
 
-D1–D3 block their downstream claims, not this documentation Gate. Exact framing
-is not invented from the illustrative arrow example. No private storage base
+D1/D2 are closed by Gate 3; D3 still blocks its Gate 5 claim. Exact framing
+comes from the approved proposal, not the illustrative arrow. No private storage base
 decision remains open: the implemented exclusion base is the Runtime root and
 there is no store to relocate. Actual future IO needs a new consumer audit.
 
@@ -119,7 +121,7 @@ Multiple Replace commands are still separate publications, not a transaction.
 | --- | --- | --- |
 | 1 — authority | Complete | Consumer/N/A inventory; active target versus closed release; D1–D3; unchanged planning notes; input equality, metadata, document/Git hygiene |
 | 2 — namespace | Complete | BOX 23 focused tests using existing filter; absent/new/old-only/both roots; task-local old sentinel byte equality; new reserved file/symlink never exposed; exact components/case and ordinary sibling/nested paths; no help/version creation; existing no-follow/admission/direct-access errors; nonexistent store IO stays N/A |
-| 3 — complete shell View | Pending, D1/D2 required first | Single self and Line-to-Paragraph/File; one single/batch call; ordered duplicate input/ref/Content mapping; mixed projected/absent peers; empty/terminator/framing KATs; reserve/allocation/Runtime/write/flush failures; zero Content-only extra observation; unchanged raw/JSON/Replace |
+| 3 — complete shell View | Complete, approved D1/D2 | Single self and Line-to-Paragraph/File; one single/batch call; ordered duplicate input/ref/Content mapping; mixed projected/absent peers; empty/terminator/framing KATs; reserve/Runtime/write/flush failures; zero Content-only extra observation; unchanged raw/JSON/Replace; recoverable reserve overflow is not allocator-exhaustion proof |
 | 4 — help/modules/verification | Pending | Executable direct/named/quoted examples including ref producers, fresh Current slots and same-source staleness; real advanced Pick/Anchor/Apply/Data help; no new one-shot/parser/crate; private code relocation; tests split only for useful navigation within one CLI integration crate; current rules extracted before duplicate history links, unique evidence preserved verbatim |
 | 5 — integration/readiness | Pending, D3 required | Final GNU/musl semantic matrix, metadata/tree/fmt/check/test/clippy/release and release smoke; fresh N-1/N four arms; exact independent oracle; actual candidate identity and GO/NO-GO, then separately approved release slices |
 
@@ -256,3 +258,291 @@ target and CLI fixture are removed before the approved commit/push.
 Next: Gate 3 after D1/D2 closure; D3 remains required before Gate 5. Gate 2
 does not implement complete shell View, module/help contraction, readiness,
 new storage or a release. Official distribution remains closed `0.2.6`.
+
+## Gate 3 D1/D2 proposals — awaiting Owner approval
+
+Proposal only, inspected at clean `main = origin/main =
+3f06c8b2ee37c094fef887d8e33bc7304cd27ef7`. Neither decision below is approved
+API/format authority, implementation, a Gate 3 GO, or source readiness.
+Gates 1–2 remain complete; Gates 3–5 and D3 remain pending. Cargo/CLI/public
+remain `0.2.6`. The existing evidence and both planning notes are unchanged.
+
+### D1 recommendation: extend the existing batch projection argument
+
+Recommend replacing, not supplementing, the current batch signature with:
+
+```rust
+pub fn view_batch(
+    &self,
+    anddresses: &[Anddress],
+    projection: Option<AnddressTarget>,
+) -> Result<Vec<ViewOutcome>, ViewError>
+```
+
+Proposed meaning: `None` projects each input to its own `input.target()`;
+`Some(kind)` retains the existing common upward projection. Empty input remains
+`Ok(Vec::new())` for either form. The existing single `view(&Anddress,
+AnddressTarget)` stays unchanged. This is a Rust source-breaking change:
+existing callers must replace `view_batch(inputs, kind)` with
+`view_batch(inputs, Some(kind))`, including function-pointer expectations.
+There is no implicit conversion, compatibility overload/alias, wrapper, new
+request type, second executor or claim that external Rust callers do not exist.
+v5 wire, ViewOutcome and error variants do not change.
+
+Evidence: `src/bin/bw.rs::execute_session_ref_view` currently uses batch only
+with `--as`; omitted `--as` loops over `run_view`. The Runtime batch already
+projects every input before source validation and groups the resulting targets
+by source, not by target kind. `RangeCapture` consumes each projected range;
+`finish_batch` restores input positions. No mixed-kind observation engine is
+needed. Proposed flow:
+
+1. Parse and resolve all references once, retaining borrowed input spellings.
+2. Exactly one input: one `run_view`/single Runtime View, using explicit kind
+   or that input's self kind, including the explicit `--as` case.
+3. Multiple inputs: exactly one `view_batch(&inputs, projection)`. Delete the
+   self-View loop; do not split by kind, reject mixed kinds or change projection.
+4. Pass the optional argument through `runtime.rs` to the existing
+   `runtime/view.rs::execute_batch` and `project_inputs`. Only at each
+   `project_request` choose `projection.unwrap_or_else(|| input.target())`.
+5. Reuse `validate_runtime_input`, source-key ordering, `batch_group_end`,
+   `execute_batch_group`, direct/trusted capture, and `finish_batch` unchanged.
+
+All projections are preflighted before admission/private checks and IO, so a
+later downward InvalidInput still wins over an earlier unavailable source.
+Absent projections remain indexed normal outcomes and do not cause source IO;
+this does not add currentness checks to an absent relation. Preserve each
+source's one direct observation in Untrusted/proof-miss mode, one retained
+handle with requested range reads in matching Host mode, hash/length/Line-count
+checks, proof invalidation rules, order, duplicate multiplicity and all-or-none
+failure. A stale projected peer still fails the whole batch.
+
+Direct production callers are only one-shot batch View and direct shell View
+in `src/bin/bw.rs`; one-shot supplies `Some(kind)` and keeps its existing
+required `--as`/JSON grammar and output. Raw named Session single View keeps
+`run_view`. Known Rust test callers are `tests/view.rs`, the native batch
+oracle inside `tests/cli.rs`, and a resource regression in
+`src/runtime/view.rs`; existing explicit kinds become `Some(kind)`.
+Approval would therefore minimally permit `src/runtime.rs`,
+`src/runtime/view.rs`, `src/bin/bw.rs`, `tests/view.rs`, `tests/cli.rs`, and
+targeted active-authority/tracker updates. No other production consumer was
+found by repository-wide `rg view_batch`; external source compatibility remains
+an explicit Owner cost, not a reason to add a parallel API.
+
+### D2 recommendation: length-delimited Content with existing ref metadata
+
+Recommend this one direct-shell-only presentation, with ASCII TAB/LF as shown:
+
+```text
+View<TAB><input REF><TAB>bytes=<N><LF>
+<existing write_session_ref_line output for fresh REF, kind and location>
+<exact N UTF-8 Content bytes><LF>EndView<LF>
+```
+
+`N = content.len()` in bytes, never Unicode scalar/character count. There is
+no blank line between the existing metadata line's LF and the first Content
+byte. Exactly one LF followed by `EndView` and one LF is display framing after
+the N bytes; none of these bytes belongs to Content. Preserve all original
+None/LF/CR/CRLF terminators. Do not scan Content for `EndView`, normalize it,
+append a source terminator or build another encoded Content value. This is a
+human display contract, not a new Core wire, JSON/Content schema or parser.
+
+An absent item is exactly `View<TAB><input REF><TAB>RelationAbsent<LF>` at its
+input position, with no fresh ref, kind, fabricated Content or end record.
+Echo the once-resolved input token (`@N`, `@name`, `@name[index]`) without its
+shell quoting. The existing valid reference grammar is ASCII and contains no
+TAB/LF. Duplicate inputs each produce their own projected slot and record.
+
+Path audit corrects a possible premise: `src/source.rs::validate_logical_path`
+already rejects every `char::is_control`, including TAB, CR, LF and NUL, as
+well as colon/backslash. There are no currently admitted control-character
+paths to escape. Spaces inside components, quotes, Unicode and delimiter-like
+names stay verbatim in the existing TAB-separated metadata line; they cannot
+introduce a structural TAB/LF or location colon. Do not tighten or extend the
+path grammar. Byte framing does not promise safe visual rendering of every
+Unicode glyph or terminal control contained in Content. Any future allowance
+of control-character paths would require a separate presentation review.
+
+Proposed exact stdout KATs below use Rust string escape notation, not literal
+backslashes on stdout. Each independent projected example starts with refs
+length 3, input `@0` and fresh `@3`; named paths are illustrative existing
+valid-v5 fixtures to use after approval, not new fixtures created in this pass.
+
+| Content / case | Exact expected stdout |
+| --- | --- |
+| Empty File | `"View\t@0\tbytes=0\n@3\tFile\tnote.txt\n\nEndView\n"` |
+| Line `x`, None | `"View\t@0\tbytes=1\n@3\tLine\tnote.txt:1\nx\nEndView\n"` |
+| Line `x\n`, LF | `"View\t@0\tbytes=2\n@3\tLine\tnote.txt:1\nx\n\nEndView\n"` |
+| Line `x\r`, CR | `"View\t@0\tbytes=2\n@3\tLine\tnote.txt:1\nx\r\nEndView\n"` |
+| Line `x\r\n`, CRLF | `"View\t@0\tbytes=3\n@3\tLine\tnote.txt:1\nx\r\n\nEndView\n"` |
+| Unicode Line `β\r\n` | `"View\t@0\tbytes=4\n@3\tLine\tnote.txt:1\nβ\r\n\nEndView\n"` |
+| File `EndView\n` | `"View\t@0\tbytes=8\n@3\tFile\tnote.txt\nEndView\n\nEndView\n"` |
+| File `x`, path with space | `"View\t@0\tbytes=1\n@3\tFile\tdir/a b.txt\nx\nEndView\n"` |
+| Absent input `@1` | `"View\t@1\tRelationAbsent\n"` |
+
+For mixed input `@0 @1 @0 --as paragraph`, where `@0` has Paragraph Content
+`x\n` at `note.txt:1-1` and `@1` is a separator Line, initial refs length 3:
+
+```text
+"View\t@0\tbytes=2\n@3\tParagraph\tnote.txt:1-1\nx\n\nEndView\nView\t@1\tRelationAbsent\nView\t@0\tbytes=2\n@4\tParagraph\tnote.txt:1-1\nx\n\nEndView\n"
+```
+
+Proposed append/failure rule: acquire all Runtime outcomes first, count only
+Projected items P, then call the existing `reserve_session_refs(refs, P)`
+before any append/output. Keep a single outcomes collection; for single View
+its one-element vector is fallibly reserved before the call. Consume outcomes
+zipped with borrowed input spellings in input order. For each Projected item,
+append its owned Anddress immediately BEFORE the first write of that record,
+then write header, existing `write_session_ref_line(..., None, &refs[slot])`,
+the borrowed bytes of its owned Content, and the end framing. Drop Content
+after use. Direct indexing of the just-appended slot is not ref re-resolution.
+An absent record appends nothing. Flush once after the last record. No Content
+clone, second result/display collection, extra resolution/Search/View/read is
+needed. Preserve append-only slots; do not undo or reuse appended slots.
+
+Let L be entry refs length, P the total projected count and k the number of
+projected records whose processing has begun (append already performed).
+Lengths below describe RAM just before returning/error unwind; terminal shell
+exit drops all refs, not persistent state. Stdout means bytes from this command.
+
+| Boundary | Ref length | Possible stdout | Error / subsequent commands |
+| --- | --- | --- | --- |
+| Malformed or unresolved ref | L | Empty | Existing Usage, status 2 recorded; shell continues |
+| Runtime failure, including stale/downward | L | Empty | Existing Execution mapping, status 1 recorded; shell continues |
+| Input/outcome/ref reserve failure before output | L | Empty | Execution, status 1 recorded; shell continues |
+| First logical write fails on first Projected record | L + 1 | Empty or a prefix accepted by the sink; no complete-delivery claim | Stream; immediate shell exit 1 |
+| First logical write fails on first absent record | L | Empty or prefix | Stream; immediate shell exit 1 |
+| Later/partial header, metadata, Content or end write fails | L + k, including current Projected item but not a current absent item | Prefix through the failing write; possibly earlier complete records | Stream; immediate shell exit 1; unvisited items are not appended |
+| Final flush fails | L + P | Empty, partial, or even all bytes; delivery still unconfirmed | Stream; immediate shell exit 1 |
+| Writes and explicit flush succeed | L + P | All ordered records | Success; shell continues |
+
+BufWriter may defer the first underlying write until several records have been
+appended; that sink failure belongs to the L+k row, not necessarily L+1.
+To avoid an implicit retry by BufWriter Drop after a Stream error, the proposed
+writer consumes it with `into_parts` and discards its unflushed buffer on error.
+Already written bytes cannot be recalled. This is not rollback; no explicit or
+Drop-driven retry is added, no previous Apply publication is cancelled, and
+partial stdout never establishes successful delivery. The existing
+`execute_shell` Stream arm already terminates rather than processing later
+commands. Non-Stream command errors retain its highest-error accounting.
+
+### Minimal approval-dependent implementation and focused acceptance
+
+Remove the direct View any-RelationAbsent early return, Content discard and
+plural single-View loop. `write_session_relation_absent` has only that direct
+View caller; replace its narrow body/name with the complete per-item View
+writer, not a retained obsolete writer plus a facade. Keep
+`write_session_refs` for Search, `write_session_replace` for Replace and
+`write_session_ref_line` unchanged for all actual callers. Reuse BufWriter and
+CliError::Stream, with one narrow writer taking ordinary `Write` for tests;
+no output trait/framework, production failure hook, module split or new crate.
+Single and batch acquisition feed this same writer. One-shot/raw/JSON View,
+Search, Replace and Check output bytes remain unchanged.
+
+| Existing regression / location | Preserve and extend after approval |
+| --- | --- |
+| `tests/cli.rs::shell_local_references_start_at_zero_append_in_order_and_keep_named_raw_aliases` | Exact new direct-View bytes, input/fresh refs, duplicates, named alias and single/mixed-kind self; retain raw named View bytes; structural single-vs-batch call and no re-resolution/Content clone audit |
+| `shell_local_view_relation_absent_and_search_failure_do_not_consume_reference_slots` | Replace old absent-only KAT with input-associated absent record; add mixed projected/absent/duplicate ordering and later-slot checks, not suppression of peers |
+| `shell_local_references_reject_malformed_numeric_forms_before_runtime_access`, `shell_local_replace_failure_does_not_consume_a_fresh_slot` | Retain malformed/stale rejection; assert failed View adds no slots and later valid command still runs |
+| Existing CLI Line terminator and one-shot/raw/JSON View regressions | Keep their bytes unchanged; integrate direct View empty, Unicode, None/LF/CR/CRLF, delimiter-like Content and space-path table cases without another fixture engine |
+| `tests/view.rs::view_batch_preserves_empty_single_duplicate_and_mixed_source_order` | Add None with mixed File/Paragraph/Line self targets across same/different sources; explicit Some keeps old expected results |
+| `view_batch_preserves_relations_terminators_unicode_and_raw_ranges`, `view_batch_preflights_relations_and_fails_all_for_unavailable_members` | Retain Some upward/absent/downward priorities, mixed absent/current and late failure; extend None identity/duplicate ranges |
+| `host_view_batch_reuses_and_invalidates_proof_per_source_group` | Add mixed-kind self to matching/missing/mismatched Host proofs; preserve per-source invalidation and ordinary equivalence |
+| `src/runtime/view.rs` existing OneByteReader, provisional-output, structural one-observation and resource regressions | Reuse for mixed targets and Some migration; no new observer or runtime counter |
+
+The CLI integration suite currently has no deterministic in-process ref-vector
+allocation/write/flush failure seam. Do not call a successful process KAT proof
+of those cases. In the existing binary's test compilation, directly exercise
+`reserve_session_refs` with a capacity-overflow request and the actual narrow
+View writer with a test-only `Write` sink failing at header/body/end/flush
+boundaries (including buffered first-sink-write and an absent first item).
+Assert refs length, captured prefix and no flush-on-drop retry. Use existing
+valid-v5 decoding and outcomes, not a copied writer or production injection flag.
+Capacity-overflow covers the existing recoverable reserve error mapping;
+structural ordering proves that real P reservation precedes output. It is not
+process allocator-exhaustion proof. Retain the existing terminal Stream arm
+and add an integration broken-pipe case only for terminal behavior, not as a
+deterministic substitute for byte-boundary tests. A small `#[cfg(test)]` binary
+test module is within the proposed `src/bin/bw.rs` change, not a new harness or
+integration crate. No such code/tests/fixtures are added by this proposal.
+
+After approval and implementation, run impacted GNU focused CLI/View/Host/
+namespace regressions plus fmt and static checks. Full GNU/musl is Gate 5.
+Gate 2's 25 focused tests and six smoke commands, and N-1's 285/285 baseline,
+are historical evidence only, not fresh D1/D2 or full candidate passes.
+This proposal runs document/link/fence/conflict/diff/path and unchanged-input
+audits only: no product tests, build, benchmark, operational probe or installed
+bw. Only this section is appended; index stays empty, with no commit/push.
+
+Owner decisions requested separately:
+
+1. Approve D1's source-breaking Option batch signature and the bounded caller/
+   regression migration above, preserving the existing single seam.
+2. Approve D2's exact direct-shell framing and per-record append-before-write,
+   reserve-before-output, terminal Stream/no-retry contract and focused tests.
+
+Until those approvals, D1/D2 remain awaiting Owner approval and Gate 3 remains
+unimplemented, without a GO claim. D3 and Gates 4–5 are unaffected.
+
+## Gate 3 implementation and focused verification — complete
+
+Entry: `main`, HEAD = origin/main =
+`3f06c8b2ee37c094fef887d8e33bc7304cd27ef7`, empty index, with only the
+224-line D1/D2 proposal appended above. That proposal is preserved verbatim as
+pre-approval evidence. The Owner subsequently explicitly approved D1/D2's
+source-breaking API/CLI implementation and allowed-path commit/non-force push.
+Approval preceded production mutation; this section records implementation and
+verification, not a retroactive implementation claim for the proposal.
+
+| Consumer | Gate 3 decision / evidence |
+| --- | --- |
+| Runtime batch API and `project_inputs` | Option selects self or common upward kind at the sole `project_request` call; explicit callers migrate to Some. No new type, error, overload or executor; external Rust source compatibility intentionally breaks |
+| Direct shell single/plural acquisition | Resolve each input once; reserve singleton result before one single View, otherwise invoke one batch with optional projection. Delete repeated self loop; retain grouping, capture, finish and currentness/Host proof |
+| Direct shell presentation | Replace absent-only writer and any-absent suppression with one consuming View writer; count/reserve P before append/output; append owned Anddress before each projected record; write exact Content and discard it |
+| Retained writers | Search consumes `write_session_refs`, Replace consumes `write_session_replace`, and all three use the unchanged `write_session_ref_line`. One-shot human/raw/JSON and named Session writers remain their distinct consumers |
+| Output failure | Real Write sink exercises every byte boundary with unbuffered and buffered writes, absent-first, final flush, prefixes and L+k/L+P. `into_parts` prevents Drop retry; broken pipe exits before a later Replace |
+| Observation evidence | Existing OneByteReader covers mixed File/Paragraph/Line in one forward observation and all-provisional late failure. Structural call audits retain single=1/batch=1, one Untrusted observation or matching Host handle, no Content-only Search/View/re-resolution |
+
+Exactly **116 distinct focused GNU tests passed** after the final Rust edits:
+3 binary writer/reservation tests, 74 CLI integration tests, 21 View integration
+tests, 13 Runtime View unit tests, and 5 namespace controls (Runtime predicate,
+Search private/sibling fixture, Host Check private/admission, Apply unavailable
+path, Anchor path-exact invalidation). The existing CLI crate is tested as one
+impacted component, not a full GNU product suite. No test/helper file is added;
+binary cfg(test) reuses unchanged `tests/support.rs` valid-v5 fixtures. Four
+CLI tests and three binary tests are new; existing batch/Host/KAT tests extend
+their original evidence.
+
+Covered: mixed-kind None including empty/single/duplicates and multiple sources;
+Some upward/absent/downward priority; Host match/mismatch/miss and failure
+invalidation; late source failure without output or slots; exact empty/Unicode,
+LF/CR/CRLF/None, delimiter-like Content, spaces/quotes in safe metadata; named
+and indexed refs; absent peers and subsequent slot numbering; stale and malformed
+refs with continuation; raw/JSON/one-shot/Replace/Check bytes. Ref reservation
+overflow proves recoverable Execution mapping and length preservation, not
+process allocator exhaustion. Production ordering proves P is reserved before
+output. No production hook, copied writer, new observer or allocation claim.
+
+Verification corrected new test fixture coordinates and obsolete direct-View
+expectations, moved the binary test module to satisfy clippy, and enlarged the
+broken-pipe fixture beyond pipe buffering after a concurrent child descriptor
+window exposed the initial small-output test's weakness. Final focused tests
+pass; no behavior was relaxed to suppress those failures.
+
+Rust/Cargo 1.95.0, default features and existing profiles: full offline/locked
+metadata and dependency tree, fmt, GNU all-target check, clippy `-D warnings`,
+and release build pass. Nine asserted task-local release commands cover raw
+Session Apply fixture setup, Help/Version, Search v2/v5, raw View, Check,
+mixed projected/absent/duplicate direct View, mixed-kind self View, and unchanged
+named raw View. Each has exact expected stdout, empty stderr and exit 0. The
+final fixture is exact `x\r\n \t\n`, SHA-256
+`1f55a163eac1472bc23893cf93791df0d0e5434017aebed04d3f15803b29a7cf`.
+
+No full GNU/musl, AI arm, benchmark, historical comparator or native Windows
+run is claimed. The 285/285 baseline remains historical. Cargo/CLI/public
+stay `0.2.6`; Gate 4 help/private modules/verification contraction and Gate 5
+integration/readiness, including D3, remain pending. Existing help constants
+are intentionally unchanged until Gate 4. No server, installed bw, actual HOME,
+public tree, service or Cloudflare operation occurs. Planning notes, README,
+Cargo/lock/toolchain/dependencies and all non-allowlisted tracked inputs remain
+byte-identical. Document/Git hygiene and exact-path temporary cleanup precede
+the approved commit and non-force push; no artifact or release is produced.

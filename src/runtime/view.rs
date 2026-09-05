@@ -77,7 +77,7 @@ pub(super) fn execute(
 pub(super) fn execute_batch(
     runtime: &WorkspaceRuntime,
     inputs: &[Anddress],
-    projection: AnddressTarget,
+    projection: Option<AnddressTarget>,
 ) -> Result<Vec<ViewOutcome>, ViewError> {
     let projected = project_inputs(inputs, projection)?;
     for anddress in projected.iter().flatten() {
@@ -124,14 +124,17 @@ pub(super) fn execute_batch(
 
 fn project_inputs(
     inputs: &[Anddress],
-    projection: AnddressTarget,
+    projection: Option<AnddressTarget>,
 ) -> Result<Vec<Option<Anddress>>, ViewError> {
     let mut projected = Vec::new();
     projected
         .try_reserve_exact(inputs.len())
         .map_err(|_| ViewError::Unavailable)?;
     for input in inputs {
-        projected.push(project_request(input, projection)?);
+        projected.push(project_request(
+            input,
+            projection.unwrap_or_else(|| input.target()),
+        )?);
     }
     Ok(projected)
 }
@@ -800,9 +803,11 @@ mod tests {
             address(bytes, AnddressTarget::Line, 3, 7),
             address(bytes, AnddressTarget::Line, 0, 3),
             address(bytes, AnddressTarget::Line, 7, 11),
+            address(bytes, AnddressTarget::File, 0, 11),
+            address(bytes, AnddressTarget::Paragraph, 0, 3),
         ];
-        let projected: Vec<_> = inputs.iter().cloned().map(Some).collect();
-        let group = [0, 1, 2, 3];
+        let projected = project_inputs(&inputs, None).unwrap();
+        let group = [0, 1, 2, 3, 4, 5];
         let mut outcomes = Vec::new();
         outcomes.resize_with(inputs.len(), || None);
         let mut source = OneByteReader {
@@ -830,6 +835,12 @@ mod tests {
                     && anddress.project(AnddressTarget::Paragraph).unwrap().is_none()
         ));
         assert_eq!(outcomes[0], outcomes[2]);
+        assert!(
+            matches!(&outcomes[4], Some(ViewOutcome::Projected { anddress, content }) if anddress.target() == AnddressTarget::File && content.as_bytes() == bytes)
+        );
+        assert!(
+            matches!(&outcomes[5], Some(ViewOutcome::Projected { anddress, content }) if anddress.target() == AnddressTarget::Paragraph && content == "α\n")
+        );
         assert!(matches!(
             outcomes[3],
             Some(ViewOutcome::Projected { ref anddress, ref content })
@@ -842,9 +853,10 @@ mod tests {
         let inputs = [
             address(b"one\nlate", AnddressTarget::Line, 0, 4),
             address(b"one\nlate", AnddressTarget::Line, 4, 8),
+            address(b"one\nlate", AnddressTarget::File, 0, 8),
         ];
-        let projected: Vec<_> = inputs.iter().cloned().map(Some).collect();
-        let group = [0, 1];
+        let projected = project_inputs(&inputs, None).unwrap();
+        let group = [0, 1, 2];
         for (bytes, fail_at, expected) in [
             (b"one\nlate".as_slice(), Some(4), SourceScanError::Read),
             (
@@ -1263,7 +1275,7 @@ mod tests {
             ])
             .unwrap();
         assert_eq!(
-            runtime.view_batch(&[cut.clone(), resource], AnddressTarget::File),
+            runtime.view_batch(&[cut.clone(), resource], Some(AnddressTarget::File)),
             Err(ViewError::Unavailable)
         );
         let proofs = runtime.current_proofs.lock().unwrap();

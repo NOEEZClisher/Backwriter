@@ -1,9 +1,9 @@
 # Backwriter Current State
 
-## 0.3.0 target — Gates 1–2 complete, Gates 3–5 pending
+## 0.3.0 target — Gates 1–3 complete, Gates 4–5 pending
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
-closes documentation authority and focused namespace implementation. Cargo/CLI and official
+closes documentation authority, focused namespace and direct shell View implementation. Cargo/CLI and official
 distribution remain published and closed `0.2.6`, with pinned N-1 Source
 Authority `09bb6c424081594bd86a95f04345b786ef9b46b6`. No `0.3.0` readiness
 revision is assigned, and this work authorizes no artifact or publication.
@@ -12,12 +12,14 @@ The checkout excludes same-root `.bw` plus exact legacy `.artext/bw` through
 one existing predicate, not a storage engine. Gate 2 adds no stored-state IO,
 eager mkdir, migration, fallback or deletion. Existing
 Update and Apply temporary mechanisms remain separate and unchanged.
-Direct shell View currently discards returned Content and an any-absent branch
-hides projected peers. Gate 3 will reuse the results/ref/writer machinery to
-show ordered per-input Content and refs; mixed-kind plural self-View versus the
-single-target batch API and exact framing/stream-slot KATs must be settled first.
+Gate 3 removes discarded Content, absent-peer suppression and repeated self
+View calls. Owner-approved optional batch projection supports mixed-kind self
+inputs in one source-grouped call; single input keeps single View. Direct shell
+records show input/fresh refs, byte length and exact Content, including normal
+absent positions. CLI authority fixes append-before-write and terminal Stream
+semantics. One-shot/raw/JSON outputs and all v5/currentness rules stay fixed.
 
-Gate 2 namespace/BOX 23 focused verification is complete. Next is Gate 3 View, Gate 4
+Gate 2 namespace/BOX 23 and Gate 3 focused verification are complete. Next is Gate 4
 help/private modules/evidence-preserving verification contraction, and Gate 5
 final GNU/musl and four-arm N-1/N readiness. No implementation or version change
 occurs at Gate 1; Gate 2 changes no version or CLI output. Source and roadmap

@@ -1851,7 +1851,7 @@ fn one_shot_view_projection_and_batch_share_the_v2_item_schema() {
     )
     .unwrap();
     let expected = runtime
-        .view_batch(&inputs, PublicAnddressTarget::Paragraph)
+        .view_batch(&inputs, Some(PublicAnddressTarget::Paragraph))
         .unwrap();
     assert!(matches!(expected[1], ViewOutcome::RelationAbsent));
     assert_eq!(expected[0], expected[2]);
@@ -3040,7 +3040,7 @@ fn shell_local_references_start_at_zero_append_in_order_and_keep_named_raw_alias
     assert!(output.status.success());
     assert_eq!(
         output.stdout,
-        b"@0\tLine\tnote.txt:1\n@1\tLine\tnote.txt:2\nneedle\n@2\tLine\tnote.txt:1\n@3\tLine\tnote.txt:1\n@4\tParagraph\tnote.txt:1-2\n@5\tParagraph\tnote.txt:1-2\n"
+        b"@0\tLine\tnote.txt:1\n@1\tLine\tnote.txt:2\nneedle\nView\t@0\tbytes=7\n@2\tLine\tnote.txt:1\nneedle\n\nEndView\nView\t@0\tbytes=7\n@3\tLine\tnote.txt:1\nneedle\n\nEndView\nView\t@0\tbytes=14\n@4\tParagraph\tnote.txt:1-2\nneedle\nneedle\n\nEndView\nView\t@1\tbytes=14\n@5\tParagraph\tnote.txt:1-2\nneedle\nneedle\n\nEndView\n"
     );
     assert!(output.stderr.is_empty());
 
@@ -3071,6 +3071,21 @@ fn shell_local_references_start_at_zero_append_in_order_and_keep_named_raw_alias
         replace.find("reserve_session_refs(refs, 1)").unwrap()
             < replace.find(".apply_replace(&edit)").unwrap()
     );
+    let view = source
+        .split_once("fn execute_session_ref_view")
+        .unwrap()
+        .1
+        .split_once("fn parse_session_ref_view")
+        .unwrap()
+        .0;
+    assert_eq!(view.matches("resolve_session_ref(").count(), 1);
+    assert_eq!(view.matches("run_view(").count(), 1);
+    assert_eq!(view.matches(".view_batch(").count(), 1);
+    assert!(view.contains("inputs.len() == 1"));
+    assert!(view.find("try_reserve_exact(1)").unwrap() < view.find("run_view(").unwrap());
+    assert!(!view.contains("for input in"));
+    assert!(!view.contains(".clone()"));
+    assert!(!source.contains("fn write_session_relation_absent"));
 }
 
 #[test]
@@ -3091,6 +3106,113 @@ fn shell_local_references_reject_malformed_numeric_forms_before_runtime_access()
 }
 
 #[test]
+fn shell_local_view_preserves_mixed_kinds_named_inputs_and_absent_peers() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "note.txt", "x\r\n \t\n");
+    let output = run_shell(
+        root.path(),
+        "search line x\nsearch line \" \"\nsearch /file note.txt\nlet named = @0\nlet hits = search line x\nview @2 @named @hits[0]\nview @0 @1 @0 --as paragraph\ncheck @7\nexit\n",
+    );
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    assert_eq!(output.stdout, b"@0\tLine\tnote.txt:1\n@1\tLine\tnote.txt:2\n@2\tFile\tnote.txt\nFound 1\n0\tLine\tnote.txt:1\nView\t@2\tbytes=6\n@3\tFile\tnote.txt\nx\r\n \t\n\nEndView\nView\t@named\tbytes=3\n@4\tLine\tnote.txt:1\nx\r\n\nEndView\nView\t@hits[0]\tbytes=3\n@5\tLine\tnote.txt:1\nx\r\n\nEndView\nView\t@0\tbytes=3\n@6\tParagraph\tnote.txt:1-1\nx\r\n\nEndView\nView\t@1\tRelationAbsent\nView\t@0\tbytes=3\n@7\tParagraph\tnote.txt:1-1\nx\r\n\nEndView\n@8\tCurrent\tParagraph\tnote.txt:1-1\n");
+    for (kind, expected) in [
+        ("paragraph", b"@0\tLine\tnote.txt:1\nView\t@0\tbytes=3\n@1\tParagraph\tnote.txt:1-1\nx\r\n\nEndView\n".as_slice()),
+        ("file", b"@0\tLine\tnote.txt:1\nView\t@0\tbytes=6\n@1\tFile\tnote.txt\nx\r\n \t\n\nEndView\n".as_slice()),
+    ] {
+        let single = run_shell(root.path(), &format!("search line x\nview @0 --as {kind}\nexit\n"));
+        assert!(single.status.success());
+        assert!(single.stderr.is_empty());
+        assert_eq!(single.stdout, expected);
+    }
+}
+
+#[test]
+fn shell_local_view_empty_unicode_delimiters_and_safe_metadata_remain_exact() {
+    for (path, content) in [
+        ("empty.txt", ""),
+        ("dir/a b.txt", "β\r\n"),
+        ("EndView.txt", "View\t@0\nEndView\n"),
+        ("quote\"β.txt", "x\r"),
+    ] {
+        let root = tempfile::tempdir().unwrap();
+        write(root.path(), path, content);
+        let path_token = serde_json::to_string(path).unwrap();
+        let output = run_shell(
+            root.path(),
+            &format!("search /file {path_token}\nview @0\nexit\n"),
+        );
+        assert!(output.status.success());
+        assert!(output.stderr.is_empty());
+        assert_eq!(
+            output.stdout,
+            format!(
+                "@0\tFile\t{path}\nView\t@0\tbytes={}\n@1\tFile\t{path}\n{content}\nEndView\n",
+                content.len()
+            )
+            .as_bytes()
+        );
+        assert_eq!(
+            fs::read(root.path().join(path)).unwrap(),
+            content.as_bytes()
+        );
+    }
+}
+
+#[test]
+fn shell_local_view_late_runtime_failure_has_no_output_or_slots_and_continues() {
+    let root = tempfile::tempdir().unwrap();
+    write(root.path(), "a.txt", "x\n");
+    write(root.path(), "b.txt", "x\n");
+    let output = run_shell_after_initial_output(
+        root.path(),
+        "search line x\n",
+        2,
+        || fs::write(root.path().join("b.txt"), b"changed\n").unwrap(),
+        "view @0 @1\nview @0\nexit\n",
+    );
+    assert_eq!(output.status.code(), Some(1));
+    assert!(text(output.stderr).contains("unavailable"));
+    assert_eq!(output.stdout, b"@0\tLine\ta.txt:1\n@1\tLine\tb.txt:1\nView\t@0\tbytes=2\n@2\tLine\ta.txt:1\nx\n\nEndView\n");
+}
+
+#[cfg(unix)]
+#[test]
+fn shell_local_view_broken_pipe_exits_before_later_publication() {
+    let root = tempfile::tempdir().unwrap();
+    // Exceed pipe buffering even if a concurrently spawned child briefly owns
+    // an inherited read descriptor before exec closes it.
+    let before = "before\n".repeat(262_144);
+    write(root.path(), "note.txt", &before);
+    let mut child = Command::new(binary())
+        .current_dir(root.path())
+        .arg("shell")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdin = child.stdin.take().unwrap();
+    stdin.write_all(b"search /file note.txt\n").unwrap();
+    let mut reader = BufReader::new(child.stdout.take().unwrap());
+    let mut first = String::new();
+    reader.read_line(&mut first).unwrap();
+    assert_eq!(first, "@0\tFile\tnote.txt\n");
+    drop(reader);
+    stdin
+        .write_all(b"view @0\nreplace @0 after\nexit\n")
+        .unwrap();
+    drop(stdin);
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert!(!output.stderr.is_empty());
+    assert_eq!(
+        fs::read(root.path().join("note.txt")).unwrap(),
+        before.as_bytes()
+    );
+}
+
+#[test]
 fn shell_local_view_relation_absent_and_search_failure_do_not_consume_reference_slots() {
     let root = tempfile::tempdir().unwrap();
     write(root.path(), "note.txt", " \t\nneedle\n");
@@ -3102,7 +3224,7 @@ fn shell_local_view_relation_absent_and_search_failure_do_not_consume_reference_
     assert!(output.status.success());
     assert_eq!(
         output.stdout,
-        b"@0\tLine\tnote.txt:1\nRelationAbsent\n@1\tChanged\tLine\tnote.txt:1\n@2\tLine\tnote.txt:1\n"
+        b"@0\tLine\tnote.txt:1\nView\t@0\tRelationAbsent\n@1\tChanged\tLine\tnote.txt:1\nView\t@1\tbytes=5\n@2\tLine\tnote.txt:1\nbody\n\nEndView\n"
     );
     assert!(output.stderr.is_empty());
     assert_eq!(
@@ -3139,7 +3261,7 @@ fn shell_local_replace_preserves_line_terminators_and_issues_fresh_references() 
         assert_eq!(output.status.code(), Some(1));
         assert_eq!(
             output.stdout,
-            b"@0\tLine\tnote.txt:1\n@1\tChanged\tLine\tnote.txt:1\n@2\tLine\tnote.txt:1\n@3\tUnchanged\tLine\tnote.txt:1\n"
+            format!("@0\tLine\tnote.txt:1\n@1\tChanged\tLine\tnote.txt:1\nView\t@1\tbytes={}\n@2\tLine\tnote.txt:1\n{expected}\nEndView\n@3\tUnchanged\tLine\tnote.txt:1\n", expected.len()).as_bytes()
         );
         assert!(text(output.stderr).contains("unavailable"));
         assert_eq!(
@@ -3362,7 +3484,7 @@ fn shell_direct_check_preserves_input_statuses_and_only_issues_current_reference
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(
         output.stdout,
-        b"@0\tLine\tcurrent.txt:1\n@1\tLine\tstale.txt:1\n@2\tLine\tunavailable.txt:1\n@3\tCurrent\tLine\tcurrent.txt:1\nNotCurrent\nUnavailable\n@4\tCurrent\tLine\tcurrent.txt:1\n@5\tLine\tcurrent.txt:1\n@6\tLine\tcurrent.txt:1\n"
+        b"@0\tLine\tcurrent.txt:1\n@1\tLine\tstale.txt:1\n@2\tLine\tunavailable.txt:1\n@3\tCurrent\tLine\tcurrent.txt:1\nNotCurrent\nUnavailable\n@4\tCurrent\tLine\tcurrent.txt:1\nView\t@3\tbytes=7\n@5\tLine\tcurrent.txt:1\nneedle\n\nEndView\nView\t@4\tbytes=7\n@6\tLine\tcurrent.txt:1\nneedle\n\nEndView\n"
     );
     let stderr = text(output.stderr);
     assert!(stderr.contains("numeric reference must be canonical"));

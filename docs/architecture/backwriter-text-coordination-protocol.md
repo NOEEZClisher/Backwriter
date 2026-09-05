@@ -3,7 +3,7 @@
 ## 0.3.0 namespace — Gate 2 implemented in the checkout
 
 This target supplements the closed `0.2.6` implementation described below;
-Gates 1–2 are complete, not source readiness. Published `0.2.6` excludes `.artext/bw` and does
+Gates 1–3 are complete, not source readiness. Published `0.2.6` excludes `.artext/bw` and does
 not implement a private state store. The `0.3.0` target reserves `.bw` at the
 same accepted Runtime workspace root, not at an admission-root-relative,
 nested-workspace, HOME, or new environment-selected base. It excludes both
@@ -39,8 +39,8 @@ does not move these temporaries, change their cleanup, or authorize installation
 The v5 fields/wire/hash domains, workspace coordinate, source SHA-256/length/
 `sourceLineCount` currentness (including false-count `NotCurrent`), Search
 algorithm/order/multiplicity/output, Apply publication, Anchor reflection and
-Host proof remain unchanged. Complete shell View is only the
-[CLI target](backwriter-cli-v1.md#030-direct-shell-view-and-help-target--gate-1-only):
+Host proof remain unchanged. Complete shell View is implemented under the
+[CLI authority](backwriter-cli-v1.md#030-direct-shell-view--gate-3-complete-help-remains-gate-4):
 it displays returned Content, not another observation or a new Core result.
 Raw/JSON View, exact File/Paragraph Content, Line body-only replacement and
 terminator preservation, raw Session and one-shot stdin remain supported.
@@ -643,7 +643,7 @@ The implemented public seams are:
 
 ```rust
 WorkspaceRuntime::view(&Anddress, AnddressTarget) -> Result<ViewOutcome, ViewError>
-WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget) -> Result<Vec<ViewOutcome>, ViewError>
+WorkspaceRuntime::view_batch(&[Anddress], Option<AnddressTarget>) -> Result<Vec<ViewOutcome>, ViewError>
 WorkspaceRuntime::view_anchored(&mut self, &Anchedress, AnddressTarget) -> Result<ViewOutcome, ViewError>
 ```
 
@@ -659,7 +659,10 @@ than duplicated result fields. When a
 Line-to-Paragraph request names a separator Line or a raw-valid nonstructural
 Line with no containing current Paragraph, it succeeds as
 `ViewOutcome::RelationAbsent`; this is not `Unavailable` or `InvalidInput`.
-Batch applies one requested projection to an ordered borrowed input collection,
+Batch applies Some(kind) as one requested projection, or None as each input's
+self target, to an ordered borrowed input collection. This Owner-approved
+Gate 3 change is Rust source-breaking; explicit callers migrate to Some(kind)
+without an overload, wrapper, compatibility seam or second executor. Batch
 preserves input order and duplicates, and is all-or-nothing. Empty input returns
 an empty vector without source access. Every source-less v5 and relation check
 runs in input order before any Runtime preflight or I/O; coordinate, spill, and
@@ -759,7 +762,7 @@ continuity, survival, or history.
 The implemented `0.2.0` Runtime execution seams are
 `WorkspaceRuntime::search(&SearchRequest)`,
 `WorkspaceRuntime::view(&Anddress, AnddressTarget)`,
-`WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)`,
+`WorkspaceRuntime::view_batch(&[Anddress], Option<AnddressTarget>)`,
 `WorkspaceRuntime::apply(&mut self, &Edit)`,
 `WorkspaceRuntime::check(Anddress)`, `check_batch(&[Anddress])`,
 `check_search(SearchOutcome)`, and `check_pick(PickOutcome)`. Across calls, Search, View, Pick, Check, and Apply
@@ -1010,10 +1013,11 @@ relation enum. Pick does not read text or call Runtime to replace them.
 
 ## Implemented View behavior
 
-View V1 has one single-input seam and one ordered borrowed-collection seam,
-each with one requested existing target kind:
+View V1 has one single-input seam with one requested existing target kind and
+one ordered borrowed-collection seam with optional common projection:
 `WorkspaceRuntime::view(&Anddress, AnddressTarget)` and
-`WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)`. Its admitted
+`WorkspaceRuntime::view_batch(&[Anddress], Option<AnddressTarget>)`. None keeps
+each input's self kind; Some selects the common upward kind. Its admitted
 capability-relative no-follow access and File/Paragraph/Line text projection
 shape remain reusable. Its former v2 evidence-based construction and v4 result
 variants are rejected; successful results use v5 source identity and geometry.

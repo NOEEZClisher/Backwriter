@@ -2,7 +2,8 @@
 
 ## 0.3.0 target boundary — no address change
 
-Gate 1 closes authority and Gate 2 implements namespace exclusion,
+Gate 1 closes authority, Gate 2 implements namespace exclusion and Gate 3
+completes direct shell View presentation with optional batch projection,
 not a new address version. The Protocol's `.bw` reservation plus legacy
 `.artext/bw` exclusion changes availability only. Keep all v5 fields, canonical
 wire/KAT bytes, hash transcript domains, workspace-coordinate derivation,
@@ -10,7 +11,9 @@ source hash/length/Line count and currentness unchanged. A false Line count
 remains `NotCurrent` even with the same hash and length. Shell Content framing
 and input-to-fresh-ref presentation are Adapter metadata; they neither alter
 Anddress nor create persistence, history, relocation or rebinding. Closed
-Cargo/public `0.2.6` remains current; Gates 3–5 remain pending.
+Cargo/public `0.2.6` remains current; Gates 4–5 remain pending. Batch None
+selects each existing self geometry; Some selects one existing upward kind.
+Neither form changes v5 algebra, source identity or currentness.
 
 ## 0.2.6 Adapter boundary — Gates 1–8 and release complete
 

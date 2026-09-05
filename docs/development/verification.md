@@ -1,6 +1,6 @@
 # Verification
 
-## 0.3.0 verification policy — Gates 1–2 complete
+## 0.3.0 verification policy — Gates 1–3 complete
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 owns gate evidence and pending acceptance, not competing semantic authority.
@@ -32,11 +32,29 @@ sentinels, private file/symlink cases, exact component and Windows case
 boundaries, ordinary siblings/nested paths, no-follow failures and help/version
 noncreation. Store creation/read/write/spill/cleanup are N/A unless real
 consumers are found; never add IO to satisfy BOX 23. Do not inspect actual old
-state. Gate 3 freezes exact framing/ref/Content KATs, empty/Unicode and every
+state. Owner-approved Gate 3 freezes exact framing/ref/Content KATs, empty/Unicode and every
 terminator, delimiter-like Content, ordered duplicates, mixed projected/absent
 results, allocation/Runtime/stdout failures, and one single or batch call with
-zero Content-only Search/View/re-resolution. Mixed-kind plural self-View needs
-its explicit prerequisite decision before that acceptance can be claimed.
+zero Content-only Search/View/re-resolution. Optional batch projection now
+supports mixed-kind plural self-View through the existing grouped executor.
+
+Gate 3 passes 116 distinct focused GNU tests: 3 binary writer/reserve, 74 CLI,
+21 View, 13 Runtime View and 5 namespace controls. Binary tests inject real
+Write failures at every header/metadata/body/end byte boundary, both immediate
+and buffered, absent-first and flush; they verify prefix, begun-slot count and
+no Drop retry. Capacity overflow proves recoverable reserve failure only, not
+allocator exhaustion. The process broken-pipe control confirms terminal exit
+before later publication. Mixed-kind OneByteReader and existing structural
+checks preserve one grouped observation without new counters or hooks.
+
+Full offline/locked metadata/tree, fmt, GNU all-target check, clippy with
+warnings denied and release build pass; nine exact task-local release commands
+cover direct/mixed/absent View, raw named View, raw Apply fixture setup, Search,
+Check and Help/Version. No full GNU/musl or AI/comparator/benchmark run is
+claimed. Gate 3 changes public Rust batch source compatibility and direct shell
+View framing only; published `0.2.6`, one-shot/raw/JSON output and help constants
+remain fixed. The tracker separates the preserved pre-approval proposal from
+subsequent Owner approval, implementation and focused evidence.
 
 Gate 4 preserves still-current rules before replacing duplicated history with
 links; unique numbers, environments, path spellings and source revisions must

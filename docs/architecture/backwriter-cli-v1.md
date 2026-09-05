@@ -1,8 +1,9 @@
 # Backwriter CLI V1
 
-## 0.3.0 direct shell View and help target — Gate 1 only
+## 0.3.0 direct shell View — Gate 3 complete; help remains Gate 4
 
-This is approved target authority, not implemented `0.2.6` output. The
+Owner-approved D1/D2 are implemented in this unpublished checkout, not in
+published `0.2.6`. The
 [tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 records the audited consumers and prerequisites. Current release, one-shot
 syntax, raw/JSON View bytes, Search output, Edit receipts, and Check stay fixed.
@@ -11,8 +12,8 @@ Direct `view <REF>... [--as <line|paragraph|file>]` must show each input ref,
 fresh projected ref, target kind/location and the complete Content already
 returned in `ViewOutcome::Projected`. Preserve input order and duplicates.
 Show `RelationAbsent` at its input position with no fresh slot; a normal absent
-relation must not suppress projected peers. The current any-absent early writer
-and discarded Content are removal targets, not new Runtime semantics.
+relation does not suppress projected peers. The any-absent early writer,
+discarded Content and repeated self-View calls have been removed.
 
 Resolve inputs once before Runtime, reuse existing results and ref reservation,
 and consume outcomes for display without another Content collection or Content
@@ -26,23 +27,42 @@ Stream failure is distinct: partial bytes may exist, the shell terminates with
 its existing stream-error status, and already performed publication is neither
 cancelled nor retried. It provides no successful delivery or rollback promise.
 
-Before Gate 3 coding, fix one minimal framing and exact byte KAT contract.
-Metadata/display separators must be distinguishable from Content, including
-empty Content, LF, CR, CRLF, no-EOL, Unicode and delimiter-like Content. Do not
-normalize or append a source terminator to make output readable. Choose the
-exact byte-length/end-boundary presentation and freeze slot commit/reporting
-behavior on write/flush failure there; the illustrative arrow is not a KAT.
-Framing is display metadata, never another Anddress wire or Content schema.
+The exact Projected record is `View<TAB><input REF><TAB>bytes=<N><LF>`,
+then the unchanged fresh `@N<TAB>kind<TAB>location<LF>` metadata line,
+then exactly `content.len()` UTF-8 bytes, then `<LF>EndView<LF>`.
+The header's N is a byte count, not a character count. There is no blank line
+before Content. The closing LF is display framing, not an added source
+terminator. Empty, LF, CR, CRLF, no-EOL, Unicode and delimiter-like Content are
+unchanged; do not scan for EndView or normalize bytes. An absent record is
+exactly `View<TAB><input REF><TAB>RelationAbsent<LF>`, with no fresh slot or body.
+Echo the once-resolved numeric, named or indexed reference token without shell
+quotes. Existing path validation rejects control characters and location colon;
+ordinary spaces, quotes and Unicode stay verbatim in shared metadata. This adds
+no escaping rule, path restriction, Core wire or Content schema.
+
+After all Runtime results succeed, count Projected P and reserve P slots before
+any output/append. Consume results in order and append each owned Anddress
+immediately before that record's first write; drop its Content after writing.
+With entry length L, Runtime/reserve failures leave L and emit nothing. A
+partial write leaves L+k, where k counts begun Projected records, never unvisited
+ones; absent records append nothing. Final flush failure leaves L+P. Buffering
+may delay the first sink write until multiple records have begun. Every Stream
+failure exits the shell immediately with status 1; discard unflushed bytes via
+BufWriter::into_parts so Drop cannot retry. Do not undo slots, promise delivery,
+or cancel prior publication. Usage (2) and Execution (1) errors still allow
+later commands with existing highest-error accounting. Overflow tests cover
+recoverable reservation failure, not process allocator exhaustion.
 
 The required execution budget is one Runtime single View for one input and
 one Runtime batch View for a batch, with zero output-motivated observations.
-Current explicit `--as` calls `view_batch` once, even for one input; omitted
-`--as` loops over self-Views. The batch API accepts one common target only.
-Homogeneous self inputs have a common target, but mixed-kind plural self inputs
-do not. **Mixed-kind plural self-View is an unresolved Gate 3 prerequisite.**
-Do not silently reject accepted inputs, change their projections, claim a
-single-call loop is a batch, or expand the public API without a bounded Owner
-decision. No choice is implemented or authorized by Gate 1.
+This applies with or without `--as`. The existing batch signature now takes
+`Option<AnddressTarget>`: None uses each input's self kind, including mixed
+kinds; Some uses one common upward kind. This is a source-breaking Rust API
+change: previous explicit callers must pass Some(kind). There is no overload,
+compatibility facade or new executor. Single View is unchanged. One-shot batch
+still requires JSON and explicit `--as`, and raw named Session keeps single
+View; their grammar and output bytes do not change. Help constants remain
+unchanged until Gate 4, so they do not yet describe the new direct framing.
 
 Gate 4 help must expose direct shell Search/View/Replace/Check, numeric and
 named refs, quoting, Content plus fresh-ref output, Line body-only replacement,

@@ -371,10 +371,11 @@ impl WorkspaceRuntime {
     }
 
     /// Projects an ordered Anddress collection with per-source observation reuse.
+    /// None keeps each input's target; Some selects one common upward target.
     pub fn view_batch(
         &self,
         anddresses: &[Anddress],
-        projection: AnddressTarget,
+        projection: Option<AnddressTarget>,
     ) -> Result<Vec<ViewOutcome>, ViewError> {
         view::execute_batch(self, anddresses, projection)
     }

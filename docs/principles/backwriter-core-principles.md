@@ -1,13 +1,14 @@
 # Backwriter Principles
 
-The `0.3.0` target has completed authority Gate 1 and namespace Gate 2 in its
+The `0.3.0` target has completed authority Gate 1, namespace Gate 2 and View Gate 3 in its
 [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
 Cargo and public distribution remain closed `0.2.6`. A private reservation is
 not a storage engine: `.bw` and the legacy exact exclusion must neither cause
-eager IO nor consume historical data. Complete shell View must display returned
-Content, not acquire it again, and normal absent relations must not hide peers.
-Its unresolved batch/framing prerequisites are not permission for silent API or
-projection changes. Reuse actual consumers, remove proven duplicate presentation,
+eager IO nor consume historical data. Complete shell View displays returned
+Content without acquiring it again; normal absent relations do not hide peers.
+Owner-approved optional batch projection preserves self kinds without a second
+executor. Byte framing and append-before-write expose existing results, not a
+new wire, observation or delivery guarantee. Reuse actual consumers, remove proven duplicate presentation,
 and retain every unique safety boundary. Verification reuse requires the whole
 test/build input boundary, not just production equality; current policy and
 unique historical evidence must survive later documentation contraction.

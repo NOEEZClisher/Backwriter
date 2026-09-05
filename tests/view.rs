@@ -231,20 +231,39 @@ fn view_batch_preserves_empty_single_duplicate_and_mixed_source_order() {
     let line_b = address(coordinate, "b.txt", source_b, AnddressTarget::Line, 0, 3);
 
     assert_eq!(
-        workspace.view_batch(&[], AnddressTarget::File),
+        workspace.view_batch(&[], Some(AnddressTarget::File)),
         Ok(Vec::new())
     );
     assert_eq!(
-        workspace.view_batch(std::slice::from_ref(&line_a), AnddressTarget::Line),
+        workspace.view_batch(std::slice::from_ref(&line_a), Some(AnddressTarget::Line)),
         Ok(vec![projected(line_a.clone(), b"two\n")])
     );
 
     let output_a = projected(file_a.clone(), source_a);
+    let mixed = [
+        file_a.clone(),
+        line_b.clone(),
+        paragraph_a.clone(),
+        line_a.clone(),
+        file_a.clone(),
+    ];
+    assert_eq!(workspace.view_batch(&[], None), Ok(Vec::new()));
+    assert_eq!(
+        workspace.view_batch(std::slice::from_ref(&line_a), None),
+        Ok(vec![projected(line_a.clone(), b"two\n")])
+    );
+    assert_eq!(
+        workspace.view_batch(&mixed, None),
+        Ok(mixed
+            .iter()
+            .map(|input| workspace.view(input, input.target()).unwrap())
+            .collect())
+    );
     let output_b = projected(file_b, source_b);
     assert_eq!(
         workspace.view_batch(
             &[line_a.clone(), line_b, line_a, paragraph_a, file_a,],
-            AnddressTarget::File,
+            Some(AnddressTarget::File),
         ),
         Ok(vec![
             output_a.clone(),
@@ -334,7 +353,9 @@ fn view_batch_preserves_relations_terminators_unicode_and_raw_ranges() {
     ];
     let raw = address(coordinate, "note.txt", source, AnddressTarget::Line, 3, 8);
 
-    let line_outcomes = workspace.view_batch(&lines, AnddressTarget::Line).unwrap();
+    let line_outcomes = workspace
+        .view_batch(&lines, Some(AnddressTarget::Line))
+        .unwrap();
     assert_eq!(line_outcomes.len(), 5);
     for (outcome, content, terminator, related) in [
         (
@@ -386,7 +407,7 @@ fn view_batch_preserves_relations_terminators_unicode_and_raw_ranges() {
                 lines[4].clone(),
                 lines[0].clone(),
             ],
-            AnddressTarget::Paragraph,
+            Some(AnddressTarget::Paragraph),
         ),
         Ok(vec![
             paragraph_output.clone(),
@@ -487,7 +508,11 @@ fn view_batch_preflights_relations_and_fails_all_for_unavailable_members() {
     ];
     for bad in unavailable {
         assert_eq!(
-            workspace.view_batch(&[current.clone(), bad], AnddressTarget::File),
+            workspace.view_batch(&[current.clone(), bad.clone()], None),
+            Err(ViewError::Unavailable)
+        );
+        assert_eq!(
+            workspace.view_batch(&[current.clone(), bad], Some(AnddressTarget::File)),
             Err(ViewError::Unavailable)
         );
     }
@@ -513,7 +538,10 @@ fn view_batch_preflights_relations_and_fails_all_for_unavailable_members() {
         4,
     );
     assert_eq!(
-        admitted.view_batch(&[admitted_file, unadmitted_file], AnddressTarget::File),
+        admitted.view_batch(
+            &[admitted_file, unadmitted_file],
+            Some(AnddressTarget::File)
+        ),
         Err(ViewError::Unavailable)
     );
 
@@ -533,7 +561,7 @@ fn view_batch_preflights_relations_and_fails_all_for_unavailable_members() {
             4,
         );
         assert_eq!(
-            workspace.view_batch(&[current.clone(), linked], AnddressTarget::File),
+            workspace.view_batch(&[current.clone(), linked], Some(AnddressTarget::File)),
             Err(ViewError::Unavailable)
         );
     }
@@ -548,7 +576,7 @@ fn view_batch_preflights_relations_and_fails_all_for_unavailable_members() {
         (vec![line, paragraph], AnddressTarget::Line),
     ] {
         assert_eq!(
-            workspace.view_batch(&inputs, projection),
+            workspace.view_batch(&inputs, Some(projection)),
             Err(ViewError::InvalidInput)
         );
     }
@@ -592,18 +620,34 @@ fn host_view_batch_reuses_and_invalidates_proof_per_source_group() {
         Ok(SearchOutcome::Found { anddresses }) if anddresses.len() == 2
     ));
 
-    let trusted = host.view_batch(&inputs, AnddressTarget::Line).unwrap();
+    let trusted = host
+        .view_batch(&inputs, Some(AnddressTarget::Line))
+        .unwrap();
     let direct = runtime(&root)
-        .view_batch(&inputs, AnddressTarget::Line)
+        .view_batch(&inputs, Some(AnddressTarget::Line))
         .unwrap();
     assert_eq!(trusted, direct);
     assert_eq!(trusted[0], trusted[2]);
+    let mixed = [
+        line_a.clone(),
+        line_b.project(AnddressTarget::File).unwrap().unwrap(),
+        line_a.project(AnddressTarget::Paragraph).unwrap().unwrap(),
+        line_a.clone(),
+    ];
+    assert_eq!(
+        host.view_batch(&mixed, None),
+        runtime(&root).view_batch(&mixed, None)
+    );
 
     let stale_a = address(coordinate, "a.txt", b"two\n", AnddressTarget::Line, 0, 4);
     let parked_a = root.join("parked-a");
     fs::rename(root.join("a.txt"), &parked_a).unwrap();
     assert_eq!(
-        host.view_batch(&[line_a.clone(), stale_a], AnddressTarget::Line),
+        host.view_batch(&[line_a.clone(), stale_a.clone()], None),
+        Err(ViewError::Unavailable)
+    );
+    assert_eq!(
+        host.view_batch(&[line_a.clone(), stale_a], Some(AnddressTarget::Line)),
         Err(ViewError::Unavailable)
     );
     assert_eq!(
@@ -615,7 +659,20 @@ fn host_view_batch_reuses_and_invalidates_proof_per_source_group() {
     let parked_b = root.join("parked-b");
     fs::rename(root.join("b.txt"), &parked_b).unwrap();
     assert_eq!(
-        host.view_batch(&[line_b.clone(), line_b.clone()], AnddressTarget::Line,),
+        host.view_batch(
+            &[
+                line_b.clone(),
+                line_b.project(AnddressTarget::File).unwrap().unwrap()
+            ],
+            None
+        ),
+        Err(ViewError::Unavailable)
+    );
+    assert_eq!(
+        host.view_batch(
+            &[line_b.clone(), line_b.clone()],
+            Some(AnddressTarget::Line)
+        ),
         Err(ViewError::Unavailable)
     );
     assert_eq!(host.check(line_b.clone()).unwrap().filtered, None);
@@ -627,8 +684,11 @@ fn host_view_batch_reuses_and_invalidates_proof_per_source_group() {
 
     host.invalidate_source("a.txt").unwrap();
     assert_eq!(
-        host.view_batch(&[line_a.clone(), line_a.clone()], AnddressTarget::Line,),
-        runtime(&root).view_batch(&[line_a.clone(), line_a], AnddressTarget::Line)
+        host.view_batch(
+            &[line_a.clone(), line_a.clone()],
+            Some(AnddressTarget::Line)
+        ),
+        runtime(&root).view_batch(&[line_a.clone(), line_a], Some(AnddressTarget::Line))
     );
 }
 
@@ -740,11 +800,11 @@ fn view_rejects_private_path_before_access_and_allows_other_artext_children() {
             vec![private.clone(), visible.clone()],
         ] {
             assert_eq!(
-                workspace.view_batch(&inputs, AnddressTarget::File),
+                workspace.view_batch(&inputs, Some(AnddressTarget::File)),
                 Err(ViewError::Unavailable)
             );
             assert_eq!(
-                workspace.view_batch(&inputs, AnddressTarget::Line),
+                workspace.view_batch(&inputs, Some(AnddressTarget::Line)),
                 Err(ViewError::InvalidInput)
             );
         }
@@ -1163,7 +1223,7 @@ fn view_preserves_ranges_at_every_source_scratch_boundary() {
             AnddressTarget::File,
         ] {
             let outputs = workspace
-                .view_batch(&[input.clone(), input.clone()], projection)
+                .view_batch(&[input.clone(), input.clone()], Some(projection))
                 .unwrap();
             assert_eq!(outputs.len(), 2);
             assert_eq!(outputs[0], outputs[1]);

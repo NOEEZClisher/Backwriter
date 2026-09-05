@@ -14,12 +14,12 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.3.0 target — Gates 1–2 complete
+## 0.3.0 target — Gates 1–3 complete
 
-Gates 1–2 are complete in the
+Gates 1–3 are complete in the
 [five-gate tracker](docs/tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
 Cargo, CLI, and public distribution remain closed `0.2.6`; the following
-checkout implements namespace exclusion, not shell output or source readiness.
+checkout implements namespace exclusion and complete direct shell View, not source readiness.
 The Protocol owns the implemented Runtime-root-relative `.bw` reservation plus
 the exact legacy `.artext/bw` exclusion. No private state store was found;
 creation/read/write/spill/cleanup of such a store is N/A, not permission to
@@ -27,10 +27,11 @@ add storage or eager directories. Keep Update and Apply temporary contracts,
 all v5 fields/domains/currentness, Search, Apply, Anchor, and Host proof intact.
 
 The CLI authority owns complete direct shell View presentation from existing
-results. Mixed-kind plural self-View versus the common-target batch API and
-exact framing/stream-failure slot KATs remain Gate 3 prerequisites, not implicit
-API or input-rejection authority. Gate 2 is focused namespace verification;
-Gate 3 is View; Gate 4 is direct/advanced help, private module relocation and
+results. Owner-approved D1 changes only batch projection to
+`Option<AnddressTarget>`: None means each input's self kind, Some means a common
+upward kind. D2 closes byte-length Content framing and append-before-write slots
+with terminal Stream failure and no Drop retry. Gate 2 is namespace verification;
+Gate 3 is complete View; Gate 4 is direct/advanced help, private module relocation and
 evidence-preserving verification contraction; Gate 5 is final GNU/musl and
 N-1/N readiness. Release slices require separate approval afterwards.
 Use focused development checks and reuse evidence only across the complete
@@ -548,10 +549,10 @@ are preserved evidence, never current authority.
   adapter payload.
 - **View V1** has an implementation. Its Runtime seams are
   `WorkspaceRuntime::view(&Anddress, AnddressTarget) -> Result<ViewOutcome,
-  ViewError>` and `WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)
+  ViewError>` and `WorkspaceRuntime::view_batch(&[Anddress], Option<AnddressTarget>)
   -> Result<Vec<ViewOutcome>, ViewError>`. The single form accepts exactly one
-  Anddress; the batch form accepts an ordered borrowed collection. Both use one
-  requested existing target kind, without a wrapper, arbitrary range, or
+  Anddress; the batch form accepts an ordered borrowed collection and either a
+  common Some target or each input's self kind with None, without a wrapper, arbitrary range, or
   selector.
   Line may project to Line, Paragraph, or File; Paragraph to Paragraph or File;
   File only to File. Downward requests are `InvalidInput` before source I/O.
@@ -597,7 +598,7 @@ are preserved evidence, never current authority.
 - The implemented Runtime execution seams are
   `WorkspaceRuntime::search(&SearchRequest)`,
   `WorkspaceRuntime::view(&Anddress, AnddressTarget)`,
-  `WorkspaceRuntime::view_batch(&[Anddress], AnddressTarget)`,
+  `WorkspaceRuntime::view_batch(&[Anddress], Option<AnddressTarget>)`,
   `WorkspaceRuntime::apply(&mut self, &Edit)`, and
   `WorkspaceRuntime::apply_replace(&mut self, &Edit)`,
 `WorkspaceRuntime::check(Anddress)`, `check_batch(&[Anddress])`,
