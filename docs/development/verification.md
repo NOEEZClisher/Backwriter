@@ -1,6 +1,6 @@
 # Verification
 
-## 0.3.0 verification policy — Gate 1 only
+## 0.3.0 verification policy — Gates 1–2 complete
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 owns gate evidence and pending acceptance, not competing semantic authority.
@@ -17,6 +17,15 @@ reused and unexecuted evidence separately. Version/build-metadata changes need
 binary identity and Version KAT checks, not repetition of historical benchmarks.
 G1 verifies documentation hygiene, offline/locked metadata and unchanged inputs;
 it reuses the existing 285-test GNU and 285-test musl results, not a new run.
+
+Gate 2 executes 25 focused GNU tests (one Runtime namespace unit, six Search,
+five View, three Check, three Apply, two Anchor and five CLI), plus offline/locked
+metadata/tree, fmt, GNU all-target check, clippy with warnings denied, release
+build and task-local release path smoke. No full GNU/musl suite is run; the
+285-test baseline is not promoted to a post-change pass. Windows case assertions
+are platform-conditioned in the shared unit regression; native Windows and
+Windows-only execution are not claimed. Tests use existing valid-v5 fixtures;
+sentinel inspection is verifier-only, not Runtime stored-state consumption.
 
 Gate 2 uses task-local absent/new/old-only/both-root fixtures and unchanged old
 sentinels, private file/symlink cases, exact component and Windows case

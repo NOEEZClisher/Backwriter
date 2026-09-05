@@ -3,14 +3,14 @@
 ## Active target: 0.3.0 independent namespace and complete shell View
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
-records only Gate 1 as complete. Its source note and grounded roadmap remain
+records Gates 1–2 as complete. Its source note and grounded roadmap remain
 unchanged planning evidence; Protocol, address model, CLI and verification own
 the reconciled target. Closed `0.2.6` stays current.
 
 1. Gate 1: namespace consumer/N/A inventory, shell output authority, explicit
    unresolved decisions and acceptance — complete; documentation only.
 2. Gate 2: same-root `.bw` plus exact legacy exclusion and BOX 23 focused tests
-   — pending; no store or eager directory creation.
+   — complete; no store or eager directory creation.
 3. Gate 3: returned Content, input/fresh refs, order/duplicates, absent slots,
    framing/failure KATs and zero extra observation — pending. Resolve mixed-kind
    plural self-View versus the common-target batch API before implementation.

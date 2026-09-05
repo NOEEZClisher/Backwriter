@@ -373,6 +373,30 @@ fn invalidation_is_path_exact_and_does_not_read_the_source() {
         Err(AnchorError::InvalidInput)
     );
     assert_eq!(workspace.invalidate_source("missing.txt"), Ok(()));
+    for path in [".bw/x", ".artext/bw/x"] {
+        fs::create_dir_all(fixture.path().join(path).parent().unwrap()).unwrap();
+        fs::write(fixture.path().join(path), b"\xff\0").unwrap();
+        let private = support::file(note.workspace_coordinate(), path, b"one\n");
+        assert!(matches!(
+            workspace.anchor(&private),
+            Err(AnchorError::Unavailable)
+        ));
+        assert_eq!(
+            workspace.invalidate_source(path),
+            Err(AnchorError::Unavailable)
+        );
+        assert_eq!(
+            workspace.invalidate_anchored_source(path),
+            Err(AnchorError::Unavailable)
+        );
+        assert_eq!(fs::read(fixture.path().join(path)).unwrap(), b"\xff\0");
+        assert_eq!(
+            fs::read_dir(fixture.path().join(path).parent().unwrap())
+                .unwrap()
+                .count(),
+            1
+        );
+    }
     assert_eq!(
         workspace.invalidate_source(".artext/bw/x"),
         Err(AnchorError::Unavailable)

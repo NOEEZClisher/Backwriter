@@ -750,7 +750,10 @@ fn workspace_coordinate(workspace_root: &Path) -> String {
 
 #[cfg(not(windows))]
 pub(crate) fn is_backwriter_spill(path: &str) -> bool {
-    path == ".artext/bw" || path.strip_prefix(".artext/bw/").is_some()
+    path == ".bw"
+        || path.starts_with(".bw/")
+        || path == ".artext/bw"
+        || path.starts_with(".artext/bw/")
 }
 
 #[cfg(all(test, any(unix, windows)))]
@@ -1025,18 +1028,42 @@ mod tests {
         );
     }
 
-    #[cfg(windows)]
     #[test]
-    fn windows_spill_boundary_is_ascii_case_insensitive_and_root_relative() {
-        assert!(super::is_backwriter_spill(".ARTEXT/BW"));
-        assert!(!super::is_backwriter_spill(".artext/bw2"));
-        assert!(!super::is_backwriter_spill("x/.artext/bw"));
+    fn spill_boundary_uses_exact_root_components_and_platform_case() {
+        for path in [
+            ".bw",
+            ".bw/file",
+            ".bw/nested/file",
+            ".artext/bw",
+            ".artext/bw/file",
+        ] {
+            assert!(super::is_backwriter_spill(path), "{path}");
+        }
+        for path in [
+            ".bw-notes",
+            ".bw2",
+            ".artext/bw2",
+            ".artext/other",
+            "x/.bw",
+            "x/.bw/file",
+            "x/.artext/bw",
+        ] {
+            assert!(!super::is_backwriter_spill(path), "{path}");
+        }
+        for path in [".BW", ".Bw/file", ".ARTEXT/BW", ".artext/Bw/file"] {
+            assert_eq!(super::is_backwriter_spill(path), cfg!(windows), "{path}");
+        }
     }
 }
 
 #[cfg(windows)]
 pub(crate) fn is_backwriter_spill(path: &str) -> bool {
     let mut components = path.split('/');
-    matches!(components.next(), Some(root) if root.eq_ignore_ascii_case(".artext"))
-        && matches!(components.next(), Some(child) if child.eq_ignore_ascii_case("bw"))
+    match components.next() {
+        Some(root) if root.eq_ignore_ascii_case(".bw") => true,
+        Some(root) if root.eq_ignore_ascii_case(".artext") => {
+            matches!(components.next(), Some(child) if child.eq_ignore_ascii_case("bw"))
+        }
+        _ => false,
+    }
 }

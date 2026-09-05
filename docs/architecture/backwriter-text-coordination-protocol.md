@@ -1,9 +1,9 @@
 # Backwriter Protocol
 
-## 0.3.0 namespace target — authority closed, implementation pending
+## 0.3.0 namespace — Gate 2 implemented in the checkout
 
 This target supplements the closed `0.2.6` implementation described below;
-only documentation Gate 1 is complete. `0.2.6` excludes `.artext/bw` and does
+Gates 1–2 are complete, not source readiness. Published `0.2.6` excludes `.artext/bw` and does
 not implement a private state store. The `0.3.0` target reserves `.bw` at the
 same accepted Runtime workspace root, not at an admission-root-relative,
 nested-workspace, HOME, or new environment-selected base. It excludes both
@@ -12,7 +12,7 @@ exact path components. Non-Windows matching stays case-sensitive; Windows
 matching stays ASCII-case-insensitive on those components. This is availability
 policy, not a change to logical-path equality or workspace coordinates.
 
-`.bw-notes`, `.artext/bw2`, other `.artext` children, and nested
+`.bw-notes`, `.bw2`, `.artext/bw2`, other `.artext` children, and nested
 `x/.bw` or `x/.artext/bw` remain ordinary source under existing admission and
 no-follow safety. Preserve the existing capability-specific private-path
 outcomes and their validation priority. An ignored entry is not followed or

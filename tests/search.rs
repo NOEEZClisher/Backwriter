@@ -191,6 +191,8 @@ fn exact_file_lookup_is_content_independent_and_integrates_with_check() {
     fs::create_dir(root.join("directory")).unwrap();
     fs::create_dir_all(root.join(".artext/bw")).unwrap();
     fs::write(root.join(".artext/bw/hidden.txt"), "ordinary").unwrap();
+    fs::create_dir(root.join(".bw")).unwrap();
+    fs::write(root.join(".bw/hidden.txt"), b"\xff\0").unwrap();
     let workspace = runtime(&root);
 
     let empty = exact_file(&workspace, "empty.txt");
@@ -219,6 +221,9 @@ fn exact_file_lookup_is_content_independent_and_integrates_with_check() {
         exact_file(&workspace, ".artext/bw/hidden.txt"),
         SearchOutcome::Empty
     );
+    for path in [".bw", ".bw/hidden.txt", ".bw/missing"] {
+        assert_eq!(exact_file(&workspace, path), SearchOutcome::Empty);
+    }
 
     let checked = workspace.check_search(empty).unwrap();
     assert_eq!(checked.report.current_count(), 1);
@@ -472,7 +477,7 @@ fn search_projects_ranges_after_many_lines_and_ignores_only_backwriter_spill() {
         source.push_str("skip\n");
     }
     source.push_str("needle");
-    fs::write(root.join("many.txt"), source).unwrap();
+    fs::write(root.join("many.txt"), &source).unwrap();
     fs::create_dir_all(root.join(".artext/bw")).unwrap();
     fs::write(root.join(".artext/bw/hidden.txt"), "needle").unwrap();
     fs::create_dir_all(root.join(".artext/other")).unwrap();
@@ -492,6 +497,168 @@ fn search_projects_ranges_after_many_lines_and_ignores_only_backwriter_spill() {
         (4097 * 5, 4097 * 5 + 6)
     );
     assert_eq!(values[3].logical_path(), "nested/.artext/bw/visible.txt");
+
+    for (new, old) in [(false, false), (true, false), (false, true), (true, true)] {
+        let fixture = tempdir().unwrap();
+        let root = fixture.path();
+        for (present, path) in [(new, ".bw"), (old, ".artext/bw")] {
+            if present {
+                fs::create_dir_all(root.join(path)).unwrap();
+                fs::write(root.join(path).join("sentinel"), b"\xffneedle\0").unwrap();
+            }
+        }
+        let ordinary = [
+            ".bw-notes",
+            ".bw2",
+            ".artext/bw2",
+            ".artext/other",
+            "x/.bw",
+            "x/.artext/bw",
+        ];
+        for path in ordinary {
+            fs::create_dir_all(root.join(path)).unwrap();
+            fs::write(root.join(path).join("visible"), b"needle").unwrap();
+        }
+        let before = fs::read_dir(root)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect::<std::collections::BTreeSet<_>>();
+        for workspace in [runtime(root), host_runtime(root, ".")] {
+            let values = found(&workspace, "needle", SearchTarget::File);
+            let mut expected = ordinary.map(|path| format!("{path}/visible"));
+            expected.sort();
+            assert_eq!(
+                values
+                    .iter()
+                    .map(Anddress::logical_path)
+                    .collect::<Vec<_>>(),
+                expected
+            );
+            for path in ordinary {
+                assert!(matches!(
+                    exact_file(&workspace, &format!("{path}/visible")),
+                    SearchOutcome::Found { .. }
+                ));
+            }
+            for private in [".bw", ".artext/bw"] {
+                assert_eq!(exact_file(&workspace, private), SearchOutcome::Empty);
+                assert_eq!(
+                    exact_file(&workspace, &format!("{private}/sentinel")),
+                    SearchOutcome::Empty
+                );
+                for entry in [
+                    SearchScopeEntry::subtree(private).unwrap(),
+                    SearchScopeEntry::source(format!("{private}/sentinel")).unwrap(),
+                ] {
+                    assert_eq!(
+                        workspace.search(&request(
+                            "needle",
+                            SearchScope::only([entry]).unwrap(),
+                            SearchTarget::Line
+                        )),
+                        Ok(SearchOutcome::Empty)
+                    );
+                }
+            }
+        }
+        let nested = host_runtime(root, "x");
+        assert_eq!(found(&nested, "needle", SearchTarget::Line).len(), 2);
+        for path in [".bw/sentinel", ".artext/bw/sentinel"] {
+            assert_eq!(
+                nested.search(&request(
+                    "needle",
+                    SearchScope::only([SearchScopeEntry::source(path).unwrap()]).unwrap(),
+                    SearchTarget::Line
+                )),
+                Err(SearchError::InvalidScope)
+            );
+        }
+        assert_eq!(
+            fs::read_dir(root)
+                .unwrap()
+                .map(|entry| entry.unwrap().file_name())
+                .collect::<std::collections::BTreeSet<_>>(),
+            before
+        );
+        for (present, path) in [(new, ".bw"), (old, ".artext/bw")] {
+            assert_eq!(root.join(path).exists(), present);
+            if present {
+                assert_eq!(
+                    fs::read(root.join(path).join("sentinel")).unwrap(),
+                    b"\xffneedle\0"
+                );
+                assert_eq!(fs::read_dir(root.join(path)).unwrap().count(), 1);
+            }
+        }
+    }
+
+    let fixture = tempdir().unwrap();
+    fs::write(fixture.path().join("coordinate.txt"), b"coordinate").unwrap();
+    fs::write(fixture.path().join(".bw"), b"\xffneedle\0").unwrap();
+    let mut workspace = runtime(fixture.path());
+    assert!(found(&workspace, "needle", SearchTarget::Line).is_empty());
+    assert_eq!(exact_file(&workspace, ".bw"), SearchOutcome::Empty);
+    assert_eq!(
+        fs::read(fixture.path().join(".bw")).unwrap(),
+        b"\xffneedle\0"
+    );
+    let coordinate = exact_file_address(&workspace, "coordinate.txt");
+    for link in [false, true] {
+        if link {
+            #[cfg(unix)]
+            {
+                fs::remove_file(fixture.path().join(".bw")).unwrap();
+                std::os::unix::fs::symlink(&root, fixture.path().join(".bw")).unwrap();
+            }
+            #[cfg(not(unix))]
+            break;
+        }
+        assert!(found(&workspace, "needle", SearchTarget::Line).is_empty());
+        assert_eq!(exact_file(&workspace, ".bw/many.txt"), SearchOutcome::Empty);
+        assert_eq!(
+            fs::symlink_metadata(fixture.path().join(".bw"))
+                .unwrap()
+                .is_symlink(),
+            link
+        );
+        for path in [".bw", ".bw/many.txt"] {
+            let private = support::file(coordinate.workspace_coordinate(), path, b"needle");
+            assert_eq!(
+                workspace.view(&private, AnddressTarget::File),
+                Err(backwriter::backwriter::view::ViewError::Unavailable)
+            );
+            assert_eq!(
+                workspace
+                    .check_batch(std::slice::from_ref(&private))
+                    .unwrap(),
+                vec![backwriter::backwriter::check::CheckStatus::NotCurrent]
+            );
+            assert!(matches!(
+                workspace.anchor(&private),
+                Err(backwriter::backwriter::anchor::AnchorError::Unavailable)
+            ));
+            let edit = backwriter::backwriter::edit::Edit::Replace {
+                target: private,
+                content: "replacement".to_owned(),
+            };
+            assert_eq!(
+                workspace.apply(&edit),
+                Err(backwriter::backwriter::apply::ApplyError::Unavailable)
+            );
+            assert_eq!(
+                workspace.apply_replace(&edit),
+                Err(backwriter::backwriter::apply::ApplyError::Unavailable)
+            );
+        }
+        if !link {
+            assert_eq!(
+                fs::read(fixture.path().join(".bw")).unwrap(),
+                b"\xffneedle\0"
+            );
+        }
+    }
+    assert_eq!(fs::read_dir(fixture.path()).unwrap().count(), 2);
+    assert_eq!(fs::read(root.join("many.txt")).unwrap(), source.as_bytes());
 }
 
 #[test]

@@ -1,9 +1,10 @@
 # Backwriter 0.3.0 independent namespace and complete shell View
 
-## Status — Gate 1 complete; Gates 2–5 pending
+## Status — Gates 1–2 complete; Gates 3–5 pending
 
 Recorded 2026-09-05. Gate 1 closes authority, audited discrepancies, open
-decisions and acceptance only. No implementation, version bump, readiness SHA,
+decisions and acceptance. Gate 2 implements the existing namespace predicate
+and focused regressions only. No version bump, readiness SHA,
 artifact, installer, publication or operational change is made. Cargo/CLI and
 official distribution remain published and closed `0.2.6`.
 
@@ -117,7 +118,7 @@ Multiple Replace commands are still separate publications, not a transaction.
 | Gate | State | Required evidence before completion |
 | --- | --- | --- |
 | 1 — authority | Complete | Consumer/N/A inventory; active target versus closed release; D1–D3; unchanged planning notes; input equality, metadata, document/Git hygiene |
-| 2 — namespace | Pending | BOX 23 focused tests using existing filter; absent/new/old-only/both roots; task-local old sentinel byte equality; new reserved file/symlink never exposed; exact components/case and ordinary sibling/nested paths; no help/version creation; existing no-follow/admission/direct-access errors; nonexistent store IO stays N/A |
+| 2 — namespace | Complete | BOX 23 focused tests using existing filter; absent/new/old-only/both roots; task-local old sentinel byte equality; new reserved file/symlink never exposed; exact components/case and ordinary sibling/nested paths; no help/version creation; existing no-follow/admission/direct-access errors; nonexistent store IO stays N/A |
 | 3 — complete shell View | Pending, D1/D2 required first | Single self and Line-to-Paragraph/File; one single/batch call; ordered duplicate input/ref/Content mapping; mixed projected/absent peers; empty/terminator/framing KATs; reserve/allocation/Runtime/write/flush failures; zero Content-only extra observation; unchanged raw/JSON/Replace |
 | 4 — help/modules/verification | Pending | Executable direct/named/quoted examples including ref producers, fresh Current slots and same-source staleness; real advanced Pick/Anchor/Apply/Data help; no new one-shot/parser/crate; private code relocation; tests split only for useful navigation within one CLI integration crate; current rules extracted before duplicate history links, unique evidence preserved verbatim |
 | 5 — integration/readiness | Pending, D3 required | Final GNU/musl semantic matrix, metadata/tree/fmt/check/test/clippy/release and release smoke; fresh N-1/N four arms; exact independent oracle; actual candidate identity and GO/NO-GO, then separately approved release slices |
@@ -184,6 +185,74 @@ final candidate verification belongs to Gate 5, not this input-equivalent
 documentation change. Native macOS/Windows/PowerShell/CMD gaps and absent
 lock/rollback/fsync/crash-durability guarantees remain explicit limitations.
 
-Next: Gate 2 only. Gates 3–5 require their preceding evidence and unresolved
+At the Gate 1 boundary, next was Gate 2 only. Gates 3–5 require their preceding evidence and unresolved
 decisions; separate future artifact/installer/publication authority is not
 granted here.
+
+## Gate 2 namespace implementation and focused evidence
+
+Entry: clean `main = origin/main = f0379b0059a1c51be511742fd9f17cb21b61ac23`.
+Only the existing `is_backwriter_spill` non-Windows and Windows branches change
+production behavior. Exact root `.bw` joins legacy `.artext/bw`; descendants
+require a slash component boundary. Windows compares only these components
+ASCII-case-insensitively; non-Windows remains case-sensitive. There is no new
+filter, constructor, registry, IO, store, fallback, migration or cleanup path.
+Store creation/read/write/spill/cleanup remain N/A.
+
+The Gate 1 consumer table was rechecked against each definition and caller.
+All nine production call sites stay byte-identical: four Search, one View,
+one Check, one Apply, two Anchor. Search scope preflight still precedes selected
+private skipping; exact private File lookup is Empty. View relation validation
+still precedes Unavailable. Check returns NotCurrent before proof/source access.
+Edit validation precedes private Unavailable, with neither unit Apply nor
+receipt Apply publishing. Anchor and invalidation retain existing errors and
+leave the unrelated live Anchor/current proof intact. Update bootstrap and
+Apply same-parent staging, names, domains and cleanup are unchanged.
+
+| Focused GNU group | Passed | Direct evidence |
+| --- | ---: | --- |
+| Runtime | 1 | Existing Windows-only predicate test expanded to both platform case policies and exact components |
+| Search | 6 | Existing range/private regression extended with absent/new-only/old-only/both sentinels, invalid UTF-8/NUL exclusion, ordinary siblings/nested roots, narrowed scope/admission, private file/symlink and direct View/Check/Anchor/Apply rejection; exact File and admission/no-follow controls |
+| View | 5 | Private single/batch Unavailable, projection InvalidInput priority, all-or-none, symlink/nonregular safety, alternate admission |
+| Check | 3 | Private NotCurrent in ordered duplicate batches under Untrusted and Host; ordinary Current/NotCurrent/Unavailable controls |
+| Apply | 3 | Private unit/receipt rejection, NUL validation priority, unchanged bytes, live Anchor and staging contents; symlink and late-invalid-source controls |
+| Anchor | 2 | Private Anchor and both invalidation seams reject without consuming sentinels or changing the ordinary live Anchor/proof; invalid source fail-close control |
+| CLI | 5 | Exact help/version, four namespace noncreation/sentinel cases, workspace/admission, Update-help no-download and View error priority |
+
+Total: **25 distinct focused GNU tests passed**. Existing functions/fixtures are
+extended, not replaced with a new harness or crate; `tests/support.rs` is
+unchanged. Verifier reads of task-local sentinels are not Runtime store IO.
+The sole predicate unit now runs on GNU as well as Windows; no native Windows
+or Windows-only test execution is claimed. Full GNU/musl suites remain Gate 5;
+the earlier 285/285 counts are baseline only, not post-change test results.
+
+Executed offline/locked metadata (full dependency graph), tree, fmt check,
+GNU all-target check, clippy `-D warnings`, and release build with Rust/Cargo
+1.95.0. Clippy initially found two unnecessary test clones; they were removed
+and the final check passes. Default features, existing test/release profiles
+and flags are unchanged, with `CARGO_TARGET_DIR` isolated under the task-local
+temporary root. No toolchain was installed. Six asserted release smoke commands
+cover ordered Search v2/v5 output, both private exact File Empty results,
+`--admit x` retaining nested private-looking names, Help and exact
+`Backwriter 0.2.6\n`; five fixture files remain byte-identical with no additions.
+No user-installed `bw`, Update, benchmark, older comparator or artifact runs.
+
+Input audit: of 38 tracked non-Markdown files, the seven allowed Rust/test
+files change; the other 31 are byte-identical to entry. Core/v5 and its KAT
+definitions, CLI, remaining Runtime, Cargo/lock/toolchain, support fixtures,
+target definitions, features and profiles are unchanged. There is no tracked
+build script or Cargo configuration. Changed inputs are tested above, not
+covered by blanket reuse of an old suite. The Runtime file delta, including
+its test, is **+654 bytes / +27 lines**; the six integration files total
+**+12,438 bytes / +312 lines**. This is coverage expansion, not a performance
+or size-contraction claim.
+
+Both planning-note SHA-256 values above remain exact; README is unchanged.
+Server stays clean at its pinned SHA with no Gate 2 server/live operation.
+Document links/fences, allowed paths, empty pre-stage index, untracked output
+and repository `.artext`/`.bw` absence are audited. Only this task's temporary
+target and CLI fixture are removed before the approved commit/push.
+
+Next: Gate 3 after D1/D2 closure; D3 remains required before Gate 5. Gate 2
+does not implement complete shell View, module/help contraction, readiness,
+new storage or a release. Official distribution remains closed `0.2.6`.

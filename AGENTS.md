@@ -6,21 +6,21 @@ target Runtime, and the canonical `bw` CLI Adapter. Product prose uses
 `backwriter`; external callers invoke `bw`, which adapts to `backwriter` Core.
 Do not add a `backwriter` executable, alias, or wrapper. Persisted
 `artext.backwriter-*` values and distribution artifact/domain names keep their
-existing contracts. The published `.artext/bw` exclusion and the unimplemented
-`0.3.0` namespace target are distinguished below. The
+existing contracts. The published `.artext/bw` exclusion and the checkout's
+implemented `0.3.0` Gate 2 namespace are distinguished below. The
 owner-defined Core capability inventory is Search, View, Pick, Anchor, Check,
 Edit, Apply, and Data. `S` is assigned to Search, `P` to Pick, `A` to
 Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.3.0 target — Gate 1 authority only
+## 0.3.0 target — Gates 1–2 complete
 
-Only Gate 1 is complete in the
+Gates 1–2 are complete in the
 [five-gate tracker](docs/tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
 Cargo, CLI, and public distribution remain closed `0.2.6`; the following
-target does not claim implemented namespace, shell output, or source readiness.
-The Protocol owns the target Runtime-root-relative `.bw` reservation plus
+checkout implements namespace exclusion, not shell output or source readiness.
+The Protocol owns the implemented Runtime-root-relative `.bw` reservation plus
 the exact legacy `.artext/bw` exclusion. No private state store was found;
 creation/read/write/spill/cleanup of such a store is N/A, not permission to
 add storage or eager directories. Keep Update and Apply temporary contracts,
@@ -462,7 +462,7 @@ are preserved evidence, never current authority.
   may retain only target-local session continuity.
 - Future spill belongs only to a host-provided system root. Published `0.2.6`
   creates no `.artext` and excludes only root-relative `.artext/bw` and its
-  descendants. The Protocol's `0.3.0` target adds exact `.bw` exclusion without
+  descendants. This checkout's `0.3.0` Gate 2 adds exact `.bw` exclusion without
   a store or eager creation; other `.artext` children remain ordinary source.
 - Search is read-only discovery over admitted live Workspace Source inside a
   structured scope. Every call scans live source directly; it creates or uses

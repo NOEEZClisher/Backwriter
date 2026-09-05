@@ -722,6 +722,35 @@ fn view_rejects_private_path_before_access_and_allows_other_artext_children() {
     let workspace = runtime(&root);
     let coordinate = coordinate(&workspace);
 
+    let visible = support::file(&coordinate, ".artext/other/file", b"x");
+    for path in [".bw/file", ".artext/bw/file"] {
+        fs::create_dir_all(root.join(path).parent().unwrap()).unwrap();
+        fs::write(root.join(path), b"\xff\0").unwrap();
+        let private = support::file(&coordinate, path, b"x");
+        assert_eq!(
+            workspace.view(&private, AnddressTarget::File),
+            Err(ViewError::Unavailable)
+        );
+        assert_eq!(
+            workspace.view(&private, AnddressTarget::Line),
+            Err(ViewError::InvalidInput)
+        );
+        for inputs in [
+            vec![visible.clone(), private.clone(), visible.clone()],
+            vec![private.clone(), visible.clone()],
+        ] {
+            assert_eq!(
+                workspace.view_batch(&inputs, AnddressTarget::File),
+                Err(ViewError::Unavailable)
+            );
+            assert_eq!(
+                workspace.view_batch(&inputs, AnddressTarget::Line),
+                Err(ViewError::InvalidInput)
+            );
+        }
+        assert_eq!(fs::read(root.join(path)).unwrap(), b"\xff\0");
+    }
+
     assert_eq!(
         workspace.view(
             &address(

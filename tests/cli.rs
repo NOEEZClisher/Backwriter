@@ -928,6 +928,39 @@ fn command_local_help_kats_are_exact_and_skip_runtime_opening() {
     assert_usage(run(root.path(), &["anchor"]));
     assert_usage(run(root.path(), &["apply"]));
     assert_usage(run(root.path(), &["data"]));
+    assert_eq!(fs::read_dir(root.path()).unwrap().count(), 0);
+    for (new, old) in [(false, false), (true, false), (false, true), (true, true)] {
+        let fixture = tempfile::tempdir().unwrap();
+        for (present, path) in [(new, ".bw"), (old, ".artext/bw")] {
+            if present {
+                fs::create_dir_all(fixture.path().join(path)).unwrap();
+                fs::write(fixture.path().join(path).join("sentinel"), b"\xff\0").unwrap();
+            }
+        }
+        for (command, expected) in [
+            ("--help", TOP_LEVEL_HELP_KAT),
+            ("version", "Backwriter 0.2.6\n"),
+        ] {
+            let output = run(fixture.path(), &[command]);
+            assert!(output.status.success());
+            assert_eq!(output.stdout, expected.as_bytes());
+            assert!(output.stderr.is_empty());
+        }
+        for (present, path) in [(new, ".bw"), (old, ".artext/bw")] {
+            assert_eq!(fixture.path().join(path).exists(), present);
+            if present {
+                assert_eq!(
+                    fs::read(fixture.path().join(path).join("sentinel")).unwrap(),
+                    b"\xff\0"
+                );
+                assert_eq!(fs::read_dir(fixture.path().join(path)).unwrap().count(), 1);
+            }
+        }
+        assert_eq!(
+            fs::read_dir(fixture.path()).unwrap().count(),
+            usize::from(new) + usize::from(old)
+        );
+    }
 }
 
 #[test]

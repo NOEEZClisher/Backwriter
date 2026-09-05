@@ -1336,6 +1336,36 @@ fn apply_replace_preserves_logical_path_and_rejects_unavailable_sources() {
         .unwrap();
     assert_eq!(fs::read_to_string(root.join("a.txt")).unwrap(), "replaced");
     assert_eq!(fs::read_to_string(root.join("b.txt")).unwrap(), "linked");
+    let live = match workspace.anchor(&exact_file(&workspace, "a.txt")).unwrap() {
+        AnchorOutcome::Anchored(handle) => handle,
+        AnchorOutcome::AlreadyLive => panic!("fresh File Anchor"),
+    };
+
+    for path in [".bw/private.txt", ".artext/bw/private.txt"] {
+        fs::create_dir_all(root.join(path).parent().unwrap()).unwrap();
+        fs::write(root.join(path), b"\xff\0").unwrap();
+        let target = support::file(&coordinate.value, path, b"private");
+        for content in ["new", "bad\0"] {
+            let edit = Edit::Replace {
+                target: target.clone(),
+                content: content.to_owned(),
+            };
+            let error = if content.contains('\0') {
+                ApplyError::InvalidInput
+            } else {
+                ApplyError::Unavailable
+            };
+            assert_eq!(workspace.apply(&edit), Err(error));
+            assert_eq!(workspace.apply_replace(&edit), Err(error));
+        }
+        assert_eq!(fs::read(root.join(path)).unwrap(), b"\xff\0");
+        assert_eq!(
+            fs::read_dir(root.join(path).parent().unwrap())
+                .unwrap()
+                .count(),
+            1
+        );
+    }
 
     for path in [".artext/bw/private.txt", "missing.txt", "directory"] {
         assert_eq!(
@@ -1346,6 +1376,10 @@ fn apply_replace_preserves_logical_path_and_rejects_unavailable_sources() {
             Err(ApplyError::Unavailable)
         );
     }
+    assert!(
+        matches!(workspace.view_anchored(&live, PublicAnddressTarget::File), Ok(ViewOutcome::Projected { content, .. }) if content == "replaced")
+    );
+    assert_eq!(fs::read_to_string(root.join("b.txt")).unwrap(), "linked");
     assert_no_apply_temp(&root);
 }
 

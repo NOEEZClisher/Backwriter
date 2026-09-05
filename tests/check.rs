@@ -530,6 +530,31 @@ fn host_check_keeps_workspace_private_admission_and_empty_boundaries() {
         assert_eq!(checked.report.removed(), &[input]);
     }
 
+    for path in [".bw/private.txt", ".artext/bw/private.txt"] {
+        fs::create_dir_all(root.join(path).parent().unwrap()).unwrap();
+        fs::write(root.join(path), b"\xff\0").unwrap();
+        let private = support::file(&coordinate, path, b"private\n");
+        for workspace in [&host, &runtime(&root, ".")] {
+            assert_eq!(
+                workspace
+                    .check_batch(&[
+                        current.clone(),
+                        private.clone(),
+                        current.clone(),
+                        private.clone()
+                    ])
+                    .unwrap(),
+                vec![
+                    CheckStatus::Current,
+                    CheckStatus::NotCurrent,
+                    CheckStatus::Current,
+                    CheckStatus::NotCurrent
+                ]
+            );
+        }
+        assert_eq!(fs::read(root.join(path)).unwrap(), b"\xff\0");
+    }
+
     let admitted_only = host_runtime(&root, "admitted");
     let unadmitted = support::file(&coordinate, "other.txt", b"other\n");
     let checked = admitted_only.check(unadmitted.clone()).unwrap();

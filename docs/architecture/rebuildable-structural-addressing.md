@@ -2,15 +2,15 @@
 
 ## 0.3.0 target boundary — no address change
 
-Documentation-only Gate 1 closes the namespace and shell presentation target,
-not a new address version. The Protocol's planned `.bw` reservation plus legacy
+Gate 1 closes authority and Gate 2 implements namespace exclusion,
+not a new address version. The Protocol's `.bw` reservation plus legacy
 `.artext/bw` exclusion changes availability only. Keep all v5 fields, canonical
 wire/KAT bytes, hash transcript domains, workspace-coordinate derivation,
 source hash/length/Line count and currentness unchanged. A false Line count
 remains `NotCurrent` even with the same hash and length. Shell Content framing
 and input-to-fresh-ref presentation are Adapter metadata; they neither alter
 Anddress nor create persistence, history, relocation or rebinding. Closed
-source/public `0.2.6` remains current; Gates 2–5 are not implemented by this note.
+Cargo/public `0.2.6` remains current; Gates 3–5 remain pending.
 
 ## 0.2.6 Adapter boundary — Gates 1–8 and release complete
 
