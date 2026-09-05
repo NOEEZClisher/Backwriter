@@ -1,12 +1,15 @@
 # Backwriter 0.3.0 independent namespace and complete shell View
 
-## Status — Gates 1–4 complete; Gate 5 pending
+## Status — Gates 1–4 complete; Gate 5 evaluated, readiness NO-GO
 
 Recorded 2026-09-05. Gate 1 closes authority, audited discrepancies, open
 decisions and acceptance. Gate 2 implements the existing namespace predicate
 and focused regressions only. Gate 3 implements Owner-approved D1/D2 after
 the preserved proposal below; its focused verification is recorded separately.
 Gate 4 completes Help, private CLI/test modules and evidence contraction.
+Gate 5 runs the final 293/293 GNU/musl suites and all four independent AI arms.
+Its NO-GO and exact evidence gaps are recorded below; this is not a source-ready
+or release claim, and no production correction is made in this gate.
 No version bump, readiness SHA,
 artifact, installer, publication or operational change is made. Cargo/CLI and
 official distribution remain published and closed `0.2.6`.
@@ -124,7 +127,7 @@ Multiple Replace commands are still separate publications, not a transaction.
 | 2 — namespace | Complete | BOX 23 focused tests using existing filter; absent/new/old-only/both roots; task-local old sentinel byte equality; new reserved file/symlink never exposed; exact components/case and ordinary sibling/nested paths; no help/version creation; existing no-follow/admission/direct-access errors; nonexistent store IO stays N/A |
 | 3 — complete shell View | Complete, approved D1/D2 | Single self and Line-to-Paragraph/File; one single/batch call; ordered duplicate input/ref/Content mapping; mixed projected/absent peers; empty/terminator/framing KATs; reserve/Runtime/write/flush failures; zero Content-only extra observation; unchanged raw/JSON/Replace; recoverable reserve overflow is not allocator-exhaustion proof |
 | 4 — help/modules/verification | Complete | Executable direct/named/quoted examples including ref producers, fresh Current slots and same-source staleness; real advanced Pick/Anchor/Apply/Data help; no new one-shot/parser/crate; private code relocation; tests split only for useful navigation within one CLI integration crate; current rules extracted before duplicate history links, unique evidence preserved verbatim |
-| 5 — integration/readiness | Pending, D3 required | Final GNU/musl semantic matrix, metadata/tree/fmt/check/test/clippy/release and release smoke; fresh N-1/N four arms; exact independent oracle; actual candidate identity and GO/NO-GO, then separately approved release slices |
+| 5 — integration/readiness | Evaluated, NO-GO | 293/293 full GNU/musl tests and 52 release smoke invocations pass; four fresh AI arms match the independent oracle, but required capture evidence is incomplete and Genie N uses nine rather than eight capability commands; no version promotion or release |
 
 Gate 2 sentinels belong only to a task-local fixture, never the real old path.
 An ignored subtree need not be opened to validate its contents. BOX 23's absent
@@ -706,3 +709,928 @@ installed executable or actual HOME access/change is part of this gate.
 Only inspected task-owned exports, targets, scripts and fixtures are removed.
 Exact allowed-path staging and cached review precede one non-force push.
 Gate 5/D3, native-platform gaps and separately authorized release remain open.
+
+## Gate 5 D3 and final readiness — NO-GO
+
+Recorded 2026-09-05 against clean `main = origin/main =
+4c3038505b8f87d01483b60abd3ec7494d0bc94d`. This evaluation changes only
+documentation. Production `src/**`, tests, Cargo/lock, build/toolchain inputs
+and the version KAT remain byte-identical to that candidate. The verdict is
+**NO-GO**, not a claim that native product semantics failed.
+
+The final native matrix passes, and all sixteen final arm files match the
+independent oracle. Mandatory comparison evidence is nevertheless incomplete:
+three PTY arms merged stdout/stderr, the first Dummy N-1 Help also lacks
+separate streams, complete whole-run elapsed/model-visible byte counts were
+not captured, and Genie N added one pre-edit File View (nine rather than the
+eight reference capability commands). These gaps are not zero values. No
+coaching, best-of rerun, production fix, weakened criterion or version promotion
+is substituted. Cargo/CLI remain `0.2.6`; public distribution and Update remain
+closed `0.2.6`. Update was not run. A separate decision is needed before any
+new evaluation or release work; this record creates no release authority.
+
+### Contraction and evidence origin
+
+Reuse: the existing native suites, shell, direct View writer, receipt path,
+source-grouped View/Check and release executable. No test/helper/framework or
+production code was added to the repository. Task-local exports, four isolated
+workspaces and an independent smoke script served only this evaluation.
+Store creation/read/write/spill/cleanup are N/A because no production consumer
+exists. Retained raw Session remains the exact-range/lifetime consumer, not a
+fallback hidden in the candidate's direct View writer.
+
+Repository `rg` searches for four-file, unit-01, primary/secondary, oracle and
+fixture references found the older three-file control in the 0.2.6 tracker
+and the unresolved BOX 25 reference, but no original four-file bytes/oracle.
+`git ls-tree` of docs/tests also found no corresponding fixture. This is a
+declared **replacement fixture**, not proof of identity with the missing one.
+No host-local historical fixture was inspected. N-1 is solely
+`09bb6c424081594bd86a95f04345b786ef9b46b6`; no older comparison was executed.
+
+### Pre-authored independent full-byte oracle
+
+Before any AI run, the following two literal maps were fixed independently of
+candidate output. Each arm received only the initial map in its own workspace.
+File names are ordered unit-01 through unit-04. JSON string escapes below
+represent exact UTF-8 file bytes; no implicit final LF is added to a value.
+
+```json
+{"initial":{"unit-01.txt":"role = primary\nretry_budget = 3\n\nrole = secondary\nretry_budget = 3\n","unit-02.txt":"role = secondary\rretry_budget = 3\r\rrole = primary\rretry_budget = 3\r","unit-03.txt":"role = primary\r\nretry_budget = 3\r\n\r\nrole = secondary\r\nretry_budget = 3\r\n","unit-04.txt":"role = secondary\nretry_budget = 3\n\nrole = primary\nretry_budget = 3"},"expected":{"unit-01.txt":"role = primary\nretry_budget = 5\n\nrole = secondary\nretry_budget = 3\n","unit-02.txt":"role = secondary\rretry_budget = 3\r\rrole = primary\rretry_budget = 5\r","unit-03.txt":"role = primary\r\nretry_budget = 5\r\n\r\nrole = secondary\r\nretry_budget = 3\r\n","unit-04.txt":"role = secondary\nretry_budget = 3\n\nrole = primary\nretry_budget = 5"}}
+```
+
+Serialization of each map is compact `JSON.stringify(map) + "\\n"`, in that
+insertion order, with no BOM. Initial and expected serializations are each
+366 bytes. Initial SHA-256:
+`f7fa969215979bb27ae3a983c9c44f9673bc2f9573a2bda39839639cb6da8f75`.
+Expected SHA-256:
+`e1a729c3b3a8c73a730f92289f8b6d34e3681bdc018cacb4229503b747249bc2`.
+The full initial/expected fixture JSON above, compact plus LF, is 755 bytes;
+SHA-256 `26e2853962e5611c640c4d5c15f25ca68988a112600bce69f350d58497075998`.
+
+| File | Bytes, initial = final | Initial SHA-256 | Expected/final SHA-256 in all four arms |
+| --- | ---: | --- | --- |
+| unit-01.txt | 67 | d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa | bc8cc52d2e785a22bd9e128abd5fd9c11c31a0acd1e779993fcf19932ffb86d0 |
+| unit-02.txt | 67 | f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389 | 6848e9494b59c5bff10181e4e5927a7307894008a1e71097dd3f3d47e39a275a |
+| unit-03.txt | 72 | 0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6 | 8fd3263bf6045e2f2b49137746bf868b4892a3aabed56b44ed24d3d8860528c0 |
+| unit-04.txt | 66 | 4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6 | 72c7b2e7d2c421aba67f2db7d3c1819e84da9349208c12293e189f9a5b8030fe |
+
+After every arm exited, the parent compared exact bytes and the complete
+workspace name set against the pre-authored expected map. All sixteen files
+passed, with no extra workspace entry. Four primary changes, four secondary
+preservations, newline mistakes 0 and Wrong Apply 0 hold in each arm. This
+parent oracle check is not an external-tool comparison arm or an AI body read.
+The N first Paragraph View supplied all decision-making Content. Neither N
+arm used self-View, named-copy or raw-View to recover missing Content.
+
+### Independent arm inputs and conditions
+
+All four agents were spawned with `fork_turns="none"`, identical inherited
+model/reasoning settings (no override) and the same enabled tool surface.
+No implementation conversation, source, private tracker, oracle or sibling
+result was supplied. The tools do not expose an independently pinned model
+build identifier in these records; inheritance is the recorded condition,
+not a claim of an externally reproducible model seed. With three child slots,
+Dummy N-1, Dummy N and Genie N-1 started first; Genie N started once a slot
+freed. Each was one actual AI run, not a scripted target-selection arm.
+
+Common task instruction: discover the eight exact `retry_budget = 3` Lines
+in four files; read surrounding Paragraph Content to select the four whose
+Paragraph says `role = primary`; replace only those bodies with
+`retry_budget = 5`; preserve secondary Paragraphs and every other
+byte/terminator; confirm currentness and inspect final Files with bw.
+
+Common restrictions: no source/AGENTS/private docs/oracle/sibling arm access;
+all workspace body reads and edits through the supplied bw only, not filesystem
+readers/writers, grep/cat/sed/Git; no installed bw, Update or unrelated directory
+work. Existing shell/Node could invoke bw, preserve/parse output and interact
+with stdin, but not decide targets. Record actual argv/stdin/output/exit,
+process/command/tool counts, extra Content queries and elapsed, preserving
+every failure without reset or best-of restart. Save an English transcript
+with apply_patch. PTY echo/ONLCR disabling was supplied as transport advice,
+with explicit warning to record merged-stream limitations or separately
+redirect stderr; no answer command sequence was supplied.
+
+| Arm | Public discovery input / instruction | Binary and isolated workspace under task root |
+| --- | --- | --- |
+| Dummy N-1 | Public Help only; choose own one-shot or shell route | nminus-target/release/bw; dummy-old/workspace |
+| Dummy N | Public Help only; choose own one-shot or shell route | gnu-target/release/bw; dummy-new/workspace |
+| Genie N-1 | Public Help and exact pinned N-1 README copy; derive the documented shell route, no supplied answer sequence | nminus-target/release/bw; genie-old/workspace |
+| Genie N | Public Help and exact candidate README copy; derive the documented shell route, no supplied answer sequence | gnu-target/release/bw; genie-new/workspace |
+
+Task root was `/tmp/backwriter-gate5.74tHth`. The Genie README copies were
+named `public-guide.md` in each arm root, outside its workspace. Their
+historical release wording was not rewritten for the comparison. No raw
+8-command answer was injected; the reference is assessed after the runs.
+
+### Actual comparison, without hidden normalization
+
+| Measure | Dummy N-1 | Dummy N | Genie N-1 | Genie N |
+| --- | ---: | ---: | ---: | ---: |
+| bw processes | 13 | 3 | 3 | 3 |
+| Help commands | 5 | 2 | 2 | 2 |
+| Search | 1 | 1 | 2 | 1 |
+| View commands | 2 | 2 | 14 | 3 |
+| Edit/Replace commands | 4 | 4 | 4 | 4 |
+| Check commands | 1 | 1 | 2 | 1 |
+| Capability commands total | 8 | 8 | 22 | 9 |
+| Explicit raw Apply | 0 | 0 | 0 | 0 |
+| Named-copy let / exit | 0 / 0 | 0 / 1 | 12 / 1 | 0 / 1 |
+| Extra Content-only calls beyond context + final inspection | 0 | 0 | 12 | 1 |
+| Model functions.exec turns, including transcript save | 7 | 8 | 11 | 10 |
+| Unexpected CLI failure / reset / retry | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
+| Final file oracle | exact | exact | exact | exact |
+| Reported partial elapsed, not whole run | >=35.744 s | 26.162 s interactive | 40.459 s interactive | about 43 s after initial docs |
+
+The Dummy N transcript calls its two required Views “extra”; the normalized
+extra-call row above counts only work beyond required context/final inspection,
+so it is zero. Genie N's additional baseline File View is an actual extra call,
+not removed to fit eight. Genie N-1's projected direct View omitted Content,
+so it made twelve named-copy/raw-View pairs. Its old secondary refs became
+NotCurrent after same-source edits, an expected currentness contract rather
+than a product error; the agent's surprise, fresh Search and extra Check remain
+in the transcript. Dummy N-1 legitimately chose one-shot JSON and needed no
+extra Content fetch. The shell lifecycle and Help are not capability work.
+Internal Runtime invocation counts were not instrumented by these AI arms.
+
+Decoded archived output payload counts (UTF-8, no JSON-escape overhead):
+
+| Capture | Dummy N-1 | Dummy N | Genie N-1 | Genie N |
+| --- | ---: | ---: | ---: | ---: |
+| Product output payload bytes, including Help | 20,437 | 5,047 | 3,745 | 5,507 |
+| All archived output payload bytes, including repeated guide reads | 20,437 | 5,047 | 37,393 | 40,555 |
+| Independently captured stdout bytes | 19,474 after first Help | unavailable | unavailable | unavailable |
+| Independently captured stderr bytes | 0 after first Help | unavailable | unavailable | unavailable |
+
+The first Dummy N-1 Help's 963 bytes are merged, despite its raw transcript's
+stdout/stderr field names; its captureNote controls that interpretation.
+PTY arms preserve merged bytes, not a fabricated zero-stderr measurement.
+All product processes finally exited 0; interactive records do not expose an
+OS exit per shell command. The complete model-visible tool-envelope bytes and
+full-run times are unavailable. Archived payload totals are reproducible
+lower-scope counts, **not** replacements for those missing measurements.
+Initial Genie guide output was reconstructed by the agent from its exact
+second public-guide read; both reads are counted. These limitations themselves
+prevent GO. No n=1 latency ratio, benchmark score or broad speed claim is made.
+
+### Final native verification, executed on N
+
+Rust `1.95.0 (59807616e 2026-04-14)`, Cargo
+`1.95.0 (f2d3ce0bd 2026-03-21)`, rustc LLVM `22.1.2`; GNU host
+`x86_64-unknown-linux-gnu`, installed `x86_64-unknown-linux-musl`
+with unix/crt-static cfg. Default features (no feature override), checked-in
+test/dev profiles; release panic=abort, strip=true, lto=true,
+codegen-units=1. No new compiler-option override or dependency. All candidate
+target output went into separate task-local GNU/musl directories.
+
+Executed offline/locked metadata and dependency tree, fmt --check, all-target
+check, full tests, all-target clippy with `-D warnings`, and release build
+for GNU and musl. Initial full test output was terminal-truncated; both full
+test commands were repeated to retain complete logs, not counted as distinct
+test cases. Final per-target counts: library 72, binary 3, Anchor 31, Apply 35,
+Check 13, CLI 74, Data 11, Edit 6, Pick 7, Search 20, support 0, View 21,
+doctests 0: **293 passed, 0 failed, 0 ignored** on each target.
+
+Existing regressions directly cover v5 KAT/strict errors/no older decoder,
+namespace/safety, ordered Search/View/Check and duplicates, D1 mixed-kind
+source grouping, D2 every writer byte boundary/flush/terminal Stream/no Drop
+retry and slot reservation overflow, broken stdout, EOF Content/terminators,
+three receipts/no-op, raw five Edit/four Position, Host hit/miss/invalidation
+and Anchor same-after reflection. Existing duplicate drift asserts
+Correct 1 / Safe Reject 6 / Wrong Apply 0 for both Untrusted and guarded Host;
+duplicate Paragraph and stale prepublication controls also pass. No historical
+performance result or earlier focused run is relabeled as this full suite.
+
+The task-local release smoke ran **26 invocations per target, 52 total**:
+top/named Help equality and all eleven topics, exact Version
+`Backwriter 0.2.6\\n`, raw Session Insert/Apply, mixed File/Line/named/indexed
+self View, Paragraph absent/duplicate framing, ordered Check, Search v2/v5,
+raw View, JSON batch View, stdin JSON receipt followed by fresh View, stale
+nonpublishing rejection, namespace exact-File Empty, and exact final CRLF
+bytes. Output streams were separately captured in this parent smoke, unlike
+the AI PTYs. This script was not supplied to agents. Node child spawning hit
+sandbox EPERM and was rerun with approved execution permission; a later
+read-only Node-to-Git hash audit also hit EPERM and used a plain Git pipe.
+Neither is a CLI failure or concealed agent retry.
+
+| Identity / raw evidence | SHA-256 or Git object |
+| --- | --- |
+| Gate 4 src Git tree | 8427811aaae0763aac22e774f01244c246c9d4ee |
+| src framed SHA-256, 27 paths | 07cac94f1651db40a6bb6b7e64029740471f18e3c4ab626e5db3b46c7709e386 |
+| N GNU release bw | 72ef3e058061ca97eb290ddfc5031bdfae2d7c92c2a5be1e6310482ef2da63d0 |
+| N musl release bw | 1ea57f0c1d4c8a8e6e080b6a38bd7840c870e32aa038623660f2b03cfdd3d997 |
+| N-1 GNU release bw | 5abd626ad17bb2847f65047bb744cdcb1f28f3b6a2a58691242a39d548f77559 |
+| Full GNU test log | 608d9987a195b84282d872baa4588cfc1f2e880dbe0455570614d84c54d8fac1 |
+| Full musl test log | e60fdb42d701b62fba8fba9dd15487b48688bace8e84bca81873233c871be6ed |
+| Parent smoke script | 0296f2f1f25b055d618d376668e2bcff8a0f62c1c9d5245392cb36645cd0a9e0 |
+| Parent exact smoke result JSON | 60a661343f135da62d24665b8a73564f397dbfefe16d20890a880d96ec914049 |
+
+Source hash framing is each sorted `git ls-files -z src` path, NUL, exact
+file bytes, NUL, concatenated then SHA-256. N-1 was built from its clean Git
+export; its entire old suite was not rerun. N was tested from the clean pinned
+checkout. No version change occurred, so there is no new-version binary/KAT
+reuse claim. Documentation-only final edits preserve every test/build input.
+Native macOS, Windows, PowerShell and CMD were not executed. No installer,
+publisher, service, server, public endpoint, real HOME or installed bw was
+accessed by this evaluation. No release or updater operation was performed.
+
+### Unedited arm transcripts
+
+The following fenced contents preserve the original agent transcripts,
+including imprecise terminology and capture limitations; the normalized
+assessment above does not silently rewrite them. Each SHA hashes the exact
+UTF-8 transcript including its original terminal LF(s), excluding the fence.
+Tool-wrapper metadata not captured there remains unavailable. Task-local
+paths in these records are historical evidence and are removed after archival.
+
+| Transcript | Bytes | SHA-256 |
+| --- | ---: | --- |
+| dummy-old | 55,824 | 470f0da66b7badbb3f4193041bdda4ffef17a0b2d6f535130786758183489da4 |
+| dummy-new | 8,878 | 1f592454ded40d32b38a8d64c50c95a619de5ee99be7c9166c29667537786855 |
+| genie-old | 43,638 | 8ee69ce4ccee59944fbe63b6956963fc743e97ffddb08cf1bb2a4509a2e62ac5 |
+| genie-new | 48,806 | f62b653c26ed21d79a118883dea7abae247234109cb05fa308185eed9c8141ff |
+
+#### D3 dummy-old transcript
+
+````text
+# Independent public-Help-only CLI run: dummy-old
+
+## Result and decisions
+
+One independent run, no restart. Public Help chose the one-shot route. Search returned eight Lines in four files. A batch Paragraph View showed primary roles at unit-01.txt line 2, unit-02.txt line 5, unit-03.txt line 2, and unit-04.txt line 5. Only after reading that Content, I explicitly selected search result positions 0, 3, 4, 7. Scripts only invoked bw, preserved and parsed its outputs; they did not decide targets. Four Line-body replacements returned changed. The four fresh receipt Anddresses checked current. Final batch File View showed four primary budgets of 5 and four secondary budgets of 3, with LF, CR, CRLF, and final missing terminator represented as expected. No fixture filesystem reads/writes outside bw were performed. No oracle, repository, sibling arm, installed bw, or updater was inspected or invoked.
+
+## Metrics
+
+- bw processes: 13 (5 Help; Search 1; View 2; Edit 4; Check 1; Shell 0).
+- Capability-bearing CLI processes: 8. View operands: 8 Paragraph projections plus 4 File projections; Check operands: 4; Edit targets: 4.
+- Extra Content-only queries beyond required discovery context and final inspection: 0. Content-bearing View commands total: 2 (12 operands).
+- Failures: 0; retries: 0; restarts: 0.
+- Execution tool calls: 6 exec_command calls in 6 functions.exec calls. Transcript save adds 1 apply_patch in 1 functions.exec call (7 functions.exec calls total through save).
+- Helper Node processes: 5. Six command submissions use the execution service's zsh launcher; launcher exec replacement/internal descendants were not instrumented. Count of explicitly launched workload processes: 18 = 13 bw + 5 Node.
+- Measured elapsed: 35744 ms, from just after initial --help capture to final Check/File View capture. Initial help and agent setup time were not clocked, so full-run wall time is unavailable; this value is a lower bound, not falsely precise full elapsed.
+- Output strings below are exact JSON-escaped UTF-8 captured strings including final newlines. Initial direct Help capture has the documented stream-attribution limitation; all remaining stdout/stderr were captured separately. No PTY was used. All bw stdin inputs are empty; replacement Content was passed as an argv operand.
+
+## Shell submissions
+
+All submissions used cwd `/tmp/backwriter-gate5.74tHth/dummy-old/workspace`. Default execution shell: zsh. Every shell submission exited 0.
+
+### Submission 1
+
+```json
+"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw --help"
+```
+
+### Submission 2
+
+```json
+"node -e 'const {spawnSync}=require(\"node:child_process\");for(const c of [\"search\",\"view\",\"edit\",\"check\"]){const argv=[\"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw\",\"help\",c];const r=spawnSync(argv[0],argv.slice(1),{encoding:\"utf8\"});console.log(JSON.stringify({argv,stdin:\"\",stdout:r.stdout,stderr:r.stderr,exit:r.status}));}'"
+```
+
+### Submission 3
+
+```json
+"node -e 'const {spawnSync}=require(\"node:child_process\");const argv=[\"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw\",\"--json\",\"search\",\"line\",\"retry_budget = 3\"];const r=spawnSync(argv[0],argv.slice(1),{encoding:\"utf8\"});console.log(JSON.stringify({argv,stdin:\"\",stdout:r.stdout,stderr:r.stderr,exit:r.status}));'"
+```
+
+### Submission 4
+
+```json
+"node -e 'const {spawnSync}=require(\"node:child_process\");const argv=[\"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw\",\"--json\",\"view\",\"anddress\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-01.txt\\\",\\\"sourceStateHash\\\":\\\"d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa\\\",\\\"sourceByteLength\\\":\\\"67\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"15\\\",\\\"byteEnd\\\":\\\"32\\\",\\\"terminator\\\":\\\"lf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"0\\\",\\\"parentByteEnd\\\":\\\"32\\\",\\\"parentFileLineOffset\\\":\\\"0\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-01.txt\\\",\\\"sourceStateHash\\\":\\\"d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa\\\",\\\"sourceByteLength\\\":\\\"67\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"50\\\",\\\"byteEnd\\\":\\\"67\\\",\\\"terminator\\\":\\\"lf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"33\\\",\\\"parentByteEnd\\\":\\\"67\\\",\\\"parentFileLineOffset\\\":\\\"3\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-02.txt\\\",\\\"sourceStateHash\\\":\\\"f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389\\\",\\\"sourceByteLength\\\":\\\"67\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"17\\\",\\\"byteEnd\\\":\\\"34\\\",\\\"terminator\\\":\\\"cr\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"0\\\",\\\"parentByteEnd\\\":\\\"34\\\",\\\"parentFileLineOffset\\\":\\\"0\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-02.txt\\\",\\\"sourceStateHash\\\":\\\"f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389\\\",\\\"sourceByteLength\\\":\\\"67\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"50\\\",\\\"byteEnd\\\":\\\"67\\\",\\\"terminator\\\":\\\"cr\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"35\\\",\\\"parentByteEnd\\\":\\\"67\\\",\\\"parentFileLineOffset\\\":\\\"3\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-03.txt\\\",\\\"sourceStateHash\\\":\\\"0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6\\\",\\\"sourceByteLength\\\":\\\"72\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"16\\\",\\\"byteEnd\\\":\\\"34\\\",\\\"terminator\\\":\\\"crlf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"0\\\",\\\"parentByteEnd\\\":\\\"34\\\",\\\"parentFileLineOffset\\\":\\\"0\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-03.txt\\\",\\\"sourceStateHash\\\":\\\"0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6\\\",\\\"sourceByteLength\\\":\\\"72\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"54\\\",\\\"byteEnd\\\":\\\"72\\\",\\\"terminator\\\":\\\"crlf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"36\\\",\\\"parentByteEnd\\\":\\\"72\\\",\\\"parentFileLineOffset\\\":\\\"3\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-04.txt\\\",\\\"sourceStateHash\\\":\\\"4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6\\\",\\\"sourceByteLength\\\":\\\"66\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"17\\\",\\\"byteEnd\\\":\\\"34\\\",\\\"terminator\\\":\\\"lf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"0\\\",\\\"parentByteEnd\\\":\\\"34\\\",\\\"parentFileLineOffset\\\":\\\"0\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-04.txt\\\",\\\"sourceStateHash\\\":\\\"4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6\\\",\\\"sourceByteLength\\\":\\\"66\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"50\\\",\\\"byteEnd\\\":\\\"66\\\",\\\"terminator\\\":\\\"none\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"35\\\",\\\"parentByteEnd\\\":\\\"66\\\",\\\"parentFileLineOffset\\\":\\\"3\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"--as\",\"paragraph\"];const r=spawnSync(argv[0],argv.slice(1),{encoding:\"utf8\"});console.log(JSON.stringify({argv,stdin:\"\",stdout:r.stdout,stderr:r.stderr,exit:r.status}));'"
+```
+
+### Submission 5
+
+```json
+"node -e 'const {spawnSync}=require(\"node:child_process\");for(const argv of [[\"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw\",\"--json\",\"edit\",\"anddress\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-01.txt\\\",\\\"sourceStateHash\\\":\\\"d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa\\\",\\\"sourceByteLength\\\":\\\"67\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"15\\\",\\\"byteEnd\\\":\\\"32\\\",\\\"terminator\\\":\\\"lf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"0\\\",\\\"parentByteEnd\\\":\\\"32\\\",\\\"parentFileLineOffset\\\":\\\"0\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"retry_budget = 5\"],[\"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw\",\"--json\",\"edit\",\"anddress\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-02.txt\\\",\\\"sourceStateHash\\\":\\\"f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389\\\",\\\"sourceByteLength\\\":\\\"67\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"50\\\",\\\"byteEnd\\\":\\\"67\\\",\\\"terminator\\\":\\\"cr\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"35\\\",\\\"parentByteEnd\\\":\\\"67\\\",\\\"parentFileLineOffset\\\":\\\"3\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"retry_budget = 5\"],[\"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw\",\"--json\",\"edit\",\"anddress\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-03.txt\\\",\\\"sourceStateHash\\\":\\\"0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6\\\",\\\"sourceByteLength\\\":\\\"72\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"16\\\",\\\"byteEnd\\\":\\\"34\\\",\\\"terminator\\\":\\\"crlf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"0\\\",\\\"parentByteEnd\\\":\\\"34\\\",\\\"parentFileLineOffset\\\":\\\"0\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"retry_budget = 5\"],[\"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw\",\"--json\",\"edit\",\"anddress\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-04.txt\\\",\\\"sourceStateHash\\\":\\\"4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6\\\",\\\"sourceByteLength\\\":\\\"66\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"50\\\",\\\"byteEnd\\\":\\\"66\\\",\\\"terminator\\\":\\\"none\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"35\\\",\\\"parentByteEnd\\\":\\\"66\\\",\\\"parentFileLineOffset\\\":\\\"3\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"retry_budget = 5\"]]){const r=spawnSync(argv[0],argv.slice(1),{encoding:\"utf8\"});console.log(JSON.stringify({argv,stdin:\"\",stdout:r.stdout,stderr:r.stderr,exit:r.status}));}'"
+```
+
+### Submission 6
+
+```json
+"node -e 'const {spawnSync}=require(\"node:child_process\");for(const argv of [[\"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw\",\"--json\",\"check\",\"anddress\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-01.txt\\\",\\\"sourceStateHash\\\":\\\"bc8cc52d2e785a22bd9e128abd5fd9c11c31a0acd1e779993fcf19932ffb86d0\\\",\\\"sourceByteLength\\\":\\\"67\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"15\\\",\\\"byteEnd\\\":\\\"32\\\",\\\"terminator\\\":\\\"lf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"0\\\",\\\"parentByteEnd\\\":\\\"32\\\",\\\"parentFileLineOffset\\\":\\\"0\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-02.txt\\\",\\\"sourceStateHash\\\":\\\"6848e9494b59c5bff10181e4e5927a7307894008a1e71097dd3f3d47e39a275a\\\",\\\"sourceByteLength\\\":\\\"67\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"50\\\",\\\"byteEnd\\\":\\\"67\\\",\\\"terminator\\\":\\\"cr\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"35\\\",\\\"parentByteEnd\\\":\\\"67\\\",\\\"parentFileLineOffset\\\":\\\"3\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-03.txt\\\",\\\"sourceStateHash\\\":\\\"8fd3263bf6045e2f2b49137746bf868b4892a3aabed56b44ed24d3d8860528c0\\\",\\\"sourceByteLength\\\":\\\"72\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"16\\\",\\\"byteEnd\\\":\\\"34\\\",\\\"terminator\\\":\\\"crlf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"0\\\",\\\"parentByteEnd\\\":\\\"34\\\",\\\"parentFileLineOffset\\\":\\\"0\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-04.txt\\\",\\\"sourceStateHash\\\":\\\"72c7b2e7d2c421aba67f2db7d3c1819e84da9349208c12293e189f9a5b8030fe\\\",\\\"sourceByteLength\\\":\\\"66\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"50\\\",\\\"byteEnd\\\":\\\"66\\\",\\\"terminator\\\":\\\"none\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"35\\\",\\\"parentByteEnd\\\":\\\"66\\\",\\\"parentFileLineOffset\\\":\\\"3\\\",\\\"parentLineCount\\\":\\\"2\\\"}\"],[\"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw\",\"--json\",\"view\",\"anddress\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-01.txt\\\",\\\"sourceStateHash\\\":\\\"bc8cc52d2e785a22bd9e128abd5fd9c11c31a0acd1e779993fcf19932ffb86d0\\\",\\\"sourceByteLength\\\":\\\"67\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"15\\\",\\\"byteEnd\\\":\\\"32\\\",\\\"terminator\\\":\\\"lf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"0\\\",\\\"parentByteEnd\\\":\\\"32\\\",\\\"parentFileLineOffset\\\":\\\"0\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-02.txt\\\",\\\"sourceStateHash\\\":\\\"6848e9494b59c5bff10181e4e5927a7307894008a1e71097dd3f3d47e39a275a\\\",\\\"sourceByteLength\\\":\\\"67\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"50\\\",\\\"byteEnd\\\":\\\"67\\\",\\\"terminator\\\":\\\"cr\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"35\\\",\\\"parentByteEnd\\\":\\\"67\\\",\\\"parentFileLineOffset\\\":\\\"3\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-03.txt\\\",\\\"sourceStateHash\\\":\\\"8fd3263bf6045e2f2b49137746bf868b4892a3aabed56b44ed24d3d8860528c0\\\",\\\"sourceByteLength\\\":\\\"72\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"16\\\",\\\"byteEnd\\\":\\\"34\\\",\\\"terminator\\\":\\\"crlf\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"0\\\",\\\"parentByteEnd\\\":\\\"34\\\",\\\"parentFileLineOffset\\\":\\\"0\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"{\\\"version\\\":\\\"artext.backwriter-anddress.v5\\\",\\\"workspaceCoordinate\\\":\\\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\\\",\\\"logicalPath\\\":\\\"unit-04.txt\\\",\\\"sourceStateHash\\\":\\\"72c7b2e7d2c421aba67f2db7d3c1819e84da9349208c12293e189f9a5b8030fe\\\",\\\"sourceByteLength\\\":\\\"66\\\",\\\"sourceLineCount\\\":\\\"5\\\",\\\"kind\\\":\\\"line\\\",\\\"byteStart\\\":\\\"50\\\",\\\"byteEnd\\\":\\\"66\\\",\\\"terminator\\\":\\\"none\\\",\\\"lineOffsetInParent\\\":\\\"1\\\",\\\"parentKind\\\":\\\"paragraph\\\",\\\"parentByteStart\\\":\\\"35\\\",\\\"parentByteEnd\\\":\\\"66\\\",\\\"parentFileLineOffset\\\":\\\"3\\\",\\\"parentLineCount\\\":\\\"2\\\"}\",\"--as\",\"file\"]]){const r=spawnSync(argv[0],argv.slice(1),{encoding:\"utf8\"});console.log(JSON.stringify({argv,stdin:\"\",stdout:r.stdout,stderr:r.stderr,exit:r.status}));}'"
+```
+
+## Exact bw argv, inputs, outputs, and exits
+
+### bw process 1
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "--help"
+  ],
+  "exit": 0,
+  "stderr": null,
+  "stdout": "USAGE\n  bw [GLOBAL OPTIONS] <command> [command options and operands]\n  bw help [<command>]\n\nGLOBAL OPTIONS\n  --workspace ABSOLUTE_PATH  Select an absolute workspace before the command.\n  --admit LOGICAL_PATH       Admit a logical root before the command; repeatable.\n  --json                     Select JSON output where the command supports it.\n  --raw                      Select raw View output only.\n\nCAPABILITIES\n  search   Discover current File, Paragraph, or Line Anddresses.\n  view     Read one or more current Anddresses.\n  edit     Replace one current Anddress.\n  check    Check one or more current Anddresses.\n  shell    Run advanced raw Session commands.\n  version  Print the Backwriter version.\n  update   Run the installed-platform updater.\n\nPick, Anchor, Apply, and Data have no one-shot command; use bw shell.\n\nADDITIONAL HELP\n  bw help <command>\n\nGlobal options precede the command. Canonical output options are documented only in that position.\n",
+  "stdin": "",
+  "captureNote": "Initial exec tool exposes a combined output field; recorded stdout is that field. Separate stderr bytes are unavailable for this first help invocation. Subsequent invocations capture separate stdout/stderr pipes through Node."
+}
+```
+
+### bw process 2
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "help",
+    "search"
+  ],
+  "stdin": "",
+  "stdout": "NAME\n  bw search - discover current Anddresses by exact literal Line content or logical File path\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search <line|paragraph|file> <query> [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] search /file <logical-path>\n\nDESCRIPTION\n  Searches admitted Workspace Source. Literal queries are case-sensitive and match exact Line content without normalization.\n\nARGUMENTS\n  <line|paragraph|file>  Returned target kind.\n  <query>                Nonempty literal query.\n  /file <logical-path>   Exact logical File lookup.\n\nOPTIONS\n  --workspace, --admit, and --json must precede search.\n  --source LOGICAL_PATH and --subtree LOGICAL_PATH narrow a literal search scope.\n\nWHAT HAPPENS\n  Opens the Runtime, scans admitted source once per selected source, and returns all-or-nothing current results.\n\nOUTPUT\n  Human output lists matches. --json writes the fixed bw.cli.search.v2 envelope.\n\nEXAMPLES\n  bw search line needle --source note.txt\n  bw --json search paragraph needle\n  bw search /file note.txt\n\nFAILURES\n  Invalid request or scope is a usage failure. Unavailable source or Runtime failure exits 1.\n\nSEE ALSO\n  bw help view\n  bw help shell\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 3
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "help",
+    "view"
+  ],
+  "stdin": "",
+  "stdout": "NAME\n  bw view - project current content from one or more v5 Anddresses\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json|--raw] view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json view anddress <encoded-v5-Anddress>... --as <line|paragraph|file>\n\nDESCRIPTION\n  Validates current source state and projects the requested target relation from caller-provided v5 Anddresses.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One or more canonical v5 objects.\n\nOPTIONS\n  --workspace, --admit, --json, and --raw must precede view.\n  --as selects line, paragraph, or file and must be last. Batch View requires --json and --as.\n\nWHAT HAPPENS\n  Opens the Runtime after input validation and returns the requested current projection.\n\nOUTPUT\n  One human or raw View writes content. JSON writes the fixed bw.cli.view.v2 envelope.\n\nEXAMPLES\n  bw view anddress '<v5-Anddress>'\n  bw --raw view anddress '<v5-Line-Anddress>'\n  bw --json view anddress '<v5-Anddress>' --as paragraph\n\nFAILURES\n  Invalid input or unsupported output form is a usage failure. Unavailable or stale source exits 1.\n\nSEE ALSO\n  bw help search\n  bw help check\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 4
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "help",
+    "edit"
+  ],
+  "stdin": "",
+  "stdout": "NAME\n  bw edit - replace one current v5 Anddress\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> <content>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... [--json] edit anddress <encoded-v5-Anddress> --stdin\n\nDESCRIPTION\n  Replaces exactly one current File, Paragraph, or Line target through the Runtime Replace seam.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One canonical v5 object.\n  <content>                  One positional replacement string.\n  --stdin                    Read replacement Content from standard input through EOF.\n\nOPTIONS\n  --workspace, --admit, and --json must precede edit.\n  --stdin is the exclusive Content selector; use standard input to pass literal --stdin Content.\n\nWHAT HAPPENS\n  Validates the Anddress, reads selected standard input before Runtime access, preserves an existing Line terminator automatically, then applies one Replace.\n\nOUTPUT\n  Human output writes the receipt outcome and fresh Anddress when present. --json writes bw.cli.edit.v1.\n\nEXAMPLES\n  bw edit anddress '<v5-Anddress>' 'replacement'\n  printf '%s' 'replacement' | bw edit anddress '<v5-Anddress>' --stdin\n\nFAILURES\n  Invalid input is a usage failure. Standard-input, stale, unavailable, or publication failure exits 1.\n\nSEE ALSO\n  bw help view\n  bw help check\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 5
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "help",
+    "check"
+  ],
+  "stdin": "",
+  "stdout": "NAME\n  bw check - check one or more current v5 Anddresses\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... check anddress <encoded-v5-Anddress>\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json check anddress <encoded-v5-Anddress>...\n\nDESCRIPTION\n  Checks the current state of caller-provided v5 Anddresses in input order.\n\nARGUMENTS\n  anddress                  Required input form.\n  <encoded-v5-Anddress>     One or more canonical v5 objects.\n\nOPTIONS\n  --workspace, --admit, and --json must precede check.\n  Multiple inputs require --json. No command-local options are available.\n\nWHAT HAPPENS\n  Validates every input before opening the Runtime, then reports one currentness state per input.\n\nOUTPUT\n  One human input writes one state. --json writes the fixed bw.cli.check.v2 envelope.\n\nEXAMPLES\n  bw check anddress '<v5-Anddress>'\n  bw --json check anddress '<v5-Anddress>' '<v5-Anddress>'\n\nFAILURES\n  Invalid input or a non-JSON batch is a usage failure. Runtime failure exits 1.\n\nSEE ALSO\n  bw help search\n  bw help shell\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 6
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "--json",
+    "search",
+    "line",
+    "retry_budget = 3"
+  ],
+  "stdin": "",
+  "stdout": "{\"schema\":\"bw.cli.search.v2\",\"outcome\":\"found\",\"occurrences\":[{\"logicalPath\":\"unit-01.txt\",\"kind\":\"line\",\"line\":\"2\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"15\",\"byteEnd\":\"32\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"32\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}},{\"logicalPath\":\"unit-01.txt\",\"kind\":\"line\",\"line\":\"5\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"67\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"33\",\"parentByteEnd\":\"67\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}},{\"logicalPath\":\"unit-02.txt\",\"kind\":\"line\",\"line\":\"2\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"17\",\"byteEnd\":\"34\",\"terminator\":\"cr\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}},{\"logicalPath\":\"unit-02.txt\",\"kind\":\"line\",\"line\":\"5\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"67\",\"terminator\":\"cr\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"67\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}},{\"logicalPath\":\"unit-03.txt\",\"kind\":\"line\",\"line\":\"2\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"16\",\"byteEnd\":\"34\",\"terminator\":\"crlf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}},{\"logicalPath\":\"unit-03.txt\",\"kind\":\"line\",\"line\":\"5\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"54\",\"byteEnd\":\"72\",\"terminator\":\"crlf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"36\",\"parentByteEnd\":\"72\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}},{\"logicalPath\":\"unit-04.txt\",\"kind\":\"line\",\"line\":\"2\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"17\",\"byteEnd\":\"34\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}},{\"logicalPath\":\"unit-04.txt\",\"kind\":\"line\",\"line\":\"5\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"66\",\"terminator\":\"none\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"66\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}}]}\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 7
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "--json",
+    "view",
+    "anddress",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"15\",\"byteEnd\":\"32\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"32\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"67\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"33\",\"parentByteEnd\":\"67\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"17\",\"byteEnd\":\"34\",\"terminator\":\"cr\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"67\",\"terminator\":\"cr\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"67\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"16\",\"byteEnd\":\"34\",\"terminator\":\"crlf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"54\",\"byteEnd\":\"72\",\"terminator\":\"crlf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"36\",\"parentByteEnd\":\"72\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"17\",\"byteEnd\":\"34\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"66\",\"terminator\":\"none\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"66\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}",
+    "--as",
+    "paragraph"
+  ],
+  "stdin": "",
+  "stdout": "{\"schema\":\"bw.cli.view.v2\",\"outcomes\":[{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"paragraph\",\"byteStart\":\"0\",\"byteEnd\":\"32\",\"fileLineOffset\":\"0\",\"lineCount\":\"2\"},\"content\":\"role = primary\\nretry_budget = 3\\n\"},{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"paragraph\",\"byteStart\":\"33\",\"byteEnd\":\"67\",\"fileLineOffset\":\"3\",\"lineCount\":\"2\"},\"content\":\"role = secondary\\nretry_budget = 3\\n\"},{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"paragraph\",\"byteStart\":\"0\",\"byteEnd\":\"34\",\"fileLineOffset\":\"0\",\"lineCount\":\"2\"},\"content\":\"role = secondary\\rretry_budget = 3\\r\"},{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"paragraph\",\"byteStart\":\"35\",\"byteEnd\":\"67\",\"fileLineOffset\":\"3\",\"lineCount\":\"2\"},\"content\":\"role = primary\\rretry_budget = 3\\r\"},{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"paragraph\",\"byteStart\":\"0\",\"byteEnd\":\"34\",\"fileLineOffset\":\"0\",\"lineCount\":\"2\"},\"content\":\"role = primary\\r\\nretry_budget = 3\\r\\n\"},{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"paragraph\",\"byteStart\":\"36\",\"byteEnd\":\"72\",\"fileLineOffset\":\"3\",\"lineCount\":\"2\"},\"content\":\"role = secondary\\r\\nretry_budget = 3\\r\\n\"},{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"paragraph\",\"byteStart\":\"0\",\"byteEnd\":\"34\",\"fileLineOffset\":\"0\",\"lineCount\":\"2\"},\"content\":\"role = secondary\\nretry_budget = 3\\n\"},{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"paragraph\",\"byteStart\":\"35\",\"byteEnd\":\"66\",\"fileLineOffset\":\"3\",\"lineCount\":\"2\"},\"content\":\"role = primary\\nretry_budget = 3\"}]}\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 8
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "--json",
+    "edit",
+    "anddress",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"d5030da326915b93ad162f2fb12e1c9b65468cae66ad397afe69327045aa2dfa\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"15\",\"byteEnd\":\"32\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"32\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}",
+    "retry_budget = 5"
+  ],
+  "stdin": "",
+  "stdout": "{\"schema\":\"bw.cli.edit.v1\",\"outcome\":\"changed\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"bc8cc52d2e785a22bd9e128abd5fd9c11c31a0acd1e779993fcf19932ffb86d0\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"15\",\"byteEnd\":\"32\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"32\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}}\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 9
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "--json",
+    "edit",
+    "anddress",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"f1773b77b3cc23541179b39a19080dde2df5805cc9f9d1f3805ecedc4d825389\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"67\",\"terminator\":\"cr\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"67\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}",
+    "retry_budget = 5"
+  ],
+  "stdin": "",
+  "stdout": "{\"schema\":\"bw.cli.edit.v1\",\"outcome\":\"changed\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"6848e9494b59c5bff10181e4e5927a7307894008a1e71097dd3f3d47e39a275a\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"67\",\"terminator\":\"cr\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"67\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}}\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 10
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "--json",
+    "edit",
+    "anddress",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"0897791dfdd076d281c39f54956b93d8547517adfd3ca654d17f3977eae80cd6\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"16\",\"byteEnd\":\"34\",\"terminator\":\"crlf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}",
+    "retry_budget = 5"
+  ],
+  "stdin": "",
+  "stdout": "{\"schema\":\"bw.cli.edit.v1\",\"outcome\":\"changed\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"8fd3263bf6045e2f2b49137746bf868b4892a3aabed56b44ed24d3d8860528c0\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"16\",\"byteEnd\":\"34\",\"terminator\":\"crlf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}}\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 11
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "--json",
+    "edit",
+    "anddress",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"4fcbbfc38bd1d7f8b18ede63c8bb45ce4d0a67b3fc3dcf47785b437366bfafd6\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"66\",\"terminator\":\"none\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"66\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}",
+    "retry_budget = 5"
+  ],
+  "stdin": "",
+  "stdout": "{\"schema\":\"bw.cli.edit.v1\",\"outcome\":\"changed\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"72c7b2e7d2c421aba67f2db7d3c1819e84da9349208c12293e189f9a5b8030fe\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"66\",\"terminator\":\"none\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"66\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}}\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 12
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "--json",
+    "check",
+    "anddress",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"bc8cc52d2e785a22bd9e128abd5fd9c11c31a0acd1e779993fcf19932ffb86d0\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"15\",\"byteEnd\":\"32\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"32\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"6848e9494b59c5bff10181e4e5927a7307894008a1e71097dd3f3d47e39a275a\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"67\",\"terminator\":\"cr\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"67\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"8fd3263bf6045e2f2b49137746bf868b4892a3aabed56b44ed24d3d8860528c0\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"16\",\"byteEnd\":\"34\",\"terminator\":\"crlf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"72c7b2e7d2c421aba67f2db7d3c1819e84da9349208c12293e189f9a5b8030fe\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"66\",\"terminator\":\"none\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"66\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}"
+  ],
+  "stdin": "",
+  "stdout": "{\"schema\":\"bw.cli.check.v2\",\"outcomes\":[{\"status\":\"current\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"bc8cc52d2e785a22bd9e128abd5fd9c11c31a0acd1e779993fcf19932ffb86d0\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"15\",\"byteEnd\":\"32\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"32\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}},{\"status\":\"current\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"6848e9494b59c5bff10181e4e5927a7307894008a1e71097dd3f3d47e39a275a\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"67\",\"terminator\":\"cr\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"67\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}},{\"status\":\"current\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"8fd3263bf6045e2f2b49137746bf868b4892a3aabed56b44ed24d3d8860528c0\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"16\",\"byteEnd\":\"34\",\"terminator\":\"crlf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}},{\"status\":\"current\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"72c7b2e7d2c421aba67f2db7d3c1819e84da9349208c12293e189f9a5b8030fe\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"66\",\"terminator\":\"none\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"66\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}}]}\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+### bw process 13
+
+```json
+{
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/nminus-target/release/bw",
+    "--json",
+    "view",
+    "anddress",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"bc8cc52d2e785a22bd9e128abd5fd9c11c31a0acd1e779993fcf19932ffb86d0\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"15\",\"byteEnd\":\"32\",\"terminator\":\"lf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"32\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"6848e9494b59c5bff10181e4e5927a7307894008a1e71097dd3f3d47e39a275a\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"67\",\"terminator\":\"cr\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"67\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"8fd3263bf6045e2f2b49137746bf868b4892a3aabed56b44ed24d3d8860528c0\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"16\",\"byteEnd\":\"34\",\"terminator\":\"crlf\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"0\",\"parentByteEnd\":\"34\",\"parentFileLineOffset\":\"0\",\"parentLineCount\":\"2\"}",
+    "{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"72c7b2e7d2c421aba67f2db7d3c1819e84da9349208c12293e189f9a5b8030fe\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"line\",\"byteStart\":\"50\",\"byteEnd\":\"66\",\"terminator\":\"none\",\"lineOffsetInParent\":\"1\",\"parentKind\":\"paragraph\",\"parentByteStart\":\"35\",\"parentByteEnd\":\"66\",\"parentFileLineOffset\":\"3\",\"parentLineCount\":\"2\"}",
+    "--as",
+    "file"
+  ],
+  "stdin": "",
+  "stdout": "{\"schema\":\"bw.cli.view.v2\",\"outcomes\":[{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-01.txt\",\"sourceStateHash\":\"bc8cc52d2e785a22bd9e128abd5fd9c11c31a0acd1e779993fcf19932ffb86d0\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"file\"},\"content\":\"role = primary\\nretry_budget = 5\\n\\nrole = secondary\\nretry_budget = 3\\n\"},{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-02.txt\",\"sourceStateHash\":\"6848e9494b59c5bff10181e4e5927a7307894008a1e71097dd3f3d47e39a275a\",\"sourceByteLength\":\"67\",\"sourceLineCount\":\"5\",\"kind\":\"file\"},\"content\":\"role = secondary\\rretry_budget = 3\\r\\rrole = primary\\rretry_budget = 5\\r\"},{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-03.txt\",\"sourceStateHash\":\"8fd3263bf6045e2f2b49137746bf868b4892a3aabed56b44ed24d3d8860528c0\",\"sourceByteLength\":\"72\",\"sourceLineCount\":\"5\",\"kind\":\"file\"},\"content\":\"role = primary\\r\\nretry_budget = 5\\r\\n\\r\\nrole = secondary\\r\\nretry_budget = 3\\r\\n\"},{\"outcome\":\"projected\",\"anddress\":{\"version\":\"artext.backwriter-anddress.v5\",\"workspaceCoordinate\":\"4308cb0cb0caa9782ab4b31dd8ebc0cb4ce8ed1924f9861dcc068cafcdcfa596\",\"logicalPath\":\"unit-04.txt\",\"sourceStateHash\":\"72c7b2e7d2c421aba67f2db7d3c1819e84da9349208c12293e189f9a5b8030fe\",\"sourceByteLength\":\"66\",\"sourceLineCount\":\"5\",\"kind\":\"file\"},\"content\":\"role = secondary\\nretry_budget = 3\\n\\nrole = primary\\nretry_budget = 5\"}]}\n",
+  "stderr": "",
+  "exit": 0
+}
+```
+
+````
+
+#### D3 dummy-new transcript
+
+````text
+# Independent dummy-new public-Help-only evaluation
+
+## Outcome
+
+Discovered eight matching Lines. Read all eight surrounding Paragraphs before choosing targets. Replaced only primary Lines @0, @3, @4, @7, one per source. Four fresh receipts checked Current. Viewed all four final Files. Secondary values remain 3. No failed commands, retries, resets, or other fixture reads/writes.
+
+## Measurement and capture limits
+
+- Product processes: 3 (two Help processes and one persistent shell).
+- Tool calls through task completion: 7 functions.exec calls, each containing one terminal call. Transcript persistence adds one functions.exec/apply_patch call, total 8.
+- Shell commands: 9 including exit.
+- Capability commands: Search 1; View 2 (8 Paragraph inputs then 4 File inputs); Replace 4; Check 1 (4 inputs). No other capability commands.
+- Extra Content-only queries: 2 View commands / 12 inputs; zero additional Search queries.
+- Measured interactive phase: 26162 ms from returned shell startup to returned shell completion; initial startup and two Help calls excluded. Whole-run wall time was not independently instrumented, so no exact whole-run elapsed is claimed.
+- All outputs below are exact JSON-escaped strings returned by the terminal tool. Help commands used plain pipes, whose API returned merged output without separate stdout/stderr. Shell used a PTY with echo and ONLCR disabled: stdout/stderr are merged and cannot be separately attributed. Thus exact merged output is preserved, not separately captured streams. No diagnostic text appeared.
+- cwd for every product process: /tmp/backwriter-gate5.74tHth/dummy-new/workspace.
+- Terminal launch shell: zsh default login semantics. Explicit wrapper shell inputs and product argv are recorded below. No additional product processes were invoked.
+
+## Exact transcript
+
+### Call 1
+
+Shell input: "/tmp/backwriter-gate5.74tHth/gnu-target/release/bw --help"
+
+argv: ["/tmp/backwriter-gate5.74tHth/gnu-target/release/bw","--help"]
+
+Merged output: "USAGE\n  bw [GLOBAL OPTIONS] <command> [command options and operands]\n  bw help [<command>]\n\nGLOBAL OPTIONS\n  --workspace ABSOLUTE_PATH  Select an absolute workspace before the command.\n  --admit LOGICAL_PATH       Admit a logical root before the command; repeatable.\n  --json                     Select JSON output where the command supports it.\n  --raw                      Select raw View output only.\n\nCOMMANDS\n  shell    Reuse short references across search, view, replace, and check.\n  search   Discover current File, Paragraph, or Line Anddresses.\n  view     Read one or more current Anddresses.\n  edit     Replace one current Anddress.\n  check    Check one or more current Anddresses.\n  version  Print the Backwriter version.\n  update   Run the installed-platform updater.\n\nADDITIONAL HELP\n  bw help <command>\n  Advanced topics: pick, anchor, apply, data (raw Session only; no one-shot execution).\n\nGlobal options precede the command. Use bw help shell for ordinary short-ref work.\n"
+
+Exit: 0.
+
+### Call 2
+
+Shell input: "/tmp/backwriter-gate5.74tHth/gnu-target/release/bw help shell"
+
+argv: ["/tmp/backwriter-gate5.74tHth/gnu-target/release/bw","help","shell"]
+
+Merged output: "NAME\n  bw shell - reuse short references across search, view, replace, and check\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nCOMMANDS\n  search <line|paragraph|file> <query> [--source PATH | --subtree PATH]...\n  search /file <logical-path>\n  view <REF>... [--as <line|paragraph|file>]\n  replace <REF> <CONTENT>\n  check <REF>...\n  let <NAME> = <REF>\n  exit\n\nREFERENCES AND CONTENT\n  @N is a zero-based, append-only reference from this process. It ends at EOF or exit.\n  @name is a named Anddress; @hits[0] selects an indexed Search/Pick binding.\n  let name = @N makes a named alias. Names cannot be redefined.\n  Double-quote arguments containing spaces. Quoted escapes are \\\\, \\\", \\n, \\r, and \\t.\n  One physical input line is one command; no single quotes, pipes, or EOF Content selector.\n  Line Replace accepts body only: NUL/CR/LF are rejected; the existing terminator is preserved.\n  File/Paragraph Replace uses exact Content. Changed source bytes stale old same-source refs,\n  including other locations. Use the fresh receipt or explicitly search again; never auto-retry.\n\nOUTPUT\n  Search appends one @N per result; Empty writes nothing.\n  View returns each input ref, a fresh ref, kind/location, and complete Content in input order.\n  View<TAB>REF<TAB>bytes=N starts a record, followed by fresh-ref metadata and N exact bytes.\n  The following LF and EndView line are display framing, not source Content.\n  RelationAbsent is shown at its input position without Content or a fresh slot.\n  Replace writes Unchanged/Changed with a fresh ref, or Changed<TAB>None without one.\n  Check writes one status per input; only Current appends a fresh ref. Check is optional.\n\nEXAMPLES\n  Start bw shell in a workspace with only note.txt containing needle plus CRLF, then enter:\n  search line needle --source note.txt\n  view @0 --as paragraph\n  let selected = @0\n  replace @selected \"new value\"\n  check @0 @2\n  view @3\n  exit\n\nADVANCED\n  let hits = search line needle\n  view anddress @hits[0]\n  Raw named View writes exact Content without direct-View framing.\n  See bw help pick, bw help anchor, bw help apply, and bw help data.\n\nFAILURES\n  Usage errors record exit 2; Runtime/source errors record exit 1; later commands still run.\n  Stdin/stdout failure ends the shell with exit 1. Partial output cannot prove delivery or\n  undo publication. --json/--raw and command-line operands are unavailable.\n\nSEE ALSO\n  bw help search\n  bw help edit\n"
+
+Exit: 0.
+
+### Call 3
+
+Shell input: "stty -echo -onlcr; exec /tmp/backwriter-gate5.74tHth/gnu-target/release/bw shell"
+
+argv: ["stty","-echo","-onlcr"] followed by exec ["/tmp/backwriter-gate5.74tHth/gnu-target/release/bw","shell"]
+
+Merged output: ""
+
+Process remains running (session 8842).
+
+### Call 4
+
+Exact shell stdin: "search line \"retry_budget = 3\"\n"
+
+Merged output: "@0\tLine\tunit-01.txt:2\n@1\tLine\tunit-01.txt:5\n@2\tLine\tunit-02.txt:2\n@3\tLine\tunit-02.txt:5\n@4\tLine\tunit-03.txt:2\n@5\tLine\tunit-03.txt:5\n@6\tLine\tunit-04.txt:2\n@7\tLine\tunit-04.txt:5\n"
+
+Process remains running.
+
+### Call 5
+
+Exact shell stdin: "view @0 @1 @2 @3 @4 @5 @6 @7 --as paragraph\n"
+
+Merged output: "View\t@0\tbytes=32\n@8\tParagraph\tunit-01.txt:1-2\nrole = primary\nretry_budget = 3\n\nEndView\nView\t@1\tbytes=34\n@9\tParagraph\tunit-01.txt:4-5\nrole = secondary\nretry_budget = 3\n\nEndView\nView\t@2\tbytes=34\n@10\tParagraph\tunit-02.txt:1-2\nrole = secondary\rretry_budget = 3\r\nEndView\nView\t@3\tbytes=32\n@11\tParagraph\tunit-02.txt:4-5\nrole = primary\rretry_budget = 3\r\nEndView\nView\t@4\tbytes=34\n@12\tParagraph\tunit-03.txt:1-2\nrole = primary\r\nretry_budget = 3\r\n\nEndView\nView\t@5\tbytes=36\n@13\tParagraph\tunit-03.txt:4-5\nrole = secondary\r\nretry_budget = 3\r\n\nEndView\nView\t@6\tbytes=34\n@14\tParagraph\tunit-04.txt:1-2\nrole = secondary\nretry_budget = 3\n\nEndView\nView\t@7\tbytes=31\n@15\tParagraph\tunit-04.txt:4-5\nrole = primary\nretry_budget = 3\nEndView\n"
+
+Process remains running.
+
+### Call 6
+
+Exact shell stdin: "replace @0 \"retry_budget = 5\"\nreplace @3 \"retry_budget = 5\"\nreplace @4 \"retry_budget = 5\"\nreplace @7 \"retry_budget = 5\"\n"
+
+Merged output: "@16\tChanged\tLine\tunit-01.txt:2\n@17\tChanged\tLine\tunit-02.txt:5\n@18\tChanged\tLine\tunit-03.txt:2\n@19\tChanged\tLine\tunit-04.txt:5\n"
+
+Process remains running.
+
+### Call 7
+
+Exact shell stdin: "check @16 @17 @18 @19\nview @20 @21 @22 @23 --as file\nexit\n"
+
+Merged output: "@20\tCurrent\tLine\tunit-01.txt:2\n@21\tCurrent\tLine\tunit-02.txt:5\n@22\tCurrent\tLine\tunit-03.txt:2\n@23\tCurrent\tLine\tunit-04.txt:5\nView\t@20\tbytes=67\n@24\tFile\tunit-01.txt\nrole = primary\nretry_budget = 5\n\nrole = secondary\nretry_budget = 3\n\nEndView\nView\t@21\tbytes=67\n@25\tFile\tunit-02.txt\nrole = secondary\rretry_budget = 3\r\rrole = primary\rretry_budget = 5\r\nEndView\nView\t@22\tbytes=72\n@26\tFile\tunit-03.txt\nrole = primary\r\nretry_budget = 5\r\n\r\nrole = secondary\r\nretry_budget = 3\r\n\nEndView\nView\t@23\tbytes=66\n@27\tFile\tunit-04.txt\nrole = secondary\nretry_budget = 3\n\nrole = primary\nretry_budget = 5\nEndView\n"
+
+Exit: 0.
+
+## Human target decision
+
+Paragraph Content showed primary at unit-01.txt:2, unit-02.txt:5, unit-03.txt:2, unit-04.txt:5. No program selected these targets. Line Replace's documented terminator preservation was used. Final Content shows LF, CR, CRLF, and an unterminated last Line respectively; no full pre-edit File view was taken, so whole-file byte preservation outside viewed Paragraphs relies on the documented Line Replace contract, not an independent byte comparison.
+
+````
+
+#### D3 genie-old transcript
+
+````text
+# Independent documented-shell evaluation: N-minus
+
+Only supplied public README and public Help were used. Fixture Content reads and edits were exclusively through the supplied bw, in this arm's workspace. No source, oracle, other arm, installed bw, update, or filesystem fixture Content access occurred.
+
+## Result and metrics
+
+Four primary Line bodies changed: unit-01.txt:2, unit-02.txt:5, unit-03.txt:2, unit-04.txt:5. Eight initial literal matches were inspected via their Paragraph Content before deciding. Final bw File Content shows primary values 5 and secondary values 3 with LF, CR, CRLF, and absent-final-terminator cases preserved by the documented body-only Replace contract. No independent whole-file before/after byte comparison was performed.
+
+All four replacement receipt references checked Current. All four pre-edit secondary references unexpectedly checked NotCurrent; this evidence is retained, not retried away. A new Search found the four remaining secondary Lines and all four fresh references checked Current. No syntax/runtime failures or resets occurred; final shell exit was 0.
+
+Shell elapsed wall clock (from shell-start tool return to exit tool return): 40459 ms. Documentation discovery occurred before that timer; full-run elapsed was not instrumented and must not be inferred from this value.
+
+Tool counts through transcript creation: 11 functions orchestration calls; 12 nested calls (5 exec_command, 6 write_stdin, 1 apply_patch). Product processes: 3 bw processes (--help, help shell, shell). Other explicitly launched processes: 5 zsh wrappers, 2 cat README reads, 1 stty; expected total 11 OS processes, excluding infrastructure and any implicit login-shell startup subprocesses. No process monitor was used.
+
+Shell commands: 35 (Search 2; View 14; Replace 4; Check 2; let 12; exit 1). View commands comprise 2 reference-only projected batches (8 Paragraph and 4 File inputs) plus 12 extra Content-only raw queries (8 Paragraph, 4 File). Check has 12 inputs, 8 Current and 4 NotCurrent. Replace invokes 4 Edit/Apply workflows by documented semantics; no explicit raw Edit/Apply, Pick, Anchor, or Data commands. Internal capability invocation counts were not instrumented. Query literals: two `retry_budget = 3` searches. No extra search for role metadata.
+
+## Capture limitations
+
+All outputs below are exact tool-returned strings represented as JSON escaped UTF-8 text. The tool does not expose separate stdout/stderr for ordinary exec calls. The shell used a PTY, `stty -echo -onlcr`, and therefore its output is explicitly a merged stdout/stderr stream, not independently attributed streams. Input is the exact string sent, including LF. No PTY echo was included. The README was read a second time solely to archive its exact returned text; the initial read's output was the same complete public copy and is reproduced below. This duplication is included in tool/process counts. Output chunks can span multiple shell commands and are not assigned per-command exit status; only final process exit is available.
+
+## Invocation transcript
+
+```json
+{"cmd":"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw --help","argv":["/tmp/backwriter-gate5.74tHth/nminus-target/release/bw","--help"],"exit":0,"merged_output":"USAGE\n  bw [GLOBAL OPTIONS] <command> [command options and operands]\n  bw help [<command>]\n\nGLOBAL OPTIONS\n  --workspace ABSOLUTE_PATH  Select an absolute workspace before the command.\n  --admit LOGICAL_PATH       Admit a logical root before the command; repeatable.\n  --json                     Select JSON output where the command supports it.\n  --raw                      Select raw View output only.\n\nCAPABILITIES\n  search   Discover current File, Paragraph, or Line Anddresses.\n  view     Read one or more current Anddresses.\n  edit     Replace one current Anddress.\n  check    Check one or more current Anddresses.\n  shell    Run advanced raw Session commands.\n  version  Print the Backwriter version.\n  update   Run the installed-platform updater.\n\nPick, Anchor, Apply, and Data have no one-shot command; use bw shell.\n\nADDITIONAL HELP\n  bw help <command>\n\nGlobal options precede the command. Canonical output options are documented only in that position.\n"}
+{"cmd":"cat /tmp/backwriter-gate5.74tHth/genie-old/public-guide.md","argv":["cat","/tmp/backwriter-gate5.74tHth/genie-old/public-guide.md"],"exit":0,"merged_output":"# Backwriter\n\nBackwriter is a Rust Core and Runtime for current, structural text work over\nadmitted Workspace Source. It provides target-local File, Paragraph, and Line\naddresses without turning source history or editor state into Core identity.\n\nThe Core capability inventory is Search, View, Pick, Anchor, Check, Edit,\nApply, and Data. The repository currently provides their Rust Core/Runtime\nsurfaces and the canonical `bw` executable's one-shot human and JSON\nSearch/View/Check/Edit, raw View, Anddress-first one-shot Edit, Session Pick, batch\nCheck, Anchor, Edit, Apply, result-binding, explicit Data modes, and\nAdapter-owned Version and Update.\n\n## Quick start\n\nInstall the closed official `0.2.5` release with the command for your\nplatform.\n\nLinux, macOS, or WSL:\n\n```sh\ncurl -fsSL https://backwriter.pentagration.com/install.sh | sh\n```\n\nWindows PowerShell:\n\n```powershell\nirm https://backwriter.pentagration.com/install.ps1 | iex\n```\n\nWindows CMD:\n\n```cmd\ncurl.exe -fsSL https://backwriter.pentagration.com/install.cmd -o install.cmd && call install.cmd && del install.cmd\n```\n\nThe POSIX installer places `bw` at `$HOME/.local/bin/bw`; the PowerShell and\nCMD paths place `bw.exe` at `$HOME\\.local\\bin\\bw.exe`. They do not change\n`PATH`, a shell startup file, the PowerShell profile, or the registry. A fresh\ninstall prints `Installed Backwriter: <version>`; replacing an existing\ndestination prints `Updated Backwriter: <version>`. The executable path and\n`PATH` guidance are printed separately only when the installation directory is\nnot already on `PATH`.\n\n### Version\n\n```sh\nbw version\n```\n\nThe closed official `0.2.5` build prints exactly:\n\n```text\nBackwriter 0.2.5\n```\n\n### Update\n\n```sh\nbw update\n```\n\n`bw update` downloads and delegates to the current official installer. The\ncurrent manifest selects the closed `0.2.5` distribution. The installer\nreads that manifest, verifies the selected artifact, and installs or reinstalls\nthat manifest version only after validation succeeds. It does not run a\nbackground updater or compare release versions. The installer accepts only the\nexact immutable `0.2.4` manifest and current `0.2.5` manifest; `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable\n`0.1.0`, and beta.3 acceptance is retired. The command still performs no\nversion comparison and adds no version guard.\n\nThe product is Backwriter. The source Cargo package and library crate are\n`backwriter` at source-ready unpublished `0.2.6`; a source-built `bw version`\nprints `Backwriter 0.2.6`. The sole canonical executable and external Adapter\ncommand are `bw`. There is no `backwriter` binary, alias, or wrapper. The\nofficial installer remains separate and selects the closed public `0.2.5`\ndistribution.\n\nProduction `src/**` remains byte-identical to Gate 6 candidate\n`22e6df23755cdc80b299b77be313d307b67bc37f`. Official artifacts, installers,\nmanifest, Update target, and the exact 68-file public distribution remain\npublished and closed `0.2.5` from Source Authority\n`e4022fc073e9df3928e1c3817b266ce92121a03c`. Update performs no version\ncomparison, so source-built `0.2.6` still installs or reinstalls that official\n`0.2.5` release until a separately authorized release closes the gap.\n\n## Anddress-first editing\n\nThe default source-checkout replacement flow is:\n\n1. Run `bw --json search ...`.\n2. Select one occurrence from `occurrences` and pass its exact embedded v5\n   `anddress` object unchanged as one argv value.\n3. Run `bw edit anddress '<opaque-v5-object>' '<new-content>'`.\n\nHuman Search rows are not encoded Anddress values and cannot be Edit input.\nTreat the selected JSON object as opaque: do not interpret or rewrite its hash,\nrange, length, or other fields. File and Paragraph Content is the exact\nreplacement. Line Content is body-only, rejects NUL, CR, and LF, and preserves\nthe None, LF, CR, or CRLF terminator carried by the exact v5 Line. A Line NUL\nis `edit.content_contains_nul`; a Line CR or LF is\n`edit.line_body_contains_terminator`. The latter explains that Backwriter adds\nthe current terminator and that advanced raw Session Edit/Apply owns exact\nextent replacement. Apply alone confirms that source state before publication.\nView or Pick may help a caller select a target; neither View nor Check is\nrequired.\n\nHuman success writes one exact LF-terminated receipt row. `Unchanged` is\nfollowed by the still-current input v5 object; `Changed` is followed by the\nfresh v5 object when the resulting File, Line, or unique Paragraph has one,\nand otherwise by `None`. With leading `--json`, the same result is the compact\nAdapter-only `bw.cli.edit.v1` object with `schema`, `outcome`, and `anddress`\nkeys in that order; `anddress` is the exact v5 object or JSON `null`. Reuse only\nthe address returned by the receipt. A changed Paragraph with `None` requires\nan explicit Search before later target work. Exit `1` is neither a stale-only\nclassification nor proof that source bytes are unchanged, so it must not\ntrigger automatic retry.\n\nOne-shot Content is either one UTF-8 argv value or the exclusive `--stdin`\nselector in that position; stdin is read to EOF after v5 address validation and\nbefore Runtime access. Both forms have the same target-specific Content rules.\nFile/Paragraph CR and LF are exact Content, while Line body Content never\nsilently strips a trailing newline. Literal `--json` and `--raw` remain exact\nContent; a literal `--stdin` Content value is supplied through standard input.\n\nRaw Session is the advanced composition surface for Insert/Delete/Move/Copy,\nPosition, Anchor/Data lifetime, explicit bindings, and separate Apply. It is\nnot a prerequisite or alias for ordinary Replace. Its existing raw\n`edit replace` accepts caller-provided exact range Content, including an\nexplicit terminator or multiline replacement, and `apply @edit` publishes it\nseparately. The caller owns the binding, index, quoting, terminator, and\npublication boundary. General replacement should use one-shot body Content\nfirst; no exact one-shot flag or alternate executor exists.\n\n### Shell-local references\n\n`bw shell` also provides a short-lived interactive flow without adding a Core\nwire or persistent identity:\n\n```text\nsearch line needle\nview @0\nreplace @1 replacement\ncheck @2 @3\nexit\n```\n\nQuote one direct-shell query or replacement argument when it contains\nwhitespace; the quotes are shell syntax and are not part of the exact literal\nor replacement Content:\n\n```text\nsearch line \"duplicate = one\"\nreplace @1 \"duplicate = two\"\n```\n\nSuccessful direct `search` and projected direct `view` append `@N` references\nin output order, including duplicates. Direct `check <REF>...` resolves every\nreference before Runtime access, writes one Current/NotCurrent/Unavailable\nstate per input, and appends a fresh slot only for Current. `replace @N <content>` uses the same\ntarget-aware Content rules as one-shot Edit and appends a fresh reference for\n`Unchanged` or `Changed` when the receipt has an Anddress; `Changed\\tNone`\nadds none. Slots are zero-based canonical unsigned decimals, append-only, and\ndiscarded at `exit` or EOF. `@name` and `@name[index]` remain the advanced raw\nSession forms; `let name = @N` explicitly clones a numeric slot into that\nexisting named Anddress binding. Raw `edit replace` and separate `apply @edit`\nremain the advanced exact-range path.\n\nThe default workspace is the process current working directory. An explicit\n`--workspace` must be absolute and is checked by Runtime. Search admits `.` by\ndefault; repeat `--admit LOGICAL_PATH` before `search` to narrow admission.\nAfter the query, repeat `--source LOGICAL_PATH` or `--subtree LOGICAL_PATH` to\nnarrow a Search scope. Without a scope selector, Search covers all admitted\nsources.\n\n## Current CLI scope\n\n`bw` currently implements Adapter-owned one-shot Version and Update, one-shot\nhuman or JSON Search, View, Check, and Edit, raw View, Anddress-first one-shot Edit,\nplus Session Pick, batch Check, Anchor, Edit, Apply, and Data:\n\n```text\nbw version\nbw update\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    search <line|paragraph|file> <query>\n    [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    search /file <logical-path>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    search <line|paragraph|file> <query>\n    [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    search /file <logical-path>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    view anddress <encoded-v5-Anddress>... [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    check anddress <encoded-v5-Anddress>...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw\n    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    check anddress <encoded-v5-Anddress>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    edit anddress <encoded-v5-Anddress> <content>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    edit anddress <encoded-v5-Anddress> --stdin\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    edit anddress <encoded-v5-Anddress> <content>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    edit anddress <encoded-v5-Anddress> --stdin\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n```\n\nVersion and Update do not call Backwriter Core or Runtime and create no Core\nwire or capability workflow.\n\nContent Search preserves Core literal validation, scope, projection, and\ndeterministic result order. The distinct `search /file` form validates one\nlogical path and returns the current File Anddress for an admitted regular\nUTF-8, NUL-free source regardless of whether it is empty or contains matching\ntext. Missing paths and directories return Empty; the form has no scope\nselectors or synthetic content query. View decodes v5 Anddresses and projects\neach to itself or one ancestor before reading its exact content. A single input\ndefaults to self projection. `--as` chooses one target kind; multiple inputs\nrequire both `--json` and `--as`. Check decodes every v5 operand before Runtime\naccess. One human input writes `Current`, `NotCurrent`, or `Unavailable`; a\nbatch requires `--json` and preserves one outcome per input. Search, View,\nCheck, and Edit `--json`\nwrite compact Adapter objects with exact embedded v5 Anddress objects where\napplicable; each is an Adapter schema, not a second Core wire. View uses the\nhard-cut `bw.cli.view.v2` outcomes array for both single and batch results;\nCheck uses the hard-cut `bw.cli.check.v2` ordered outcomes array.\nRaw View is an explicit Adapter exact-text mode that reuses the ordinary View\nprojection without a Core wire or changed View meaning.\nHuman Search, View, and Check keep their existing projections; human Edit\nreceipts intentionally return the exact current v5 object when one exists.\nThe Session holds one Runtime until EOF\nor `exit` and has explicit local Search, Pick, Anddress, Edit, View, and Check\nbindings plus non-aliasing Anchedress handles. It owns one explicit `DataStore`\nfor the Session only; names are typed and never persist past EOF or `exit`.\nSession Pick\npasses a named Search or Pick collection and an Adapter-parsed predicate directly\nto Core; Session batch Check passes a named matching outcome directly to its\nRuntime batch seam and prints only report counts. Session Anchor creates a live\nhandle only through `let <name> = anchor create <anddress-ref>`, views it through\n`view anchored @<name>`, and can invalidate its logical source with `anchor\ninvalidate-source <logical-path>`. One-shot Data and Anchor are intentionally\nunsupported because their DataStore and live-handle contracts require Session\nlifetime. One-shot Pick, raw Edit-object transport, and a separate\nApply transport await collection or Edit transport schema authority. The\ndistinct Anddress-first one-shot Edit above is implemented. Raw output other\nthan one-shot View and further Session behavior remain deferred.\n\n## Scope\n\nBackwriter is not Git, a file watcher, daemon, persistent index, or editor UI.\nIt reads admitted current Workspace Source through Runtime's safe no-follow\naccess. It does not model branches, merges, history, automatic re-evaluation,\nor editor buffers.\n\nApply uses its accepted current observation and does not coordinate concurrent\nwriters. Writers may race and one publication may overwrite another\nsource-visible change; hosts requiring a stronger guarantee coordinate outside\nBackwriter.\n\n## Build from source and test\n\n```sh\ncargo build --offline --locked --release\n./target/release/bw search line \"needle\"\n./target/release/bw --workspace /path/project search paragraph \"needle\"\ncargo test --offline --locked\n```\n\n## Official desktop distribution\n\nThe official distribution authority is\n[https://backwriter.pentagration.com](https://backwriter.pentagration.com).\nIt publishes the closed Backwriter `0.2.5` release for Linux/WSL x86_64,\nmacOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision\n`e4022fc073e9df3928e1c3817b266ce92121a03c`. Linux uses canonical target\n`x86_64-unknown-linux-musl`;\n`x86_64-unknown-linux-gnu` remains the local development/test-host target.\nmacOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and\n`x86_64-apple-darwin` with minimum macOS 10.12. The macOS artifacts receive\nstatic cross-build verification but are not claimed to have been executed on a\nnative Mac before publication. Windows uses `x86_64-pc-windows-gnu` and the\ncanonical executable `bw.exe`; its static cross-build verification does not\nclaim native Windows, PowerShell, or CMD execution. Linux arm64 is not currently\nprovided, and no universal host-compatibility claim is made.\n\n`install.sh` reads the canonical manifest, verifies the downloaded artifact\nagainst the manifest SHA-256, and installs the verified binary at\n`$HOME/.local/bin/bw` with a same-directory rename. Concurrent same-user\nHOME mutation is caller-owned. The published `.sha256` sidecar is for manual\nverification and is not installer authority. Windows PowerShell verifies the\nsame manifest authority and exact ZIP, and installs to\n`$HOME\\.local\\bin\\bw.exe` without editing PATH or the PowerShell profile. The\nthree canonical install commands and the canonical `bw update` command are kept\ntogether in [Quick start](#quick-start).\n\nThe CMD command writes `install.cmd` in the current directory and removes it\nafter a successful installation. An existing file with that name is replaced.\n\nThe CRLF `install.cmd` checks `curl.exe` and `powershell.exe`, downloads exactly\nthe canonical `install.ps1` over HTTPS-only TLS 1.2-or-newer transport into a\ncollision-failing `%TEMP%` task directory, delegates all installation meaning,\ncleans the directory, and preserves the child exit code. It owns no manifest,\nSHA-256, ZIP, or installation logic. The Linux-hosted CMD regression is static;\nno native CMD execution is claimed.\nThe distribution provides no\npublisher-authenticity signature or trusted signing identity, background or\nautomatic update, telemetry, `sudo` execution, or automatic `PATH` or\nshell-startup-file change.\nGitHub is a public source and documentation mirror, not the distribution\nauthority. The complete beta.1, beta.2, beta.3, stable `0.1.0`, `0.2.0`, and\n`0.2.1` and `0.2.2` version directories remain unchanged and immutable. The\ncomplete `0.2.3`, `0.2.4`, and `0.2.5` version directories are immutable; the\n`0.2.5` release is closed. The active public tree has exactly 68 files, and\nthe current installers and manifest select `0.2.5`. Any later platform or\nversion requires separate Owner authority. Linux arm64, tags, GitHub Releases,\ncrates.io publication, and background or automatic update remain outside the\ncompleted publication. The earlier `0.2.4` publication added its eight\nversioned files and replaced only the two installers and manifest pointers\nwithout replacing any of the 48 prior versioned files or the CMD Adapter. Its\nsecond publisher run reused all 60 files without metadata change. The `0.2.5`\npublication then added its eight versioned files, replaced the two installers\nand manifest pointers, and reused all 68 files on its second run.\n\n## Architecture\n\n- [Current state](docs/current/now.md)\n- [Backwriter protocol](docs/architecture/backwriter-text-coordination-protocol.md)\n- [Anddress and exact Line model](docs/architecture/rebuildable-structural-addressing.md)\n- [CLI V1 authority](docs/architecture/backwriter-cli-v1.md)\n- [Verification](docs/development/verification.md)\n\n## License\n\n[MIT License](LICENSE)\n"}
+{"cmd":"/tmp/backwriter-gate5.74tHth/nminus-target/release/bw help shell","argv":["/tmp/backwriter-gate5.74tHth/nminus-target/release/bw","help","shell"],"exit":0,"merged_output":"NAME\n  bw shell - run one local reference session and advanced raw Session commands\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nDESCRIPTION\n  Reads commands from standard input until exit. Direct search, view, replace, and check use session-local numeric Anddress references. Raw bindings and raw capability composition remain the advanced surface.\n\nARGUMENTS\n  None.\n\nOPTIONS\n  --workspace and --admit must precede shell.\n  --json and --raw are unavailable.\n\nWHAT HAPPENS\n  A successful direct search, view, or current check emits append-only @N references. Direct replace uses one reference and emits a fresh reference when one exists. References end with this shell process. Raw let, Pick, View, Check, Anchor, Edit, Apply, and Data retain their existing grammar.\n\nOUTPUT\n  Direct references write @N, target kind, and location. Direct Check writes one state per input. Raw commands write their existing human result.\n\nEXAMPLES\n  bw shell\n  search line needle\n  view @0\n  replace @1 replacement\n  check @2 @3\n  let hits = search line needle\n  view anddress @hits[0]\n  exit\n\nFAILURES\n  Invalid shell grammar is a usage failure. Runtime and source failures exit 1.\n\nSEE ALSO\n  bw help search\n  bw help edit\n"}
+{"cmd":"stty -echo -onlcr; exec /tmp/backwriter-gate5.74tHth/nminus-target/release/bw shell","argvs":[["stty","-echo","-onlcr"],["/tmp/backwriter-gate5.74tHth/nminus-target/release/bw","shell"]],"cwd":"/tmp/backwriter-gate5.74tHth/genie-old/workspace","tty":true}
+{"input":null,"merged_output":"","exit":null,"session_running":true}
+{"input":"search line \"retry_budget = 3\"\n","merged_output":"@0\tLine\tunit-01.txt:2\n@1\tLine\tunit-01.txt:5\n@2\tLine\tunit-02.txt:2\n@3\tLine\tunit-02.txt:5\n@4\tLine\tunit-03.txt:2\n@5\tLine\tunit-03.txt:5\n@6\tLine\tunit-04.txt:2\n@7\tLine\tunit-04.txt:5\n","exit":null,"session_running":true}
+{"input":"view @0 @1 @2 @3 @4 @5 @6 @7 --as paragraph\n","merged_output":"@8\tParagraph\tunit-01.txt:1-2\n@9\tParagraph\tunit-01.txt:4-5\n@10\tParagraph\tunit-02.txt:1-2\n@11\tParagraph\tunit-02.txt:4-5\n@12\tParagraph\tunit-03.txt:1-2\n@13\tParagraph\tunit-03.txt:4-5\n@14\tParagraph\tunit-04.txt:1-2\n@15\tParagraph\tunit-04.txt:4-5\n","exit":null,"session_running":true}
+{"input":"let p0 = @8\nview anddress @p0\n","merged_output":"role = primary\nretry_budget = 3\n","exit":null,"session_running":true}
+{"input":"let p1 = @9\nview anddress @p1\nlet p2 = @10\nview anddress @p2\nlet p3 = @11\nview anddress @p3\nlet p4 = @12\nview anddress @p4\nlet p5 = @13\nview anddress @p5\nlet p6 = @14\nview anddress @p6\nlet p7 = @15\nview anddress @p7\n","merged_output":"role = secondary\nretry_budget = 3\nrole = secondary\rretry_budget = 3\rrole = primary\rretry_budget = 3\rrole = primary\r\nretry_budget = 3\r\nrole = secondary\r\nretry_budget = 3\r\nrole = secondary\nretry_budget = 3\nrole = primary\nretry_budget = 3","exit":null,"session_running":true}
+{"input":"replace @0 \"retry_budget = 5\"\nreplace @3 \"retry_budget = 5\"\nreplace @4 \"retry_budget = 5\"\nreplace @7 \"retry_budget = 5\"\ncheck @16 @17 @18 @19 @1 @2 @5 @6\n","merged_output":"@16\tChanged\tLine\tunit-01.txt:2\n@17\tChanged\tLine\tunit-02.txt:5\n@18\tChanged\tLine\tunit-03.txt:2\n@19\tChanged\tLine\tunit-04.txt:5\n@20\tCurrent\tLine\tunit-01.txt:2\n@21\tCurrent\tLine\tunit-02.txt:5\n@22\tCurrent\tLine\tunit-03.txt:2\n@23\tCurrent\tLine\tunit-04.txt:5\nNotCurrent\nNotCurrent\nNotCurrent\nNotCurrent\n","exit":null,"session_running":true}
+{"input":"view @16 @17 @18 @19 --as file\nlet f0 = @24\nview anddress @f0\nlet f1 = @25\nview anddress @f1\nlet f2 = @26\nview anddress @f2\nlet f3 = @27\nview anddress @f3\nsearch line \"retry_budget = 3\"\ncheck @28 @29 @30 @31\nexit\n","merged_output":"@24\tFile\tunit-01.txt\n@25\tFile\tunit-02.txt\n@26\tFile\tunit-03.txt\n@27\tFile\tunit-04.txt\nrole = primary\nretry_budget = 5\n\nrole = secondary\nretry_budget = 3\nrole = secondary\rretry_budget = 3\r\rrole = primary\rretry_budget = 5\rrole = primary\r\nretry_budget = 5\r\n\r\nrole = secondary\r\nretry_budget = 3\r\nrole = secondary\nretry_budget = 3\n\nrole = primary\nretry_budget = 5@28\tLine\tunit-01.txt:5\n@29\tLine\tunit-02.txt:2\n@30\tLine\tunit-03.txt:5\n@31\tLine\tunit-04.txt:2\n@32\tCurrent\tLine\tunit-01.txt:5\n@33\tCurrent\tLine\tunit-02.txt:2\n@34\tCurrent\tLine\tunit-03.txt:5\n@35\tCurrent\tLine\tunit-04.txt:2\n","exit":0,"session_running":false}
+{"cmd":"cat /tmp/backwriter-gate5.74tHth/genie-old/public-guide.md","argv":["cat","/tmp/backwriter-gate5.74tHth/genie-old/public-guide.md"],"purpose":"exact public-guide archival reread","exit":0,"merged_output":"# Backwriter\n\nBackwriter is a Rust Core and Runtime for current, structural text work over\nadmitted Workspace Source. It provides target-local File, Paragraph, and Line\naddresses without turning source history or editor state into Core identity.\n\nThe Core capability inventory is Search, View, Pick, Anchor, Check, Edit,\nApply, and Data. The repository currently provides their Rust Core/Runtime\nsurfaces and the canonical `bw` executable's one-shot human and JSON\nSearch/View/Check/Edit, raw View, Anddress-first one-shot Edit, Session Pick, batch\nCheck, Anchor, Edit, Apply, result-binding, explicit Data modes, and\nAdapter-owned Version and Update.\n\n## Quick start\n\nInstall the closed official `0.2.5` release with the command for your\nplatform.\n\nLinux, macOS, or WSL:\n\n```sh\ncurl -fsSL https://backwriter.pentagration.com/install.sh | sh\n```\n\nWindows PowerShell:\n\n```powershell\nirm https://backwriter.pentagration.com/install.ps1 | iex\n```\n\nWindows CMD:\n\n```cmd\ncurl.exe -fsSL https://backwriter.pentagration.com/install.cmd -o install.cmd && call install.cmd && del install.cmd\n```\n\nThe POSIX installer places `bw` at `$HOME/.local/bin/bw`; the PowerShell and\nCMD paths place `bw.exe` at `$HOME\\.local\\bin\\bw.exe`. They do not change\n`PATH`, a shell startup file, the PowerShell profile, or the registry. A fresh\ninstall prints `Installed Backwriter: <version>`; replacing an existing\ndestination prints `Updated Backwriter: <version>`. The executable path and\n`PATH` guidance are printed separately only when the installation directory is\nnot already on `PATH`.\n\n### Version\n\n```sh\nbw version\n```\n\nThe closed official `0.2.5` build prints exactly:\n\n```text\nBackwriter 0.2.5\n```\n\n### Update\n\n```sh\nbw update\n```\n\n`bw update` downloads and delegates to the current official installer. The\ncurrent manifest selects the closed `0.2.5` distribution. The installer\nreads that manifest, verifies the selected artifact, and installs or reinstalls\nthat manifest version only after validation succeeds. It does not run a\nbackground updater or compare release versions. The installer accepts only the\nexact immutable `0.2.4` manifest and current `0.2.5` manifest; `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable\n`0.1.0`, and beta.3 acceptance is retired. The command still performs no\nversion comparison and adds no version guard.\n\nThe product is Backwriter. The source Cargo package and library crate are\n`backwriter` at source-ready unpublished `0.2.6`; a source-built `bw version`\nprints `Backwriter 0.2.6`. The sole canonical executable and external Adapter\ncommand are `bw`. There is no `backwriter` binary, alias, or wrapper. The\nofficial installer remains separate and selects the closed public `0.2.5`\ndistribution.\n\nProduction `src/**` remains byte-identical to Gate 6 candidate\n`22e6df23755cdc80b299b77be313d307b67bc37f`. Official artifacts, installers,\nmanifest, Update target, and the exact 68-file public distribution remain\npublished and closed `0.2.5` from Source Authority\n`e4022fc073e9df3928e1c3817b266ce92121a03c`. Update performs no version\ncomparison, so source-built `0.2.6` still installs or reinstalls that official\n`0.2.5` release until a separately authorized release closes the gap.\n\n## Anddress-first editing\n\nThe default source-checkout replacement flow is:\n\n1. Run `bw --json search ...`.\n2. Select one occurrence from `occurrences` and pass its exact embedded v5\n   `anddress` object unchanged as one argv value.\n3. Run `bw edit anddress '<opaque-v5-object>' '<new-content>'`.\n\nHuman Search rows are not encoded Anddress values and cannot be Edit input.\nTreat the selected JSON object as opaque: do not interpret or rewrite its hash,\nrange, length, or other fields. File and Paragraph Content is the exact\nreplacement. Line Content is body-only, rejects NUL, CR, and LF, and preserves\nthe None, LF, CR, or CRLF terminator carried by the exact v5 Line. A Line NUL\nis `edit.content_contains_nul`; a Line CR or LF is\n`edit.line_body_contains_terminator`. The latter explains that Backwriter adds\nthe current terminator and that advanced raw Session Edit/Apply owns exact\nextent replacement. Apply alone confirms that source state before publication.\nView or Pick may help a caller select a target; neither View nor Check is\nrequired.\n\nHuman success writes one exact LF-terminated receipt row. `Unchanged` is\nfollowed by the still-current input v5 object; `Changed` is followed by the\nfresh v5 object when the resulting File, Line, or unique Paragraph has one,\nand otherwise by `None`. With leading `--json`, the same result is the compact\nAdapter-only `bw.cli.edit.v1` object with `schema`, `outcome`, and `anddress`\nkeys in that order; `anddress` is the exact v5 object or JSON `null`. Reuse only\nthe address returned by the receipt. A changed Paragraph with `None` requires\nan explicit Search before later target work. Exit `1` is neither a stale-only\nclassification nor proof that source bytes are unchanged, so it must not\ntrigger automatic retry.\n\nOne-shot Content is either one UTF-8 argv value or the exclusive `--stdin`\nselector in that position; stdin is read to EOF after v5 address validation and\nbefore Runtime access. Both forms have the same target-specific Content rules.\nFile/Paragraph CR and LF are exact Content, while Line body Content never\nsilently strips a trailing newline. Literal `--json` and `--raw` remain exact\nContent; a literal `--stdin` Content value is supplied through standard input.\n\nRaw Session is the advanced composition surface for Insert/Delete/Move/Copy,\nPosition, Anchor/Data lifetime, explicit bindings, and separate Apply. It is\nnot a prerequisite or alias for ordinary Replace. Its existing raw\n`edit replace` accepts caller-provided exact range Content, including an\nexplicit terminator or multiline replacement, and `apply @edit` publishes it\nseparately. The caller owns the binding, index, quoting, terminator, and\npublication boundary. General replacement should use one-shot body Content\nfirst; no exact one-shot flag or alternate executor exists.\n\n### Shell-local references\n\n`bw shell` also provides a short-lived interactive flow without adding a Core\nwire or persistent identity:\n\n```text\nsearch line needle\nview @0\nreplace @1 replacement\ncheck @2 @3\nexit\n```\n\nQuote one direct-shell query or replacement argument when it contains\nwhitespace; the quotes are shell syntax and are not part of the exact literal\nor replacement Content:\n\n```text\nsearch line \"duplicate = one\"\nreplace @1 \"duplicate = two\"\n```\n\nSuccessful direct `search` and projected direct `view` append `@N` references\nin output order, including duplicates. Direct `check <REF>...` resolves every\nreference before Runtime access, writes one Current/NotCurrent/Unavailable\nstate per input, and appends a fresh slot only for Current. `replace @N <content>` uses the same\ntarget-aware Content rules as one-shot Edit and appends a fresh reference for\n`Unchanged` or `Changed` when the receipt has an Anddress; `Changed\\tNone`\nadds none. Slots are zero-based canonical unsigned decimals, append-only, and\ndiscarded at `exit` or EOF. `@name` and `@name[index]` remain the advanced raw\nSession forms; `let name = @N` explicitly clones a numeric slot into that\nexisting named Anddress binding. Raw `edit replace` and separate `apply @edit`\nremain the advanced exact-range path.\n\nThe default workspace is the process current working directory. An explicit\n`--workspace` must be absolute and is checked by Runtime. Search admits `.` by\ndefault; repeat `--admit LOGICAL_PATH` before `search` to narrow admission.\nAfter the query, repeat `--source LOGICAL_PATH` or `--subtree LOGICAL_PATH` to\nnarrow a Search scope. Without a scope selector, Search covers all admitted\nsources.\n\n## Current CLI scope\n\n`bw` currently implements Adapter-owned one-shot Version and Update, one-shot\nhuman or JSON Search, View, Check, and Edit, raw View, Anddress-first one-shot Edit,\nplus Session Pick, batch Check, Anchor, Edit, Apply, and Data:\n\n```text\nbw version\nbw update\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    search <line|paragraph|file> <query>\n    [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    search /file <logical-path>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    search <line|paragraph|file> <query>\n    [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    search /file <logical-path>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    view anddress <encoded-v5-Anddress>... [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    check anddress <encoded-v5-Anddress>...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw\n    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    check anddress <encoded-v5-Anddress>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    edit anddress <encoded-v5-Anddress> <content>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    edit anddress <encoded-v5-Anddress> --stdin\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    edit anddress <encoded-v5-Anddress> <content>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    edit anddress <encoded-v5-Anddress> --stdin\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n```\n\nVersion and Update do not call Backwriter Core or Runtime and create no Core\nwire or capability workflow.\n\nContent Search preserves Core literal validation, scope, projection, and\ndeterministic result order. The distinct `search /file` form validates one\nlogical path and returns the current File Anddress for an admitted regular\nUTF-8, NUL-free source regardless of whether it is empty or contains matching\ntext. Missing paths and directories return Empty; the form has no scope\nselectors or synthetic content query. View decodes v5 Anddresses and projects\neach to itself or one ancestor before reading its exact content. A single input\ndefaults to self projection. `--as` chooses one target kind; multiple inputs\nrequire both `--json` and `--as`. Check decodes every v5 operand before Runtime\naccess. One human input writes `Current`, `NotCurrent`, or `Unavailable`; a\nbatch requires `--json` and preserves one outcome per input. Search, View,\nCheck, and Edit `--json`\nwrite compact Adapter objects with exact embedded v5 Anddress objects where\napplicable; each is an Adapter schema, not a second Core wire. View uses the\nhard-cut `bw.cli.view.v2` outcomes array for both single and batch results;\nCheck uses the hard-cut `bw.cli.check.v2` ordered outcomes array.\nRaw View is an explicit Adapter exact-text mode that reuses the ordinary View\nprojection without a Core wire or changed View meaning.\nHuman Search, View, and Check keep their existing projections; human Edit\nreceipts intentionally return the exact current v5 object when one exists.\nThe Session holds one Runtime until EOF\nor `exit` and has explicit local Search, Pick, Anddress, Edit, View, and Check\nbindings plus non-aliasing Anchedress handles. It owns one explicit `DataStore`\nfor the Session only; names are typed and never persist past EOF or `exit`.\nSession Pick\npasses a named Search or Pick collection and an Adapter-parsed predicate directly\nto Core; Session batch Check passes a named matching outcome directly to its\nRuntime batch seam and prints only report counts. Session Anchor creates a live\nhandle only through `let <name> = anchor create <anddress-ref>`, views it through\n`view anchored @<name>`, and can invalidate its logical source with `anchor\ninvalidate-source <logical-path>`. One-shot Data and Anchor are intentionally\nunsupported because their DataStore and live-handle contracts require Session\nlifetime. One-shot Pick, raw Edit-object transport, and a separate\nApply transport await collection or Edit transport schema authority. The\ndistinct Anddress-first one-shot Edit above is implemented. Raw output other\nthan one-shot View and further Session behavior remain deferred.\n\n## Scope\n\nBackwriter is not Git, a file watcher, daemon, persistent index, or editor UI.\nIt reads admitted current Workspace Source through Runtime's safe no-follow\naccess. It does not model branches, merges, history, automatic re-evaluation,\nor editor buffers.\n\nApply uses its accepted current observation and does not coordinate concurrent\nwriters. Writers may race and one publication may overwrite another\nsource-visible change; hosts requiring a stronger guarantee coordinate outside\nBackwriter.\n\n## Build from source and test\n\n```sh\ncargo build --offline --locked --release\n./target/release/bw search line \"needle\"\n./target/release/bw --workspace /path/project search paragraph \"needle\"\ncargo test --offline --locked\n```\n\n## Official desktop distribution\n\nThe official distribution authority is\n[https://backwriter.pentagration.com](https://backwriter.pentagration.com).\nIt publishes the closed Backwriter `0.2.5` release for Linux/WSL x86_64,\nmacOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision\n`e4022fc073e9df3928e1c3817b266ce92121a03c`. Linux uses canonical target\n`x86_64-unknown-linux-musl`;\n`x86_64-unknown-linux-gnu` remains the local development/test-host target.\nmacOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and\n`x86_64-apple-darwin` with minimum macOS 10.12. The macOS artifacts receive\nstatic cross-build verification but are not claimed to have been executed on a\nnative Mac before publication. Windows uses `x86_64-pc-windows-gnu` and the\ncanonical executable `bw.exe`; its static cross-build verification does not\nclaim native Windows, PowerShell, or CMD execution. Linux arm64 is not currently\nprovided, and no universal host-compatibility claim is made.\n\n`install.sh` reads the canonical manifest, verifies the downloaded artifact\nagainst the manifest SHA-256, and installs the verified binary at\n`$HOME/.local/bin/bw` with a same-directory rename. Concurrent same-user\nHOME mutation is caller-owned. The published `.sha256` sidecar is for manual\nverification and is not installer authority. Windows PowerShell verifies the\nsame manifest authority and exact ZIP, and installs to\n`$HOME\\.local\\bin\\bw.exe` without editing PATH or the PowerShell profile. The\nthree canonical install commands and the canonical `bw update` command are kept\ntogether in [Quick start](#quick-start).\n\nThe CMD command writes `install.cmd` in the current directory and removes it\nafter a successful installation. An existing file with that name is replaced.\n\nThe CRLF `install.cmd` checks `curl.exe` and `powershell.exe`, downloads exactly\nthe canonical `install.ps1` over HTTPS-only TLS 1.2-or-newer transport into a\ncollision-failing `%TEMP%` task directory, delegates all installation meaning,\ncleans the directory, and preserves the child exit code. It owns no manifest,\nSHA-256, ZIP, or installation logic. The Linux-hosted CMD regression is static;\nno native CMD execution is claimed.\nThe distribution provides no\npublisher-authenticity signature or trusted signing identity, background or\nautomatic update, telemetry, `sudo` execution, or automatic `PATH` or\nshell-startup-file change.\nGitHub is a public source and documentation mirror, not the distribution\nauthority. The complete beta.1, beta.2, beta.3, stable `0.1.0`, `0.2.0`, and\n`0.2.1` and `0.2.2` version directories remain unchanged and immutable. The\ncomplete `0.2.3`, `0.2.4`, and `0.2.5` version directories are immutable; the\n`0.2.5` release is closed. The active public tree has exactly 68 files, and\nthe current installers and manifest select `0.2.5`. Any later platform or\nversion requires separate Owner authority. Linux arm64, tags, GitHub Releases,\ncrates.io publication, and background or automatic update remain outside the\ncompleted publication. The earlier `0.2.4` publication added its eight\nversioned files and replaced only the two installers and manifest pointers\nwithout replacing any of the 48 prior versioned files or the CMD Adapter. Its\nsecond publisher run reused all 60 files without metadata change. The `0.2.5`\npublication then added its eight versioned files, replaced the two installers\nand manifest pointers, and reused all 68 files on its second run.\n\n## Architecture\n\n- [Current state](docs/current/now.md)\n- [Backwriter protocol](docs/architecture/backwriter-text-coordination-protocol.md)\n- [Anddress and exact Line model](docs/architecture/rebuildable-structural-addressing.md)\n- [CLI V1 authority](docs/architecture/backwriter-cli-v1.md)\n- [Verification](docs/development/verification.md)\n\n## License\n\n[MIT License](LICENSE)\n"}
+```
+
+````
+
+#### D3 genie-new transcript
+
+````text
+# Independent documented-shell evaluation: new CLI
+
+One uninterrupted run. All fixture body reads and edits used the specified bw binary. No oracle, repository source, private documents, or sibling arms inspected. Commands derived from the supplied public guide and Help. No failure or reset occurred.
+
+## Result and decisions
+
+Discovery returned eight Lines across four files. Paragraph View established primary targets @0, @3, @4, @7; the other four Paragraphs said secondary. Full-file View was taken before edits solely to verify byte preservation. Four body-only replacements returned fresh @20–@23; Check reported all Current. Final file Views confirm exactly one ASCII `3` to `5` substitution per file, no length or terminator changes, and unchanged secondary Content. LF, CR, CRLF, and final unterminated Line were preserved.
+
+Exact byte differences, computed solely from bw View output, with zero-based offsets:
+
+```json
+[
+  {
+    "path": "unit-01.txt",
+    "bytesBefore": 67,
+    "bytesAfter": 67,
+    "differences": [
+      {
+        "offset": 30,
+        "before": "3",
+        "after": "5"
+      }
+    ]
+  },
+  {
+    "path": "unit-02.txt",
+    "bytesBefore": 67,
+    "bytesAfter": 67,
+    "differences": [
+      {
+        "offset": 65,
+        "before": "3",
+        "after": "5"
+      }
+    ]
+  },
+  {
+    "path": "unit-03.txt",
+    "bytesBefore": 72,
+    "bytesAfter": 72,
+    "differences": [
+      {
+        "offset": 31,
+        "before": "3",
+        "after": "5"
+      }
+    ]
+  },
+  {
+    "path": "unit-04.txt",
+    "bytesBefore": 66,
+    "bytesAfter": 66,
+    "differences": [
+      {
+        "offset": 65,
+        "before": "3",
+        "after": "5"
+      }
+    ]
+  }
+]
+```
+
+## Metrics
+
+- Product processes: 3 (top-level Help, shell Help, one interactive shell).
+- Additional explicitly invoked utility processes: 3 (two public-guide head reads, one stty). Five command-launch calls each use the configured host shell; the interactive launch exec-replaced that host shell with bw. No task-decision script.
+- Public bw command counts: Help 2; Search 1; View 3 (8 Paragraph inputs + 4 baseline File inputs + 4 final File inputs); Replace 4; Check 1 (4 inputs); exit 1.
+- Capability work: Search 1, View 16 target reads, Check 4 target inputs; 4 successful body-only replacements (Edit/Apply path). No explicit raw Apply/Pick/Anchor/Data command. Internal capability invocation counts were not instrumented.
+- Extra Content-only Search queries: 0. One Content query was the required discovery. Extra baseline preservation inspection: one View command / four File inputs.
+- Failures: 0; interactive shell final exit 0.
+- Elapsed task interaction: approximately 43 seconds (06:52:07 UTC immediately after initial documentation read through 06:52:50 UTC after final verification/exit). Initial Help/guide tool calls preceded the starting timestamp by under one displayed second; reporting/transcript work is excluded.
+- Through transcript creation: 10 functions.exec wrapper calls, containing 5 exec_command, 5 write_stdin, 2 clock reads, and 1 apply_patch = 13 nested calls. No further fixture operation is planned.
+
+## Capture limitations
+
+All output strings below are exact JSON-escaped strings returned by execution tooling, preserving CR/LF. Initial Help was copied verbatim from its tool return; initial public-guide output was reconstructed from an identical second public-guide read, recorded below. No body was read by that utility. Execution tooling exposes a combined output field rather than independent stdout/stderr. Interactive execution used a PTY with `stty -echo -onlcr`, suppressing input echo and LF-to-CRLF output translation; stdout and stderr therefore remain merged, and separate exact stderr attribution cannot be proved. No error text appeared. PTY launch and intermediate shell inputs have no per-command OS exit status; the retained process finally exited 0. No hidden command output is omitted.
+
+Working directory for every process: `/tmp/backwriter-gate5.74tHth/genie-new/workspace`.
+Interactive launch actual utility argv: `["stty","-echo","-onlcr"]`; product argv: `["/tmp/backwriter-gate5.74tHth/gnu-target/release/bw","shell"]`. Shell Help argv: `["/tmp/backwriter-gate5.74tHth/gnu-target/release/bw","help","shell"]`. Other launch strings map literally to their whitespace-separated argv; all interactive input bytes are recorded below.
+
+## Exact chronological transcript
+
+### Event 1
+
+```json
+{
+  "cmd": "/tmp/backwriter-gate5.74tHth/gnu-target/release/bw --help",
+  "argv": [
+    "/tmp/backwriter-gate5.74tHth/gnu-target/release/bw",
+    "--help"
+  ],
+  "result": {
+    "exit_code": 0,
+    "output": "USAGE\n  bw [GLOBAL OPTIONS] <command> [command options and operands]\n  bw help [<command>]\n\nGLOBAL OPTIONS\n  --workspace ABSOLUTE_PATH  Select an absolute workspace before the command.\n  --admit LOGICAL_PATH       Admit a logical root before the command; repeatable.\n  --json                     Select JSON output where the command supports it.\n  --raw                      Select raw View output only.\n\nCOMMANDS\n  shell    Reuse short references across search, view, replace, and check.\n  search   Discover current File, Paragraph, or Line Anddresses.\n  view     Read one or more current Anddresses.\n  edit     Replace one current Anddress.\n  check    Check one or more current Anddresses.\n  version  Print the Backwriter version.\n  update   Run the installed-platform updater.\n\nADDITIONAL HELP\n  bw help <command>\n  Advanced topics: pick, anchor, apply, data (raw Session only; no one-shot execution).\n\nGlobal options precede the command. Use bw help shell for ordinary short-ref work.\n"
+  }
+}
+```
+
+### Event 2
+
+```json
+{
+  "cmd": "head -c 40000 /tmp/backwriter-gate5.74tHth/genie-new/public-guide.md",
+  "argv": [
+    "head",
+    "-c",
+    "40000",
+    "/tmp/backwriter-gate5.74tHth/genie-new/public-guide.md"
+  ],
+  "result": {
+    "exit_code": 0,
+    "output": "# Backwriter\n\nBackwriter is a Rust Core and Runtime for current, structural text work over\nadmitted Workspace Source. It provides target-local File, Paragraph, and Line\naddresses without turning source history or editor state into Core identity.\n\nThe Core capability inventory is Search, View, Pick, Anchor, Check, Edit,\nApply, and Data. The repository currently provides their Rust Core/Runtime\nsurfaces and the canonical `bw` executable's one-shot human and JSON\nSearch/View/Check/Edit, raw View, Anddress-first one-shot Edit, Session Pick, batch\nCheck, Anchor, Edit, Apply, result-binding, explicit Data modes, and\nAdapter-owned Version and Update.\n\n## Quick start\n\nInstall the closed official `0.2.6` release with the command for your\nplatform.\n\nLinux, macOS, or WSL:\n\n```sh\ncurl -fsSL https://backwriter.pentagration.com/install.sh | sh\n```\n\nWindows PowerShell:\n\n```powershell\nirm https://backwriter.pentagration.com/install.ps1 | iex\n```\n\nWindows CMD:\n\n```cmd\ncurl.exe -fsSL https://backwriter.pentagration.com/install.cmd -o install.cmd && call install.cmd && del install.cmd\n```\n\nThe POSIX installer places `bw` at `$HOME/.local/bin/bw`; the PowerShell and\nCMD paths place `bw.exe` at `$HOME\\.local\\bin\\bw.exe`. They do not change\n`PATH`, a shell startup file, the PowerShell profile, or the registry. A fresh\ninstall prints `Installed Backwriter: <version>`; replacing an existing\ndestination prints `Updated Backwriter: <version>`. The executable path and\n`PATH` guidance are printed separately only when the installation directory is\nnot already on `PATH`.\n\n### Version\n\n```sh\nbw version\n```\n\nThe closed official `0.2.6` build prints exactly:\n\n```text\nBackwriter 0.2.6\n```\n\n### Update\n\n```sh\nbw update\n```\n\n`bw update` downloads and delegates to the current official installer. The\ncurrent manifest selects the closed `0.2.6` distribution. The installer\nreads that manifest, verifies the selected artifact, and installs or reinstalls\nthat manifest version only after validation succeeds. It does not run a\nbackground updater or compare release versions. The installer accepts only the\nexact immutable `0.2.5` manifest and current `0.2.6` manifest; `0.2.4`, `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable\n`0.1.0`, and beta.3 acceptance is retired. The command still performs no\nversion comparison and adds no version guard.\n\nThe product is Backwriter. The source Cargo package and library crate are\n`backwriter` at published and closed `0.2.6`; a source-built `bw version`\nprints `Backwriter 0.2.6`. The sole canonical executable and external Adapter\ncommand are `bw`. There is no `backwriter` binary, alias, or wrapper. The\nofficial installer selects the closed public `0.2.6`\ndistribution.\n\nThe published `0.2.6` Source Authority's `src/**` is byte-identical to its Gate 6\ncandidate `c78e07f242035230e8b071d583491ac633f58d29`; that claim does not cover\nthis later checkout. Unpublished `0.3.0` Gates 1–4 add the private namespace\nboundary, complete direct shell View, discoverable Help and private CLI modules.\nCargo and `bw version` still report `0.2.6`; readiness and release remain pending.\nUse `bw help shell` for short-reference Search/View/Replace/Check and\n`bw help pick`, `bw help anchor`, `bw help apply`, or `bw help data` for advanced\nraw Session topics. These Help topics add no one-shot capability execution.\nR3 release closure is complete: Source Authority\n`09bb6c424081594bd86a95f04345b786ef9b46b6` supplies published and closed\n`0.2.6`. Official artifacts, installers, manifest, and Update now select\n`0.2.6` in the exact 76-file tree. Installers accept only exact `0.2.5` and\n`0.2.6` manifests. Update still performs no version comparison. Production\nRust, Cargo, tests, toolchain, and v5 wire are unchanged by release closure.\n\n## Anddress-first editing\n\nThe default replacement flow is:\n\n1. Run `bw --json search ...`.\n2. Select one occurrence from `occurrences` and pass its exact embedded v5\n   `anddress` object unchanged as one argv value.\n3. Run `bw edit anddress '<opaque-v5-object>' '<new-content>'`.\n\nHuman Search rows are not encoded Anddress values and cannot be Edit input.\nTreat the selected JSON object as opaque: do not interpret or rewrite its hash,\nrange, length, or other fields. File and Paragraph Content is the exact\nreplacement. Line Content is body-only, rejects NUL, CR, and LF, and preserves\nthe None, LF, CR, or CRLF terminator carried by the exact v5 Line. A Line NUL\nis `edit.content_contains_nul`; a Line CR or LF is\n`edit.line_body_contains_terminator`. The latter explains that Backwriter adds\nthe current terminator and that advanced raw Session Edit/Apply owns exact\nextent replacement. Apply alone confirms that source state before publication.\nView or Pick may help a caller select a target; neither View nor Check is\nrequired.\n\nHuman success writes one exact LF-terminated receipt row. `Unchanged` is\nfollowed by the still-current input v5 object; `Changed` is followed by the\nfresh v5 object when the resulting File, Line, or unique Paragraph has one,\nand otherwise by `None`. With leading `--json`, the same result is the compact\nAdapter-only `bw.cli.edit.v1` object with `schema`, `outcome`, and `anddress`\nkeys in that order; `anddress` is the exact v5 object or JSON `null`. Reuse only\nthe address returned by the receipt. A changed Paragraph with `None` requires\nan explicit Search before later target work. Exit `1` is neither a stale-only\nclassification nor proof that source bytes are unchanged, so it must not\ntrigger automatic retry.\n\nOne-shot Content is either one UTF-8 argv value or the exclusive `--stdin`\nselector in that position; stdin is read to EOF after v5 address validation and\nbefore Runtime access. Both forms have the same target-specific Content rules.\nFile/Paragraph CR and LF are exact Content, while Line body Content never\nsilently strips a trailing newline. Literal `--json` and `--raw` remain exact\nContent; a literal `--stdin` Content value is supplied through standard input.\n\nRaw Session is the advanced composition surface for Insert/Delete/Move/Copy,\nPosition, Anchor/Data lifetime, explicit bindings, and separate Apply. It is\nnot a prerequisite or alias for ordinary Replace. Its existing raw\n`edit replace` accepts caller-provided exact range Content, including an\nexplicit terminator or multiline replacement, and `apply @edit` publishes it\nseparately. The caller owns the binding, index, quoting, terminator, and\npublication boundary. General replacement should use one-shot body Content\nfirst; no exact one-shot flag or alternate executor exists.\n\n### Shell-local references\n\n`bw shell` also provides a short-lived interactive flow without adding a Core\nwire or persistent identity:\n\n```text\nsearch line needle\nview @0\nreplace @1 replacement\ncheck @2 @3\nexit\n```\n\nQuote one direct-shell query or replacement argument when it contains\nwhitespace; the quotes are shell syntax and are not part of the exact literal\nor replacement Content:\n\n```text\nsearch line \"duplicate = one\"\nreplace @1 \"duplicate = two\"\n```\n\nSuccessful direct `search` and projected direct `view` append `@N` references\nin output order, including duplicates. Direct `check <REF>...` resolves every\nreference before Runtime access, writes one Current/NotCurrent/Unavailable\nstate per input, and appends a fresh slot only for Current. `replace @N <content>` uses the same\ntarget-aware Content rules as one-shot Edit and appends a fresh reference for\n`Unchanged` or `Changed` when the receipt has an Anddress; `Changed\\tNone`\nadds none. Slots are zero-based canonical unsigned decimals, append-only, and\ndiscarded at `exit` or EOF. `@name` and `@name[index]` remain the advanced raw\nSession forms; `let name = @N` explicitly clones a numeric slot into that\nexisting named Anddress binding. Raw `edit replace` and separate `apply @edit`\nremain the advanced exact-range path.\n\nThe default workspace is the process current working directory. An explicit\n`--workspace` must be absolute and is checked by Runtime. Search admits `.` by\ndefault; repeat `--admit LOGICAL_PATH` before `search` to narrow admission.\nAfter the query, repeat `--source LOGICAL_PATH` or `--subtree LOGICAL_PATH` to\nnarrow a Search scope. Without a scope selector, Search covers all admitted\nsources.\n\n## Current CLI scope\n\n`bw` currently implements Adapter-owned one-shot Version and Update, one-shot\nhuman or JSON Search, View, Check, and Edit, raw View, Anddress-first one-shot Edit,\nplus Session Pick, batch Check, Anchor, Edit, Apply, and Data:\n\n```text\nbw version\nbw update\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    search <line|paragraph|file> <query>\n    [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    search /file <logical-path>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    search <line|paragraph|file> <query>\n    [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    search /file <logical-path>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    view anddress <encoded-v5-Anddress>... [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    check anddress <encoded-v5-Anddress>...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw\n    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    check anddress <encoded-v5-Anddress>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    edit anddress <encoded-v5-Anddress> <content>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    edit anddress <encoded-v5-Anddress> --stdin\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    edit anddress <encoded-v5-Anddress> <content>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    edit anddress <encoded-v5-Anddress> --stdin\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n```\n\nVersion and Update do not call Backwriter Core or Runtime and create no Core\nwire or capability workflow.\n\nContent Search preserves Core literal validation, scope, projection, and\ndeterministic result order. The distinct `search /file` form validates one\nlogical path and returns the current File Anddress for an admitted regular\nUTF-8, NUL-free source regardless of whether it is empty or contains matching\ntext. Missing paths and directories return Empty; the form has no scope\nselectors or synthetic content query. View decodes v5 Anddresses and projects\neach to itself or one ancestor before reading its exact content. A single input\ndefaults to self projection. `--as` chooses one target kind; multiple inputs\nrequire both `--json` and `--as`. Check decodes every v5 operand before Runtime\naccess. One human input writes `Current`, `NotCurrent`, or `Unavailable`; a\nbatch requires `--json` and preserves one outcome per input. Search, View,\nCheck, and Edit `--json`\nwrite compact Adapter objects with exact embedded v5 Anddress objects where\napplicable; each is an Adapter schema, not a second Core wire. View uses the\nhard-cut `bw.cli.view.v2` outcomes array for both single and batch results;\nCheck uses the hard-cut `bw.cli.check.v2` ordered outcomes array.\nRaw View is an explicit Adapter exact-text mode that reuses the ordinary View\nprojection without a Core wire or changed View meaning.\nHuman Search, View, and Check keep their existing projections; human Edit\nreceipts intentionally return the exact current v5 object when one exists.\nThe Session holds one Runtime until EOF\nor `exit` and has explicit local Search, Pick, Anddress, Edit, View, and Check\nbindings plus non-aliasing Anchedress handles. It owns one explicit `DataStore`\nfor the Session only; names are typed and never persist past EOF or `exit`.\nSession Pick\npasses a named Search or Pick collection and an Adapter-parsed predicate directly\nto Core; Session batch Check passes a named matching outcome directly to its\nRuntime batch seam and prints only report counts. Session Anchor creates a live\nhandle only through `let <name> = anchor create <anddress-ref>`, views it through\n`view anchored @<name>`, and can invalidate its logical source with `anchor\ninvalidate-source <logical-path>`. One-shot Data and Anchor are intentionally\nunsupported because their DataStore and live-handle contracts require Session\nlifetime. One-shot Pick, raw Edit-object transport, and a separate\nApply transport await collection or Edit transport schema authority. The\ndistinct Anddress-first one-shot Edit above is implemented. Raw output other\nthan one-shot View and further Session behavior remain deferred.\n\n## Scope\n\nBackwriter is not Git, a file watcher, daemon, persistent index, or editor UI.\nIt reads admitted current Workspace Source through Runtime's safe no-follow\naccess. It does not model branches, merges, history, automatic re-evaluation,\nor editor buffers.\n\nApply uses its accepted current observation and does not coordinate concurrent\nwriters. Writers may race and one publication may overwrite another\nsource-visible change; hosts requiring a stronger guarantee coordinate outside\nBackwriter.\n\n## Build from source and test\n\n```sh\ncargo build --offline --locked --release\n./target/release/bw search line \"needle\"\n./target/release/bw --workspace /path/project search paragraph \"needle\"\ncargo test --offline --locked\n```\n\n## Official desktop distribution\n\nThe official distribution authority is\n[https://backwriter.pentagration.com](https://backwriter.pentagration.com).\nIt publishes the closed Backwriter `0.2.6` release for Linux/WSL x86_64,\nmacOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision\n`09bb6c424081594bd86a95f04345b786ef9b46b6`. Linux uses canonical target\n`x86_64-unknown-linux-musl`;\n`x86_64-unknown-linux-gnu` remains the local development/test-host target.\nmacOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and\n`x86_64-apple-darwin` with minimum macOS 10.12. The macOS artifacts receive\nstatic cross-build verification but are not claimed to have been executed on a\nnative Mac before publication. Windows uses `x86_64-pc-windows-gnu` and the\ncanonical executable `bw.exe`; its static cross-build verification does not\nclaim native Windows, PowerShell, or CMD execution. Linux arm64 is not currently\nprovided, and no universal host-compatibility claim is made.\n\n`install.sh` reads the canonical manifest, verifies the downloaded artifact\nagainst the manifest SHA-256, and installs the verified binary at\n`$HOME/.local/bin/bw` with a same-directory rename. Concurrent same-user\nHOME mutation is caller-owned. The published `.sha256` sidecar is for manual\nverification and is not installer authority. Windows PowerShell verifies the\nsame manifest authority and exact ZIP, and installs to\n`$HOME\\.local\\bin\\bw.exe` without editing PATH or the PowerShell profile. The\nthree canonical install commands and the canonical `bw update` command are kept\ntogether in [Quick start](#quick-start).\n\nThe CMD command writes `install.cmd` in the current directory and removes it\nafter a successful installation. An existing file with that name is replaced.\n\nThe CRLF `install.cmd` checks `curl.exe` and `powershell.exe`, downloads exactly\nthe canonical `install.ps1` over HTTPS-only TLS 1.2-or-newer transport into a\ncollision-failing `%TEMP%` task directory, delegates all installation meaning,\ncleans the directory, and preserves the child exit code. It owns no manifest,\nSHA-256, ZIP, or installation logic. The Linux-hosted CMD regression is static;\nno native CMD execution is claimed.\nThe distribution provides no\npublisher-authenticity signature or trusted signing identity, background or\nautomatic update, telemetry, `sudo` execution, or automatic `PATH` or\nshell-startup-file change.\nGitHub is a public source and documentation mirror, not the distribution\nauthority. The complete beta.1, beta.2, beta.3, stable `0.1.0`, `0.2.0`, and\n`0.2.1` and `0.2.2` version directories remain unchanged and immutable. The\ncomplete `0.2.3`, `0.2.4`, `0.2.5`, and `0.2.6` version directories are immutable;\nthe `0.2.6` release is closed. The active public tree has exactly 76 files,\nand the current installers and manifest select `0.2.6`. Any later platform or\nversion requires separate Owner authority. Linux arm64, tags, GitHub Releases,\ncrates.io publication, and background or automatic update remain outside the\ncompleted publication. The earlier `0.2.4` publication added its eight\nversioned files and replaced only the two installers and manifest pointers\nwithout replacing any of the 48 prior versioned files or the CMD Adapter. Its\nsecond publisher run reused all 60 files without metadata change. The `0.2.5`\npublication then added its eight versioned files, replaced the two installers\nand manifest pointers, and reused all 68 files on its second run. R3 adds the\neight `0.2.6` files and replaces the two installers and manifest last; its\nsecond run reuses all 76 files without byte or metadata change.\n\n## Architecture\n\n- [Current state](docs/current/now.md)\n- [Backwriter protocol](docs/architecture/backwriter-text-coordination-protocol.md)\n- [Anddress and exact Line model](docs/architecture/rebuildable-structural-addressing.md)\n- [CLI V1 authority](docs/architecture/backwriter-cli-v1.md)\n- [Verification](docs/development/verification.md)\n\n## License\n\n[MIT License](LICENSE)\n"
+  }
+}
+```
+
+### Event 3
+
+```json
+{
+  "cmd": "/tmp/backwriter-gate5.74tHth/gnu-target/release/bw help shell",
+  "result": {
+    "chunk_id": "4ae29b",
+    "wall_time_seconds": 0.000003669,
+    "exit_code": 0,
+    "original_token_count": 615,
+    "output": "NAME\n  bw shell - reuse short references across search, view, replace, and check\n\nUSAGE\n  bw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n\nCOMMANDS\n  search <line|paragraph|file> <query> [--source PATH | --subtree PATH]...\n  search /file <logical-path>\n  view <REF>... [--as <line|paragraph|file>]\n  replace <REF> <CONTENT>\n  check <REF>...\n  let <NAME> = <REF>\n  exit\n\nREFERENCES AND CONTENT\n  @N is a zero-based, append-only reference from this process. It ends at EOF or exit.\n  @name is a named Anddress; @hits[0] selects an indexed Search/Pick binding.\n  let name = @N makes a named alias. Names cannot be redefined.\n  Double-quote arguments containing spaces. Quoted escapes are \\\\, \\\", \\n, \\r, and \\t.\n  One physical input line is one command; no single quotes, pipes, or EOF Content selector.\n  Line Replace accepts body only: NUL/CR/LF are rejected; the existing terminator is preserved.\n  File/Paragraph Replace uses exact Content. Changed source bytes stale old same-source refs,\n  including other locations. Use the fresh receipt or explicitly search again; never auto-retry.\n\nOUTPUT\n  Search appends one @N per result; Empty writes nothing.\n  View returns each input ref, a fresh ref, kind/location, and complete Content in input order.\n  View<TAB>REF<TAB>bytes=N starts a record, followed by fresh-ref metadata and N exact bytes.\n  The following LF and EndView line are display framing, not source Content.\n  RelationAbsent is shown at its input position without Content or a fresh slot.\n  Replace writes Unchanged/Changed with a fresh ref, or Changed<TAB>None without one.\n  Check writes one status per input; only Current appends a fresh ref. Check is optional.\n\nEXAMPLES\n  Start bw shell in a workspace with only note.txt containing needle plus CRLF, then enter:\n  search line needle --source note.txt\n  view @0 --as paragraph\n  let selected = @0\n  replace @selected \"new value\"\n  check @0 @2\n  view @3\n  exit\n\nADVANCED\n  let hits = search line needle\n  view anddress @hits[0]\n  Raw named View writes exact Content without direct-View framing.\n  See bw help pick, bw help anchor, bw help apply, and bw help data.\n\nFAILURES\n  Usage errors record exit 2; Runtime/source errors record exit 1; later commands still run.\n  Stdin/stdout failure ends the shell with exit 1. Partial output cannot prove delivery or\n  undo publication. --json/--raw and command-line operands are unavailable.\n\nSEE ALSO\n  bw help search\n  bw help edit\n"
+  }
+}
+```
+
+### Event 4
+
+```json
+{
+  "cmd": "stty -echo -onlcr; exec /tmp/backwriter-gate5.74tHth/gnu-target/release/bw shell",
+  "result": {
+    "chunk_id": "8944b6",
+    "wall_time_seconds": 1.00114906,
+    "session_id": 20127,
+    "original_token_count": 0,
+    "output": ""
+  }
+}
+```
+
+### Event 5
+
+```json
+{
+  "stdin": "search line \"retry_budget = 3\"\n",
+  "result": {
+    "chunk_id": "1f64a3",
+    "wall_time_seconds": 1.000797233,
+    "session_id": 20127,
+    "original_token_count": 44,
+    "output": "@0\tLine\tunit-01.txt:2\n@1\tLine\tunit-01.txt:5\n@2\tLine\tunit-02.txt:2\n@3\tLine\tunit-02.txt:5\n@4\tLine\tunit-03.txt:2\n@5\tLine\tunit-03.txt:5\n@6\tLine\tunit-04.txt:2\n@7\tLine\tunit-04.txt:5\n"
+  }
+}
+```
+
+### Event 6
+
+```json
+{
+  "stdin": "view @0 @1 @2 @3 @4 @5 @6 @7 --as paragraph\n",
+  "result": {
+    "chunk_id": "0f889f",
+    "wall_time_seconds": 1.000483504,
+    "session_id": 20127,
+    "original_token_count": 179,
+    "output": "View\t@0\tbytes=32\n@8\tParagraph\tunit-01.txt:1-2\nrole = primary\nretry_budget = 3\n\nEndView\nView\t@1\tbytes=34\n@9\tParagraph\tunit-01.txt:4-5\nrole = secondary\nretry_budget = 3\n\nEndView\nView\t@2\tbytes=34\n@10\tParagraph\tunit-02.txt:1-2\nrole = secondary\rretry_budget = 3\r\nEndView\nView\t@3\tbytes=32\n@11\tParagraph\tunit-02.txt:4-5\nrole = primary\rretry_budget = 3\r\nEndView\nView\t@4\tbytes=34\n@12\tParagraph\tunit-03.txt:1-2\nrole = primary\r\nretry_budget = 3\r\n\nEndView\nView\t@5\tbytes=36\n@13\tParagraph\tunit-03.txt:4-5\nrole = secondary\r\nretry_budget = 3\r\n\nEndView\nView\t@6\tbytes=34\n@14\tParagraph\tunit-04.txt:1-2\nrole = secondary\nretry_budget = 3\n\nEndView\nView\t@7\tbytes=31\n@15\tParagraph\tunit-04.txt:4-5\nrole = primary\nretry_budget = 3\nEndView\n"
+  }
+}
+```
+
+### Event 7
+
+```json
+{
+  "stdin": "view @0 @2 @4 @6 --as file\n",
+  "result": {
+    "chunk_id": "f805a1",
+    "wall_time_seconds": 1.001154642,
+    "session_id": 20127,
+    "original_token_count": 115,
+    "output": "View\t@0\tbytes=67\n@16\tFile\tunit-01.txt\nrole = primary\nretry_budget = 3\n\nrole = secondary\nretry_budget = 3\n\nEndView\nView\t@2\tbytes=67\n@17\tFile\tunit-02.txt\nrole = secondary\rretry_budget = 3\r\rrole = primary\rretry_budget = 3\r\nEndView\nView\t@4\tbytes=72\n@18\tFile\tunit-03.txt\nrole = primary\r\nretry_budget = 3\r\n\r\nrole = secondary\r\nretry_budget = 3\r\n\nEndView\nView\t@6\tbytes=66\n@19\tFile\tunit-04.txt\nrole = secondary\nretry_budget = 3\n\nrole = primary\nretry_budget = 3\nEndView\n"
+  }
+}
+```
+
+### Event 8
+
+```json
+{
+  "stdin": "replace @0 \"retry_budget = 5\"\nreplace @3 \"retry_budget = 5\"\nreplace @4 \"retry_budget = 5\"\nreplace @7 \"retry_budget = 5\"\n",
+  "result": {
+    "chunk_id": "9db1ae",
+    "wall_time_seconds": 1.000935374,
+    "session_id": 20127,
+    "original_token_count": 31,
+    "output": "@20\tChanged\tLine\tunit-01.txt:2\n@21\tChanged\tLine\tunit-02.txt:5\n@22\tChanged\tLine\tunit-03.txt:2\n@23\tChanged\tLine\tunit-04.txt:5\n"
+  }
+}
+```
+
+### Event 9
+
+```json
+{
+  "stdin": "check @20 @21 @22 @23\nview @20 @21 @22 @23 --as file\nexit\n",
+  "result": {
+    "chunk_id": "4e2aac",
+    "wall_time_seconds": 0.000003668,
+    "exit_code": 0,
+    "original_token_count": 147,
+    "output": "@24\tCurrent\tLine\tunit-01.txt:2\n@25\tCurrent\tLine\tunit-02.txt:5\n@26\tCurrent\tLine\tunit-03.txt:2\n@27\tCurrent\tLine\tunit-04.txt:5\nView\t@20\tbytes=67\n@28\tFile\tunit-01.txt\nrole = primary\nretry_budget = 5\n\nrole = secondary\nretry_budget = 3\n\nEndView\nView\t@21\tbytes=67\n@29\tFile\tunit-02.txt\nrole = secondary\rretry_budget = 3\r\rrole = primary\rretry_budget = 5\r\nEndView\nView\t@22\tbytes=72\n@30\tFile\tunit-03.txt\nrole = primary\r\nretry_budget = 5\r\n\r\nrole = secondary\r\nretry_budget = 3\r\n\nEndView\nView\t@23\tbytes=66\n@31\tFile\tunit-04.txt\nrole = secondary\nretry_budget = 3\n\nrole = primary\nretry_budget = 5\nEndView\n"
+  }
+}
+```
+
+### Event 10
+
+```json
+{
+  "cmd": "head -c 40000 /tmp/backwriter-gate5.74tHth/genie-new/public-guide.md",
+  "note": "Re-read public guide only to preserve the identical initial documentation stdout in transcript; no fixture read.",
+  "result": {
+    "chunk_id": "d67c14",
+    "wall_time_seconds": 0.000005018,
+    "exit_code": 0,
+    "original_token_count": 4381,
+    "output": "# Backwriter\n\nBackwriter is a Rust Core and Runtime for current, structural text work over\nadmitted Workspace Source. It provides target-local File, Paragraph, and Line\naddresses without turning source history or editor state into Core identity.\n\nThe Core capability inventory is Search, View, Pick, Anchor, Check, Edit,\nApply, and Data. The repository currently provides their Rust Core/Runtime\nsurfaces and the canonical `bw` executable's one-shot human and JSON\nSearch/View/Check/Edit, raw View, Anddress-first one-shot Edit, Session Pick, batch\nCheck, Anchor, Edit, Apply, result-binding, explicit Data modes, and\nAdapter-owned Version and Update.\n\n## Quick start\n\nInstall the closed official `0.2.6` release with the command for your\nplatform.\n\nLinux, macOS, or WSL:\n\n```sh\ncurl -fsSL https://backwriter.pentagration.com/install.sh | sh\n```\n\nWindows PowerShell:\n\n```powershell\nirm https://backwriter.pentagration.com/install.ps1 | iex\n```\n\nWindows CMD:\n\n```cmd\ncurl.exe -fsSL https://backwriter.pentagration.com/install.cmd -o install.cmd && call install.cmd && del install.cmd\n```\n\nThe POSIX installer places `bw` at `$HOME/.local/bin/bw`; the PowerShell and\nCMD paths place `bw.exe` at `$HOME\\.local\\bin\\bw.exe`. They do not change\n`PATH`, a shell startup file, the PowerShell profile, or the registry. A fresh\ninstall prints `Installed Backwriter: <version>`; replacing an existing\ndestination prints `Updated Backwriter: <version>`. The executable path and\n`PATH` guidance are printed separately only when the installation directory is\nnot already on `PATH`.\n\n### Version\n\n```sh\nbw version\n```\n\nThe closed official `0.2.6` build prints exactly:\n\n```text\nBackwriter 0.2.6\n```\n\n### Update\n\n```sh\nbw update\n```\n\n`bw update` downloads and delegates to the current official installer. The\ncurrent manifest selects the closed `0.2.6` distribution. The installer\nreads that manifest, verifies the selected artifact, and installs or reinstalls\nthat manifest version only after validation succeeds. It does not run a\nbackground updater or compare release versions. The installer accepts only the\nexact immutable `0.2.5` manifest and current `0.2.6` manifest; `0.2.4`, `0.2.3`, `0.2.2`, `0.2.1`, `0.2.0`, stable\n`0.1.0`, and beta.3 acceptance is retired. The command still performs no\nversion comparison and adds no version guard.\n\nThe product is Backwriter. The source Cargo package and library crate are\n`backwriter` at published and closed `0.2.6`; a source-built `bw version`\nprints `Backwriter 0.2.6`. The sole canonical executable and external Adapter\ncommand are `bw`. There is no `backwriter` binary, alias, or wrapper. The\nofficial installer selects the closed public `0.2.6`\ndistribution.\n\nThe published `0.2.6` Source Authority's `src/**` is byte-identical to its Gate 6\ncandidate `c78e07f242035230e8b071d583491ac633f58d29`; that claim does not cover\nthis later checkout. Unpublished `0.3.0` Gates 1–4 add the private namespace\nboundary, complete direct shell View, discoverable Help and private CLI modules.\nCargo and `bw version` still report `0.2.6`; readiness and release remain pending.\nUse `bw help shell` for short-reference Search/View/Replace/Check and\n`bw help pick`, `bw help anchor`, `bw help apply`, or `bw help data` for advanced\nraw Session topics. These Help topics add no one-shot capability execution.\nR3 release closure is complete: Source Authority\n`09bb6c424081594bd86a95f04345b786ef9b46b6` supplies published and closed\n`0.2.6`. Official artifacts, installers, manifest, and Update now select\n`0.2.6` in the exact 76-file tree. Installers accept only exact `0.2.5` and\n`0.2.6` manifests. Update still performs no version comparison. Production\nRust, Cargo, tests, toolchain, and v5 wire are unchanged by release closure.\n\n## Anddress-first editing\n\nThe default replacement flow is:\n\n1. Run `bw --json search ...`.\n2. Select one occurrence from `occurrences` and pass its exact embedded v5\n   `anddress` object unchanged as one argv value.\n3. Run `bw edit anddress '<opaque-v5-object>' '<new-content>'`.\n\nHuman Search rows are not encoded Anddress values and cannot be Edit input.\nTreat the selected JSON object as opaque: do not interpret or rewrite its hash,\nrange, length, or other fields. File and Paragraph Content is the exact\nreplacement. Line Content is body-only, rejects NUL, CR, and LF, and preserves\nthe None, LF, CR, or CRLF terminator carried by the exact v5 Line. A Line NUL\nis `edit.content_contains_nul`; a Line CR or LF is\n`edit.line_body_contains_terminator`. The latter explains that Backwriter adds\nthe current terminator and that advanced raw Session Edit/Apply owns exact\nextent replacement. Apply alone confirms that source state before publication.\nView or Pick may help a caller select a target; neither View nor Check is\nrequired.\n\nHuman success writes one exact LF-terminated receipt row. `Unchanged` is\nfollowed by the still-current input v5 object; `Changed` is followed by the\nfresh v5 object when the resulting File, Line, or unique Paragraph has one,\nand otherwise by `None`. With leading `--json`, the same result is the compact\nAdapter-only `bw.cli.edit.v1` object with `schema`, `outcome`, and `anddress`\nkeys in that order; `anddress` is the exact v5 object or JSON `null`. Reuse only\nthe address returned by the receipt. A changed Paragraph with `None` requires\nan explicit Search before later target work. Exit `1` is neither a stale-only\nclassification nor proof that source bytes are unchanged, so it must not\ntrigger automatic retry.\n\nOne-shot Content is either one UTF-8 argv value or the exclusive `--stdin`\nselector in that position; stdin is read to EOF after v5 address validation and\nbefore Runtime access. Both forms have the same target-specific Content rules.\nFile/Paragraph CR and LF are exact Content, while Line body Content never\nsilently strips a trailing newline. Literal `--json` and `--raw` remain exact\nContent; a literal `--stdin` Content value is supplied through standard input.\n\nRaw Session is the advanced composition surface for Insert/Delete/Move/Copy,\nPosition, Anchor/Data lifetime, explicit bindings, and separate Apply. It is\nnot a prerequisite or alias for ordinary Replace. Its existing raw\n`edit replace` accepts caller-provided exact range Content, including an\nexplicit terminator or multiline replacement, and `apply @edit` publishes it\nseparately. The caller owns the binding, index, quoting, terminator, and\npublication boundary. General replacement should use one-shot body Content\nfirst; no exact one-shot flag or alternate executor exists.\n\n### Shell-local references\n\n`bw shell` also provides a short-lived interactive flow without adding a Core\nwire or persistent identity:\n\n```text\nsearch line needle\nview @0\nreplace @1 replacement\ncheck @2 @3\nexit\n```\n\nQuote one direct-shell query or replacement argument when it contains\nwhitespace; the quotes are shell syntax and are not part of the exact literal\nor replacement Content:\n\n```text\nsearch line \"duplicate = one\"\nreplace @1 \"duplicate = two\"\n```\n\nSuccessful direct `search` and projected direct `view` append `@N` references\nin output order, including duplicates. Direct `check <REF>...` resolves every\nreference before Runtime access, writes one Current/NotCurrent/Unavailable\nstate per input, and appends a fresh slot only for Current. `replace @N <content>` uses the same\ntarget-aware Content rules as one-shot Edit and appends a fresh reference for\n`Unchanged` or `Changed` when the receipt has an Anddress; `Changed\\tNone`\nadds none. Slots are zero-based canonical unsigned decimals, append-only, and\ndiscarded at `exit` or EOF. `@name` and `@name[index]` remain the advanced raw\nSession forms; `let name = @N` explicitly clones a numeric slot into that\nexisting named Anddress binding. Raw `edit replace` and separate `apply @edit`\nremain the advanced exact-range path.\n\nThe default workspace is the process current working directory. An explicit\n`--workspace` must be absolute and is checked by Runtime. Search admits `.` by\ndefault; repeat `--admit LOGICAL_PATH` before `search` to narrow admission.\nAfter the query, repeat `--source LOGICAL_PATH` or `--subtree LOGICAL_PATH` to\nnarrow a Search scope. Without a scope selector, Search covers all admitted\nsources.\n\n## Current CLI scope\n\n`bw` currently implements Adapter-owned one-shot Version and Update, one-shot\nhuman or JSON Search, View, Check, and Edit, raw View, Anddress-first one-shot Edit,\nplus Session Pick, batch Check, Anchor, Edit, Apply, and Data:\n\n```text\nbw version\nbw update\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    search <line|paragraph|file> <query>\n    [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    search /file <logical-path>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    search <line|paragraph|file> <query>\n    [--source LOGICAL_PATH | --subtree LOGICAL_PATH]...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    search /file <logical-path>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    view anddress <encoded-v5-Anddress>... [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    check anddress <encoded-v5-Anddress>...\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --raw\n    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    view anddress <encoded-v5-Anddress> [--as <line|paragraph|file>]\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    check anddress <encoded-v5-Anddress>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    edit anddress <encoded-v5-Anddress> <content>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]...\n    edit anddress <encoded-v5-Anddress> --stdin\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    edit anddress <encoded-v5-Anddress> <content>\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... --json\n    edit anddress <encoded-v5-Anddress> --stdin\nbw [--workspace ABSOLUTE_PATH] [--admit LOGICAL_PATH]... shell\n```\n\nVersion and Update do not call Backwriter Core or Runtime and create no Core\nwire or capability workflow.\n\nContent Search preserves Core literal validation, scope, projection, and\ndeterministic result order. The distinct `search /file` form validates one\nlogical path and returns the current File Anddress for an admitted regular\nUTF-8, NUL-free source regardless of whether it is empty or contains matching\ntext. Missing paths and directories return Empty; the form has no scope\nselectors or synthetic content query. View decodes v5 Anddresses and projects\neach to itself or one ancestor before reading its exact content. A single input\ndefaults to self projection. `--as` chooses one target kind; multiple inputs\nrequire both `--json` and `--as`. Check decodes every v5 operand before Runtime\naccess. One human input writes `Current`, `NotCurrent`, or `Unavailable`; a\nbatch requires `--json` and preserves one outcome per input. Search, View,\nCheck, and Edit `--json`\nwrite compact Adapter objects with exact embedded v5 Anddress objects where\napplicable; each is an Adapter schema, not a second Core wire. View uses the\nhard-cut `bw.cli.view.v2` outcomes array for both single and batch results;\nCheck uses the hard-cut `bw.cli.check.v2` ordered outcomes array.\nRaw View is an explicit Adapter exact-text mode that reuses the ordinary View\nprojection without a Core wire or changed View meaning.\nHuman Search, View, and Check keep their existing projections; human Edit\nreceipts intentionally return the exact current v5 object when one exists.\nThe Session holds one Runtime until EOF\nor `exit` and has explicit local Search, Pick, Anddress, Edit, View, and Check\nbindings plus non-aliasing Anchedress handles. It owns one explicit `DataStore`\nfor the Session only; names are typed and never persist past EOF or `exit`.\nSession Pick\npasses a named Search or Pick collection and an Adapter-parsed predicate directly\nto Core; Session batch Check passes a named matching outcome directly to its\nRuntime batch seam and prints only report counts. Session Anchor creates a live\nhandle only through `let <name> = anchor create <anddress-ref>`, views it through\n`view anchored @<name>`, and can invalidate its logical source with `anchor\ninvalidate-source <logical-path>`. One-shot Data and Anchor are intentionally\nunsupported because their DataStore and live-handle contracts require Session\nlifetime. One-shot Pick, raw Edit-object transport, and a separate\nApply transport await collection or Edit transport schema authority. The\ndistinct Anddress-first one-shot Edit above is implemented. Raw output other\nthan one-shot View and further Session behavior remain deferred.\n\n## Scope\n\nBackwriter is not Git, a file watcher, daemon, persistent index, or editor UI.\nIt reads admitted current Workspace Source through Runtime's safe no-follow\naccess. It does not model branches, merges, history, automatic re-evaluation,\nor editor buffers.\n\nApply uses its accepted current observation and does not coordinate concurrent\nwriters. Writers may race and one publication may overwrite another\nsource-visible change; hosts requiring a stronger guarantee coordinate outside\nBackwriter.\n\n## Build from source and test\n\n```sh\ncargo build --offline --locked --release\n./target/release/bw search line \"needle\"\n./target/release/bw --workspace /path/project search paragraph \"needle\"\ncargo test --offline --locked\n```\n\n## Official desktop distribution\n\nThe official distribution authority is\n[https://backwriter.pentagration.com](https://backwriter.pentagration.com).\nIt publishes the closed Backwriter `0.2.6` release for Linux/WSL x86_64,\nmacOS arm64, macOS x86_64, and Windows x86_64 from Source Authority revision\n`09bb6c424081594bd86a95f04345b786ef9b46b6`. Linux uses canonical target\n`x86_64-unknown-linux-musl`;\n`x86_64-unknown-linux-gnu` remains the local development/test-host target.\nmacOS uses `aarch64-apple-darwin` with minimum macOS 11.0 and\n`x86_64-apple-darwin` with minimum macOS 10.12. The macOS artifacts receive\nstatic cross-build verification but are not claimed to have been executed on a\nnative Mac before publication. Windows uses `x86_64-pc-windows-gnu` and the\ncanonical executable `bw.exe`; its static cross-build verification does not\nclaim native Windows, PowerShell, or CMD execution. Linux arm64 is not currently\nprovided, and no universal host-compatibility claim is made.\n\n`install.sh` reads the canonical manifest, verifies the downloaded artifact\nagainst the manifest SHA-256, and installs the verified binary at\n`$HOME/.local/bin/bw` with a same-directory rename. Concurrent same-user\nHOME mutation is caller-owned. The published `.sha256` sidecar is for manual\nverification and is not installer authority. Windows PowerShell verifies the\nsame manifest authority and exact ZIP, and installs to\n`$HOME\\.local\\bin\\bw.exe` without editing PATH or the PowerShell profile. The\nthree canonical install commands and the canonical `bw update` command are kept\ntogether in [Quick start](#quick-start).\n\nThe CMD command writes `install.cmd` in the current directory and removes it\nafter a successful installation. An existing file with that name is replaced.\n\nThe CRLF `install.cmd` checks `curl.exe` and `powershell.exe`, downloads exactly\nthe canonical `install.ps1` over HTTPS-only TLS 1.2-or-newer transport into a\ncollision-failing `%TEMP%` task directory, delegates all installation meaning,\ncleans the directory, and preserves the child exit code. It owns no manifest,\nSHA-256, ZIP, or installation logic. The Linux-hosted CMD regression is static;\nno native CMD execution is claimed.\nThe distribution provides no\npublisher-authenticity signature or trusted signing identity, background or\nautomatic update, telemetry, `sudo` execution, or automatic `PATH` or\nshell-startup-file change.\nGitHub is a public source and documentation mirror, not the distribution\nauthority. The complete beta.1, beta.2, beta.3, stable `0.1.0`, `0.2.0`, and\n`0.2.1` and `0.2.2` version directories remain unchanged and immutable. The\ncomplete `0.2.3`, `0.2.4`, `0.2.5`, and `0.2.6` version directories are immutable;\nthe `0.2.6` release is closed. The active public tree has exactly 76 files,\nand the current installers and manifest select `0.2.6`. Any later platform or\nversion requires separate Owner authority. Linux arm64, tags, GitHub Releases,\ncrates.io publication, and background or automatic update remain outside the\ncompleted publication. The earlier `0.2.4` publication added its eight\nversioned files and replaced only the two installers and manifest pointers\nwithout replacing any of the 48 prior versioned files or the CMD Adapter. Its\nsecond publisher run reused all 60 files without metadata change. The `0.2.5`\npublication then added its eight versioned files, replaced the two installers\nand manifest pointers, and reused all 68 files on its second run. R3 adds the\neight `0.2.6` files and replaces the two installers and manifest last; its\nsecond run reuses all 76 files without byte or metadata change.\n\n## Architecture\n\n- [Current state](docs/current/now.md)\n- [Backwriter protocol](docs/architecture/backwriter-text-coordination-protocol.md)\n- [Anddress and exact Line model](docs/architecture/rebuildable-structural-addressing.md)\n- [CLI V1 authority](docs/architecture/backwriter-cli-v1.md)\n- [Verification](docs/development/verification.md)\n\n## License\n\n[MIT License](LICENSE)\n"
+  }
+}
+```
+
+
+````

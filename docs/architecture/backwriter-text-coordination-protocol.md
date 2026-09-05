@@ -3,7 +3,9 @@
 ## 0.3.0 namespace — Gate 2 implemented in the checkout
 
 This target supplements the closed `0.2.6` implementation described below;
-Gates 1–4 are complete, not source readiness. Published `0.2.6` excludes `.artext/bw` and does
+Gates 1–4 are complete; Gate 5 records readiness NO-GO in the
+[tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md#gate-5-d3-and-final-readiness--no-go).
+No protocol or version change follows that evaluation. Published `0.2.6` excludes `.artext/bw` and does
 not implement a private state store. The `0.3.0` target reserves `.bw` at the
 same accepted Runtime workspace root, not at an admission-root-relative,
 nested-workspace, HOME, or new environment-selected base. It excludes both

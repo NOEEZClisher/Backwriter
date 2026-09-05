@@ -3,7 +3,9 @@
 The `0.3.0` target has completed authority Gate 1, namespace Gate 2, View Gate 3
 and Help/module/evidence contraction Gate 4 in its
 [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
-Cargo and public distribution remain closed `0.2.6`. A private reservation is
+Gate 5 records readiness NO-GO, preserving its incomplete comparison evidence
+rather than weakening the gate. Cargo and public distribution remain closed
+`0.2.6`. A private reservation is
 not a storage engine: `.bw` and the legacy exact exclusion must neither cause
 eager IO nor consume historical data. Complete shell View displays returned
 Content without acquiring it again; normal absent relations do not hide peers.

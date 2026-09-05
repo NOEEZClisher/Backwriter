@@ -4,9 +4,22 @@
 
 The [0.3.0 five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 records implementation evidence; Protocol, address model and CLI authority own
-semantics. Gates 1–4 are complete. Gate 5 integration/readiness, D3's independent
-four-file fixture and subsequent separately authorized release work remain open.
-No readiness SHA or final product test count is assigned.
+semantics. Gates 1–4 are complete. Gate 5 evaluated candidate
+`4c3038505b8f87d01483b60abd3ec7494d0bc94d` and records readiness **NO-GO**.
+The full GNU and musl suites each pass **293 tests**; 52 release smoke
+invocations pass. All four independent AI arms finish with exact replacement
+oracle bytes, but D3 lacks separate stdout/stderr, full-run timing and complete
+model-visible byte evidence. Genie N also uses nine capability commands, not
+the reference eight, by adding a pre-edit File View. Do not rerun a coached
+best case, promote the version or infer a product defect from missing evidence.
+No `0.3.0` readiness SHA or release is assigned.
+
+The final executed inputs, binary/log identities, independent oracle, four
+unaltered transcripts and capture gaps are retained in the
+[Gate 5 record](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md#gate-5-d3-and-final-readiness--no-go).
+Only docs changed after that matrix, so all test/build inputs remain identical.
+Task-local exports, build outputs, fixture workspaces and captures were removed
+after byte-exact transcript archival. No native macOS/Windows run is claimed.
 
 Cargo and source-built Version remain `0.2.6`. Published N-1 Source Authority is
 `09bb6c424081594bd86a95f04345b786ef9b46b6`, closed `0.2.6`; the candidate

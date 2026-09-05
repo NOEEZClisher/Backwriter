@@ -1,6 +1,6 @@
 # Backwriter Current State
 
-## 0.3.0 target — Gates 1–4 complete, Gate 5 pending
+## 0.3.0 target — Gates 1–4 complete, Gate 5 NO-GO
 
 The [five-gate tracker](../tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md)
 closes documentation authority, focused namespace, direct shell View, Help and
@@ -23,11 +23,16 @@ semantics. One-shot/raw/JSON outputs and all v5/currentness rules stay fixed.
 Gate 4 passes 116 focused GNU tests and 33 release smoke invocations. It preserves
 all 74 CLI test names across one integration crate and all non-Help function
 bodies across private modules. This is not source byte equality with N-1 or a
-full product suite. Next is Gate 5 final GNU/musl and four-arm N-1/N readiness.
+full product suite. Gate 5 now passes 293 tests per GNU/musl target and 52
+release smoke invocations. Four independently executed AI arms match the
+pre-authored replacement oracle exactly, but D3 is NO-GO: separate output
+streams/full elapsed/model-visible byte evidence is incomplete, and Genie N
+uses nine capability commands against the eight-command reference. No source
+readiness or version promotion follows; production, tests and Cargo stay fixed.
 No implementation or version change
 occurs at Gate 1; Gate 2 changes no version or CLI output. Source and roadmap
-notes are preserved planning evidence. Full GNU/musl suites remain Gate 5 work;
-the existing 285-test results are baseline evidence, not post-Gate-2 results.
+notes are preserved planning evidence. The existing 285-test results remain
+baseline evidence, not the newly executed 293-test candidate results.
 
 ## 0.2.6 operational Adapter and verification contraction — Gates 1–8 and release complete
 

@@ -18,7 +18,10 @@ the reconciled target. Closed `0.2.6` stays current.
    conditional test modules within one CLI integration crate, and verification
    contraction preserving current rules and unique historical evidence — complete.
 5. Gate 5: final GNU/musl candidate, pinned `0.2.6` N-1 versus N, four-arm
-   Dummy/Genie with an independent four-file oracle, and readiness — pending.
+   Dummy/Genie with an independent four-file oracle — executed, readiness NO-GO.
+   Native suites pass 293 tests each; all four final oracles match. Missing
+   D3 stream/timing/visibility evidence and Genie N's extra baseline View
+   prevent promotion. Cargo/CLI remain `0.2.6`; no production fix is included.
    Subsequent artifact/installer/publication slices require separate approval.
 
 No Gate adds a parser, executor, persistent refs, history, relocation, rollback,
@@ -27,7 +30,9 @@ Do not use the user-installed `0.2.2` executable or run older comparison arms.
 The original independent fixture must be located before Gate 5; if unavailable,
 declare a common spec-conformant replacement and its new digest, never claim
 identity with a lost fixture. Gate 3 framing and stream-failure slot reporting
-are closed in CLI authority; D3's fixture decision remains pending for Gate 5.
+are closed in CLI authority. Gate 5 used a declared independent replacement
+because the original bytes were not located. Its transcripts and evidence
+gaps are recorded in the tracker; no coached rerun replaces these observations.
 
 ## Completed: 0.2.6 operational Adapter and verification contraction — published and closed
 

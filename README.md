@@ -80,7 +80,12 @@ The published `0.2.6` Source Authority's `src/**` is byte-identical to its Gate 
 candidate `c78e07f242035230e8b071d583491ac633f58d29`; that claim does not cover
 this later checkout. Unpublished `0.3.0` Gates 1–4 add the private namespace
 boundary, complete direct shell View, discoverable Help and private CLI modules.
-Cargo and `bw version` still report `0.2.6`; readiness and release remain pending.
+Cargo and `bw version` still report `0.2.6`. Gate 5 readiness is **NO-GO**:
+the native suites pass, but the independent AI comparison lacks required
+capture evidence and Genie N exceeds its reference command count. See the
+[evaluation record](docs/tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md#gate-5-d3-and-final-readiness--no-go).
+No `0.3.0` release is authorized. Update still hands off to the official
+`0.2.6` installer without comparing versions; it was not executed in Gate 5.
 Use `bw help shell` for short-reference Search/View/Replace/Check and
 `bw help pick`, `bw help anchor`, `bw help apply`, or `bw help data` for advanced
 raw Session topics. These Help topics add no one-shot capability execution.

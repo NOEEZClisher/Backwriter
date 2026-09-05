@@ -14,13 +14,17 @@ Anchor, `C` to Check, and `D` to Data. `I`, `R`, and Apply's reference letter
 are unassigned. Inventory names do not define a lifecycle, call order,
 payload, error model, or adapter behavior.
 
-## 0.3.0 target — Gates 1–4 complete
+## 0.3.0 target — Gates 1–4 complete; Gate 5 NO-GO
 
 Gates 1–4 are complete in the
 [five-gate tracker](docs/tasks/2026-09-05-backwriter-0.3.0-independent-namespace-complete-view.md).
 Cargo, CLI, and public distribution remain closed `0.2.6`; the following
 checkout implements namespace exclusion, complete direct shell View and Help/module
-contraction, not source readiness.
+contraction, not source readiness. Gate 5 executed 293 tests on each of GNU
+and musl and all four independent AI arms, but required D3 capture evidence
+is incomplete and Genie N used nine rather than eight capability commands.
+Keep Cargo/CLI at `0.2.6`; no production fix or version promotion is authorized
+by this evaluation. See the tracker for exact evidence and limitations.
 The Protocol owns the implemented Runtime-root-relative `.bw` reservation plus
 the exact legacy `.artext/bw` exclusion. No private state store was found;
 creation/read/write/spill/cleanup of such a store is N/A, not permission to
